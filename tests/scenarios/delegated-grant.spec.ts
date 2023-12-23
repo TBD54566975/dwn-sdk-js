@@ -252,7 +252,6 @@ export function testDelegatedGrantScenarios(): void {
         }
       });
       const recordsSubscribeByDeviceXReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
-      console.log(recordsSubscribeByDeviceXReply.status);
       expect(recordsSubscribeByDeviceXReply.status.code).to.equal(200, 'subscribe');
 
       const subscriptionChatRecords:Set<string> = new Set();

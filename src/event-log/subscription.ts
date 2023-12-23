@@ -1,6 +1,6 @@
 import type { EventEmitter } from 'events';
 import type { MessageStore } from '../types/message-store.js';
-import type { Subscription } from '../types/subscriptions.js';
+import type { EmitFunction, Subscription } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
@@ -45,14 +45,19 @@ export class SubscriptionBase implements Subscription {
     return this.#id;
   }
 
-  protected matchFilter(tenant: string, ...indexes: KeyValues[]):boolean {
-    return this.tenant === tenant &&
-      indexes.find(index => FilterUtility.matchAnyFilter(index, this.filters)) !== undefined;
+  protected matchFilter(tenant: string, indexes: KeyValues, ...additionalIndexes: KeyValues[]): { match: boolean, updated?: boolean } {
+    const initialMatch = FilterUtility.matchAnyFilter(indexes, this.filters);
+    const additionalMatch =
+      additionalIndexes.length > 0 ? additionalIndexes.find(index => FilterUtility.matchAnyFilter(index, this.filters)) !== undefined : undefined;
+    const match = this.tenant === tenant && (initialMatch === true || additionalMatch === true);
+    const updated = additionalMatch ? additionalMatch === true && !initialMatch : undefined;
+    return { match, updated };
   }
 
-  public listener = (tenant: string, message: GenericMessage, ...indexes: KeyValues[]):void => {
-    if (this.matchFilter(tenant, ...indexes)) {
-      this.eventEmitter.emit(this.eventChannel, message);
+  public listener: EmitFunction = (tenant, message, indexes, ...additionalIndexes):void => {
+    const { match, updated } = this.matchFilter(tenant, indexes, ...additionalIndexes);
+    if (match === true) {
+      this.eventEmitter.emit(this.eventChannel, message, updated);
     }
   };
 

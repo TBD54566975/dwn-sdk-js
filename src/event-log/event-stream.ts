@@ -100,13 +100,13 @@ export class EventStreamEmitter implements EventStream {
     this.eventEmitter.removeAllListeners();
   }
 
-  emit(tenant: string, message: GenericMessage, ...matchIndexes: KeyValues[]): void {
+  emit(tenant: string, message: GenericMessage, initialIndexes:KeyValues, ...additionalIndexes: KeyValues[]): void {
     if (!this.isOpen) {
       //todo: dwn error
       throw new Error('Event stream is not open. Cannot add to the stream.');
     }
     try {
-      this.eventEmitter.emit(this.eventChannel, tenant, message, ...matchIndexes);
+      this.eventEmitter.emit(this.eventChannel, tenant, message, initialIndexes, ...additionalIndexes);
     } catch (error) {
       //todo: dwn catch error;
       throw error; // You can choose to handle or propagate the error as needed.

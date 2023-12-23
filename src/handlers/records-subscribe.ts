@@ -1,10 +1,9 @@
 import type { DidResolver } from '../did/did-resolver.js';
-import type EventEmitter from 'events';
-import type { EventStream } from '../types/subscriptions.js';
-import type { GenericMessage } from '../types/message-types.js';
+import type { EventEmitter } from 'events';
+import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { Filter, KeyValues } from '../types/query-types.js';
+import type { EmitFunction, EventStream } from '../types/subscriptions.js';
 import type { RecordsDeleteMessage, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -287,8 +286,9 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
     return new RecordsSubscriptionHandler({ ...options, id, recordsSubscribe });
   }
 
-  public listener = async (tenant: string, message: GenericMessage, ...indexes: KeyValues[]):Promise<void> => {
-    if (this.matchFilter(tenant, ...indexes)) {
+  public listener: EmitFunction = async (tenant, message, initialIndex, ...additionalIndexes):Promise<void> => {
+    const { match, updated } = this.matchFilter(tenant, initialIndex, ...additionalIndexes);
+    if (match === true) {
       if (this.shouldAuthorize) {
         try {
           await this.reauthorize();
@@ -300,12 +300,12 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
       }
 
       if (RecordsWrite.isRecordsWriteMessage(message) || RecordsDelete.isRecordsDeleteMessage(message)) {
-        this.eventEmitter.emit(this.eventChannel, message);
+        this.eventEmitter.emit(this.eventChannel, message, updated);
       }
     }
   };
 
-  on(handler:(message: RecordsWriteMessage | RecordsDeleteMessage) => void): { off: () => void } {
+  on(handler:(message: RecordsWriteMessage | RecordsDeleteMessage, updated?: boolean) => void): { off: () => void } {
     this.eventEmitter.on(this.eventChannel, handler);
     return {
       off: (): void => {
