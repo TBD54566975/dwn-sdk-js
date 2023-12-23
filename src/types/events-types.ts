@@ -46,7 +46,7 @@ export type EventsSubscribeMessage = {
   descriptor: EventsSubscribeDescriptor;
 };
 
-export type EventsHandler = (message: GenericMessage) => void;
+export type EventsHandler = (message: GenericMessage, updated?: boolean) => void;
 
 export type EventsSubscription = {
   id: string;
