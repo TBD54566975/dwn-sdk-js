@@ -1002,6 +1002,239 @@ export function testRecordsWriteHandler(): void {
         expect(ArrayUtility.byteArraysEqual(readDataBytes, write2.dataBytes!)).to.be.true;
       });
 
+      describe('tags', () => {
+        it('it should throw if more than 10 tags are present', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // too many tags (rejected)
+          let recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1  : [ 'tag' ],
+              tag2  : [ 'tag' ],
+              tag3  : [ 'tag' ],
+              tag4  : [ 'tag' ],
+              tag5  : [ 'tag' ],
+              tag6  : [ 'tag' ],
+              tag7  : [ 'tag' ],
+              tag8  : [ 'tag' ],
+              tag9  : [ 'tag' ],
+              tag10 : [ 'tag' ],
+              tag11 : [ 'tag' ],
+            }
+          });
+          let reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // maximum allowed 10 tags
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1  : [ 'tag' ],
+              tag2  : [ 'tag' ],
+              tag3  : [ 'tag' ],
+              tag4  : [ 'tag' ],
+              tag5  : [ 'tag' ],
+              tag6  : [ 'tag' ],
+              tag7  : [ 'tag' ],
+              tag8  : [ 'tag' ],
+              tag9  : [ 'tag' ],
+              tag10 : [ 'tag' ],
+            }
+          });
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(202);
+        });
+
+        it('should throw if more than 10 values are present in any single tag', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // too many tag string values (rejected)
+          let recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1 : [ 'tag' ],
+              tag2 : [
+                'tag1',
+                'tag2',
+                'tag3',
+                'tag4',
+                'tag5',
+                'tag6',
+                'tag7',
+                'tag8',
+                'tag9',
+                'tag10',
+                'tag11'
+              ],
+            }
+          });
+          let reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // at most 10 tag string values per tag (accepted)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1 : [ 'tag' ],
+              tag2 : [
+                'tag1',
+                'tag2',
+                'tag3',
+                'tag4',
+                'tag5',
+                'tag6',
+                'tag7',
+                'tag8',
+                'tag9',
+                'tag10',
+              ],
+            }
+          });
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          // too many tag numerical values (rejected)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1 : [ 1, 2, 3 ],
+              tag2 : [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ],
+            }
+          });
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // at most 10 numerical tag values per tag (accepted)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1 : [ 1, 2, 3 ],
+              tag2 : [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10
+              ],
+            }
+          });
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(202);
+        });
+
+        it('should throw if multiple booleans are passed', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // multiple true (rejected)
+          let recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [ true, true ]
+            }
+          });
+
+          let reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // multiple false (rejected)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [ false, false ]
+            }
+          });
+
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // multiple true and false (rejected)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [ true, false ]
+            }
+          });
+
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // no values (rejected)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [] // no values
+            }
+          });
+
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(400);
+
+          // single true (accepted)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [ true ]
+            }
+          });
+
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          // single false (accepted)
+          recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author     : alice,
+            dataFormat : 'application/octet-stream',
+            data       : TestDataGenerator.randomBytes(10),
+            tags       : {
+              tag1: [ false ]
+            }
+          });
+
+          reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(reply.status.code).to.equal(202);
+        });
+      });
+
       describe('initial write & subsequent write tests', () => {
         describe('createFrom()', () => {
           it('should accept a published RecordsWrite using createFrom() without specifying `data` or `datePublished`', async () => {

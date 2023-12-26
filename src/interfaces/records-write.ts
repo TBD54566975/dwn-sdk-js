@@ -239,7 +239,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
-
     const recordsWrite = new RecordsWrite(message);
 
     await recordsWrite.validateIntegrity(); // RecordsWrite specific data integrity check

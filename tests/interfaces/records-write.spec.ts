@@ -321,6 +321,35 @@ describe('RecordsWrite', () => {
 
       expect(write.message.descriptor.published).to.be.true;
     });
+
+    it('replace tags with updated tags, if tags do not exist in createFrom remove them', async () => {
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
+        tags: {
+          tag1: [ 'value1', 'value2' ]
+        }
+      });
+      expect(message.descriptor.tags).to.exist;
+      expect(message.descriptor.tags!.tag1).to.exist;
+      expect(message.descriptor.tags!.tag1).to.have.members([ 'value1', 'value2' ]);
+
+      const write = await RecordsWrite.createFrom({
+        recordsWriteMessage : recordsWrite.message,
+        signer              : Jws.createSigner(author),
+        tags                : {
+          tag2: [ 'value1', 'value2', 'value3' ]
+        }
+      });
+      expect(write.message.descriptor.tags).to.exist;
+      expect(write.message.descriptor.tags!.tag1).to.not.exist;
+      expect(write.message.descriptor.tags!.tag2).to.exist;
+      expect(write.message.descriptor.tags!.tag2).to.have.members([ 'value1', 'value2', 'value3' ]);
+
+      const write2 = await RecordsWrite.createFrom({
+        recordsWriteMessage : write.message,
+        signer              : Jws.createSigner(author),
+      });
+      expect(write2.message.descriptor.tags).to.not.exist;
+    });
   });
 
   describe('parse()', () => {
@@ -355,6 +384,8 @@ describe('RecordsWrite', () => {
 
       await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
     });
+
+
   });
 
   describe('isSignedByDelegate()', () => {
