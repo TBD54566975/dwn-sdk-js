@@ -5,11 +5,11 @@
   "minProperties": 1,
   "additionalProperties": false,
   "required": [
-    "itemId",
+    "messageCid",
     "value"
   ],
   "properties": {
-    "itemId": {
+    "messageCid": {
       "type": "string"
     },
     "value": {

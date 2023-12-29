@@ -11,15 +11,15 @@ describe('EventsGet Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
         cursor: {
-          itemId : 'itemId',
-          value  : 'value'
+          messageCid : 'messageCid',
+          value      : 'value'
         },
         signer: Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;
       expect(message.descriptor).to.exist;
-      expect(message.descriptor.cursor).to.eql({ itemId: 'itemId', value: 'value' });
+      expect(message.descriptor.cursor).to.eql({ messageCid: 'messageCid', value: 'value' });
       expect(message.authorization).to.exist;
     });
 
@@ -41,8 +41,8 @@ describe('EventsGet Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
         cursor: {
-          itemId : 'itemId',
-          value  : 'value'
+          messageCid : 'messageCid',
+          value      : 'value'
         },
         signer: Jws.createSigner(alice)
       });
@@ -60,8 +60,8 @@ describe('EventsGet Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
         cursor: {
-          itemId : 'itemId',
-          value  : 'value'
+          messageCid : 'messageCid',
+          value      : 'value'
         },
         signer: Jws.createSigner(alice)
       });
