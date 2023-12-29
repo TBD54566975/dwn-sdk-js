@@ -1,6 +1,7 @@
 import type { MessagesGetReplyEntry } from '../types/messages-types.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
-import type { RecordsWriteReply } from '../types/records-types.js';
+import type { Readable } from 'readable-stream';
+import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { GenericMessageReply, QueryResultEntry } from '../types/message-types.js';
 
 export function messageReplyFromError(e: unknown, code: number): GenericMessageReply {
@@ -25,7 +26,13 @@ export type UnionMessageReply = GenericMessageReply & {
    * Record corresponding to the message received if applicable (e.g. RecordsRead).
    * Mutually exclusive with `entries` and `cursor`.
    */
-  record?: RecordsWriteReply;
+  record?: RecordsWriteMessage & {
+    /**
+     * The initial write of the record if the returned RecordsWrite message itself is not the initial write.
+     */
+    initialWrite?: RecordsWriteMessage;
+    data: Readable;
+  };
 
   /**
    * A cursor for pagination if applicable (e.g. RecordsQuery).
