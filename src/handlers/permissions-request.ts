@@ -51,7 +51,7 @@ export class PermissionsRequestHandler implements MethodHandler {
     if (existingMessage === undefined) {
       await this.messageStore.put(tenant, message, indexes);
       await this.eventLog.append(tenant, messageCid, indexes);
-      this.eventStream.emit(tenant, message, indexes);
+      this.eventStream.emit(tenant, { message, indexes });
     }
 
     return {

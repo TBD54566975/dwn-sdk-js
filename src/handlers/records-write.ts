@@ -133,12 +133,14 @@ export class RecordsWriteHandler implements MethodHandler {
 
       // we use the same KeyValues as the store indexes for the event stream match fields
       // if it is not the initial write, we also include the indexes from the most recent write
-      const additionalIndexes = [];
+      let mostRecentMessage;
       if (!newMessageIsInitialWrite && newestExistingMessage?.descriptor.method === DwnMethodName.Write) {
-        const newistExistingRecordsWrite = await RecordsWrite.parse(newestExistingMessage as RecordsQueryReplyEntry);
-        additionalIndexes.push(await newistExistingRecordsWrite.constructIndexes(false));
+        const newestExistingWrite = await RecordsWrite.parse(newestExistingMessage as RecordsQueryReplyEntry);
+        const newestExistingIndexes = await newestExistingWrite.constructIndexes(false);
+        mostRecentMessage = { message: newestExistingMessage, indexes: newestExistingIndexes };
       }
-      this.eventStream.emit(tenant, message, indexes, ...additionalIndexes);
+
+      this.eventStream.emit(tenant, { message, indexes }, mostRecentMessage);
     } catch (error) {
       const e = error as any;
       if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
