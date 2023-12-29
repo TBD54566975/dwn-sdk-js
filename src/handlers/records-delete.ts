@@ -99,7 +99,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     const latestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
     const mostRecentWrite = await RecordsWrite.parse(latestRecordsWrite);
     const mostRecentWriteIndexes = await mostRecentWrite.constructIndexes(false);
-    this.eventStream.emit(tenant, message, indexes, mostRecentWriteIndexes);
+    this.eventStream.emit(tenant, { message, indexes }, { message: mostRecentWrite.message, indexes: mostRecentWriteIndexes });
 
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(

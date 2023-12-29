@@ -1,8 +1,8 @@
 import type { DidResolver } from '../did/did-resolver.js';
+import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { EventMessageData, EventStream, Subscription } from '../types/subscriptions.js';
 import type { EventsSubscribeMessage, EventsSubscription } from '../types/events-types.js';
-import type { EventStream, Subscription } from '../types/subscriptions.js';
-import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageSubscription } from '../types/message-types.js';
 import type { RecordsSubscribeMessage, RecordsSubscription } from '../types/records-types.js';
 
@@ -100,13 +100,13 @@ export class EventStreamEmitter implements EventStream {
     this.eventEmitter.removeAllListeners();
   }
 
-  emit(tenant: string, message: GenericMessage, initialIndexes:KeyValues, ...additionalIndexes: KeyValues[]): void {
+  emit(tenant: string, message: EventMessageData, mostRecentMessage?: EventMessageData): void {
     if (!this.isOpen) {
       //todo: dwn error
       throw new Error('Event stream is not open. Cannot add to the stream.');
     }
     try {
-      this.eventEmitter.emit(this.eventChannel, tenant, message, initialIndexes, ...additionalIndexes);
+      this.eventEmitter.emit(this.eventChannel, tenant, message, mostRecentMessage);
     } catch (error) {
       //todo: dwn catch error;
       throw error; // You can choose to handle or propagate the error as needed.

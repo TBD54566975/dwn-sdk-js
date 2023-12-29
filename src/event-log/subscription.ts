@@ -1,7 +1,7 @@
 import type { EventEmitter } from 'events';
+import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { EmitFunction, Subscription } from '../types/subscriptions.js';
-import type { Filter, KeyValues } from '../types/query-types.js';
+import type { EmitFunction, EventMessageData, Subscription } from '../types/subscriptions.js';
 import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
@@ -45,19 +45,22 @@ export class SubscriptionBase implements Subscription {
     return this.#id;
   }
 
-  protected matchFilter(tenant: string, indexes: KeyValues, ...additionalIndexes: KeyValues[]): { match: boolean, updated?: boolean } {
-    const initialMatch = FilterUtility.matchAnyFilter(indexes, this.filters);
-    const additionalMatch =
-      additionalIndexes.length > 0 ? additionalIndexes.find(index => FilterUtility.matchAnyFilter(index, this.filters)) !== undefined : undefined;
-    const match = this.tenant === tenant && (initialMatch === true || additionalMatch === true);
-    const updated = additionalMatch ? additionalMatch === true && !initialMatch : undefined;
-    return { match, updated };
+  protected matchMessages(tenant: string, current: EventMessageData, mostRecent?: EventMessageData): GenericMessage[] {
+    const emitArgs:GenericMessage[] = [];
+    if (tenant === this.tenant) {
+      if (FilterUtility.matchAnyFilter(current.indexes, this.filters)) {
+        emitArgs.push(current.message);
+      } else if (mostRecent !== undefined && FilterUtility.matchAnyFilter(mostRecent.indexes, this.filters)) {
+        emitArgs.push(current.message, mostRecent.message);;
+      }
+    }
+    return emitArgs;
   }
 
-  public listener: EmitFunction = (tenant, message, indexes, ...additionalIndexes):void => {
-    const { match, updated } = this.matchFilter(tenant, indexes, ...additionalIndexes);
-    if (match === true) {
-      this.eventEmitter.emit(this.eventChannel, message, updated);
+  public listener: EmitFunction = (tenant, current, mostRecent):void => {
+    const emitArgs = this.matchMessages(tenant, current, mostRecent);
+    if (emitArgs.length > 0) {
+      this.eventEmitter.emit(this.eventChannel, ...emitArgs);
     }
   };
 

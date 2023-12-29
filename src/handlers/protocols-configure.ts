@@ -66,7 +66,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await this.messageStore.put(tenant, message, indexes);
       const messageCid = await Message.getCid(message);
       await this.eventLog.append(tenant, messageCid, indexes);
-      this.eventStream.emit(tenant, message, indexes);
+      this.eventStream.emit(tenant, { message, indexes });
 
       messageReply = {
         status: { code: 202, detail: 'Accepted' }

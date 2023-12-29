@@ -7,6 +7,7 @@ import type { EmitFunction, EventStream } from '../types/subscriptions.js';
 import type { RecordsDeleteMessage, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { FilterUtility } from '../utils/filter.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
@@ -286,21 +287,25 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
     return new RecordsSubscriptionHandler({ ...options, id, recordsSubscribe });
   }
 
-  public listener: EmitFunction = async (tenant, message, initialIndex, ...additionalIndexes):Promise<void> => {
-    const { match, updated } = this.matchFilter(tenant, initialIndex, ...additionalIndexes);
-    if (match === true) {
-      if (this.shouldAuthorize) {
-        try {
-          await this.reauthorize();
-        } catch (error) {
-          //todo: check for known authorization errors
-          // console.log('reauthorize error', error);
-          await this.close();
+  public listener: EmitFunction = async (tenant, current, mostRecent):Promise<void> => {
+    if (RecordsWrite.isRecordsWriteMessage(current.message) || RecordsDelete.isRecordsDeleteMessage(current.message)) {
+      try {
+        const emitArgs = [];
+        if (FilterUtility.matchAnyFilter(current.indexes, this.filters)) {
+          emitArgs.push(current.message);
+        } else if (mostRecent !== undefined && FilterUtility.matchAnyFilter(mostRecent.indexes, this.filters)) {
+          emitArgs.push(current.message, mostRecent.message);
         }
-      }
-
-      if (RecordsWrite.isRecordsWriteMessage(message) || RecordsDelete.isRecordsDeleteMessage(message)) {
-        this.eventEmitter.emit(this.eventChannel, message, updated);
+        if (emitArgs.length > 0) {
+          if (this.shouldAuthorize) {
+            await this.reauthorize();
+          }
+          this.eventEmitter.emit(this.eventChannel, ...emitArgs);
+        }
+      } catch (error) {
+        //todo: check for known authorization errors
+        // console.log('reauthorize error', error);
+        await this.close();
       }
     }
   };
