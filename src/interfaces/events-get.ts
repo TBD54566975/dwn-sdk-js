@@ -17,7 +17,7 @@ export class EventsGet extends AbstractMessage<EventsGetMessage> {
 
   public static async parse(message: EventsGetMessage): Promise<EventsGet> {
     Message.validateJsonSchema(message);
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new EventsGet(message);

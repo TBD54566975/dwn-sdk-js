@@ -33,7 +33,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     let signaturePayload;
     if (message.authorization !== undefined) {
-      signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      signaturePayload = await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
     Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
@@ -83,13 +83,19 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
   }
 
   /**
-   * Authorizes the delegate who signed the message.
+   * Authorizes the delegate who signed this message.
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeDelegate(matchedRecordsWrite: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
-    const grantedTo = this.signer!;
-    const grantedFor = this.author!;
     const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
-    await RecordsGrantAuthorization.authorizeRead(grantedFor, this.message, matchedRecordsWrite, grantedTo, delegatedGrant, messageStore);
+
+    await RecordsGrantAuthorization.authorizeRead({
+      recordsReadMessage          : this.message,
+      recordsWriteMessageToBeRead : matchedRecordsWrite,
+      expectedGrantedToInGrant    : this.signer!,
+      expectedGrantedForInGrant   : this.author!,
+      permissionsGrantMessage     : delegatedGrant,
+      messageStore
+    });
   }
 }

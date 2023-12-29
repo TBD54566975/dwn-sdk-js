@@ -39,7 +39,7 @@ export type CreateFromPermissionsRequestOverrides = {
 export class PermissionsGrant extends AbstractMessage<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     PermissionsGrant.validateScope(message);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
     Time.validateTimestamp(message.descriptor.dateExpires);
@@ -147,7 +147,6 @@ export class PermissionsGrant extends AbstractMessage<PermissionsGrantMessage> {
 
   /**
    * Validates scope structure for properties beyond `interface` and `method`.
-   * Currently only grants for RecordsRead and RecordsWrite have such properties and need validation beyond JSON Schema.
    */
   public static validateScope(permissionsGrantMessage: PermissionsGrantMessage): void {
     const recordsScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;

@@ -5,7 +5,7 @@ import type { EventsQueryMessage, EventsQueryReply } from '../types/event-types.
 
 import { EventsQuery } from '../interfaces/events-query.js';
 import { messageReplyFromError } from '../core/message-reply.js';
-import { authenticate, authorize } from '../core/auth.js';
+import { authenticate, authorizeOwner } from '../core/auth.js';
 
 
 export class EventsQueryHandler implements MethodHandler {
@@ -26,7 +26,7 @@ export class EventsQueryHandler implements MethodHandler {
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorize(tenant, eventsQuery);
+      await authorizeOwner(tenant, eventsQuery);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }

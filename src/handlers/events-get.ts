@@ -5,7 +5,7 @@ import type { EventsGetMessage, EventsGetReply } from '../types/event-types.js';
 
 import { EventsGet } from '../interfaces/events-get.js';
 import { messageReplyFromError } from '../core/message-reply.js';
-import { authenticate, authorize } from '../core/auth.js';
+import { authenticate, authorizeOwner } from '../core/auth.js';
 
 type HandleArgs = {tenant: string, message: EventsGetMessage};
 
@@ -23,7 +23,7 @@ export class EventsGetHandler implements MethodHandler {
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorize(tenant, eventsGet);
+      await authorizeOwner(tenant, eventsGet);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }

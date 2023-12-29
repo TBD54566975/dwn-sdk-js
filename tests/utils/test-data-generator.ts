@@ -1,67 +1,49 @@
+import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolutionResult } from '../../src/types/did-types.js';
+import type { EventsGetOptions } from '../../src/interfaces/events-get.js';
 import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
+import type { MessagesGetMessage } from '../../src/types/messages-types.js';
+import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
 import type { PaginationCursor } from '../../src/types/query-types.js';
+import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-configure.js';
+import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsFilter } from '../../src/types/records-types.js';
+import type { RecordsQueryOptions } from '../../src/interfaces/records-query.js';
+import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
-import type { EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
-
-import type {
-  CreateFromOptions,
-  DateSort,
-  DerivedPrivateJwk,
-  EncryptionInput,
-  EventsGetMessage,
-  EventsGetOptions,
-  KeyEncryptionInput,
-  MessagesGetMessage,
-  MessagesGetOptions,
-  ProtocolDefinition,
-  ProtocolsConfigureMessage,
-  ProtocolsConfigureOptions,
-  ProtocolsQueryMessage,
-  ProtocolsQueryOptions,
-  RecordsDeleteMessage,
-  RecordsQueryMessage,
-  RecordsQueryOptions, RecordsWriteMessage, RecordsWriteOptions
-} from '../../src/index.js';
-import {
-  DwnInterfaceName,
-  DwnMethodName,
-  Encryption,
-  HdKey,
-  KeyDerivationScheme,
-  Records
-} from '../../src/index.js';
+import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
+import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
+import type { EventsGetMessage, EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
-
+import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
+import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
+import { Encryption } from '../../src/utils/encryption.js';
+import { EventsGet } from '../../src/interfaces/events-get.js';
 import { EventsQuery } from '../../src/interfaces/events-query.js';
+import { Jws } from '../../src/utils/jws.js';
+import { MessagesGet } from '../../src/interfaces/messages-get.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
+import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
+import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
+import { Records } from '../../src/utils/records.js';
+import { RecordsDelete } from '../../src/interfaces/records-delete.js';
+import { RecordsQuery } from '../../src/interfaces/records-query.js';
+import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Time } from '../../src/utils/time.js';
-
-import {
-  DidKeyResolver,
-  EventsGet,
-  Jws,
-  MessagesGet,
-  ProtocolsConfigure,
-  ProtocolsQuery,
-  RecordsDelete,
-  RecordsQuery,
-  RecordsWrite
-} from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
+import { HdKey, KeyDerivationScheme } from '../../src/utils/hd-key.js';
 
 /**
  * A logical grouping of user data used to generate test messages.

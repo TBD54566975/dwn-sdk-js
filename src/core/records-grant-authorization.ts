@@ -1,6 +1,6 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
+import type { PermissionsGrantMessage, RecordsPermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
@@ -11,71 +11,83 @@ export class RecordsGrantAuthorization {
   /**
    * Authorizes the given RecordsWrite in the scope of the DID given.
    */
-  public static async authorizeWrite(
-    tenant: string,
-    incomingMessage: RecordsWriteMessage,
-    author: string,
+  public static async authorizeWrite(input: {
+    recordsWriteMessage: RecordsWriteMessage,
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage({
-      tenant,
-      incomingMessage,
-      author,
+  }): Promise<void> {
+    const {
+      recordsWriteMessage, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
+    } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage: recordsWriteMessage,
+      expectedGrantedToInGrant,
+      expectedGrantedForInGrant,
       permissionsGrantMessage,
       messageStore
     });
 
-    RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionsGrantMessage as RecordsPermissionsGrantMessage);
 
-    RecordsGrantAuthorization.verifyConditions(incomingMessage, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionsGrantMessage);
   }
 
   /**
-   * Authorizes the scope of a PermissionsGrant for RecordsRead.
-   * @param messageStore Used to check if the grant has been revoked.
+   * Authorizes a RecordsReadMessage using the given PermissionsGrant.
+   * @param messageStore Used to check if the given grant has been revoked.
    */
-  public static async authorizeRead(
-    tenant: string,
-    incomingMessage: RecordsReadMessage,
-    newestRecordsWriteMessage: RecordsWriteMessage,
-    author: string,
+  public static async authorizeRead(input: {
+    recordsReadMessage: RecordsReadMessage,
+    recordsWriteMessageToBeRead: RecordsWriteMessage,
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage({
-      tenant,
-      incomingMessage,
-      author,
+  }): Promise<void> {
+    const {
+      expectedGrantedForInGrant, recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantedToInGrant, permissionsGrantMessage, messageStore
+    } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage: recordsReadMessage,
+      expectedGrantedToInGrant,
+      expectedGrantedForInGrant,
       permissionsGrantMessage,
       messageStore
     });
 
-    RecordsGrantAuthorization.verifyScope(newestRecordsWriteMessage, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionsGrantMessage as RecordsPermissionsGrantMessage);
   }
 
   /**
    * Authorizes the scope of a PermissionsGrant for RecordsQuery.
    * @param messageStore Used to check if the grant has been revoked.
    */
-  public static async authorizeQuery(
-    tenant: string,
-    incomingMessage: RecordsQueryMessage,
-    author: string,
+  public static async authorizeQuery(input: {
+    recordsQueryMessage: RecordsQueryMessage,
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage({
-      tenant,
-      incomingMessage,
-      author,
+  }): Promise<void> {
+    const {
+      recordsQueryMessage, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
+    } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage: recordsQueryMessage,
+      expectedGrantedToInGrant,
+      expectedGrantedForInGrant,
       permissionsGrantMessage,
       messageStore
     });
 
     // If the grant specifies a protocol, the query must specify the same protocol.
-    const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
-    const protocolInQuery = incomingMessage.descriptor.filter.protocol;
+    const protocolInGrant = (permissionsGrantMessage as RecordsPermissionsGrantMessage).descriptor.scope.protocol;
+    const protocolInQuery = recordsQueryMessage.descriptor.filter.protocol;
     if (protocolInGrant !== undefined && protocolInQuery !== protocolInGrant) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationQueryProtocolScopeMismatch,
@@ -88,24 +100,28 @@ export class RecordsGrantAuthorization {
    * Authorizes the scope of a PermissionsGrant for RecordsDelete.
    * @param messageStore Used to check if the grant has been revoked.
    */
-  public static async authorizeDelete(
-    tenant: string,
-    incomingDeleteMessage: RecordsDeleteMessage,
+  public static async authorizeDelete(input: {
+    recordsDeleteMessage: RecordsDeleteMessage,
     recordsWriteToDelete: RecordsWriteMessage,
-    author: string,
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage({
-      tenant,
-      incomingMessage: incomingDeleteMessage,
-      author,
+  }): Promise<void> {
+    const {
+      recordsDeleteMessage, recordsWriteToDelete, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
+    } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage: recordsDeleteMessage,
+      expectedGrantedToInGrant,
+      expectedGrantedForInGrant,
       permissionsGrantMessage,
       messageStore
     });
 
     // If the grant specifies a protocol, the delete must be deleting a record with the same protocol.
-    const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
+    const protocolInGrant = (permissionsGrantMessage as RecordsPermissionsGrantMessage).descriptor.scope.protocol;
     const protocolOfRecordToDelete = recordsWriteToDelete.descriptor.protocol;
     if (protocolInGrant !== undefined && protocolOfRecordToDelete !== protocolInGrant) {
       throw new DwnError(
@@ -121,25 +137,24 @@ export class RecordsGrantAuthorization {
    */
   private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
-    permissionsGrantMessage: PermissionsGrantMessage,
+    permissionsGrantMessage: RecordsPermissionsGrantMessage,
   ): void {
-    const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
-
+    const grantScope = permissionsGrantMessage.descriptor.scope;
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
       return;
     } else if (recordsWriteMessage.descriptor.protocol !== undefined) {
       // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWriteMessage, grantScope);
+      RecordsGrantAuthorization.verifyProtocolRecordScope(recordsWriteMessage, grantScope);
     } else {
-      RecordsGrantAuthorization.authorizeFlatRecord(recordsWriteMessage, grantScope);
+      RecordsGrantAuthorization.verifyFlatRecordScope(recordsWriteMessage, grantScope);
     }
   }
 
   /**
-   * Authorizes a grant scope for a protocol record
+   * Verifies a protocol record against the scope of the given grant.
    */
-  private static authorizeProtocolRecord(
+  private static verifyProtocolRecordScope(
     recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {
@@ -177,9 +192,9 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes a grant scope for a non-protocol record
+   * Verifies a non-protocol record against the scope of the given grant.
    */
-  private static authorizeFlatRecord(
+  private static verifyFlatRecordScope(
     recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {

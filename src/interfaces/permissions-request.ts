@@ -22,7 +22,7 @@ export type PermissionsRequestOptions = {
 export class PermissionsRequest extends AbstractMessage<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRequest(message);
