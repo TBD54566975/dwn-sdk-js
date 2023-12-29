@@ -52,6 +52,6 @@ export type RangeCriterion = {
 };
 
 export type PaginationCursor = {
-  itemId: string;
+  messageCid: string;
   value: string | number;
 };

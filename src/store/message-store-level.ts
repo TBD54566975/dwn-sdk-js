@@ -107,8 +107,8 @@ export class MessageStoreLevel implements MessageStore {
 
     const messages: GenericMessage[] = [];
     for (let i = 0; i < results.length; i++) {
-      const { itemId } = results[i];
-      const message = await this.get(tenant, itemId, options);
+      const { messageCid } = results[i];
+      const message = await this.get(tenant, messageCid, options);
       if (message) { messages.push(message); }
     }
 

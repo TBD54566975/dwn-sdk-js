@@ -50,7 +50,7 @@ export class EventLogLevel implements EventLog {
   async queryEvents(tenant: string, filters: Filter[], cursor?: PaginationCursor): Promise<{ events: string[], cursor?: PaginationCursor }> {
     const results = await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor });
     return {
-      events : results.map(({ itemId }) => itemId),
+      events : results.map(({ messageCid }) => messageCid),
       cursor : IndexLevel.getCursorFromArray(results, 'watermark'),
     };
   }
