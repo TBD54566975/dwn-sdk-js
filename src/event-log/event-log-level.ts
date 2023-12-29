@@ -51,7 +51,7 @@ export class EventLogLevel implements EventLog {
     const results = await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor });
     return {
       events : results.map(({ messageCid }) => messageCid),
-      cursor : IndexLevel.getCursorFromArray(results, 'watermark'),
+      cursor : IndexLevel.createCursorFromLastArrayItem(results, 'watermark'),
     };
   }
 
