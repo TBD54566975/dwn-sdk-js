@@ -102,7 +102,7 @@ export class MessageStoreLevel implements MessageStore {
       results.splice(-1);
 
       // set cursor to the last item remaining after the spliced result.
-      cursor = IndexLevel.getCursorFromArray(results, queryOptions.sortProperty);
+      cursor = IndexLevel.createCursorFromLastArrayItem(results, queryOptions.sortProperty);
     }
 
     const messages: GenericMessage[] = [];

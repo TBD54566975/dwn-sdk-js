@@ -191,7 +191,7 @@ export class IndexLevel {
    * @param filters Array of filters that are treated as an OR query.
    * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
    * @param options IndexLevelOptions that include an AbortSignal.
-   * @returns {string[]} an array of messageCids that match the given filters.
+   * @returns {IndexedItem[]} an array of `IndexedItem` that match the given filters.
    */
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<IndexedItem[]> {
 
@@ -216,7 +216,7 @@ export class IndexLevel {
     const { cursor: queryCursor , limit } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : '';
+    const startKey = queryCursor ? this.createStartingKeyFromCursor(queryCursor) : '';
 
     const matches: IndexedItem[] = [];
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
@@ -265,32 +265,32 @@ export class IndexLevel {
   }
 
   /**
-   * Gets the starting point for a LevelDB query given an messageCid as a cursor and the indexed property.
+   * Creates the starting point for a LevelDB query given an messageCid as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private getStartingKeyForCursor(cursor: PaginationCursor): string {
+  private createStartingKeyFromCursor(cursor: PaginationCursor): string {
     const { messageCid , value } = cursor;
     return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(value), messageCid);
   }
 
   /**
-   * Returns a PaginationCursor for the last item of a given array of IndexedItems.
+   * Returns a PaginationCursor using the last item of a given array of IndexedItems.
    * If the given array is empty, undefined is returned.
    *
    * @throws {DwnError} if the sort property or cursor value is invalid.
    */
-  static getCursorFromArray(items: IndexedItem[], sortProperty: string): PaginationCursor | undefined {
+  static createCursorFromLastArrayItem(items: IndexedItem[], sortProperty: string): PaginationCursor | undefined {
     if (items.length > 0) {
-      return this.encodeCursorFromItem(items.at(-1)!, sortProperty);
+      return this.createCursorFromItem(items.at(-1)!, sortProperty);
     }
   }
 
   /**
-   * Encodes a PaginationCursor from a given IndexedItem and sortProperty.
+   * Creates a PaginationCursor from a given IndexedItem and sortProperty.
    *
    * @throws {DwnError} if the sort property or cursor value is invalid.
    */
-  static encodeCursorFromItem(item: IndexedItem, sortProperty: string): PaginationCursor {
+  static createCursorFromItem(item: IndexedItem, sortProperty: string): PaginationCursor {
     const { messageCid , indexes } = item;
     const value = indexes[sortProperty];
 
@@ -323,7 +323,7 @@ export class IndexLevel {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit } = queryOptions;
 
     // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
-    const cursorStartingKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : undefined;
+    const cursorStartingKey = queryCursor ? this.createStartingKeyFromCursor(queryCursor) : undefined;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
