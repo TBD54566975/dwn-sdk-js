@@ -1,7 +1,7 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
-import type { GenericMessageReply } from '../core/message-reply.js';
+import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';

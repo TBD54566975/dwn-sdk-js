@@ -74,7 +74,7 @@ export function testDwnClass(): void {
         const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
         expect(reply.status.code).to.equal(200);
-        expect(reply.events).to.be.empty;
+        expect(reply.entries).to.be.empty;
         expect((reply as any).data).to.not.exist;
       });
 

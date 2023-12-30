@@ -77,7 +77,14 @@ export type Pagination = {
   limit?: number;
 };
 
+type Status = {
+  code: number
+  detail: string
+};
 
+export type GenericMessageReply = {
+  status: Status;
+};
 
 export type MessageSort = {
   dateCreated?: SortDirection;

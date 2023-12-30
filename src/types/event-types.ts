@@ -1,6 +1,5 @@
-import type { GenericMessageReply } from '../core/message-reply.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
-import type { AuthorizationModel, GenericMessage } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { RangeCriterion, RangeFilter } from './query-types.js';
 
@@ -39,7 +38,7 @@ export type EventsGetMessage = GenericMessage & {
 };
 
 export type EventsGetReply = GenericMessageReply & {
-  events?: string[];
+  entries?: string[];
 };
 
 export type EventsQueryDescriptor = {
@@ -56,5 +55,5 @@ export type EventsQueryMessage = GenericMessage & {
 };
 
 export type EventsQueryReply = GenericMessageReply & {
-  events?: string[];
+  entries?: string[];
 };

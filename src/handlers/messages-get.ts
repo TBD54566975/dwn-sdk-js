@@ -73,8 +73,8 @@ export class MessagesGetHandler implements MethodHandler {
     }
 
     return {
-      status: { code: 200, detail: 'OK' },
-      messages
+      status  : { code: 200, detail: 'OK' },
+      entries : messages
     };
   }
 }

@@ -1,10 +1,9 @@
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
-import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { AuthorizationModel, GenericMessage, GenericSignaturePayload, Pagination } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericSignaturePayload, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { RangeCriterion, RangeFilter } from './query-types.js';
 
@@ -31,8 +30,6 @@ export type RecordsWriteDescriptor = {
   datePublished?: string;
   dataFormat: string;
 };
-
-export type RecordsWriteReply = GenericMessageReply;
 
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
@@ -157,7 +154,7 @@ export type RecordsReadReply = GenericMessageReply & {
      */
     initialWrite?: RecordsWriteMessage;
     data: Readable;
-  }
+  };
 };
 
 export type RecordsReadDescriptor = {
