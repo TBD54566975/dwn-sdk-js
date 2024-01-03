@@ -1,12 +1,15 @@
-import varint from 'varint';
+import type { Signer } from '../types/signer.js';
 import type { DidDocument, DidMethodResolver, DidResolutionResult } from '../types/did-types.js';
+import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
+
+import varint from 'varint';
 
 import { base58btc } from 'multiformats/bases/base58';
 import { Did } from './did.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../utils/encoder.js';
+import { PrivateKeySigner } from '../utils/private-key-signer.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
 
 /**
  * did:key Resolver.
@@ -108,7 +111,7 @@ export class DidKeyResolver implements DidMethodResolver {
    * Generates a new ed25519 public/private key pair. Creates a DID using the private key.
    * @returns DID and its key material.
    */
-  public static async generate(): Promise<{ did: string } & KeyMaterial> {
+  public static async generate(): Promise<{ did: string, signer: Signer } & KeyMaterial> {
     const { publicJwk, privateJwk } = await ed25519.generateKeyPair();
 
     // multicodec code for Ed25519 public keys
@@ -122,7 +125,16 @@ export class DidKeyResolver implements DidMethodResolver {
     const did = `did:key:${id}`;
     const keyId = DidKeyResolver.getKeyId(did);
 
-    return { did, keyId, keyPair: { publicJwk, privateJwk } };
+    return {
+      did,
+      keyId,
+      keyPair : { publicJwk, privateJwk },
+      signer  : new PrivateKeySigner({
+        privateJwk : privateJwk,
+        algorithm  : privateJwk.alg,
+        keyId      : `${did}#${keyId}`,
+      })
+    };
   }
 
   /**

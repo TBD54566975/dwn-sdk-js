@@ -10,6 +10,7 @@ import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryOptions } from '../../src/interfaces/records-query.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
@@ -32,6 +33,7 @@ import { MessagesGet } from '../../src/interfaces/messages-get.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
+import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
 import { Records } from '../../src/utils/records.js';
@@ -52,6 +54,7 @@ export type Persona = {
   did: string;
   keyId: string;
   keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  signer: Signer;
 };
 
 export type GenerateProtocolsConfigureInput = {
@@ -279,7 +282,12 @@ export class TestDataGenerator {
     const persona: Persona = {
       did,
       keyId,
-      keyPair
+      keyPair,
+      signer: new PrivateKeySigner({
+        privateJwk : keyPair.privateJwk,
+        algorithm  : keyPair.privateJwk.alg,
+        keyId      : `${did}#${keyId}`,
+      })
     };
 
     return persona;
