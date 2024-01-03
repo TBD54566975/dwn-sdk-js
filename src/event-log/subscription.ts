@@ -1,7 +1,7 @@
 import type { EventEmitter } from 'events';
-import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { EmitFunction, EventMessageData, Subscription } from '../types/subscriptions.js';
+import type { EmitFunction, Subscription } from '../types/subscriptions.js';
+import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
@@ -45,22 +45,13 @@ export class SubscriptionBase implements Subscription {
     return this.#id;
   }
 
-  protected matchMessages(tenant: string, current: EventMessageData, mostRecent?: EventMessageData): GenericMessage[] {
-    const emitArgs:GenericMessage[] = [];
-    if (tenant === this.tenant) {
-      if (FilterUtility.matchAnyFilter(current.indexes, this.filters)) {
-        emitArgs.push(current.message);
-      } else if (mostRecent !== undefined && FilterUtility.matchAnyFilter(mostRecent.indexes, this.filters)) {
-        emitArgs.push(current.message, mostRecent.message);;
-      }
-    }
-    return emitArgs;
+  protected matchFilters(tenant: string, indexes: KeyValues): boolean {
+    return tenant === this.tenant && FilterUtility.matchAnyFilter(indexes, this.filters);
   }
 
-  public listener: EmitFunction = (tenant, current, mostRecent):void => {
-    const emitArgs = this.matchMessages(tenant, current, mostRecent);
-    if (emitArgs.length > 0) {
-      this.eventEmitter.emit(this.eventChannel, ...emitArgs);
+  public listener: EmitFunction = (tenant, message, indexes):void => {
+    if (this.matchFilters(tenant, indexes)) {
+      this.eventEmitter.emit(this.eventChannel, message);
     }
   };
 
