@@ -75,7 +75,7 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
-export type GenericMessageHandler = (message: GenericMessage, updated?: boolean) => void;
+export type GenericMessageHandler = (message: GenericMessage) => void;
 
 export type GenericMessageSubscription = {
   id: string;
