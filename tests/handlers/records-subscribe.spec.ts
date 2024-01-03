@@ -272,14 +272,6 @@ export function testRecordsSubscribeHandler(): void {
 
           expect(messageCids.length).to.equal(1);
           expect(messageCids[0]).to.equal(await Message.getCid(chatRecordForBob.message));
-
-          // delete the chat addressed to bob
-          const deleteChatForBob = await TestDataGenerator.generateRecordsDelete({ recordId: chatRecordForBob.message.recordId, author: alice });
-          const deleteChatReply = await dwn.processMessage(alice.did, deleteChatForBob.message);
-          expect(deleteChatReply.status.code).to.equal(202);
-
-          expect(messageCids.length).to.equal(2);
-          expect(messageCids[1]).to.equal(await Message.getCid(deleteChatForBob.message));
         });
 
         it('allows $globalRole authorized subscriptions', async () => {
