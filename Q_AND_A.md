@@ -94,12 +94,12 @@
 
   This design choice is primarily driven by performance considerations. If we were to make `protocolPath` optional, and it is not specified, we would need to search records across protocol paths. Since protocol rules (protocol rule set) are defined at the per protocol path level, this means we would need to parse the protocol rules for every protocol path in the protocol definition to determine which protocol path the invoked role has access to. Then, we would need to make a database query for each qualified protocol path, which could be quite costly. This is not to say that we should never consider it, but this is the current design choice.
 
-- What is the difference between `write` and `update` actions?
+- What is the difference between `write` and `co-update` actions?
 
-  (Last update: 2023/11/09)
+  (Last update: 2024/03/04)
 
   - `write` - allows a DID to create and update the record they have created
-  - `update` - allows a DID to update a record, regardless of the initial author
+  - `co-update` - allows a DID to update a record, regardless of the initial author
 
 - What is the difference between the terms "global role" and "context role"?
 

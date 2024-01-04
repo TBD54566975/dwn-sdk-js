@@ -2345,7 +2345,7 @@ export function testRecordsWriteHandler(): void {
           expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
         });
 
-        it('should disallow overwriting existing records by a different author if author is not authorized to `update`', async () => {
+        it('should disallow overwriting existing records by a different author if author is not authorized to `co-update`', async () => {
           // scenario: Bob writes into Alice's DWN given Alice's "message" protocol, Carol then attempts to modify the existing message
 
           // write a protocol definition with an allow-anyone rule

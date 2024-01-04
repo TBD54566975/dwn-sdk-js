@@ -3,11 +3,11 @@ import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor,
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
-import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
+import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 
 export type ProtocolsConfigureOptions = {
   messageTimestamp?: string;

@@ -90,7 +90,7 @@ export type ProtocolActionRule = {
 
   /**
    * Action that the actor can perform.
-   * May be 'query' | 'read' | 'write' | 'update' | 'delete' | 'subscribe'.
+   * See {ProtocolAction} for possible values.
    * 'query' and 'subscribe' are only supported for `role` rules.
    */
   can: string;

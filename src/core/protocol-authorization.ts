@@ -535,7 +535,7 @@ export class ProtocolAuthorization {
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
       if (await incomingRecordsWrite.isInitialWrite()) {
-        // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+        // only 'write' allows initial RecordsWrites
         return [ProtocolAction.Write];
       } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
         // Both 'co-update' and 'write' authorize the incoming message
