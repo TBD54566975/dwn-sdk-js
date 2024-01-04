@@ -15,7 +15,6 @@ import { authenticate, authorizeOwner } from '../core/auth.js';
 export class EventsSubscribeHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
-    private messageStore: MessageStore,
     private eventStream: EventStream
   ) {}
 
@@ -54,16 +53,16 @@ export class EventsSubscribeHandler implements MethodHandler {
 }
 
 export class EventsSubscriptionHandler extends SubscriptionBase {
-  public static async create(
+  public static async create(input: {
     tenant: string,
     message: EventsSubscribeMessage,
     filters: Filter[],
     eventEmitter: EventEmitter,
     messageStore: MessageStore,
     unsubscribe: () => Promise<void>
-  ): Promise<EventsSubscriptionHandler> {
-    const id = await Message.getCid(message);
-    return new EventsSubscriptionHandler({ tenant, message, id, filters, eventEmitter, messageStore, unsubscribe });
+  }): Promise<EventsSubscriptionHandler> {
+    const id = await Message.getCid(input.message);
+    return new EventsSubscriptionHandler({ ...input, id });
   }
 };
 

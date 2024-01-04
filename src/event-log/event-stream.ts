@@ -25,7 +25,6 @@ type EventStreamConfig = {
 
 export class EventStreamEmitter implements EventStream {
   private eventEmitter: EventEmitter;
-  private didResolver: DidResolver;
   private messageStore: MessageStore;
   private reauthorizationTTL: number;
 
@@ -33,7 +32,6 @@ export class EventStreamEmitter implements EventStream {
   private subscriptions: Map<string, Subscription> = new Map();
 
   constructor(config: EventStreamConfig) {
-    this.didResolver = config.didResolver;
     this.messageStore = config.messageStore;
     this.reauthorizationTTL = config.reauthorizationTTL ?? 0; // if set to zero it does not reauthorize
 
@@ -58,20 +56,25 @@ export class EventStreamEmitter implements EventStream {
       return subscription;
     }
 
-    const unsubscribe = async ():Promise<void> => { await this.unsubscribe(messageCid); };
-
     if (RecordsSubscribe.isRecordsSubscribeMessage(message)) {
       subscription = await RecordsSubscriptionHandler.create({
         tenant,
         message,
         filters,
-        unsubscribe,
+        unsubscribe        : () => this.unsubscribe(messageCid),
         eventEmitter       : this.eventEmitter,
         messageStore       : this.messageStore,
         reauthorizationTTL : this.reauthorizationTTL,
       });
     } else if (EventsSubscribe.isEventsSubscribeMessage(message)) {
-      subscription = await EventsSubscriptionHandler.create(tenant, message, filters, this.eventEmitter, this.messageStore, unsubscribe);
+      subscription = await EventsSubscriptionHandler.create({
+        tenant,
+        message,
+        filters,
+        unsubscribe  : () => this.unsubscribe(messageCid),
+        eventEmitter : this.eventEmitter,
+        messageStore : this.messageStore
+      });
     } else {
       throw new DwnError(DwnErrorCode.EventStreamSubscriptionNotSupported, 'not a supported subscription message');
     }
@@ -102,8 +105,8 @@ export class EventStreamEmitter implements EventStream {
 
   emit(tenant: string, message: GenericMessage, indexes: KeyValues): void {
     if (!this.isOpen) {
-      //todo: dwn error
-      throw new Error('Event stream is not open. Cannot add to the stream.');
+      // silently ignore.
+      return;
     }
     try {
       this.eventEmitter.emit(this.eventChannel, tenant, message, indexes);

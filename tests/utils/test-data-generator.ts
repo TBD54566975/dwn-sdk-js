@@ -269,7 +269,7 @@ export type GenerateEventsQueryOutput = {
 
 export type GenerateEventsSubscribeInput = {
   author: Persona;
-  filters: EventsFilter[];
+  filters?: EventsFilter[];
 };
 
 export type GenerateEventsSubscribeOutput = {

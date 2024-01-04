@@ -153,19 +153,18 @@ export class ProtocolAuthorization {
     );
   }
 
-  // maybe combine with query?
   public static async authorizeSubscription(
     tenant: string,
     incomingMessage: RecordsSubscribe,
     messageStore: MessageStore,
   ): Promise<void> {
-    // validate that required properties exist in query filter
+    // validate that required properties exist in subscription filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!, // authorizeQuery` is only called if `protocol` is present
+      protocol!, // `authorizeSubscription` is only called if `protocol` is present
       messageStore,
     );
 
@@ -190,7 +189,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
-      [], // ancestor chain is not relevant to subscribes
+      [], // ancestor chain is not relevant to subscriptions
       messageStore,
     );
   }

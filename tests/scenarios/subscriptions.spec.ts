@@ -196,7 +196,157 @@ export function testSubscriptionScenarios(): void {
       });
 
       describe('events subscribe', () => {
-        xit('filters by protocol', async () => {
+        it('all events', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // subscribe to all messages
+          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message);
+          expect(eventsSubscriptionReply.status.code).to.equal(200);
+          expect(eventsSubscriptionReply.subscription?.id).to.equal(await Message.getCid(eventsSubscription.message));
+
+          // create a handler that adds the messageCid of each message to an array.
+          const messageCids: string[] = [];
+          const messageHandler = async (message: GenericMessage): Promise<void> => {
+            const messageCid = await Message.getCid(message);
+            messageCids.push(messageCid);
+          };
+          const handler = eventsSubscriptionReply.subscription!.on(messageHandler);
+
+          // generate various messages
+          const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          const write1MessageCid = await Message.getCid(write1.message);
+          const write1Reply = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+          expect(write1Reply.status.code).to.equal(202);
+
+          const grant1 = await TestDataGenerator.generatePermissionsGrant({ author: alice });
+          const grant1MessageCid = await Message.getCid(grant1.message);
+          const grant1Reply = await dwn.processMessage(alice.did, grant1.message);
+          expect(grant1Reply.status.code).to.equal(202);
+
+          const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+          const protocol1MessageCid = await Message.getCid(protocol1.message);
+          const protocol1Reply = await dwn.processMessage(alice.did, protocol1.message);
+          expect(protocol1Reply.status.code).to.equal(202);
+
+          const deleteWrite1 = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1.message.recordId });
+          const delete1MessageCid = await Message.getCid(deleteWrite1.message);
+          const deleteWrite1Reply = await dwn.processMessage(alice.did, deleteWrite1.message);
+          expect(deleteWrite1Reply.status.code).to.equal(202);
+
+          // unregister the handler
+          handler.off();
+
+          // create a message after
+          const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          const write2Reply = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+          expect(write2Reply.status.code).to.equal(202);
+
+          await Time.minimalSleep();
+
+          // test the messageCids array for the appropriate messages
+          expect(messageCids.length).to.equal(4);
+          expect(messageCids).to.eql([ write1MessageCid, grant1MessageCid, protocol1MessageCid, delete1MessageCid ]);
+        });
+
+        it('filters by protocol', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // create a proto1
+          const protoConf1 = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : { ...freeForAll, protocol: 'proto1' }
+          });
+
+          const postProperties = {
+            protocolPath : 'post',
+            schema       : freeForAll.types.post.schema,
+            dataFormat   : freeForAll.types.post.dataFormats[0],
+          };
+
+          // create a proto1
+          const proto1 = protoConf1.message.descriptor.definition.protocol;
+          const protoConf1Response = await dwn.processMessage(alice.did, protoConf1.message);
+          expect(protoConf1Response.status.code).equals(202);
+
+          // create a proto2
+          const protoConf2 = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : { ...freeForAll, protocol: 'proto2' }
+          });
+          const proto2 = protoConf2.message.descriptor.definition.protocol;
+          const protoConf2Response = await dwn.processMessage(alice.did, protoConf2.message);
+          expect(protoConf2Response.status.code).equals(202);
+
+          // we will add messageCids to these arrays as they are received by their handler to check against later
+          const proto1Messages:string[] = [];
+          const proto2Messages:string[] = [];
+
+          // subscribe to proto1 messages
+          const proto1Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto1 }] });
+          const proto1SubscriptionReply = await dwn.processMessage(alice.did, proto1Subscription.message);
+          expect(proto1SubscriptionReply.status.code).to.equal(200);
+          expect(proto1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto1Subscription.message));
+
+          // we add a handler to the subscription and add the messageCid to the appropriate array
+          const proto1Handler = async (message:GenericMessage):Promise<void> => {
+            const messageCid = await Message.getCid(message);
+            proto1Messages.push(messageCid);
+          };
+          const proto1Sub = proto1SubscriptionReply.subscription!.on(proto1Handler);
+
+          // subscribe to proto2 messages
+          const proto2Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto2 }] });
+          const proto2SubscriptionReply = await dwn.processMessage(alice.did, proto2Subscription.message);
+          expect(proto2SubscriptionReply.status.code).to.equal(200);
+          expect(proto2SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto2Subscription.message));
+          // we add a handler to the subscription and add the messageCid to the appropriate array
+          const proto2Handler = async (message:GenericMessage):Promise<void> => {
+            const messageCid = await Message.getCid(message);
+            proto2Messages.push(messageCid);
+          };
+          proto2SubscriptionReply.subscription!.on(proto2Handler);
+
+          // create some random record, will not show up in records subscription
+          const write1Random = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          const write1RandomResponse = await dwn.processMessage(alice.did, write1Random.message, write1Random.dataStream);
+          expect(write1RandomResponse.status.code).to.equal(202);
+
+          // create a record for proto1
+          const write1proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
+          const write1Response = await dwn.processMessage(alice.did, write1proto1.message, write1proto1.dataStream);
+          expect(write1Response.status.code).equals(202);
+
+          // create a record for proto2
+          const write1proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
+          const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, write1proto2.dataStream);
+          expect(write1Proto2Response.status.code).equals(202);
+
+          expect(proto1Messages.length).to.equal(1, 'proto1');
+          expect(proto1Messages).to.include(await Message.getCid(write1proto1.message));
+          expect(proto2Messages.length).to.equal(1, 'proto2');
+          expect(proto2Messages).to.include(await Message.getCid(write1proto2.message));
+
+          // remove listener for proto1
+          proto1Sub.off();
+
+          // create another record for proto1
+          const write2proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
+          const write2Response = await dwn.processMessage(alice.did, write2proto1.message, write2proto1.dataStream);
+          expect(write2Response.status.code).equals(202);
+
+          // create another record for proto2
+          const write2proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
+          const write2Proto2Response = await dwn.processMessage(alice.did, write2proto2.message, write2proto2.dataStream);
+          expect(write2Proto2Response.status.code).equals(202);
+
+          // proto1 messages from handler do not change.
+          expect(proto1Messages.length).to.equal(1, 'proto1 after subscription.off()');
+          expect(proto1Messages).to.include(await Message.getCid(write1proto1.message));
+
+          //proto2 messages from handler have the new message.
+          expect(proto2Messages.length).to.equal(2, 'proto2 after subscription.off()');
+          expect(proto2Messages).to.have.members([await Message.getCid(write1proto2.message), await Message.getCid(write2proto2.message)]);
         });
       });
     });
