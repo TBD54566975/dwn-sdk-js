@@ -45,7 +45,7 @@
         },
         {
           "role": "admin",
-          "can": "delete"
+          "can": "co-delete"
         }
       ]
     }

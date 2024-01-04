@@ -14,7 +14,7 @@
         },
         {
           "who": "recipient",
-          "can": "delete"
+          "can": "co-delete"
         }
       ],
       "tag": {
@@ -27,7 +27,7 @@
           {
             "who": "recipient",
             "of": "post",
-            "can": "delete"
+            "can": "co-delete"
           }
         ]
       }

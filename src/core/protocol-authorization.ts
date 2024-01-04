@@ -521,7 +521,7 @@ export class ProtocolAuthorization {
 
     switch (incomingMessage.message.descriptor.method) {
     case DwnMethodName.Delete:
-      return [ProtocolAction.Delete];
+      return [ProtocolAction.CoDelete];
 
     case DwnMethodName.Query:
       return [ProtocolAction.Query];
@@ -595,7 +595,7 @@ export class ProtocolAuthorization {
         if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
           recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
         } else {
-          // else the incoming message must be a RecordsDelete because only `co-update` and `delete` are allowed recipient actions
+          // else the incoming message must be a RecordsDelete because only `co-update` and `co-delete` are allowed recipient actions
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
 

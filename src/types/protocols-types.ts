@@ -37,11 +37,11 @@ export enum ProtocolActor {
 }
 
 export enum ProtocolAction {
-  Delete = 'delete',
+  CoDelete = 'co-delete',
+  CoUpdate = 'co-update',
   Query = 'query',
   Read = 'read',
   Subscribe = 'subscribe',
-  CoUpdate = 'co-update',
   Write = 'write'
 }
 

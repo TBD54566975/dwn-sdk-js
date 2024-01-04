@@ -17,7 +17,7 @@
         },
         {
           "who": "anyone",
-          "can": "delete"
+          "can": "co-delete"
         }
       ]
     }

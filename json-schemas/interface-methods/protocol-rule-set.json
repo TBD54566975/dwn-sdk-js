@@ -43,9 +43,9 @@
               "can": {
                 "type": "string",
                 "enum": [
-                  "delete",
-                  "read",
+                  "co-delete",
                   "co-update",
+                  "read",
                   "write"
                 ]
               }
@@ -64,11 +64,11 @@
               "can": {
                 "type": "string",
                 "enum": [
-                  "delete",
+                  "co-delete",
+                  "co-update",
                   "query",
                   "subscribe",
                   "read",
-                  "co-update",
                   "write"
                 ]
               }
