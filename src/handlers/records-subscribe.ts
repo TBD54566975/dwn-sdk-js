@@ -60,12 +60,6 @@ export class RecordsSubscribeHandler implements MethodHandler {
     };
   }
 
-  // 1) owner filters
-  // 2) public filters
-  // 3) authorized filters
-  //    a) protocol authorized
-  //    b) grant authorized
-
   /**
    * Fetches the records as the owner of the DWN with no additional filtering.
    */
@@ -272,7 +266,7 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
     await RecordsSubscribeHandler.authorizeRecordsSubscribe(this.tenant, this.recordsSubscribe, this.messageStore);
   }
 
-  public static async create(options: {
+  public static async create(input: {
     tenant: string,
     message: RecordsSubscribeMessage,
     filters: Filter[],
@@ -281,9 +275,9 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
     unsubscribe: () => Promise<void>;
     reauthorizationTTL: number
   }): Promise<RecordsSubscriptionHandler> {
-    const id = await Message.getCid(options.message);
-    const recordsSubscribe = await RecordsSubscribe.parse(options.message);
-    return new RecordsSubscriptionHandler({ ...options, id, recordsSubscribe });
+    const id = await Message.getCid(input.message);
+    const recordsSubscribe = await RecordsSubscribe.parse(input.message);
+    return new RecordsSubscriptionHandler({ ...input, id, recordsSubscribe });
   }
 
   public listener: EmitFunction = async (tenant, message, indexes):Promise<void> => {

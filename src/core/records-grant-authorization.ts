@@ -100,13 +100,16 @@ export class RecordsGrantAuthorization {
    * Authorizes the scope of a PermissionsGrant for RecordsSubscribe.
    * @param messageStore Used to check if the grant has been revoked.
    */
-  public static async authorizeSubscribe(
+  public static async authorizeSubscribe(input: {
     recordsSubscribeMessage: RecordsSubscribeMessage,
     expectedGrantedToInGrant: string,
     expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
+  }): Promise<void> {
+    const {
+      recordsSubscribeMessage, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
+    } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsSubscribeMessage,
