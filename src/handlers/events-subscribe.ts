@@ -6,6 +6,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventsSubscribeMessage, EventsSubscribeReply } from '../types/events-types.js';
 
+import { Events } from '../utils/events.js';
 import { EventsSubscribe } from '../interfaces/events-subscribe.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -40,7 +41,10 @@ export class EventsSubscribeHandler implements MethodHandler {
     }
 
     try {
-      const subscription = await this.eventStream.subscribe(tenant, message, []);
+
+      const { filters } = message.descriptor;
+      const eventsFilters = Events.convertFilters(filters);
+      const subscription = await this.eventStream.subscribe(tenant, message, eventsFilters);
       const messageReply: EventsSubscribeReply = {
         status: { code: 200, detail: 'OK' },
         subscription,
