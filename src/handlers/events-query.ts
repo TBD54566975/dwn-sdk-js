@@ -3,6 +3,7 @@ import type { EventLog } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventsQueryMessage, EventsQueryReply } from '../types/events-types.js';
 
+import { Events } from '../utils/events.js';
 import { EventsQuery } from '../interfaces/events-query.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { authenticate, authorizeOwner } from '../core/auth.js';
@@ -32,7 +33,7 @@ export class EventsQueryHandler implements MethodHandler {
     }
 
     const { filters, cursor } = eventsQuery.message.descriptor;
-    const logFilters = EventsQuery.convertFilters(filters);
+    const logFilters = Events.convertFilters(filters);
     const events = await this.eventLog.queryEvents(tenant, logFilters, cursor);
 
     return {
