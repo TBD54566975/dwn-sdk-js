@@ -56,5 +56,5 @@ export { DataStoreLevel } from './store/data-store-level.js';
 export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
 
-// test generator
-export { TestDataGenerator } from '../tests/utils/test-data-generator.js';
+// test library exports
+export { Persona, TestDataGenerator } from '../tests/utils/test-data-generator.js';

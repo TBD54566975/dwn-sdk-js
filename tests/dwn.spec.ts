@@ -117,7 +117,7 @@ export function testDwnClass(): void {
       it('should throw 401 if message is targeted at a non-tenant', async () => {
       // tenant gate that blocks everyone
         const blockAllTenantGate: TenantGate = {
-          async isTenant(): Promise<boolean> {
+          async isActiveTenant(): Promise<boolean> {
             return false;
           }
         };

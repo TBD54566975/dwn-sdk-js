@@ -244,9 +244,9 @@ import { Dwn, TenantGate, DataStoreLevel, EventLogLevel, MessageStoreLevel } fro
 
 // Define a custom implementation of the TenantGate interface.
 class CustomTenantGate implements TenantGate {
-  public async isTenant(did): Promise<void> {
+  public async isActiveTenant(did): Promise<void> {
     // Custom implementation
-    // returns `true` if the given DID is a tenant of the DWN; `false` otherwise
+    // returns `true` if the given DID is an active tenant of the DWN; `false` otherwise
   }
 }
 
