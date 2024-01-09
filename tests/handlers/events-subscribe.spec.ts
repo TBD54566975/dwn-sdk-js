@@ -117,11 +117,5 @@ export function testEventsSubscribeHandler(): void {
       expect(subscriptionReply.status.code).to.equal(401);
       expect(subscriptionReply.subscription).to.be.undefined;
     });
-
-    xit('should allow a non-tenant to subscribe to an event stream they are authorized for');
-
-    xit('should not allow to subscribe after a grant as been revoked');
-
-    xit('should not continue streaming messages after grant has been revoked');
   });
 }
