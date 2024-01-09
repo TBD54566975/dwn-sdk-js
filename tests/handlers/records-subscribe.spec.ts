@@ -17,9 +17,10 @@ import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { RecordsSubscribeHandler } from '../../src/handlers/records-subscribe.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidResolver, Dwn, EventStreamEmitter, Time } from '../../src/index.js';
+import { DidResolver, Dwn, Time } from '../../src/index.js';
 import { DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -43,7 +44,8 @@ export function testRecordsSubscribeHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });

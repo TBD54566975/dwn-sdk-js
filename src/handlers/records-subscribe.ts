@@ -53,7 +53,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
       }
     }
 
-    const subscription = await this.eventStream.subscribe(tenant, message, filters);
+    const subscription = await this.eventStream.subscribe(tenant, message, filters, this.messageStore);
     return {
       status: { code: 200, detail: 'OK' },
       subscription
@@ -289,8 +289,7 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
 
         this.eventEmitter.emit(this.eventChannel, message);
       } catch (error) {
-        //todo: check for known authorization errors
-        // console.log('reauthorize error', error);
+        //todo: check for known authorization errors, and signal to user there has been an error
         await this.close();
       }
     }

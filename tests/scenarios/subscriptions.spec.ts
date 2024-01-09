@@ -13,6 +13,7 @@ import friendRole from '../vectors/protocol-definitions/friend-role.json' assert
 
 import { RecordsSubscriptionHandler } from '../../src/handlers/records-subscribe.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 import { DidKeyResolver, DidResolver, Dwn, EventStreamEmitter, Message } from '../../src/index.js';
@@ -39,7 +40,7 @@ export function testSubscriptionScenarios(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
@@ -189,6 +190,9 @@ export function testSubscriptionScenarios(): void {
           const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'schema1' });
           const record2Reply = await dwn.processMessage(alice.did, record2.message, record2.dataStream);
           expect(record2Reply.status.code).to.equal(202);
+
+          // sleep to make sure events have some time to emit.
+          await Time.minimalSleep();
 
           expect(schema1Messages.length).to.equal(1); // same as before
           expect(schema1Messages).to.eql([ record1MessageCid ]);
@@ -348,6 +352,48 @@ export function testSubscriptionScenarios(): void {
           expect(proto2Messages.length).to.equal(2, 'proto2 after subscription.off()');
           expect(proto2Messages).to.have.members([await Message.getCid(write1proto2.message), await Message.getCid(write2proto2.message)]);
         });
+
+        it('unsubscribes', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // subscribe to all events
+          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message);
+          expect(eventsSubscriptionReply.status.code).to.equal(200);
+
+          // messageCids of events
+          const messageCids:string[] = [];
+
+          const eventsHandler = async (message: GenericMessage): Promise<void> => {
+            const messageCid = await Message.getCid(message);
+            messageCids.push(messageCid);
+          };
+          eventsSubscriptionReply.subscription!.on(eventsHandler);
+
+          expect(messageCids.length).to.equal(0); // no events exist yet
+
+          const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          const record1Reply = await dwn.processMessage(alice.did, record1.message, record1.dataStream);
+          expect(record1Reply.status.code).to.equal(202);
+          const record1MessageCid = await Message.getCid(record1.message);
+
+          expect(messageCids.length).to.equal(1); // message exists
+          expect(messageCids).to.eql([ record1MessageCid ]);
+
+          // unsubscribe, this should be used as clean up.
+          await eventsSubscriptionReply.subscription!.close();
+
+          // write another message.
+          const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          const record2Reply = await dwn.processMessage(alice.did, record2.message, record2.dataStream);
+          expect(record2Reply.status.code).to.equal(202);
+
+          // sleep to make sure events have some time to emit.
+          await Time.minimalSleep();
+
+          expect(messageCids.length).to.equal(1); // same as before
+          expect(messageCids).to.eql([ record1MessageCid ]);
+        });
       });
     });
 
@@ -360,13 +406,14 @@ export function testSubscriptionScenarios(): void {
       let dwn: Dwn;
 
       before(async () => {
+        didResolver = new DidResolver([new DidKeyResolver()]);
+
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
 
-        didResolver = new DidResolver([new DidKeyResolver()]);
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
@@ -384,7 +431,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('does not reauthorize if TTL is set to zero', async () => {
-        const eventStream = new EventStreamEmitter({ messageStore, didResolver, reauthorizationTTL: 0 });
+        const eventStream = new EventStreamEmitter({ reauthorizationTTL: 0 });
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
 
         const authorizeSpy = sinon.spy(RecordsSubscriptionHandler.prototype as any, 'reauthorize');
@@ -462,7 +509,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('reauthorize on every event emitted if TTL is less than zero', async () => {
-        const eventStream = new EventStreamEmitter({ messageStore, didResolver, reauthorizationTTL: -1 });
+        const eventStream = new EventStreamEmitter({ reauthorizationTTL: -1 });
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
 
         const authorizeSpy = sinon.spy(RecordsSubscriptionHandler.prototype as any, 'reauthorize');
@@ -542,7 +589,7 @@ export function testSubscriptionScenarios(): void {
       it('reauthorizes after the ttl', async () => {
         const clock = sinon.useFakeTimers();
 
-        const eventStream = new EventStreamEmitter({ messageStore, didResolver, reauthorizationTTL: 1 }); // every second
+        const eventStream = new EventStreamEmitter({ reauthorizationTTL: 1 }); // every second
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
 
         const authorizeSpy = sinon.spy(RecordsSubscriptionHandler.prototype as any, 'reauthorize');
@@ -640,7 +687,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('no longer sends to subscription handler if subscription becomes un-authorized', async () => {
-        const eventStream = new EventStreamEmitter({ messageStore, didResolver, reauthorizationTTL: -1 }); // reauthorize with each event
+        const eventStream = new EventStreamEmitter({ reauthorizationTTL: -1 }); // reauthorize with each event
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
 
         const alice = await DidKeyResolver.generate();
