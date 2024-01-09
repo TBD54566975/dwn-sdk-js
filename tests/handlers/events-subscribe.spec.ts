@@ -5,10 +5,10 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
-import { EventStreamEmitter } from '../../src/event-log/event-stream.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 
 import sinon from 'sinon';
@@ -36,7 +36,7 @@ export function testEventsSubscribeHandler(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
-      eventStream = new EventStreamEmitter({ messageStore, didResolver });
+      eventStream = TestEventStream.get();
 
       dwn = await Dwn.create({
         didResolver,

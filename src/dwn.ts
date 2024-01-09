@@ -61,6 +61,7 @@ export class Dwn {
       ),
       [DwnInterfaceName.Events+ DwnMethodName.Subscribe]: new EventsSubscribeHandler(
         this.didResolver,
+        this.messageStore,
         this.eventStream,
       ),
       [DwnInterfaceName.Messages + DwnMethodName.Get]: new MessagesGetHandler(
@@ -135,7 +136,7 @@ export class Dwn {
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
-    config.eventStream ??= new EventStreamEmitter({ messageStore: config.messageStore, didResolver: config.didResolver });
+    config.eventStream ??= new EventStreamEmitter();
 
     const dwn = new Dwn(config);
     await dwn.open();

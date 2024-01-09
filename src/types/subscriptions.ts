@@ -1,4 +1,5 @@
 import type { GenericMessageReply } from '../types/message-types.js';
+import type { MessageStore } from './message-store.js';
 import type { EventsSubscribeMessage, EventsSubscription } from './events-types.js';
 import type { Filter, KeyValues } from './query-types.js';
 import type { GenericMessage, GenericMessageHandler, GenericMessageSubscription } from './message-types.js';
@@ -7,9 +8,9 @@ import type { RecordsSubscribeMessage, RecordsSubscription } from './records-typ
 export type EmitFunction = (tenant: string, message: GenericMessage, indexes: KeyValues) => void;
 
 export interface EventStream {
-  subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[]): Promise<EventsSubscription>;
-  subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[]): Promise<RecordsSubscription>;
-  subscribe(tenant: string, message: GenericMessage, filters: Filter[]): Promise<GenericMessageSubscription>;
+  subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<EventsSubscription>;
+  subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<RecordsSubscription>;
+  subscribe(tenant: string, message: GenericMessage, filters: Filter[], messageStore: MessageStore): Promise<GenericMessageSubscription>;
   emit(tenant: string, message: GenericMessage, indexes: KeyValues): void;
   open(): Promise<void>;
   close(): Promise<void>;

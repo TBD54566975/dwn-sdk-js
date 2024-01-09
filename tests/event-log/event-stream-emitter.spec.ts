@@ -3,8 +3,8 @@ import type { GenericMessage, MessageStore } from '../../src/index.js';
 import EventEmitter from 'events';
 import { EventStreamEmitter } from '../../src/event-log/event-stream.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStores } from '../test-stores.js';
 import { DidKeyResolver, Message } from '../../src/index.js';
-import { DidResolver, MessageStoreLevel } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
@@ -13,15 +13,10 @@ chai.use(chaiAsPromised);
 
 describe('EventStreamEmitter', () => {
   let eventStream: EventStreamEmitter;
-  let didResolver: DidResolver;
   let messageStore: MessageStore;
 
   before(() => {
-    didResolver = new DidResolver();
-    messageStore = new MessageStoreLevel({
-      blockstoreLocation : 'TEST-MESSAGESTORE',
-      indexLocation      : 'TEST-INDEX'
-    });
+    ({ messageStore } = TestStores.get());
   });
 
   beforeEach(async () => {
@@ -38,14 +33,14 @@ describe('EventStreamEmitter', () => {
     const alice = await DidKeyResolver.generate();
 
     const emitter = new EventEmitter();
-    eventStream = new EventStreamEmitter({ emitter, messageStore, didResolver });
+    eventStream = new EventStreamEmitter({ emitter });
 
     // count the `events_bus` listeners, which represents all listeners
     expect(emitter.listenerCount('events_bus')).to.equal(0);
 
     // initiate a subscription, which should add a listener
     const { message } = await TestDataGenerator.generateRecordsSubscribe({ author: alice });
-    const sub = await eventStream.subscribe(alice.did, message, []);
+    const sub = await eventStream.subscribe(alice.did, message, [], messageStore);
     expect(emitter.listenerCount('events_bus')).to.equal(1);
 
     // close the subscription, which should remove the listener
@@ -56,11 +51,11 @@ describe('EventStreamEmitter', () => {
   it('should remove listeners when off method is used', async () => {
     const alice = await DidKeyResolver.generate();
     const emitter = new EventEmitter();
-    eventStream = new EventStreamEmitter({ emitter, messageStore, didResolver });
+    eventStream = new EventStreamEmitter({ emitter });
 
     // initiate a subscription
     const { message } = await TestDataGenerator.generateRecordsSubscribe();
-    const sub = await eventStream.subscribe(alice.did, message, []);
+    const sub = await eventStream.subscribe(alice.did, message, [], messageStore);
     const messageCid = await Message.getCid(message);
 
     // the listener count for the specific subscription should be at zero

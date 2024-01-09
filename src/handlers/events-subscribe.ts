@@ -16,6 +16,7 @@ import { authenticate, authorizeOwner } from '../core/auth.js';
 export class EventsSubscribeHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
+    private messageStore: MessageStore,
     private eventStream: EventStream
   ) {}
 
@@ -44,7 +45,7 @@ export class EventsSubscribeHandler implements MethodHandler {
 
       const { filters } = message.descriptor;
       const eventsFilters = Events.convertFilters(filters);
-      const subscription = await this.eventStream.subscribe(tenant, message, eventsFilters);
+      const subscription = await this.eventStream.subscribe(tenant, message, eventsFilters, this.messageStore);
       const messageReply: EventsSubscribeReply = {
         status: { code: 200, detail: 'OK' },
         subscription,
