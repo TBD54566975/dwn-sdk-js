@@ -8,12 +8,12 @@ import type {
 import { EventsQueryHandler } from '../../src/handlers/events-query.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import {
   DidKeyResolver,
   DidResolver,
   Dwn,
-  EventStreamEmitter,
 } from '../../src/index.js';
 
 
@@ -35,7 +35,7 @@ export function testEventsQueryHandler(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
-      eventStream = new EventStreamEmitter({ messageStore, didResolver });
+      eventStream = TestEventStream.get();
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });

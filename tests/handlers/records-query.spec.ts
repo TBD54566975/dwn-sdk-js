@@ -15,6 +15,7 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { DateSort } from '../../src/types/records-types.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
+import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
@@ -23,10 +24,10 @@ import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DidResolver, Dwn, RecordsWrite, Time } from '../../src/index.js';
-import { DwnErrorCode, EventStreamEmitter } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -49,7 +50,8 @@ export function testRecordsQueryHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });

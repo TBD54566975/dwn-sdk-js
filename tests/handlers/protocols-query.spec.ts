@@ -14,10 +14,11 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, EventStreamEmitter, Jws, ProtocolsQuery } from '../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -41,7 +42,7 @@ export function testProtocolsQueryHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });

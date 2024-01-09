@@ -15,8 +15,9 @@ import { Message } from '../../src/core/message.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRequestHandler } from '../../src/handlers/permissions-request.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DwnInterfaceName, DwnMethodName, EventStreamEmitter } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 export function testPermissionsRequestHandler(): void {
   describe('PermissionsRequestHandler.handle()', () => {
@@ -38,7 +39,7 @@ export function testPermissionsRequestHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });

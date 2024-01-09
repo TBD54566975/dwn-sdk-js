@@ -13,10 +13,10 @@ import {
   DidKeyResolver,
   DidResolver,
   Dwn,
-  EventStreamEmitter
 } from '../../src/index.js';
 
 import { Message } from '../../src/core/message.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 
 export function testEventsGetHandler(): void {
@@ -37,7 +37,7 @@ export function testEventsGetHandler(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
-      eventStream = new EventStreamEmitter({ messageStore, didResolver });
+      eventStream = TestEventStream.get();
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });

@@ -19,11 +19,12 @@ import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidResolver, Dwn, DwnErrorCode, Encoder, EventStreamEmitter, Jws } from '../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -47,7 +48,8 @@ export function testProtocolsConfigureHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });

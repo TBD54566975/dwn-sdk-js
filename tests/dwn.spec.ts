@@ -11,8 +11,8 @@ import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { TestEventStream } from './test-event-stream.js';
 import { TestStores } from './test-stores.js';
-import { DidResolver, EventStreamEmitter } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -32,8 +32,7 @@ export function testDwnClass(): void {
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
 
-      const didResolver = new DidResolver();
-      eventStream = new EventStreamEmitter({ messageStore, didResolver });
+      eventStream = TestEventStream.get();
 
       dwn = await Dwn.create({ messageStore, dataStore, eventLog, eventStream });
     });

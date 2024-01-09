@@ -39,11 +39,12 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnConstant, DwnInterfaceName, DwnMethodName, EventStreamEmitter, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
+import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -68,7 +69,8 @@ export function testRecordsWriteHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-        eventStream = new EventStreamEmitter({ messageStore, didResolver });
+
+        eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
