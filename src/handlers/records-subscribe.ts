@@ -16,6 +16,7 @@ import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { SubscriptionBase } from '../event-log/subscription.js';
 import { Time } from '../utils/time.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsSubscribeHandler implements MethodHandler {
@@ -290,6 +291,7 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
         this.eventEmitter.emit(this.eventChannel, message);
       } catch (error) {
         //todo: check for known authorization errors, and signal to user there has been an error
+        this.eventEmitter.emit(this.errorEventChannel, new DwnError(DwnErrorCode.RecordsSubscribeUnauthorized, 'this subscription has become unauthorized'));
         await this.close();
       }
     }
