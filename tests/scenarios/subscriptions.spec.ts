@@ -1,5 +1,6 @@
 import type {
   DataStore,
+  DwnError,
   EventLog,
   EventStream,
   GenericMessage,
@@ -16,7 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyResolver, DidResolver, Dwn, EventStreamEmitter, Message } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnErrorCode, EventStreamEmitter, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -162,8 +163,8 @@ export function testSubscriptionScenarios(): void {
 
           // subscribe to schema1
           const schema1Subscription = await TestDataGenerator.generateRecordsSubscribe({ author: alice, filter: { schema: 'schema1' } });
-          const schema1SubscriptionRepl = await dwn.processMessage(alice.did, schema1Subscription.message);
-          expect(schema1SubscriptionRepl.status.code).to.equal(200);
+          const schema1SubscriptionReply = await dwn.processMessage(alice.did, schema1Subscription.message);
+          expect(schema1SubscriptionReply.status.code).to.equal(200);
 
           // messageCids of schema1
           const schema1Messages:string[] = [];
@@ -172,7 +173,7 @@ export function testSubscriptionScenarios(): void {
             const messageCid = await Message.getCid(message);
             schema1Messages.push(messageCid);
           };
-          schema1SubscriptionRepl.subscription!.on(schema1Handler);
+          schema1SubscriptionReply.subscription!.on(schema1Handler);
           expect(schema1Messages.length).to.equal(0); // no messages exist;
 
           const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'schema1' });
@@ -184,7 +185,7 @@ export function testSubscriptionScenarios(): void {
           expect(schema1Messages).to.eql([ record1MessageCid ]);
 
           // unsubscribe, this should be used as clean up.
-          await schema1SubscriptionRepl.subscription!.close();
+          await schema1SubscriptionReply.subscription!.close();
 
           // write another message.
           const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'schema1' });
@@ -196,6 +197,7 @@ export function testSubscriptionScenarios(): void {
 
           expect(schema1Messages.length).to.equal(1); // same as before
           expect(schema1Messages).to.eql([ record1MessageCid ]);
+
         });
       });
 
@@ -729,6 +731,11 @@ export function testSubscriptionScenarios(): void {
         expect(bobSubscribeReply.status.code).to.equal(200);
 
 
+        const errorHandlerPromise = new Promise((_,reject) => {
+          const errorHandler = (error: DwnError): void => { reject(error); };
+          bobSubscribeReply.subscription!.onError(errorHandler);
+        });
+
         // capture the messageCids from the subscription
         const messageCids: string[] = [];
         const captureFunction = async (message: RecordsWriteMessage | RecordsDeleteMessage):Promise<void> => {
@@ -776,6 +783,7 @@ export function testSubscriptionScenarios(): void {
         expect(messageCids.length).to.equal(1, 'messageCids');
         expect(messageCids).to.have.members([ aliceMessage1Cid ]);
         expect(subscriptionCloseSpy.called).to.be.true;
+        await expect(errorHandlerPromise).to.eventually.be.rejectedWith(DwnErrorCode.RecordsSubscribeUnauthorized);
       });
     });
   });
