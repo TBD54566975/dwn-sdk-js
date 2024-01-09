@@ -1,3 +1,4 @@
+import type { DwnError } from '../index.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from './message-store.js';
 import type { EventsSubscribeMessage, EventsSubscription } from './events-types.js';
@@ -20,6 +21,7 @@ export interface Subscription {
   id: string;
   listener: EmitFunction;
   on: (handler: GenericMessageHandler) => { off: () => void };
+  onError: (handler: (error: DwnError) => void) => void;
   close: () => Promise<void>;
 }
 

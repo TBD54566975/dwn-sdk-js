@@ -1,3 +1,4 @@
+import type { DwnError } from '../index.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
@@ -194,5 +195,6 @@ export type RecordsDeleteDescriptor = {
 export type RecordsSubscription = {
   id: string;
   on: (handler:(message: RecordsWriteMessage | RecordsDeleteMessage) => void) => { off: () => void };
+  onError: (handler:(error: DwnError) => void) => void;
   close: () => Promise<void>;
 };

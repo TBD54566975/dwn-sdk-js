@@ -1,3 +1,4 @@
+import type { DwnError } from '../index.js';
 import type { EventEmitter } from 'events';
 import type { MessageStore } from '../types/message-store.js';
 import type { EmitFunction, Subscription } from '../types/subscriptions.js';
@@ -41,6 +42,10 @@ export class SubscriptionBase implements Subscription {
     return `${this.tenant}_${this.#id}`;
   }
 
+  get errorEventChannel(): string {
+    return `${this.tenant}_${this.#id}_error`;
+  }
+
   get id(): string {
     return this.#id;
   }
@@ -64,8 +69,13 @@ export class SubscriptionBase implements Subscription {
     };
   }
 
+  onError(handler: (error: DwnError) => void): void {
+    this.eventEmitter.on(this.errorEventChannel, handler);
+  }
+
   async close(): Promise<void> {
     this.eventEmitter.removeAllListeners(this.eventChannel);
+    this.eventEmitter.removeAllListeners(this.errorEventChannel);
     await this.#unsubscribe();
   }
 }
