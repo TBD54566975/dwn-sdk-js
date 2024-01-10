@@ -293,8 +293,14 @@ export class RecordsSubscriptionHandler extends SubscriptionBase {
 
         this.eventEmitter.emit(this.eventChannel, message);
       } catch (error) {
-        //todo: check for known authorization errors, and signal to user there has been an error
-        this.eventEmitter.emit(this.errorEventChannel, new DwnError(DwnErrorCode.RecordsSubscribeUnauthorized, 'this subscription has become unauthorized'));
+        const e = error as any;
+        //todo: add tests and error checking for other authorization errors
+        if (e.code === DwnErrorCode.ProtocolAuthorizationMissingRole) {
+          this.eventEmitter.emit(this.errorEventChannel, new DwnError(DwnErrorCode.RecordsSubscribeUnauthorized, 'this subscription has become unauthorized'));
+        } else {
+          this.eventEmitter.emit(this.errorEventChannel, new DwnError(DwnErrorCode.RecordsSubscribeUnknownError, 'unknown error occurred, the subscription has been closed'));
+        }
+
         await this.close();
       }
     }
