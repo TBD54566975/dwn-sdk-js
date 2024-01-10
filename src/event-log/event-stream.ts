@@ -38,6 +38,8 @@ export class EventStreamEmitter implements EventStream {
     return `${eventChannel}_bus`;
   }
 
+  // we subscribe to the general `EventEmitter` error events with this handler.
+  // this handler is also called when there is a caught error upon emitting an event from a handler.
   private eventError = (error: any): void => {
     console.error('event emitter error', error);
   };
@@ -106,8 +108,7 @@ export class EventStreamEmitter implements EventStream {
     try {
       this.eventEmitter.emit(this.eventChannel, tenant, message, indexes);
     } catch (error) {
-      //todo: dwn catch error;
-      throw error; // You can choose to handle or propagate the error as needed.
+      this.eventError(error);
     }
   }
 }
