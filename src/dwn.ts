@@ -29,7 +29,6 @@ import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
-import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
@@ -113,11 +112,6 @@ export class Dwn {
         this.didResolver,
         this.messageStore,
         this.dataStore
-      ),
-      [DwnInterfaceName.Records + DwnMethodName.Subscribe]: new RecordsSubscribeHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventStream
       ),
       [DwnInterfaceName.Records + DwnMethodName.Write]: new RecordsWriteHandler(
         this.didResolver,

@@ -466,7 +466,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
@@ -524,7 +524,7 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
 
@@ -537,9 +537,6 @@ export class ProtocolAuthorization {
 
     case DwnMethodName.Read:
       return [ProtocolAction.Read];
-
-    case DwnMethodName.Subscribe:
-      return [ProtocolAction.Subscribe];
 
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
@@ -565,7 +562,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,

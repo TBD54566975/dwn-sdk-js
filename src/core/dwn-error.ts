@@ -89,7 +89,6 @@ export enum DwnErrorCode {
   RecordsGrantAuthorizationDeleteProtocolScopeMismatch = 'RecordsGrantAuthorizationDeleteProtocolScopeMismatch',
   RecordsGrantAuthorizationQueryProtocolScopeMismatch = 'RecordsGrantAuthorizationQueryProtocolScopeMismatch',
   RecordsGrantAuthorizationScopeContextIdMismatch = 'RecordsGrantAuthorizationScopeContextIdMismatch',
-  RecordsGrantAuthorizationSubscribeProtocolScopeMismatch = 'RecordsGrantAuthorizationSubscribeProtocolScopeMismatch',
   RecordsGrantAuthorizationScopeNotProtocol = 'RecordsGrantAuthorizationScopeNotProtocol',
   RecordsGrantAuthorizationScopeProtocolMismatch = 'RecordsGrantAuthorizationScopeProtocolMismatch',
   RecordsGrantAuthorizationScopeProtocolPathMismatch = 'RecordsGrantAuthorizationScopeProtocolPathMismatch',
