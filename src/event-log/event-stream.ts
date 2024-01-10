@@ -1,6 +1,6 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { EventsSubscribeMessage, EventsSubscription } from '../types/events-types.js';
-import type { EventStream, Subscription } from '../types/subscriptions.js';
+import type { EventStream, SubscriptionHandler } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageSubscription } from '../types/message-types.js';
 import type { RecordsSubscribeMessage, RecordsSubscription } from '../types/records-types.js';
@@ -25,7 +25,7 @@ export class EventStreamEmitter implements EventStream {
   private reauthorizationTTL: number;
 
   private isOpen: boolean = false;
-  private subscriptions: Map<string, Subscription> = new Map();
+  private subscriptions: Map<string, SubscriptionHandler> = new Map();
 
   constructor(config?: EventStreamConfig) {
     this.reauthorizationTTL = config?.reauthorizationTTL || 0; // if set to zero it does not reauthorize
