@@ -35,10 +35,11 @@ export class RecordsSubscribeHandler implements MethodHandler {
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
+
     let filters:Filter[] = [];
     // if this is an anonymous subscribe and the filter supports published records, subscribe to only published records
     if (RecordsSubscribeHandler.filterIncludesPublishedRecords(recordsSubscribe) && recordsSubscribe.author === undefined) {
-      // return a stream
+      // build filters for a stream of published records
       filters = await RecordsSubscribeHandler.subscribePublishedRecords(recordsSubscribe);
     } else {
       // authentication and authorization
@@ -50,8 +51,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
       }
 
       if (recordsSubscribe.author === tenant) {
+        // if the subscribe author is the tenant, filter as owner.
         filters = await RecordsSubscribeHandler.subscribeAsOwner(recordsSubscribe);
       } else {
+        // otherwise build filters based on published records, permissions, or protocol rules
         filters = await RecordsSubscribeHandler.subscribeAsNonOwner(recordsSubscribe);
       }
     }
