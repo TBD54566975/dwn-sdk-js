@@ -1,3 +1,4 @@
+import type { DwnError } from '../index.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -51,6 +52,7 @@ export type EventsHandler = (message: GenericMessage) => void;
 export type EventsSubscription = {
   id: string;
   on: (handler: EventsHandler) => { off: () => void };
+  onError: (handler: (error: DwnError) => void) => void;
   close: () => Promise<void>;
 };
 
