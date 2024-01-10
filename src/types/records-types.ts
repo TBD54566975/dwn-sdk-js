@@ -106,6 +106,13 @@ export type RecordsQueryDescriptor = {
   pagination?: Pagination;
 };
 
+export type RecordsSubscribeDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Subscribe;
+  messageTimestamp: string;
+  filter: RecordsFilter;
+};
+
 export type RecordsFilter = {
   /**the logical author of the record */
   author?: string;
@@ -148,7 +155,7 @@ export type RecordsQueryReply = GenericMessageReply & {
 
 export type RecordsSubscribeMessageHandler = (message: RecordsWriteMessage | RecordsDeleteMessage) => void;
 
-export type RecordsSubscribeMessageOptions = {
+export type RecordsSubscribeMessgeOptions = {
   handler: RecordsSubscribeMessageHandler;
 };
 

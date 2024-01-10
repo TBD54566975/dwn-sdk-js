@@ -21,8 +21,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead } from '../../src/index.js';
-import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
+import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -184,7 +183,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    it('should only allow correct entity invoking a delegated grant to read and query ', async () => {
+    it('should only allow correct entity invoking a delegated grant to read, query or subscribe', async () => {
       // scenario:
       // 1. Alice creates read and query delegated grants for device X,
       // 2. Bob starts a chat thread with Alice on his DWN

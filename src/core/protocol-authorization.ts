@@ -153,19 +153,18 @@ export class ProtocolAuthorization {
     );
   }
 
-  // maybe combine with query?
   public static async authorizeSubscription(
     tenant: string,
     incomingMessage: RecordsSubscribe,
     messageStore: MessageStore,
   ): Promise<void> {
-    // validate that required properties exist in query filter
+    // validate that required properties exist in subscription filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!, // authorizeQuery` is only called if `protocol` is present
+      protocol!, // `authorizeSubscription` is only called if `protocol` is present
       messageStore,
     );
 
@@ -190,7 +189,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
-      [], // ancestor chain is not relevant to subscribes
+      [], // ancestor chain is not relevant to subscriptions
       messageStore,
     );
   }
@@ -466,7 +465,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
@@ -524,7 +523,7 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
 
@@ -537,6 +536,9 @@ export class ProtocolAuthorization {
 
     case DwnMethodName.Read:
       return [ProtocolAction.Read];
+
+    case DwnMethodName.Subscribe:
+      return [ProtocolAction.Subscribe];
 
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
@@ -562,7 +564,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,
