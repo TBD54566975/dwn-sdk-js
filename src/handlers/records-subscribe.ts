@@ -14,7 +14,7 @@ import { Records } from '../utils/records.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { SubscriptionBase } from '../event-log/subscription.js';
+import { SubscriptionHandlerBase } from '../event-log/subscription.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -231,7 +231,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 }
 
-export class RecordsSubscriptionHandler extends SubscriptionBase {
+export class RecordsSubscriptionHandler extends SubscriptionHandlerBase {
   private recordsSubscribe: RecordsSubscribe;
 
   private reauthorizationTTL: number;

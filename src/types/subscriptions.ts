@@ -8,6 +8,9 @@ import type { RecordsSubscribeMessage, RecordsSubscription } from './records-typ
 
 export type EmitFunction = (tenant: string, message: GenericMessage, indexes: KeyValues) => void;
 
+/**
+ * The EventStream interface implements a pub/sub system based on Message filters.
+ */
 export interface EventStream {
   subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<EventsSubscription>;
   subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<RecordsSubscription>;
@@ -17,7 +20,12 @@ export interface EventStream {
   close(): Promise<void>;
 }
 
-export interface Subscription {
+/**
+ * The SubscriptionHandler interface is implemented by specific types of Subscription Handlers.
+ *
+ * ie. `RecordsSubscriptionHandler` has behavior to re-authorize subscriptions.
+ */
+export interface SubscriptionHandler {
   id: string;
   listener: EmitFunction;
   on: (handler: GenericMessageHandler) => { off: () => void };

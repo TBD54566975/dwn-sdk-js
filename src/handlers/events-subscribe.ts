@@ -10,7 +10,7 @@ import { Events } from '../utils/events.js';
 import { EventsSubscribe } from '../interfaces/events-subscribe.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
-import { SubscriptionBase } from '../event-log/subscription.js';
+import { SubscriptionHandlerBase } from '../event-log/subscription.js';
 import { authenticate, authorizeOwner } from '../core/auth.js';
 
 export class EventsSubscribeHandler implements MethodHandler {
@@ -57,7 +57,7 @@ export class EventsSubscribeHandler implements MethodHandler {
   }
 }
 
-export class EventsSubscriptionHandler extends SubscriptionBase {
+export class EventsSubscriptionHandler extends SubscriptionHandlerBase {
   public static async create(input: {
     tenant: string,
     message: EventsSubscribeMessage,
