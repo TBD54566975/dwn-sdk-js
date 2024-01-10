@@ -39,7 +39,7 @@ describe('EventStreamEmitter', () => {
     expect(emitter.listenerCount('events_bus')).to.equal(0);
 
     // initiate a subscription, which should add a listener
-    const { message } = await TestDataGenerator.generateRecordsSubscribe({ author: alice });
+    const { message } = await TestDataGenerator.generateEventsSubscribe({ author: alice });
     const sub = await eventStream.subscribe(alice.did, message, [], messageStore);
     expect(emitter.listenerCount('events_bus')).to.equal(1);
 
@@ -54,7 +54,7 @@ describe('EventStreamEmitter', () => {
     eventStream = new EventStreamEmitter({ emitter });
 
     // initiate a subscription
-    const { message } = await TestDataGenerator.generateRecordsSubscribe();
+    const { message } = await TestDataGenerator.generateEventsSubscribe();
     const sub = await eventStream.subscribe(alice.did, message, [], messageStore);
     const messageCid = await Message.getCid(message);
 

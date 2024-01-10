@@ -9,8 +9,6 @@ import { FilterUtility } from '../utils/filter.js';
 
 /**
  * Base class to extend default subscription behavior.
- *
- * ie. `RecordsSubscriptionHandler` has different rules for authorization and only matches specific message types.
  */
 export class SubscriptionHandlerBase implements SubscriptionHandler {
   protected eventEmitter: EventEmitter;

@@ -4,7 +4,6 @@ import type { MessageStore } from './message-store.js';
 import type { EventsSubscribeMessage, EventsSubscription } from './events-types.js';
 import type { Filter, KeyValues } from './query-types.js';
 import type { GenericMessage, GenericMessageHandler, GenericMessageSubscription } from './message-types.js';
-import type { RecordsSubscribeMessage, RecordsSubscription } from './records-types.js';
 
 export type EmitFunction = (tenant: string, message: GenericMessage, indexes: KeyValues) => void;
 
@@ -13,7 +12,6 @@ export type EmitFunction = (tenant: string, message: GenericMessage, indexes: Ke
  */
 export interface EventStream {
   subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<EventsSubscription>;
-  subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<RecordsSubscription>;
   subscribe(tenant: string, message: GenericMessage, filters: Filter[], messageStore: MessageStore): Promise<GenericMessageSubscription>;
   emit(tenant: string, message: GenericMessage, indexes: KeyValues): void;
   open(): Promise<void>;
@@ -22,8 +20,6 @@ export interface EventStream {
 
 /**
  * The SubscriptionHandler interface is implemented by specific types of Subscription Handlers.
- *
- * ie. `RecordsSubscriptionHandler` has behavior to re-authorize subscriptions.
  */
 export interface SubscriptionHandler {
   id: string;

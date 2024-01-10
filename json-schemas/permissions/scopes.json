@@ -106,24 +106,6 @@
           "type": "string"
         }
       }
-    },
-    "records-subscribe-scope": {
-      "type": "object",
-      "required": [
-        "interface",
-        "method"
-      ],
-      "properties": {
-        "interface": {
-          "const": "Records"
-        },
-        "method": {
-          "const": "Subscribe"
-        },
-        "protocol": {
-          "type": "string"
-        }
-      }
     }
   }
 }
