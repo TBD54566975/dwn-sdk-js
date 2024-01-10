@@ -16,7 +16,7 @@ import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { SubscriptionBase } from '../event-log/subscription.js';
 import { Time } from '../utils/time.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsSubscribeHandler implements MethodHandler {
