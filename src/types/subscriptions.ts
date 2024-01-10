@@ -1,4 +1,4 @@
-import type { DwnError } from '../index.js';
+import type { DwnError } from '../core/dwn-error.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from './message-store.js';
 import type { EventsSubscribeMessage, EventsSubscription } from './events-types.js';

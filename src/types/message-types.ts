@@ -1,5 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { DwnError } from '../index.js';
+import type { DwnError } from '../core/dwn-error.js';
 import type { GeneralJws } from './jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { PaginationCursor, SortDirection } from './query-types.js';
