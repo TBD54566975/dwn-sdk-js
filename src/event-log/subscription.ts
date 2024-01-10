@@ -1,13 +1,18 @@
 import type { DwnError } from '../core/dwn-error.js';
 import type { EventEmitter } from 'events';
 import type { MessageStore } from '../types/message-store.js';
-import type { EmitFunction, Subscription } from '../types/subscriptions.js';
+import type { EmitFunction, SubscriptionHandler } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
 
-export class SubscriptionBase implements Subscription {
+/**
+ * Base class to extend default subscription behavior.
+ *
+ * ie. `RecordsSubscriptionHandler` has different rules for authorization and only matches specific message types.
+ */
+export class SubscriptionHandlerBase implements SubscriptionHandler {
   protected eventEmitter: EventEmitter;
   protected messageStore: MessageStore;
   protected filters: Filter[];
