@@ -3,14 +3,11 @@ import type { EventsSubscribeMessage, EventsSubscription } from '../types/events
 import type { EventStream, SubscriptionHandler } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageSubscription } from '../types/message-types.js';
-import type { RecordsSubscribeMessage, RecordsSubscription } from '../types/records-types.js';
 
 import { EventEmitter } from 'events';
 import { EventsSubscribe } from '../interfaces/events-subscribe.js';
 import { EventsSubscriptionHandler } from '../handlers/events-subscribe.js';
 import { Message } from '../core/message.js';
-import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
-import { RecordsSubscriptionHandler } from '../handlers/records-subscribe.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 const eventChannel = 'events';
@@ -45,7 +42,6 @@ export class EventStreamEmitter implements EventStream {
   };
 
   async subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<EventsSubscription>;
-  async subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[], messageStore: MessageStore): Promise<RecordsSubscription>;
   async subscribe(tenant: string, message: GenericMessage, filters: Filter[], messageStore: MessageStore): Promise<GenericMessageSubscription> {
     const messageCid = await Message.getCid(message);
     let subscription = this.subscriptions.get(messageCid);
@@ -53,17 +49,7 @@ export class EventStreamEmitter implements EventStream {
       return subscription;
     }
 
-    if (RecordsSubscribe.isRecordsSubscribeMessage(message)) {
-      subscription = await RecordsSubscriptionHandler.create({
-        tenant,
-        message,
-        filters,
-        messageStore,
-        unsubscribe        : () => this.unsubscribe(messageCid),
-        eventEmitter       : this.eventEmitter,
-        reauthorizationTTL : this.reauthorizationTTL,
-      });
-    } else if (EventsSubscribe.isEventsSubscribeMessage(message)) {
+    if (EventsSubscribe.isEventsSubscribeMessage(message)) {
       subscription = await EventsSubscriptionHandler.create({
         tenant,
         message,

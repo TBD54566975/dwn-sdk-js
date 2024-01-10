@@ -45,7 +45,6 @@ import RecordsDelete from '../json-schemas/interface-methods/records-delete.json
 import RecordsFilter from '../json-schemas/interface-methods/records-filter.json' assert { type: 'json' };
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
-import RecordsSubscribe from '../json-schemas/interface-methods/records-subscribe.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
@@ -56,7 +55,6 @@ const schemas = {
   AuthorizationOwner,
   RecordsDelete,
   RecordsQuery,
-  RecordsSubscribe,
   RecordsWrite,
   RecordsWriteUnidentified,
   EventsFilter,
