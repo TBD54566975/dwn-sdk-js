@@ -1,4 +1,4 @@
-import type { DwnError } from '../index.js';
+import type { DwnError } from '../core/dwn-error.js';
 import type { EventEmitter } from 'events';
 import type { MessageStore } from '../types/message-store.js';
 import type { EmitFunction, Subscription } from '../types/subscriptions.js';

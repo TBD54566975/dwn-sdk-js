@@ -1,4 +1,4 @@
-import type { DwnError } from '../index.js';
+import type { DwnError } from '../core/dwn-error.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';

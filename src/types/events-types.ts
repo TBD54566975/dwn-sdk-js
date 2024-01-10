@@ -1,4 +1,4 @@
-import type { DwnError } from '../index.js';
+import type { DwnError } from '../core/dwn-error.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
