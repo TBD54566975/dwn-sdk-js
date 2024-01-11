@@ -1,7 +1,6 @@
 import type { DwnError } from '../core/dwn-error.js';
 import type { EventEmitter } from 'events';
-import type { MessageStore } from '../types/message-store.js';
-import type { EmitFunction, SubscriptionHandler } from '../types/subscriptions.js';
+import type { EventListener } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
 import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
@@ -10,14 +9,12 @@ import { FilterUtility } from '../utils/filter.js';
 /**
  * Base class to extend default subscription behavior.
  */
-export class SubscriptionHandlerBase implements SubscriptionHandler {
+export class SubscriptionHandlerBase {
   protected eventEmitter: EventEmitter;
-  protected messageStore: MessageStore;
   protected filters: Filter[];
   protected tenant: string;
   protected message: GenericMessage;
 
-  #unsubscribe: () => Promise<void>;
   #id: string;
 
   protected constructor(options: {
@@ -26,19 +23,15 @@ export class SubscriptionHandlerBase implements SubscriptionHandler {
       id: string,
       filters: Filter[],
       eventEmitter: EventEmitter,
-      messageStore: MessageStore,
-      unsubscribe: () => Promise<void>;
     }
   ) {
-    const { tenant, id, filters, eventEmitter, message, messageStore, unsubscribe } = options;
+    const { tenant, id, filters, eventEmitter, message } = options;
 
     this.tenant = tenant;
     this.#id = id;
     this.filters = filters;
     this.eventEmitter = eventEmitter;
     this.message = message;
-    this.messageStore = messageStore;
-    this.#unsubscribe = unsubscribe;
   }
 
   get eventChannel(): string {
@@ -57,7 +50,7 @@ export class SubscriptionHandlerBase implements SubscriptionHandler {
     return tenant === this.tenant && FilterUtility.matchAnyFilter(indexes, this.filters);
   }
 
-  public listener: EmitFunction = (tenant, message, indexes):void => {
+  public listener: EventListener = (tenant, message, indexes):void => {
     if (this.matchFilters(tenant, indexes)) {
       this.eventEmitter.emit(this.eventChannel, message);
     }
@@ -79,6 +72,6 @@ export class SubscriptionHandlerBase implements SubscriptionHandler {
   async close(): Promise<void> {
     this.eventEmitter.removeAllListeners(this.eventChannel);
     this.eventEmitter.removeAllListeners(this.errorEventChannel);
-    await this.#unsubscribe();
+    // await this.#unsubscribe();
   }
 }
