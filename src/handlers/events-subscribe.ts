@@ -1,8 +1,7 @@
 import type { DidResolver } from '../did/did-resolver.js';
-import type EventEmitter from 'events';
+import EventEmitter from 'events';
 import type { EventStream } from '../types/subscriptions.js';
 import type { Filter } from '../types/query-types.js';
-import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventsSubscribeMessage, EventsSubscribeReply } from '../types/events-types.js';
 
@@ -16,7 +15,6 @@ import { authenticate, authorizeOwner } from '../core/auth.js';
 export class EventsSubscribeHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
-    private messageStore: MessageStore,
     private eventStream: EventStream
   ) {}
 
@@ -44,8 +42,11 @@ export class EventsSubscribeHandler implements MethodHandler {
     try {
 
       const { filters } = message.descriptor;
+      const eventEmitter = new EventEmitter();
       const eventsFilters = Events.convertFilters(filters);
-      const subscription = await this.eventStream.subscribe(tenant, message, eventsFilters, this.messageStore);
+      const subscription = await EventsSubscriptionHandler.create({ tenant, message, filters: eventsFilters, eventEmitter });
+      this.eventStream.subscribe(subscription.id, subscription.listener);
+
       const messageReply: EventsSubscribeReply = {
         status: { code: 200, detail: 'OK' },
         subscription,
@@ -63,8 +64,6 @@ export class EventsSubscriptionHandler extends SubscriptionHandlerBase {
     message: EventsSubscribeMessage,
     filters: Filter[],
     eventEmitter: EventEmitter,
-    messageStore: MessageStore,
-    unsubscribe: () => Promise<void>
   }): Promise<EventsSubscriptionHandler> {
     const id = await Message.getCid(input.message);
     return new EventsSubscriptionHandler({ ...input, id });
