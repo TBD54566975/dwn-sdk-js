@@ -11,6 +11,9 @@ export type GenericMessage = {
   authorization?: AuthorizationModel;
 };
 
+/**
+ *  MessageOptions that are used when processing a message.
+ */
 export type MessageOptions = {
   dataStream?: Readable;
 };
