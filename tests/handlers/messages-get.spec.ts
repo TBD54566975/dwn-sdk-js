@@ -110,7 +110,7 @@ export function testMessagesGetHandler(): void {
       let messageCid = await Message.getCid(recordsWrite.message);
       messageCids.push(messageCid);
 
-      let reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+      let reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), { dataStream });
       expect(reply.status.code).to.equal(202);
 
       const { recordsDelete } = await TestDataGenerator.generateRecordsDelete({
@@ -211,7 +211,7 @@ export function testMessagesGetHandler(): void {
         data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
       });
 
-      const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+      const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), { dataStream });
       expect(reply.status.code).to.equal(202);
 
       const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
@@ -241,7 +241,7 @@ export function testMessagesGetHandler(): void {
         author: alice
       });
 
-      const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+      const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), { dataStream });
       expect(reply.status.code).to.equal(202);
 
       const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
