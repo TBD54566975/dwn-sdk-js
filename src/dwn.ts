@@ -9,7 +9,7 @@ import type { GenericMessage, GenericMessageReply, MessageOptions } from './type
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -105,7 +105,7 @@ export class Dwn {
   public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
   public async processMessage(tenant: string, rawMessage: RecordsReadMessage): Promise<RecordsReadReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, options?: MessageOptions): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, options?: RecordsWriteMessageOptions): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: unknown, options?: MessageOptions): Promise<UnionMessageReply>;
   public async processMessage(tenant: string, rawMessage: GenericMessage, options: MessageOptions = {}): Promise<UnionMessageReply> {
     const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
