@@ -31,6 +31,10 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
+export type RecordsWriteMessageOptions = {
+  dataStream?: Readable;
+};
+
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
  */

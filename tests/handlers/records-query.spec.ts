@@ -94,7 +94,7 @@ export function testRecordsQueryHandler(): void {
         const dataFormat = 'myAwesomeDataFormat';
 
         const write = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob], dataFormat });
-        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         const query = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataFormat } });
@@ -121,9 +121,9 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -156,7 +156,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
-        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
@@ -172,7 +172,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
-        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
@@ -187,7 +187,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const write = await TestDataGenerator.generateRecordsWrite({ author: alice, published: false });
 
-        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         // write an update to the record
@@ -214,8 +214,8 @@ export function testRecordsQueryHandler(): void {
         const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob] });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, recordsWrite1.message, recordsWrite1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, recordsWrite2.message, recordsWrite2.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, recordsWrite1.message, { dataStream: recordsWrite1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, recordsWrite2.message, { dataStream: recordsWrite2.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
 
@@ -265,7 +265,7 @@ export function testRecordsQueryHandler(): void {
           dataFormat   : protocolDefinition.types.post.dataFormats[0],
           protocolPath : 'post'
         });
-        const aliceAuthorReply = await dwn.processMessage(alice.did, aliceAuthorWrite.message, aliceAuthorWrite.dataStream);
+        const aliceAuthorReply = await dwn.processMessage(alice.did, aliceAuthorWrite.message, { dataStream: aliceAuthorWrite.dataStream });
         expect(aliceAuthorReply.status.code).to.equal(202);
 
         const bobAuthorWrite = await TestDataGenerator.generateRecordsWrite({
@@ -275,7 +275,7 @@ export function testRecordsQueryHandler(): void {
           dataFormat   : protocolDefinition.types.post.dataFormats[0],
           protocolPath : 'post'
         });
-        const bobAuthorReply = await dwn.processMessage(alice.did, bobAuthorWrite.message, bobAuthorWrite.dataStream);
+        const bobAuthorReply = await dwn.processMessage(alice.did, bobAuthorWrite.message, { dataStream: bobAuthorWrite.dataStream });
         expect(bobAuthorReply.status.code).to.equal(202);
 
         // alice queries with an empty filter, gets both
@@ -315,12 +315,12 @@ export function testRecordsQueryHandler(): void {
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
-        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, { dataStream: publishedWrite.dataStream });
         expect(publishedWriteReply.status.code).to.equal(202);
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
-        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, { dataStream: draftWrite.dataStream });
         expect(draftWriteReply.status.code).to.equal(202);
 
         // query for only published records
@@ -382,12 +382,12 @@ export function testRecordsQueryHandler(): void {
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
-        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, { dataStream: publishedWrite.dataStream });
         expect(publishedWriteReply.status.code).to.equal(202);
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
-        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, { dataStream: draftWrite.dataStream });
         expect(draftWriteReply.status.code).to.equal(202);
 
         // query for only unpublished records
@@ -418,12 +418,12 @@ export function testRecordsQueryHandler(): void {
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
-        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, { dataStream: publishedWrite.dataStream });
         expect(publishedWriteReply.status.code).to.equal(202);
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
-        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, { dataStream: draftWrite.dataStream });
         expect(draftWriteReply.status.code).to.equal(202);
 
         // bob queries for unpublished records returns zero
@@ -464,7 +464,7 @@ export function testRecordsQueryHandler(): void {
 
         // create a record
         const writeRecord = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const writeRecordReply = await dwn.processMessage(alice.did, writeRecord.message, writeRecord.dataStream);
+        const writeRecordReply = await dwn.processMessage(alice.did, writeRecord.message, { dataStream: writeRecord.dataStream });
         expect(writeRecordReply.status.code).to.equal(202);
         const recordDataCid = writeRecord.message.descriptor.dataCid;
 
@@ -483,9 +483,9 @@ export function testRecordsQueryHandler(): void {
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -557,9 +557,9 @@ export function testRecordsQueryHandler(): void {
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -615,9 +615,9 @@ export function testRecordsQueryHandler(): void {
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -688,9 +688,9 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -806,9 +806,9 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -907,9 +907,9 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -1010,9 +1010,9 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data
-        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, { dataStream: write3.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -1041,7 +1041,7 @@ export function testRecordsQueryHandler(): void {
         const mockResolution = TestDataGenerator.createDidResolutionResult(alice);
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -1061,7 +1061,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -1093,8 +1093,9 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data
-        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWriteData.message, publishedWriteData.dataStream);
-        const unpublishedWriteReply = await dwn.processMessage(alice.did, unpublishedWriteData.message, unpublishedWriteData.dataStream);
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWriteData.message, { dataStream: publishedWriteData.dataStream });
+        const unpublishedWriteReply =
+          await dwn.processMessage(alice.did, unpublishedWriteData.message, { dataStream: unpublishedWriteData.dataStream });
         expect(publishedWriteReply.status.code).to.equal(202);
         expect(unpublishedWriteReply.status.code).to.equal(202);
 
@@ -1135,9 +1136,9 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data, intentionally out of order
-        const writeReply2 = await dwn.processMessage(alice.did, write2Data.message, write2Data.dataStream);
-        const writeReply1 = await dwn.processMessage(alice.did, write1Data.message, write1Data.dataStream);
-        const writeReply3 = await dwn.processMessage(alice.did, write3Data.message, write3Data.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2Data.message, { dataStream: write2Data.dataStream });
+        const writeReply1 = await dwn.processMessage(alice.did, write1Data.message, { dataStream: write1Data.dataStream });
+        const writeReply3 = await dwn.processMessage(alice.did, write3Data.message, { dataStream: write3Data.dataStream });
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -1251,11 +1252,11 @@ export function testRecordsQueryHandler(): void {
         );
 
         // intentionally write the RecordsWrite of out lexicographical order to avoid the test query below accidentally having the correct order
-        const reply2 = await dwn.processMessage(alice.did, middleWrite.message, middleWrite.dataStream);
+        const reply2 = await dwn.processMessage(alice.did, middleWrite.message, { dataStream: middleWrite.dataStream });
         expect(reply2.status.code).to.equal(202);
-        const reply3 = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+        const reply3 = await dwn.processMessage(alice.did, newestWrite.message, { dataStream: newestWrite.dataStream });
         expect(reply3.status.code).to.equal(202);
-        const reply1 = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+        const reply1 = await dwn.processMessage(alice.did, oldestWrite.message, { dataStream: oldestWrite.dataStream });
         expect(reply1.status.code).to.equal(202);
 
         const queryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -1292,7 +1293,7 @@ export function testRecordsQueryHandler(): void {
           schema : 'https://schema'
         })));
         for (const message of messages) {
-          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          const result = await dwn.processMessage(alice.did, message.message, { dataStream: message.dataStream });
           expect(result.status.code).to.equal(202);
         }
 
@@ -1333,7 +1334,7 @@ export function testRecordsQueryHandler(): void {
           schema : 'https://schema'
         })));
         for (const message of messages) {
-          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          const result = await dwn.processMessage(alice.did, message.message, { dataStream: message.dataStream });
           expect(result.status.code).to.equal(202);
         }
 
@@ -1374,7 +1375,7 @@ export function testRecordsQueryHandler(): void {
           schema : 'https://schema'
         })));
         for (const message of messages) {
-          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          const result = await dwn.processMessage(alice.did, message.message, { dataStream: message.dataStream });
           expect(result.status.code).to.equal(202);
         }
 
@@ -1410,9 +1411,9 @@ export function testRecordsQueryHandler(): void {
           { author: alice, schema: 'https://schema2', published: true }
         );
 
-        const recordsWrite1Reply = await dwn.processMessage(alice.did, record1Data.message, record1Data.dataStream);
+        const recordsWrite1Reply = await dwn.processMessage(alice.did, record1Data.message, { dataStream: record1Data.dataStream });
         expect(recordsWrite1Reply.status.code).to.equal(202);
-        const recordsWrite2Reply = await dwn.processMessage(alice.did, record2Data.message, record2Data.dataStream);
+        const recordsWrite2Reply = await dwn.processMessage(alice.did, record2Data.message, { dataStream: record2Data.dataStream });
         expect(recordsWrite2Reply.status.code).to.equal(202);
 
         // test correctness for anonymous query
@@ -1707,7 +1708,7 @@ export function testRecordsQueryHandler(): void {
           { author: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
         );
 
-        const result1 = await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+        const result1 = await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, { dataStream: unpublishedRecordsWrite.dataStream });
         expect(result1.status.code).to.equal(202);
 
         // alice should be able to see the unpublished record
@@ -1757,8 +1758,8 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data into 2 different tenants
-        await dwn.processMessage(alice.did, recordsWriteMessage1Data.message, recordsWriteMessage1Data.dataStream);
-        await dwn.processMessage(bob.did, recordsWriteMessage2Data.message, recordsWriteMessage2Data.dataStream);
+        await dwn.processMessage(alice.did, recordsWriteMessage1Data.message, { dataStream: recordsWriteMessage1Data.dataStream });
+        await dwn.processMessage(bob.did, recordsWriteMessage2Data.message, { dataStream: recordsWriteMessage2Data.dataStream });
 
         const reply = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
 
@@ -1835,7 +1836,7 @@ export function testRecordsQueryHandler(): void {
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
-        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, { dataStream: draftWrite.dataStream });
         expect(draftWriteReply.status.code).to.equal(202);
 
         // validate that alice can query
@@ -1876,7 +1877,7 @@ export function testRecordsQueryHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'thread',
           });
-          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
           // Alice writes one 'chat' record addressed to Bob
@@ -1890,7 +1891,7 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
-          const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, chatRecordForBob.dataStream);
+          const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
           expect(chatRecordForBobReply.status.code).to.equal(202);
 
           // Alice writes two 'chat' records NOT addressed to Bob
@@ -1905,7 +1906,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob cannot read this'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
           }
 
@@ -1960,7 +1961,7 @@ export function testRecordsQueryHandler(): void {
             protocolPath : 'friend',
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
           expect(friendRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -1974,7 +1975,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -2031,7 +2032,7 @@ export function testRecordsQueryHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'thread',
           });
-          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
           // Alice writes a 'participant' $contextRole record with Bob as recipient
@@ -2044,7 +2045,8 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const participantRoleReply = await dwn.processMessage(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          const participantRoleReply =
+            await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
           expect(participantRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -2060,7 +2062,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -2105,7 +2107,7 @@ export function testRecordsQueryHandler(): void {
             protocolPath : 'friend',
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
           expect(friendRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -2119,7 +2121,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -2159,7 +2161,7 @@ export function testRecordsQueryHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'thread',
           });
-          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
           // Alice writes a 'friend' $globalRole record with Bob as recipient
@@ -2172,7 +2174,8 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const participantRoleReply = await dwn.processMessage(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          const participantRoleReply =
+            await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
           expect(participantRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -2188,7 +2191,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -2235,7 +2238,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -2274,7 +2277,7 @@ export function testRecordsQueryHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'thread',
           });
-          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -2290,7 +2293,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }

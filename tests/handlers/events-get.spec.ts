@@ -79,7 +79,7 @@ export function testEventsGetHandler(): void {
 
       for (let i = 0; i < 5; i += 1) {
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
         expect(reply.status.code).to.equal(202);
         const messageCid = await Message.getCid(message);
@@ -104,7 +104,7 @@ export function testEventsGetHandler(): void {
 
       for (let i = 0; i < 5; i += 1) {
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
         expect(reply.status.code).to.equal(202);
       }
@@ -119,7 +119,7 @@ export function testEventsGetHandler(): void {
 
       for (let i = 0; i < 3; i += 1) {
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
         expect(reply.status.code).to.equal(202);
         const messageCid = await Message.getCid(message);

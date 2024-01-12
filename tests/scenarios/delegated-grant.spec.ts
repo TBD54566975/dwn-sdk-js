@@ -119,7 +119,7 @@ export function testDelegatedGrantScenarios(): void {
         data           : deviceXData
       });
 
-      const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, deviceXDataStream);
+      const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, { dataStream: deviceXDataStream });
       expect(deviceXWriteReply.status.code).to.equal(202);
 
       // verify the message by device X got written to Bob's DWN, AND Alice is the logical author
@@ -147,7 +147,7 @@ export function testDelegatedGrantScenarios(): void {
         delegatedGrant      : deviceYGrant.asDelegatedGrant(),
       });
 
-      const deviceYWriteReply = await dwn.processMessage(bob.did, messageByDeviceY.message, deviceYDataStream);
+      const deviceYWriteReply = await dwn.processMessage(bob.did, messageByDeviceY.message, { dataStream: deviceYDataStream });
       expect(deviceYWriteReply.status.code).to.equal(202);
 
       // verify the message by device Y got written to Bob's DWN, AND Alice is the logical author
@@ -173,7 +173,8 @@ export function testDelegatedGrantScenarios(): void {
         data           : messageByCarolAsAlice
       });
 
-      const carolWriteReply = await dwn.processMessage(carol.did, writeByCarolAsAlice.message, DataStream.fromBytes(messageByCarolAsAlice));
+      const carolWriteReply =
+        await dwn.processMessage(carol.did, writeByCarolAsAlice.message, { dataStream: DataStream.fromBytes(messageByCarolAsAlice) });
       expect(carolWriteReply.status.code).to.equal(400);
       expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
@@ -205,7 +206,7 @@ export function testDelegatedGrantScenarios(): void {
         protocol     : protocolDefinition.protocol,
         protocolPath : 'thread',
       });
-      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
+      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
       expect(threadRoleReply.status.code).to.equal(202);
 
       // Bob adds Alice as a participant in the thread
@@ -218,7 +219,7 @@ export function testDelegatedGrantScenarios(): void {
         parentId     : threadRecord.message.recordId,
         data         : new TextEncoder().encode('Alice is my friend'),
       });
-      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Bob writes a chat message in the thread
@@ -229,7 +230,7 @@ export function testDelegatedGrantScenarios(): void {
         contextId    : threadRecord.message.contextId,
         parentId     : threadRecord.message.recordId,
       });
-      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
+      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
 
       // Alice creates a delegated query grant for device X to act as Alice.
@@ -372,7 +373,7 @@ export function testDelegatedGrantScenarios(): void {
         protocolPath : 'globalAdmin',
         data         : new TextEncoder().encode('I trust Alice to manage my chat thread'),
       });
-      const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, globalAdminRecord.dataStream);
+      const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, { dataStream: globalAdminRecord.dataStream });
       expect(globalAdminRecordReply.status.code).to.equal(202);
 
       // Bob starts a chat thread
@@ -381,7 +382,7 @@ export function testDelegatedGrantScenarios(): void {
         protocol     : protocolDefinition.protocol,
         protocolPath : 'thread',
       });
-      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
+      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
       expect(threadRoleReply.status.code).to.equal(202);
 
       // Bob adds Carol as a participant in the thread
@@ -393,7 +394,7 @@ export function testDelegatedGrantScenarios(): void {
         contextId    : threadRecord.message.contextId,
         parentId     : threadRecord.message.recordId
       });
-      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Carol writes a chat message in the thread
@@ -406,7 +407,7 @@ export function testDelegatedGrantScenarios(): void {
         parentId     : threadRecord.message.recordId,
         data         : new TextEncoder().encode('A rude message'),
       });
-      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
+      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
 
       // Alice creates a delegated delete grant for device X to act as Alice.
@@ -521,7 +522,7 @@ export function testDelegatedGrantScenarios(): void {
         data           : deviceXData
       });
 
-      const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, deviceXDataStream);
+      const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, { dataStream: deviceXDataStream });
       expect(deviceXWriteReply.status.code).to.equal(401);
       expect(deviceXWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch);
     });
@@ -553,7 +554,7 @@ export function testDelegatedGrantScenarios(): void {
         protocol     : protocolDefinition.protocol,
         protocolPath : 'thread',
       });
-      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
+      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
       expect(threadRoleReply.status.code).to.equal(202);
 
       // Bob adds Alice as a participant in the thread
@@ -566,7 +567,7 @@ export function testDelegatedGrantScenarios(): void {
         parentId     : threadRecord.message.recordId,
         data         : new TextEncoder().encode('Alice is my friend'),
       });
-      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Bob writes a chat message in the thread
@@ -577,7 +578,7 @@ export function testDelegatedGrantScenarios(): void {
         contextId    : threadRecord.message.contextId,
         parentId     : threadRecord.message.recordId,
       });
-      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
+      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
 
       // Alice creates a delegated query grant for device X to act as Alice but not for chat protocol
@@ -668,7 +669,7 @@ export function testDelegatedGrantScenarios(): void {
         protocolPath : 'globalAdmin',
         data         : new TextEncoder().encode('I trust Alice to manage my chat thread'),
       });
-      const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, globalAdminRecord.dataStream);
+      const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, { dataStream: globalAdminRecord.dataStream });
       expect(globalAdminRecordReply.status.code).to.equal(202);
 
       // Bob starts a chat thread
@@ -677,7 +678,7 @@ export function testDelegatedGrantScenarios(): void {
         protocol     : protocolDefinition.protocol,
         protocolPath : 'thread',
       });
-      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
+      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
       expect(threadRoleReply.status.code).to.equal(202);
 
       // Bob adds Carol as a participant in the thread
@@ -689,7 +690,7 @@ export function testDelegatedGrantScenarios(): void {
         contextId    : threadRecord.message.contextId,
         parentId     : threadRecord.message.recordId
       });
-      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Carol writes a chat message in the thread
@@ -702,7 +703,7 @@ export function testDelegatedGrantScenarios(): void {
         parentId     : threadRecord.message.recordId,
         data         : new TextEncoder().encode('A rude message'),
       });
-      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
+      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
 
       // Alice creates a delegated delete grant for Device X to act as her for a protocol that is NOT chat protocol

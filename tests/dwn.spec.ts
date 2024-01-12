@@ -51,7 +51,7 @@ export function testDwnClass(): void {
           author: alice,
         });
 
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
         expect(reply.status.code).to.equal(202);
       });

@@ -74,7 +74,7 @@ export function testRecordsDeleteHandler(): void {
 
         // insert data
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
         expect(writeReply.status.code).to.equal(202);
 
         // ensure data is inserted
@@ -118,22 +118,22 @@ export function testRecordsDeleteHandler(): void {
 
         // alice writes a records with data
         const aliceWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, { dataStream: aliceWriteData.dataStream });
         expect(aliceWriteReply.status.code).to.equal(202);
 
         // alice writes another record with the same data
         const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
+        const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, { dataStream: aliceAssociateData.dataStream });
         expect(aliceAssociateReply.status.code).to.equal(202);
 
         // bob writes a records with same data
         const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
+        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, { dataStream: bobWriteData.dataStream });
         expect(bobWriteReply.status.code).to.equal(202);
 
         // bob writes another record with the same data
         const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, { dataStream: bobAssociateData.dataStream });
         expect(bobAssociateReply.status.code).to.equal(202);
 
         // alice deletes one of the two records
@@ -203,7 +203,7 @@ export function testRecordsDeleteHandler(): void {
 
         // initial write
         const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, initialWriteData.dataStream);
+        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, { dataStream: initialWriteData.dataStream });
         expect(initialWriteReply.status.code).to.equal(202);
 
         // generate subsequent write and delete with the delete having an earlier timestamp
@@ -219,7 +219,7 @@ export function testRecordsDeleteHandler(): void {
         });
 
         // subsequent write
-        const subsequentWriteReply = await dwn.processMessage(alice.did, subsequentWriteData.message, subsequentWriteData.dataStream);
+        const subsequentWriteReply = await dwn.processMessage(alice.did, subsequentWriteData.message, { dataStream: subsequentWriteData.dataStream });
         expect(subsequentWriteReply.status.code).to.equal(202);
 
         // test that a delete with an earlier `messageTimestamp` results in a 409
@@ -248,7 +248,7 @@ export function testRecordsDeleteHandler(): void {
           author: alice,
           data
         });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, { dataStream: aliceWriteData.dataStream });
         expect(aliceWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
@@ -281,7 +281,7 @@ export function testRecordsDeleteHandler(): void {
           author: alice,
           data
         });
-        const aliceRewriteReply = await dwn.processMessage(alice.did, aliceRewriteData.message, aliceRewriteData.dataStream);
+        const aliceRewriteReply = await dwn.processMessage(alice.did, aliceRewriteData.message, { dataStream: aliceRewriteData.dataStream });
         expect(aliceRewriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceRewriteData = await TestDataGenerator.generateRecordsQuery({
@@ -319,7 +319,7 @@ export function testRecordsDeleteHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'doc',
           });
-          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: recordsWrite.dataStream });
           expect(recordsWriteReply.status.code).to.eq(202);
 
           // Bob (anyone) is able to delete the record
@@ -359,7 +359,7 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'post',
             });
-            const chatRecordsWriteReply = await dwn.processMessage(alice.did, chatRecordsWrite.message, chatRecordsWrite.dataStream);
+            const chatRecordsWriteReply = await dwn.processMessage(alice.did, chatRecordsWrite.message, { dataStream: chatRecordsWrite.dataStream });
             expect(chatRecordsWriteReply.status.code).to.eq(202);
 
             // Alice writes a 'chat/tag'
@@ -370,7 +370,7 @@ export function testRecordsDeleteHandler(): void {
               contextId    : chatRecordsWrite.message.contextId,
               parentId     : chatRecordsWrite.message.recordId,
             });
-            const tagRecordsWriteReply = await dwn.processMessage(alice.did, tagRecordsWrite.message, tagRecordsWrite.dataStream);
+            const tagRecordsWriteReply = await dwn.processMessage(alice.did, tagRecordsWrite.message, { dataStream: tagRecordsWrite.dataStream });
             expect(tagRecordsWriteReply.status.code).to.eq(202);
 
             // Carol is unable to delete the 'chat/tag'
@@ -418,7 +418,7 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'post',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: recordsWrite.dataStream });
             expect(recordsWriteReply.status.code).to.eq(202);
 
             // Carol is unable to delete the 'post'
@@ -467,7 +467,7 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'post',
             });
-            const postRecordsWriteReply = await dwn.processMessage(alice.did, postRecordsWrite.message, postRecordsWrite.dataStream);
+            const postRecordsWriteReply = await dwn.processMessage(alice.did, postRecordsWrite.message, { dataStream: postRecordsWrite.dataStream });
             expect(postRecordsWriteReply.status.code).to.eq(202);
 
             // Alice writes a 'post/comment'
@@ -478,7 +478,8 @@ export function testRecordsDeleteHandler(): void {
               contextId    : postRecordsWrite.message.contextId,
               parentId     : postRecordsWrite.message.recordId,
             });
-            const commentRecordsWriteReply = await dwn.processMessage(alice.did, commentRecordsWrite.message, commentRecordsWrite.dataStream);
+            const commentRecordsWriteReply =
+              await dwn.processMessage(alice.did, commentRecordsWrite.message, { dataStream: commentRecordsWrite.dataStream });
             expect(commentRecordsWriteReply.status.code).to.eq(202);
 
             // Carol is unable to delete Alice's 'post/comment'
@@ -526,7 +527,7 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'thread'
             });
-            const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+            const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
             expect(threadRecordReply.status.code).to.equal(202);
 
             // Alice adds Bob as a 'thread/admin' in that thread
@@ -538,7 +539,8 @@ export function testRecordsDeleteHandler(): void {
               contextId    : threadRecord.message.contextId,
               parentId     : threadRecord.message.recordId,
             });
-            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            const participantRecordReply =
+              await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
             expect(participantRecordReply.status.code).to.equal(202);
 
             // Alice writes a chat message in that thread
@@ -550,7 +552,7 @@ export function testRecordsDeleteHandler(): void {
               contextId    : threadRecord.message.contextId,
               parentId     : threadRecord.message.recordId,
             });
-            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
 
             const chatDeleteCarol = await TestDataGenerator.generateRecordsDelete({
@@ -595,7 +597,8 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'admin',
             });
-            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            const participantRecordReply =
+              await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
             expect(participantRecordReply.status.code).to.equal(202);
 
             // Alice writes a chat message in that thread
@@ -605,7 +608,7 @@ export function testRecordsDeleteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'chat',
             });
-            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
 
             // Carol is unable to delete the chat message
@@ -638,7 +641,7 @@ export function testRecordsDeleteHandler(): void {
         const recordsWrite = await TestDataGenerator.generateRecordsWrite({
           author: alice,
         });
-        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: recordsWrite.dataStream });
         expect(recordsWriteReply.status.code).to.equal(202);
 
         const recordsDelete = await TestDataGenerator.generateRecordsDelete({
@@ -655,7 +658,7 @@ export function testRecordsDeleteHandler(): void {
 
         // initial write
         const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'testSchema' });
-        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, initialWriteData.dataStream);
+        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, { dataStream: initialWriteData.dataStream });
         expect(initialWriteReply.status.code).to.equal(202);
 
         // generate subsequent write and delete with the delete having an earlier timestamp
@@ -685,7 +688,7 @@ export function testRecordsDeleteHandler(): void {
           const alice = await DidKeyResolver.generate();
 
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
           expect(writeReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
@@ -714,7 +717,7 @@ export function testRecordsDeleteHandler(): void {
           const { message, author, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
           TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-          const reply = await dwn.processMessage(author.did, message, dataStream);
+          const reply = await dwn.processMessage(author.did, message, { dataStream });
           expect(reply.status.code).to.equal(202);
 
           const newWrite = await RecordsWrite.createFrom({
