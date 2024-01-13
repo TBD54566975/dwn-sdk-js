@@ -17,6 +17,7 @@ export type GenericMessage = {
  */
 export type MessageOptions = {
   dataStream?: Readable;
+  handler?: GenericMessageHandler;
 };
 
 /**

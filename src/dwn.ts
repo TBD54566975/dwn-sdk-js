@@ -5,7 +5,7 @@ import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeReply } from './types/events-types.js';
+import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply } from './types/events-types.js';
 import type { GenericMessage, GenericMessageReply, MessageOptions } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
@@ -157,7 +157,8 @@ export class Dwn {
    */
   public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
   public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: EventsSubscribeMessage): Promise<EventsSubscribeReply>;
+  public async processMessage(
+    tenant: string, rawMessage: EventsSubscribeMessage, options?: EventsSubscribeMessageOptions): Promise<EventsSubscribeReply>;
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
@@ -175,13 +176,14 @@ export class Dwn {
       return errorMessageReply;
     }
 
-    const { dataStream } = options;
+    const { dataStream, handler } = options;
 
     const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
       message: rawMessage as GenericMessage,
-      dataStream
+      dataStream,
+      handler
     });
 
     return methodHandlerReply;

@@ -55,24 +55,23 @@ export function testSubscriptionScenarios(): void {
         it('all events', async () => {
           const alice = await DidKeyResolver.generate();
 
-          // subscribe to all messages
-          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
-          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message);
-          expect(eventsSubscriptionReply.status.code).to.equal(200);
-          expect(eventsSubscriptionReply.subscription?.id).to.equal(await Message.getCid(eventsSubscription.message));
-
           // create a handler that adds the messageCid of each message to an array.
           const messageCids: string[] = [];
-          const messageHandler = async (message: GenericMessage): Promise<void> => {
+          const handler = async (message: GenericMessage): Promise<void> => {
             const messageCid = await Message.getCid(message);
             messageCids.push(messageCid);
           };
-          const handler = eventsSubscriptionReply.subscription!.on(messageHandler);
+
+          // subscribe to all messages
+          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { handler });
+          expect(eventsSubscriptionReply.status.code).to.equal(200);
+          expect(eventsSubscriptionReply.subscription?.id).to.equal(await Message.getCid(eventsSubscription.message));
 
           // generate various messages
           const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
           const write1MessageCid = await Message.getCid(write1.message);
-          const write1Reply = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+          const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
           expect(write1Reply.status.code).to.equal(202);
 
           const grant1 = await TestDataGenerator.generatePermissionsGrant({ author: alice });
@@ -91,11 +90,11 @@ export function testSubscriptionScenarios(): void {
           expect(deleteWrite1Reply.status.code).to.equal(202);
 
           // unregister the handler
-          handler.off();
+          await eventsSubscriptionReply.subscription?.close();
 
           // create a message after
           const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const write2Reply = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+          const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
           expect(write2Reply.status.code).to.equal(202);
 
           await Time.minimalSleep();
@@ -138,44 +137,43 @@ export function testSubscriptionScenarios(): void {
           const proto1Messages:string[] = [];
           const proto2Messages:string[] = [];
 
-          // subscribe to proto1 messages
-          const proto1Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto1 }] });
-          const proto1SubscriptionReply = await dwn.processMessage(alice.did, proto1Subscription.message);
-          expect(proto1SubscriptionReply.status.code).to.equal(200);
-          expect(proto1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto1Subscription.message));
-
           // we add a handler to the subscription and add the messageCid to the appropriate array
           const proto1Handler = async (message:GenericMessage):Promise<void> => {
             const messageCid = await Message.getCid(message);
             proto1Messages.push(messageCid);
           };
-          const proto1Sub = proto1SubscriptionReply.subscription!.on(proto1Handler);
 
-          // subscribe to proto2 messages
-          const proto2Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto2 }] });
-          const proto2SubscriptionReply = await dwn.processMessage(alice.did, proto2Subscription.message);
-          expect(proto2SubscriptionReply.status.code).to.equal(200);
-          expect(proto2SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto2Subscription.message));
+          // subscribe to proto1 messages
+          const proto1Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto1 }] });
+          const proto1SubscriptionReply = await dwn.processMessage(alice.did, proto1Subscription.message, { handler: proto1Handler });
+          expect(proto1SubscriptionReply.status.code).to.equal(200);
+          expect(proto1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto1Subscription.message));
+
           // we add a handler to the subscription and add the messageCid to the appropriate array
           const proto2Handler = async (message:GenericMessage):Promise<void> => {
             const messageCid = await Message.getCid(message);
             proto2Messages.push(messageCid);
           };
-          proto2SubscriptionReply.subscription!.on(proto2Handler);
+
+          // subscribe to proto2 messages
+          const proto2Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto2 }] });
+          const proto2SubscriptionReply = await dwn.processMessage(alice.did, proto2Subscription.message, { handler: proto2Handler });
+          expect(proto2SubscriptionReply.status.code).to.equal(200);
+          expect(proto2SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto2Subscription.message));
 
           // create some random record, will not show up in records subscription
           const write1Random = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const write1RandomResponse = await dwn.processMessage(alice.did, write1Random.message, write1Random.dataStream);
+          const write1RandomResponse = await dwn.processMessage(alice.did, write1Random.message, { dataStream: write1Random.dataStream });
           expect(write1RandomResponse.status.code).to.equal(202);
 
           // create a record for proto1
           const write1proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
-          const write1Response = await dwn.processMessage(alice.did, write1proto1.message, write1proto1.dataStream);
+          const write1Response = await dwn.processMessage(alice.did, write1proto1.message, { dataStream: write1proto1.dataStream });
           expect(write1Response.status.code).equals(202);
 
           // create a record for proto2
           const write1proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
-          const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, write1proto2.dataStream);
+          const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, { dataStream: write1proto2.dataStream });
           expect(write1Proto2Response.status.code).equals(202);
 
           expect(proto1Messages.length).to.equal(1, 'proto1');
@@ -184,16 +182,16 @@ export function testSubscriptionScenarios(): void {
           expect(proto2Messages).to.include(await Message.getCid(write1proto2.message));
 
           // remove listener for proto1
-          proto1Sub.off();
+          proto1SubscriptionReply.subscription?.close();
 
           // create another record for proto1
           const write2proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
-          const write2Response = await dwn.processMessage(alice.did, write2proto1.message, write2proto1.dataStream);
+          const write2Response = await dwn.processMessage(alice.did, write2proto1.message, { dataStream: write2proto1.dataStream });
           expect(write2Response.status.code).equals(202);
 
           // create another record for proto2
           const write2proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
-          const write2Proto2Response = await dwn.processMessage(alice.did, write2proto2.message, write2proto2.dataStream);
+          const write2Proto2Response = await dwn.processMessage(alice.did, write2proto2.message, { dataStream: write2proto2.dataStream });
           expect(write2Proto2Response.status.code).equals(202);
 
           // proto1 messages from handler do not change.
@@ -208,24 +206,23 @@ export function testSubscriptionScenarios(): void {
         it('unsubscribes', async () => {
           const alice = await DidKeyResolver.generate();
 
-          // subscribe to all events
-          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
-          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message);
-          expect(eventsSubscriptionReply.status.code).to.equal(200);
-
           // messageCids of events
           const messageCids:string[] = [];
 
-          const eventsHandler = async (message: GenericMessage): Promise<void> => {
+          const handler = async (message: GenericMessage): Promise<void> => {
             const messageCid = await Message.getCid(message);
             messageCids.push(messageCid);
           };
-          eventsSubscriptionReply.subscription!.on(eventsHandler);
+
+          // subscribe to all events
+          const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+          const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { handler });
+          expect(eventsSubscriptionReply.status.code).to.equal(200);
 
           expect(messageCids.length).to.equal(0); // no events exist yet
 
           const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const record1Reply = await dwn.processMessage(alice.did, record1.message, record1.dataStream);
+          const record1Reply = await dwn.processMessage(alice.did, record1.message, { dataStream: record1.dataStream });
           expect(record1Reply.status.code).to.equal(202);
           const record1MessageCid = await Message.getCid(record1.message);
 
@@ -237,7 +234,7 @@ export function testSubscriptionScenarios(): void {
 
           // write another message.
           const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const record2Reply = await dwn.processMessage(alice.did, record2.message, record2.dataStream);
+          const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
           expect(record2Reply.status.code).to.equal(202);
 
           // sleep to make sure events have some time to emit.
