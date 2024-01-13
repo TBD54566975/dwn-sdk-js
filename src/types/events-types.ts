@@ -1,6 +1,5 @@
-import type { DwnError } from '../core/dwn-error.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
-import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageHandler, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
@@ -43,6 +42,11 @@ export type EventsGetReply = GenericMessageReply & {
   cursor?: PaginationCursor;
 };
 
+
+export type EventsSubscribeMessageOptions = {
+  handler: GenericMessageHandler;
+};
+
 export type EventsSubscribeMessage = {
   authorization?: AuthorizationModel;
   descriptor: EventsSubscribeDescriptor;
@@ -52,8 +56,6 @@ export type EventsHandler = (message: GenericMessage) => void;
 
 export type EventsSubscription = {
   id: string;
-  on: (handler: EventsHandler) => { off: () => void };
-  onError: (handler: (error: DwnError) => void) => void;
   close: () => Promise<void>;
 };
 

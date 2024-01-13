@@ -64,26 +64,26 @@ export function testEventsSubscribeHandler(): void {
     it('should allow tenant to subscribe their own event stream', async () => {
       const alice = await DidKeyResolver.generate();
 
+      // set up a promise to read later that captures the emitted messageCid
+      let handler;
+      const messageSubscriptionPromise: Promise<string> = new Promise((resolve) => {
+        handler = async (message: GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          resolve(messageCid);
+        };
+      });
+
       // testing Subscription Request
       const subscriptionRequest = await EventsSubscribe.create({
         signer: Jws.createSigner(alice),
       });
+      const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message, { handler });
 
-      const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message);
       expect(subscriptionReply.status.code).to.equal(200);
       expect(subscriptionReply.subscription).to.not.be.undefined;
 
-      // set up a promise to read later that captures the emitted messageCid
-      const messageSubscriptionPromise: Promise<string> = new Promise((resolve) => {
-        const process = async (message: GenericMessage):Promise<void> => {
-          const messageCid = await Message.getCid(message);
-          resolve(messageCid);
-        };
-        subscriptionReply.subscription!.on(process);
-      });
-
       const messageWrite = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const writeReply = await dwn.processMessage(alice.did, messageWrite.message, messageWrite.dataStream);
+      const writeReply = await dwn.processMessage(alice.did, messageWrite.message, { dataStream: messageWrite.dataStream });
       expect(writeReply.status.code).to.equal(202);
       const messageCid = await Message.getCid(messageWrite.message);
 
