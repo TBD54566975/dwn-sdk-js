@@ -355,10 +355,10 @@ export function testEventsQueryScenarios(): void {
 
       // add an additional records to match against the previous queries
       const write5 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: lastDayOf2022, messageTimestamp: lastDayOf2022 });
-      const writeReply5 = await dwn.processMessage(alice.did, write5.message, write5.dataStream);
+      const writeReply5 = await dwn.processMessage(alice.did, write5.message, { dataStream: write5.dataStream });
       expect(writeReply5.status.code).to.equal(202);
       const write6 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
-      const writeReply6 = await dwn.processMessage(alice.did, write6.message, write6.dataStream);
+      const writeReply6 = await dwn.processMessage(alice.did, write6.message, { dataStream: write6.dataStream });
       expect(writeReply6.status.code).to.equal(202);
 
       fromLastDayOf2021 = await TestDataGenerator.generateEventsQuery({
