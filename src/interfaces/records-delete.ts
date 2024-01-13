@@ -71,7 +71,7 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   }
 
   /**
-   * Authorizes the delegate who signed this message.
+  * Authorizes the delegate who signed this message.
   * Indexed properties needed for MessageStore indexing.
   */
   public constructIndexes(

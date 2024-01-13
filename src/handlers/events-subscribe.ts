@@ -2,7 +2,7 @@ import EventEmitter from 'events';
 
 import type { DidResolver } from '../did/did-resolver.js';
 import type { Filter } from '../types/query-types.js';
-import type { GenericMessageHandler } from '../types/message-types.js';
+import type { GenericMessageHandler } from '../types/core-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
 import type { EventsSubscribeMessage, EventsSubscribeReply, EventsSubscription } from '../types/events-types.js';

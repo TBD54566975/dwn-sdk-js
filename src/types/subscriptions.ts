@@ -1,6 +1,5 @@
-import type { GenericMessageReply } from '../types/message-types.js';
+import type { GenericMessage } from './message-types.js';
 import type { KeyValues } from './query-types.js';
-import type { GenericMessage, GenericMessageSubscription } from './message-types.js';
 
 export type EventListener = (tenant: string, message: GenericMessage, indexes: KeyValues) => void;
 
@@ -18,7 +17,3 @@ export interface EventSubscription {
   id: string;
   close: () => Promise<void>;
 }
-
-export type SubscriptionReply = GenericMessageReply & {
-  subscription?: GenericMessageSubscription;
-};

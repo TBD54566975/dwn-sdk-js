@@ -5,7 +5,7 @@ import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { RecordsSubscribeMessage, RecordsSubscribeMessageHandler, RecordsSubscribeReply, RecordsSubscription } from '../types/records-types.js';
+import type { RecordsHandler, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsSubscription } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { FilterUtility } from '../utils/filter.js';
@@ -27,7 +27,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }: {
     tenant: string,
     message: RecordsSubscribeMessage,
-    handler: RecordsSubscribeMessageHandler,
+    handler: RecordsHandler,
   }): Promise<RecordsSubscribeReply> {
     let recordsSubscribe: RecordsSubscribe;
     try {
@@ -74,7 +74,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   private async createEventSubscription(
     tenant: string,
     messageCid: string,
-    handler: RecordsSubscribeMessageHandler,
+    handler: RecordsHandler,
     filters: Filter[]
   ): Promise<RecordsSubscription> {
 

@@ -279,8 +279,6 @@ export function testRecordsSubscribeHandler(): void {
           const deleteChatReply = await dwn.processMessage(alice.did, deleteChatForBob.message);
           expect(deleteChatReply.status.code).to.equal(202);
 
-          await Time.minimalSleep();
-
           expect(messageCids.length).to.equal(2, 'after delete');
           expect(messageCids[1]).to.equal(await Message.getCid(deleteChatForBob.message));
         });

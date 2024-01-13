@@ -1,8 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { EventsHandler } from './events-types.js';
 import type { GeneralJws } from './jws-types.js';
-import type { Readable } from 'readable-stream';
-import type { RecordsSubscribeMessageHandler } from './records-types.js';
 import type { SortDirection } from './query-types.js';
 
 /**
@@ -11,14 +8,6 @@ import type { SortDirection } from './query-types.js';
 export type GenericMessage = {
   descriptor: Descriptor;
   authorization?: AuthorizationModel;
-};
-
-/**
- *  MessageOptions that are used when processing a message.
- */
-export type MessageOptions = {
-  dataStream?: Readable;
-  handler?: GenericMessageHandler;
 };
 
 /**
@@ -78,7 +67,9 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
-export type GenericMessageHandler = EventsHandler | RecordsSubscribeMessageHandler;
+export type SubscriptionReply = GenericMessageReply & {
+  subscription?: GenericMessageSubscription;
+};
 
 export type GenericMessageSubscription = {
   id: string;
