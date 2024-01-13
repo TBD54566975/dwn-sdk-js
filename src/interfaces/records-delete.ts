@@ -75,7 +75,8 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   * Indexed properties needed for MessageStore indexing.
   */
   public constructIndexes(
-    initialWrite: RecordsWriteMessage
+    initialWrite: RecordsWriteMessage,
+    published?: boolean,
   ): KeyValues {
     const message = this.message;
     const descriptor = { ...message.descriptor };
@@ -87,9 +88,10 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
     // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
     // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
     // `isLatestBaseState` for the initial delete would have been toggled to `false`
-    const indexes: { [key:string]: string | undefined } = {
+    const indexes: { [key:string]: string | boolean | undefined } = {
       // isLatestBaseState : "true", // intentionally showing that this index is omitted
       protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
+      published : !!published,
       contextId : initialWrite.contextId,
       author    : this.author!,
       ...descriptor
