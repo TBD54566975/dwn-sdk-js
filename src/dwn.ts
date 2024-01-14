@@ -17,7 +17,7 @@ import { DidResolver } from './did/did-resolver.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
-import { EventStreamEmitter } from './event-log/event-stream.js';
+import { EventEmitterEventStream } from './event-log/event-emitter-stream.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
@@ -129,7 +129,7 @@ export class Dwn {
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
-    config.eventStream ??= new EventStreamEmitter();
+    config.eventStream ??= new EventEmitterEventStream();
 
     const dwn = new Dwn(config);
     await dwn.open();

@@ -1,4 +1,4 @@
-import type { EventStreamEmitter } from '../../src/event-log/event-stream.js';
+import type { EventEmitterEventStream } from '../../src/event-log/event-emitter-stream.js';
 import type { MessageStore } from '../../src/index.js';
 
 import { TestStores } from '../test-stores.js';
@@ -9,7 +9,7 @@ import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 
 describe('EventStreamEmitter', () => {
-  let eventStream: EventStreamEmitter;
+  let eventStream: EventEmitterEventStream;
   let messageStore: MessageStore;
 
   before(() => {
