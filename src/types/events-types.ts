@@ -48,7 +48,7 @@ export type EventsSubscribeMessageOptions = {
 };
 
 export type EventsSubscribeMessage = {
-  authorization?: AuthorizationModel;
+  authorization: AuthorizationModel;
   descriptor: EventsSubscribeDescriptor;
 };
 

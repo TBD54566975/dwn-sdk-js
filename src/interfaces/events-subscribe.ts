@@ -18,9 +18,9 @@ export type EventsSubscribeOptions = {
 
 export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
   public static async parse(message: EventsSubscribeMessage): Promise<EventsSubscribe> {
-    if (message.authorization !== undefined) {
-      await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
-    }
+    Message.validateJsonSchema(message);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
+
     Time.validateTimestamp(message.descriptor.messageTimestamp);
     return new EventsSubscribe(message);
   }
@@ -46,14 +46,12 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
-    let authorization = undefined;
-    if (options.signer !== undefined) {
-      authorization = await Message.createAuthorization({
-        descriptor,
-        permissionsGrantId,
-        signer: options.signer
-      });
-    }
+    const authorization = await Message.createAuthorization({
+      descriptor,
+      permissionsGrantId,
+      signer: options.signer
+    });
+
     const message: EventsSubscribeMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);
     return new EventsSubscribe(message);

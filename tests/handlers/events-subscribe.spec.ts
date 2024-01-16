@@ -16,6 +16,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import chaiAsPromised from 'chai-as-promised';
+import { EventsSubscribeHandler } from '../../src/handlers/events-subscribe.js';
 chai.use(chaiAsPromised);
 
 export function testEventsSubscribeHandler(): void {
@@ -117,6 +118,20 @@ export function testEventsSubscribeHandler(): void {
         await dwn.close();
       });
 
+      it('returns a 400 if message is invalid', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+
+        // add an invalid property to the descriptor
+        (message['descriptor'] as any)['invalid'] = 'invalid';
+
+        const eventsSubscribeHandler = new EventsSubscribeHandler(didResolver, eventStream);
+
+        const reply = await eventsSubscribeHandler.handle({ tenant: alice.did, message, handler: (_) => {} });
+        expect(reply.status.code).to.equal(400);
+      });
+
+
       it('should allow tenant to subscribe their own event stream', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -157,7 +172,7 @@ export function testEventsSubscribeHandler(): void {
 
         // test anonymous request
         const anonymousSubscription = await TestDataGenerator.generateEventsSubscribe();
-        delete anonymousSubscription.message.authorization; // delete the authorization
+        delete (anonymousSubscription.message as any).authorization;
 
         const anonymousReply = await dwn.processMessage(alice.did, anonymousSubscription.message);
         expect(anonymousReply.status.code).to.equal(400);

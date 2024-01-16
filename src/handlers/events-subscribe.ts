@@ -10,7 +10,7 @@ import { FilterUtility } from '../utils/filter.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { authenticate, authorizeOwner } from '../core/auth.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 export class EventsSubscribeHandler implements MethodHandler {
   constructor(
@@ -48,25 +48,20 @@ export class EventsSubscribeHandler implements MethodHandler {
       return messageReplyFromError(error, 401);
     }
 
-    try {
-      const { filters } = message.descriptor;
-      const eventsFilters = Events.convertFilters(filters);
-      const messageCid = await Message.getCid(message);
-      const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
-        if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
-          handler(eventMessage);
-        }
-      };
-      const subscription = await this.eventStream.subscribe(messageCid, listener);
+    const { filters } = message.descriptor;
+    const eventsFilters = Events.convertFilters(filters);
+    const messageCid = await Message.getCid(message);
 
-      const messageReply: EventsSubscribeReply = {
-        status: { code: 200, detail: 'OK' },
-        subscription,
-      };
+    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
+      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
+        handler(eventMessage);
+      }
+    };
+    const subscription = await this.eventStream.subscribe(messageCid, listener);
 
-      return messageReply;
-    } catch (error) {
-      return messageReplyFromError(error, 400);
-    }
+    return {
+      status: { code: 200, detail: 'OK' },
+      subscription,
+    };
   }
 }
