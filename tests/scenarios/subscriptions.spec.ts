@@ -210,7 +210,6 @@ export function testSubscriptionScenarios(): void {
         const receivedMessages:string[] = [];
 
         const handler = async (message:GenericMessage): Promise<void> => {
-          console.log('got message??', message);
           const messageCid = await Message.getCid(message);
           receivedMessages.push(messageCid);
         };

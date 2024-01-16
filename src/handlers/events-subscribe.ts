@@ -53,7 +53,6 @@ export class EventsSubscribeHandler implements MethodHandler {
     const messageCid = await Message.getCid(message);
 
     const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
-      console.log('got from listener', eventMessage, eventIndexes, eventsFilters);
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
         handler(eventMessage);
       }
