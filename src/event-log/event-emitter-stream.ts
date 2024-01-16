@@ -22,7 +22,7 @@ export class EventEmitterStream implements EventStream {
 
   // we subscribe to the general `EventEmitter` error events with this handler.
   // this handler is also called when there is a caught error upon emitting an event from a handler.
-  private eventError = (error: any): void => {
+  private eventError(error: any): void {
     console.error('event emitter error', error);
   };
 
@@ -48,10 +48,6 @@ export class EventEmitterStream implements EventStream {
       // silently ignore
       return;
     }
-    try {
-      this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, message, indexes);
-    } catch (error) {
-      this.eventError(error);
-    }
+    this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, message, indexes);
   }
 }
