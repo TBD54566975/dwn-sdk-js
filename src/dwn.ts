@@ -14,10 +14,10 @@ import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, Reco
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
+import { EventEmitterStream } from './event-log/event-emitter-stream.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
-import { EventEmitterEventStream } from './event-log/event-emitter-stream.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
@@ -129,7 +129,7 @@ export class Dwn {
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
-    config.eventStream ??= new EventEmitterEventStream();
+    config.eventStream ??= new EventEmitterStream();
 
     const dwn = new Dwn(config);
     await dwn.open();

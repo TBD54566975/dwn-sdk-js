@@ -58,7 +58,7 @@ export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
 
 // eventing implementations
-export { EventEmitterEventStream as EventStreamEmitter } from './event-log/event-emitter-stream.js';
+export { EventEmitterStream } from './event-log/event-emitter-stream.js';
 export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 
 // test library exports

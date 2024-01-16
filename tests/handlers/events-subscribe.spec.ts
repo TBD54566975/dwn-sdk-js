@@ -101,11 +101,12 @@ export function testEventsSubscribeHandler(): void {
       const bob = await DidKeyResolver.generate();
 
       // test anonymous request
-      const anonymousSubscription = await EventsSubscribe.create({});
-      expect(anonymousSubscription.message.authorization).to.be.undefined;
+      const anonymousSubscription = await TestDataGenerator.generateEventsSubscribe();
+      delete anonymousSubscription.message.authorization; // delete the authorization
 
       const anonymousReply = await dwn.processMessage(alice.did, anonymousSubscription.message);
-      expect(anonymousReply.status.code).to.equal(401);
+      expect(anonymousReply.status.code).to.equal(400);
+      expect(anonymousReply.status.detail).to.include(`EventsSubscribe: must have required property 'authorization'`);
       expect(anonymousReply.subscription).to.be.undefined;
 
       // testing Subscription Request

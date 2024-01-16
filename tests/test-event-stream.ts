@@ -1,5 +1,6 @@
 import type { EventStream } from '../src/index.js';
-import { EventStreamEmitter } from '../src/index.js';
+
+import { EventEmitterStream } from '../src/index.js';
 
 /**
  * Class that manages store implementations for testing.
@@ -22,7 +23,7 @@ export class TestEventStream {
    * Initializes and return the stores used for running the test suite.
    */
   public static get(): EventStream {
-    TestEventStream.eventStream ??= new EventStreamEmitter();
+    TestEventStream.eventStream ??= new EventEmitterStream();
     return TestEventStream.eventStream;
   }
 }
