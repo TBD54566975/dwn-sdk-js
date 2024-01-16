@@ -10,11 +10,12 @@ import { FilterUtility } from '../utils/filter.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { authenticate, authorizeOwner } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 export class EventsSubscribeHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) {}
 
   public async handle({
@@ -26,6 +27,12 @@ export class EventsSubscribeHandler implements MethodHandler {
     message: EventsSubscribeMessage;
     handler: GenericMessageSubscriptionHandler;
   }): Promise<EventsSubscribeReply> {
+    if (this.eventStream === undefined) {
+      return messageReplyFromError(new DwnError(
+        DwnErrorCode.EventsSubscribeEventStreamUnimplemented,
+        'Subscriptions are not supported'
+      ), 501);
+    }
 
     let subscriptionRequest: EventsSubscribe;
     try {

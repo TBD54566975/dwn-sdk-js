@@ -18,7 +18,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     private didResolver: DidResolver,
     private messageStore: MessageStore,
     private eventLog: EventLog,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) { }
 
   public async handle({
@@ -26,7 +26,6 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     message,
     dataStream: _dataStream
   }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<GenericMessageReply> {
-
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);
@@ -66,7 +65,9 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await this.messageStore.put(tenant, message, indexes);
       const messageCid = await Message.getCid(message);
       await this.eventLog.append(tenant, messageCid, indexes);
-      this.eventStream.emit(tenant, message, indexes);
+
+      // only emit if the event stream is set
+      this.eventStream?.emit(tenant, message, indexes);
 
       messageReply = {
         status: { code: 202, detail: 'Accepted' }

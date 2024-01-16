@@ -10,8 +10,8 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 
 
 export type EventsSubscribeOptions = {
+  signer: Signer;
   messageTimestamp?: string;
-  signer?: Signer;
   filters?: EventsFilter[]
   permissionsGrantId?: string;
 };

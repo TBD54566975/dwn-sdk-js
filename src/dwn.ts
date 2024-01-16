@@ -14,7 +14,6 @@ import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, Reco
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
-import { EventEmitterStream } from './event-log/event-emitter-stream.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
@@ -38,16 +37,16 @@ export class Dwn {
   private messageStore: MessageStore;
   private dataStore: DataStore;
   private eventLog: EventLog;
-  private eventStream: EventStream;
   private tenantGate: TenantGate;
+  private eventStream?: EventStream;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
     this.tenantGate = config.tenantGate!;
-    this.eventStream = config.eventStream!;
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
     this.eventLog = config.eventLog;
+    this.eventStream = config.eventStream;
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]: new EventsGetHandler(
@@ -129,7 +128,6 @@ export class Dwn {
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
-    config.eventStream ??= new EventEmitterStream();
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -141,14 +139,14 @@ export class Dwn {
     await this.messageStore.open();
     await this.dataStore.open();
     await this.eventLog.open();
-    await this.eventStream.open();
+    await this.eventStream?.open();
   }
 
   public async close(): Promise<void> {
-    this.eventStream.close();
-    this.messageStore.close();
-    this.dataStore.close();
-    this.eventLog.close();
+    await this.eventStream?.close();
+    await this.messageStore.close();
+    await this.dataStore.close();
+    await this.eventLog.close();
   }
 
   /**
@@ -240,8 +238,10 @@ export class Dwn {
  */
 export type DwnConfig = {
   didResolver?: DidResolver;
-  eventStream?: EventStream;
   tenantGate?: TenantGate;
+
+  // event stream is optional if a DWN does not wish to provide subscription services.
+  eventStream?: EventStream;
 
   messageStore: MessageStore;
   dataStore: DataStore;

@@ -24,14 +24,13 @@ export class RecordsDeleteHandler implements MethodHandler {
     private messageStore: MessageStore,
     private dataStore: DataStore,
     private eventLog: EventLog,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) { }
 
   public async handle({
     tenant,
     message
   }: { tenant: string, message: RecordsDeleteMessage}): Promise<GenericMessageReply> {
-
     let recordsDelete: RecordsDelete;
     try {
       recordsDelete = await RecordsDelete.parse(message);
@@ -96,7 +95,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     const messageCid = await Message.getCid(message);
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, messageCid, indexes);
-    this.eventStream.emit(tenant, message, indexes);
+
+    // only emit if the event stream is set
+    this.eventStream?.emit(tenant, message, indexes);
 
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(

@@ -18,7 +18,7 @@ export class PermissionsGrantHandler implements MethodHandler {
     private didResolver: DidResolver,
     private messageStore: MessageStore,
     private eventLog: EventLog,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) { }
 
   public async handle({
@@ -47,7 +47,9 @@ export class PermissionsGrantHandler implements MethodHandler {
     if (existingMessage === undefined) {
       await this.messageStore.put(tenant, message, indexes);
       await this.eventLog.append(tenant, messageCid, indexes);
-      this.eventStream.emit(tenant, message, indexes);
+
+      // only emit if the event stream is set
+      this.eventStream?.emit(tenant, message, indexes);
     }
 
     return {

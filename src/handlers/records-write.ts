@@ -31,7 +31,7 @@ export class RecordsWriteHandler implements MethodHandler {
     private messageStore: MessageStore,
     private dataStore: DataStore,
     private eventLog: EventLog,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) { }
 
   public async handle({
@@ -130,7 +130,9 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await recordsWrite.constructIndexes(isLatestBaseState);
       await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
       await this.eventLog.append(tenant, await Message.getCid(message), indexes);
-      this.eventStream.emit(tenant, message, indexes);
+
+      // only emit if the event stream is set
+      this.eventStream?.emit(tenant, message, indexes);
     } catch (error) {
       const e = error as any;
       if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||

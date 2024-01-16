@@ -25,7 +25,7 @@ export enum DwnErrorCode {
   DidNotValid = 'DidNotValid',
   DidResolutionFailed = 'DidResolutionFailed',
   Ed25519InvalidJwk = 'Ed25519InvalidJwk',
-  EventStreamSubscriptionNotSupported = 'EventStreamSubscriptionNotSupported',
+  EventsSubscribeEventStreamUnimplemented = 'EventsSubscribeEventStreamUnimplemented',
   GeneralJwsVerifierGetPublicKeyNotFound = 'GeneralJwsVerifierGetPublicKeyNotFound',
   GeneralJwsVerifierInvalidSignature = 'GeneralJwsVerifierInvalidSignature',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',

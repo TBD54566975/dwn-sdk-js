@@ -18,7 +18,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     private didResolver: DidResolver,
     private messageStore: MessageStore,
     private eventLog: EventLog,
-    private eventStream: EventStream
+    private eventStream?: EventStream
   ) { }
 
   public async handle({
@@ -95,8 +95,8 @@ export class PermissionsRevokeHandler implements MethodHandler {
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
-    // emit revoke and exercise any revocation necessary within the event stream
-    this.eventStream.emit(tenant, message, indexes);
+    // only emit if the event stream is set
+    this.eventStream?.emit(tenant, message, indexes);
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];
