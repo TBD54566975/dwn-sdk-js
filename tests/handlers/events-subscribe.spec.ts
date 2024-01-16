@@ -78,8 +78,7 @@ export function testEventsSubscribeHandler(): void {
         signer: Jws.createSigner(alice),
       });
       const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message, { handler });
-
-      expect(subscriptionReply.status.code).to.equal(200);
+      expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
       expect(subscriptionReply.subscription).to.not.be.undefined;
 
       const messageWrite = await TestDataGenerator.generateRecordsWrite({ author: alice });

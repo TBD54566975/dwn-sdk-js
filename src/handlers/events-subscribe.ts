@@ -1,11 +1,8 @@
-import EventEmitter from 'events';
-
 import type { DidResolver } from '../did/did-resolver.js';
-import type { Filter } from '../types/query-types.js';
-import type { GenericMessageHandler } from '../types/message-types.js';
+import type { GenericMessageSubscriptionHandler } from '../types/message-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { EventsSubscribeMessage, EventsSubscribeReply, EventsSubscription } from '../types/events-types.js';
+import type { EventsSubscribeMessage, EventsSubscribeReply } from '../types/events-types.js';
 
 import { Events } from '../utils/events.js';
 import { EventsSubscribe } from '../interfaces/events-subscribe.js';
@@ -23,11 +20,11 @@ export class EventsSubscribeHandler implements MethodHandler {
   public async handle({
     tenant,
     message,
-    handler,
+    handler
   }: {
     tenant: string;
     message: EventsSubscribeMessage;
-    handler: GenericMessageHandler;
+    handler: GenericMessageSubscriptionHandler;
   }): Promise<EventsSubscribeReply> {
 
     let subscriptionRequest: EventsSubscribe;
@@ -48,7 +45,12 @@ export class EventsSubscribeHandler implements MethodHandler {
       const { filters } = message.descriptor;
       const eventsFilters = Events.convertFilters(filters);
       const messageCid = await Message.getCid(message);
-      const subscription = await this.createEventSubscription(tenant, messageCid, handler, eventsFilters);
+      const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
+        if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
+          handler(eventMessage);
+        }
+      };
+      const subscription = await this.eventStream.subscribe(messageCid, listener);
 
       const messageReply: EventsSubscribeReply = {
         status: { code: 200, detail: 'OK' },
@@ -57,39 +59,7 @@ export class EventsSubscribeHandler implements MethodHandler {
 
       return messageReply;
     } catch (error) {
-      return messageReplyFromError(error, 401);
+      return messageReplyFromError(error, 400);
     }
-  }
-
-  /**
-   * Creates an EventStream subscription and assigns the message handler to the listener.
-   * The listener checks that the incoming message matches the supplied filters, as well as is attributed to the tenant.
-   */
-  private async createEventSubscription(
-    tenant: string,
-    messageCid: string,
-    handler: GenericMessageHandler,
-    filters: Filter[]
-  ): Promise<EventsSubscription> {
-
-    const eventEmitter = new EventEmitter();
-    const eventChannel = `${tenant}_${messageCid}`;
-
-    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
-      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
-        eventEmitter.emit(eventChannel, eventMessage);
-      }
-    };
-
-    const eventsSubscription = await this.eventStream.subscribe(messageCid, listener);
-    eventEmitter.on(eventChannel, handler);
-
-    return {
-      id    : messageCid,
-      close : async (): Promise<void> => {
-        await eventsSubscription.close();
-        eventEmitter.off(eventChannel, handler);
-      },
-    };
   }
 }
