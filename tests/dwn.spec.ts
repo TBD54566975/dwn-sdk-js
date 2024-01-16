@@ -1,5 +1,5 @@
+import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
-import type { EventsGetReply, TenantGate } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -114,11 +114,11 @@ export function testDwnClass(): void {
         expect(reply3.status.detail).to.contain('Both interface and method must be present');
       });
 
-      it('should throw 401 if message is targeted at a non-tenant', async () => {
+      it('should throw 401 if message is targeted at a non active tenant', async () => {
       // tenant gate that blocks everyone
         const blockAllTenantGate: TenantGate = {
-          async isActiveTenant(): Promise<boolean> {
-            return false;
+          async isActiveTenant(): Promise<ActiveTenantCheckResult> {
+            return { isActiveTenant: false };
           }
         };
 
@@ -140,7 +140,37 @@ export function testDwnClass(): void {
         const reply = await dwnWithConfig.processMessage(tenant, message);
 
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('not a tenant');
+        expect(reply.status.detail).to.contain('not an active tenant');
+      });
+
+      it('should throw 401 with custom message from tenant gate if provided', async () => {
+        // tenant gate that blocks everyone with a custom message
+        const customMessage = 'a custom not-an-active-tenant message';
+        const blockAllTenantGate: TenantGate = {
+          async isActiveTenant(): Promise<ActiveTenantCheckResult> {
+            return { isActiveTenant: false, detail: customMessage };
+          }
+        };
+
+        const messageStoreStub = stubInterface<MessageStore>();
+        const dataStoreStub = stubInterface<DataStore>();
+        const eventLogStub = stubInterface<EventLog>();
+
+        const dwnWithConfig = await Dwn.create({
+          tenantGate   : blockAllTenantGate,
+          messageStore : messageStoreStub,
+          dataStore    : dataStoreStub,
+          eventLog     : eventLogStub
+        });
+
+        const alice = await DidKeyResolver.generate();
+        const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
+
+        const tenant = author!.did;
+        const reply = await dwnWithConfig.processMessage(tenant, message);
+
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.equal(customMessage);
       });
     });
   });

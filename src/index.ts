@@ -11,7 +11,7 @@ export type { PermissionsGrantMessage, PermissionsRequestDescriptor, Permissions
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
-export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
+export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
 export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';

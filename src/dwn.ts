@@ -131,10 +131,11 @@ export class Dwn {
    * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
    */
   public async validateTenant(tenant: string): Promise<GenericMessageReply | undefined> {
-    const isActiveTenant = await this.tenantGate.isActiveTenant(tenant);
-    if (!isActiveTenant) {
+    const result = await this.tenantGate.isActiveTenant(tenant);
+    if (!result.isActiveTenant) {
+      const detail = result.detail ?? `DID ${tenant} is not an active tenant.`;
       return {
-        status: { code: 401, detail: `${tenant} is not a tenant` }
+        status: { code: 401, detail }
       };
     }
   }
