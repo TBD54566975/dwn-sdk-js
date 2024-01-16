@@ -1,4 +1,3 @@
-import type { GenericMessage } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsSubscribeDescriptor, EventsSubscribeMessage } from '../types/events-types.js';
 
@@ -55,9 +54,5 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
     const message: EventsSubscribeMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);
     return new EventsSubscribe(message);
-  }
-
-  public static isEventsSubscribeMessage(message: GenericMessage): message is EventsSubscribeMessage {
-    return message.descriptor.interface === DwnInterfaceName.Events && message.descriptor.method === DwnMethodName.Subscribe;
   }
 }

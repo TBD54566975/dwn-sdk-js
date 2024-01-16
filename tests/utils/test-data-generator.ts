@@ -252,6 +252,7 @@ export type GenerateEventsQueryOutput = {
 export type GenerateEventsSubscribeInput = {
   author: Persona;
   filters?: EventsFilter[];
+  messageTimestamp?: string;
 };
 
 export type GenerateEventsSubscribeOutput = {
@@ -787,7 +788,8 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: EventsSubscribeOptions = {
-      filters: input?.filters,
+      filters          : input?.filters,
+      messageTimestamp : input?.messageTimestamp,
       signer,
     };
     removeUndefinedProperties(options);
