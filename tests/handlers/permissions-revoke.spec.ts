@@ -282,7 +282,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         });
         const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
         expect(permissionsGrantReply.status.code).to.eq(202);
-        let events = await eventLog.getEvents(alice.did);
+        let { events } = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(1);
 
         // Revoke the grant, adding a second event
@@ -293,7 +293,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
         expect(reply.status.code).to.equal(202);
 
-        events = await eventLog.getEvents(alice.did);
+        ({ events } = await eventLog.getEvents(alice.did));
         expect(events.length).to.equal(2);
 
         // The revoke should be the second event
@@ -314,7 +314,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         });
         const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
         expect(permissionsGrantReply.status.code).to.eq(202);
-        let events = await eventLog.getEvents(alice.did);
+        let { events } = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(1);
 
         // Pre-create a Revoke message with earlier timestamp, to be processed later
@@ -335,7 +335,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
         // An event is added for the revoke
         const permissionsRevokeCid2 = await Message.getCid(permissionsRevoke2.message);
-        events = await eventLog.getEvents(alice.did);
+        ({ events } = await eventLog.getEvents(alice.did));
         expect(events.length).to.equal(2);
         expect(events[1]).to.equal(permissionsRevokeCid2);
 
@@ -345,7 +345,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
         // The existing Revoke event is purged from the eventLog. The pre-created Revoke is added to the eventLog
         const permissionsRevokeCid1 = await Message.getCid(permissionsRevoke1.message);
-        events = await eventLog.getEvents(alice.did);
+        ({ events } = await eventLog.getEvents(alice.did));
         expect(events.length).to.equal(2);
         expect(events[1]).to.equal(permissionsRevokeCid1);
       });

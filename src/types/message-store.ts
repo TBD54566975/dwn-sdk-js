@@ -1,4 +1,4 @@
-import type { Filter, KeyValues } from './query-types.js';
+import type { Filter, KeyValues, PaginationCursor } from './query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {
@@ -43,7 +43,7 @@ export interface MessageStore {
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<{ messages: GenericMessage[], cursor?: string }>;
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor}>;
 
   /**
    * Deletes the message associated with the id provided.

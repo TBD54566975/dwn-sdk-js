@@ -1,7 +1,7 @@
 import type { ProtocolsQueryFilter } from './protocols-types.js';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import type { RangeCriterion, RangeFilter } from './query-types.js';
+import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
 export type EventsMessageFilter = {
   interface?: string;
@@ -28,7 +28,7 @@ export type EventsQueryFilter = EventsMessageFilter | EventsRecordsFilter | Prot
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
   method: DwnMethodName.Get;
-  cursor?: string;
+  cursor?: PaginationCursor;
   messageTimestamp: string;
 };
 
@@ -39,6 +39,7 @@ export type EventsGetMessage = GenericMessage & {
 
 export type EventsGetReply = GenericMessageReply & {
   entries?: string[];
+  cursor?: PaginationCursor;
 };
 
 export type EventsQueryDescriptor = {
@@ -46,7 +47,7 @@ export type EventsQueryDescriptor = {
   method: DwnMethodName.Query;
   messageTimestamp: string;
   filters: EventsQueryFilter[];
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type EventsQueryMessage = GenericMessage & {
@@ -56,4 +57,5 @@ export type EventsQueryMessage = GenericMessage & {
 
 export type EventsQueryReply = GenericMessageReply & {
   entries?: string[];
+  cursor?: PaginationCursor;
 };

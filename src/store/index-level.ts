@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, KeyValues, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, PaginationCursor, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { isEmptyObject } from '../utils/object.js';
@@ -13,7 +13,7 @@ type IndexLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type IndexedItem = { itemId: string, indexes: KeyValues };
+export type IndexedItem = { messageCid: string, indexes: KeyValues };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -60,13 +60,13 @@ export class IndexLevel {
    * Put an item into the index using information that will allow it to be queried for.
    *
    * @param tenant
-   * @param itemId a unique ID that represents the item being indexed, this is also used as the cursor value in a query.
+   * @param messageCid a unique ID that represents the item being indexed, this is also used as the cursor value in a query.
    * @param indexes - (key-value pairs) to be included as part of indexing this item. Must include at least one indexing property.
    * @param options IndexLevelOptions that include an AbortSignal.
    */
   async put(
     tenant: string,
-    itemId: string,
+    messageCid: string,
     indexes: KeyValues,
     options?: IndexLevelOptions
   ): Promise<void> {
@@ -82,11 +82,11 @@ export class IndexLevel {
     // these indexes are all sortable lexicographically.
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
-      // the key is indexValue followed by the itemId as a tie-breaker.
+      // the key is indexValue followed by the messageCid as a tie-breaker.
       // for example if the property is messageTimestamp the key would look like:
       // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
-      const item: IndexedItem = { itemId, indexes };
+      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
+      const item: IndexedItem = { messageCid: messageCid, indexes };
 
       const partitionOperation = await this.createOperationForIndexPartition(
         tenant,
@@ -99,7 +99,7 @@ export class IndexLevel {
     // create a reverse lookup for the sortedIndex values. This is used during deletion and cursor starting point lookup.
     const partitionOperation = await this.createOperationForIndexesLookupPartition(
       tenant,
-      { type: 'put', key: itemId, value: JSON.stringify(indexes) }
+      { type: 'put', key: messageCid, value: JSON.stringify(indexes) }
     );
     indexOps.push(partitionOperation);
 
@@ -110,17 +110,17 @@ export class IndexLevel {
   /**
    *  Deletes all of the index data associated with the item.
    */
-  async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
+  async delete(tenant: string, messageCid: string, options?: IndexLevelOptions): Promise<void> {
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
-    const indexes = await this.getIndexes(tenant, itemId);
+    const indexes = await this.getIndexes(tenant, messageCid);
     if (indexes === undefined) {
-      // invalid itemId
+      // invalid messageCid
       return;
     }
 
     // delete the reverse lookup
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: itemId });
+    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: messageCid });
     indexOps.push(partitionOperation);
 
     // delete the keys for each sortIndex
@@ -131,7 +131,7 @@ export class IndexLevel {
         indexName,
         {
           type : 'del',
-          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId)
+          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), messageCid)
         }
       );
       indexOps.push(partitionOperation);
@@ -156,7 +156,7 @@ export class IndexLevel {
   }
 
   /**
-   * Wraps the given operation as an operation for the itemId to indexes lookup partition.
+   * Wraps the given operation as an operation for the messageCid to indexes lookup partition.
    */
   private async createOperationForIndexesLookupPartition(tenant: string, operation: LevelWrapperBatchOperation<string>)
     : Promise<LevelWrapperBatchOperation<string>> {
@@ -179,7 +179,7 @@ export class IndexLevel {
   }
 
   /**
-   * Gets the itemId to indexes lookup partition.
+   * Gets the messageCid to indexes lookup partition.
    */
   private async getIndexesLookupPartition(tenant: string): Promise<LevelWrapper<string>> {
     return (await this.db.partition(tenant)).partition(INDEX_SUBLEVEL_NAME);
@@ -191,9 +191,9 @@ export class IndexLevel {
    * @param filters Array of filters that are treated as an OR query.
    * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
    * @param options IndexLevelOptions that include an AbortSignal.
-   * @returns {string[]} an array of itemIds that match the given filters.
+   * @returns {IndexedItem[]} an array of `IndexedItem` that match the given filters.
    */
-  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
+  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<IndexedItem[]> {
 
     // check if we should query using in-memory paging or iterator paging
     if (IndexLevel.shouldQueryWithInMemoryPaging(filters, queryOptions)) {
@@ -207,26 +207,29 @@ export class IndexLevel {
    * This query is a linear iterator over the sorted index, checking each item for a match.
    * If a cursor is provided it starts the iteration from the cursor point.
    */
-  async queryWithIteratorPaging(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
-    const { limit, cursor , sortProperty } = queryOptions;
+  async queryWithIteratorPaging(
+    tenant: string,
+    filters: Filter[],
+    queryOptions: QueryOptions,
+    options?: IndexLevelOptions
+  ): Promise<IndexedItem[]> {
+    const { cursor: queryCursor , limit } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
-    if (startKey === undefined) {
-      // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
-      return [];
+    const startKey = queryCursor ? this.createStartingKeyFromCursor(queryCursor) : '';
+
+    const matches: IndexedItem[] = [];
+    for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
+      if (limit !== undefined && limit === matches.length) {
+        break;
+      }
+
+      const { indexes } = item;
+      if (FilterUtility.matchAnyFilter(indexes, filters)) {
+        matches.push(item);
+      }
     }
 
-    const matches: string[] = [];
-    for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
-      if (limit !== undefined && matches.length === limit) {
-        return matches;
-      }
-      const { itemId, indexes } = item;
-      if (FilterUtility.matchAnyFilter(indexes, filters)) {
-        matches.push(itemId);
-      }
-    }
     return matches;
   }
 
@@ -256,33 +259,51 @@ export class IndexLevel {
 
     const sortPartition = await this.getIndexPartition(tenant, sortProperty);
     for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
-      const { indexes, itemId } = JSON.parse(val);
-      yield { indexes, itemId };
+      const { indexes, messageCid } = JSON.parse(val);
+      yield { indexes, messageCid };
     }
   }
 
   /**
-   * Gets the starting point for a LevelDB query given an itemId as a cursor and the indexed property.
+   * Creates the starting point for a LevelDB query given an messageCid as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private async getStartingKeyForCursor(tenant: string, itemId: string, property: string, filters: Filter[]): Promise<string|undefined> {
-    const indexes = await this.getIndexes(tenant, itemId);
-    if (indexes === undefined) {
-      // invalid itemId
-      return;
+  private createStartingKeyFromCursor(cursor: PaginationCursor): string {
+    const { messageCid , value } = cursor;
+    return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(value), messageCid);
+  }
+
+  /**
+   * Returns a PaginationCursor using the last item of a given array of IndexedItems.
+   * If the given array is empty, undefined is returned.
+   *
+   * @throws {DwnError} if the sort property or cursor value is invalid.
+   */
+  static createCursorFromLastArrayItem(items: IndexedItem[], sortProperty: string): PaginationCursor | undefined {
+    if (items.length > 0) {
+      return this.createCursorFromItem(items.at(-1)!, sortProperty);
+    }
+  }
+
+  /**
+   * Creates a PaginationCursor from a given IndexedItem and sortProperty.
+   *
+   * @throws {DwnError} if the sort property or cursor value is invalid.
+   */
+  static createCursorFromItem(item: IndexedItem, sortProperty: string): PaginationCursor {
+    const { messageCid , indexes } = item;
+    const value = indexes[sortProperty];
+
+    if (value === undefined) {
+      throw new DwnError(DwnErrorCode.IndexInvalidCursorSortProperty, `the sort property '${sortProperty}' is not defined within the given item.`);
     }
 
-    const sortValue = indexes[property];
-    if (sortValue === undefined) {
-      // invalid sort property
-      return;
+    // we only support cursors for string or number types
+    if (typeof value === 'boolean') {
+      throw new DwnError(DwnErrorCode.IndexInvalidCursorValueType, 'only string or number values are supported for cursors, a boolean was given.');
     }
 
-    // cursor indexes must match the provided filters in order to be valid.
-    // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
-    if (FilterUtility.matchAnyFilter(indexes, filters)) {
-      return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
-    }
+    return { messageCid , value };
   }
 
   /**
@@ -298,8 +319,11 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<string[]> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit } = queryOptions;
+  ): Promise<IndexedItem[]> {
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit } = queryOptions;
+
+    // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
+    const cursorStartingKey = queryCursor ? this.createStartingKeyFromCursor(queryCursor) : undefined;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
@@ -315,7 +339,7 @@ export class IndexLevel {
         return this.executeSingleFilterQuery(tenant, filter, sortProperty, matches, options );
       }));
     } catch (error) {
-      if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
+      if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortPropertyInMemory) {
         // return empty results if the sort property is invalid.
         return [];
       }
@@ -323,18 +347,14 @@ export class IndexLevel {
 
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
-    // we find the cursor point and only return the result starting there + the limit.
-    // if there is no cursor index, we just start in the beginning.
-    const cursorIndex = cursor ? sortedValues.findIndex(match => match.itemId === cursor) : -1;
-    if (cursor !== undefined && cursorIndex === -1) {
-      // if a cursor is provided but we cannot find it, we return an empty result set
+    const start = cursorStartingKey !== undefined ? this.findCursorStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey) : 0;
+    if (start < 0) {
+      // if the provided cursor does not come before any of the results, we return no results
       return [];
     }
 
-    const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
-    const end = limit !== undefined ? start + limit : undefined;
-
-    return sortedValues.slice(start, end).map(match => match.itemId);
+    const end = limit !== undefined ? start + limit: undefined;
+    return sortedValues.slice(start, end);
   }
 
   /**
@@ -388,16 +408,16 @@ export class IndexLevel {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        if (matches.has(indexedItem.itemId) || !FilterUtility.matchFilter(indexedItem.indexes, filter)) {
+        if (matches.has(indexedItem.messageCid) || !FilterUtility.matchFilter(indexedItem.indexes, filter)) {
           continue;
         }
 
         // ensure that each matched item has the sortProperty, otherwise fail the entire query.
         if (indexedItem.indexes[sortProperty] === undefined) {
-          throw new DwnError(DwnErrorCode.IndexInvalidSortProperty, `invalid sort property ${sortProperty}`);
+          throw new DwnError(DwnErrorCode.IndexInvalidSortPropertyInMemory, `invalid sort property ${sortProperty}`);
         }
 
-        matches.set(indexedItem.itemId, indexedItem);
+        matches.set(indexedItem.messageCid, indexedItem);
       }
     }
   }
@@ -485,25 +505,44 @@ export class IndexLevel {
   }
 
   /**
-   * Sorts Items lexicographically in ascending or descending order given a specific indexName, using the itemId as a tie breaker.
+   * Sorts Items lexicographically in ascending or descending order given a specific indexName, using the messageCid as a tie breaker.
    * We know the indexes include the indexName here because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem, itemB: IndexedItem, indexName: string, direction: SortDirection): number {
-    const aValue = IndexLevel.encodeValue(itemA.indexes[indexName]) + itemA.itemId;
-    const bValue = IndexLevel.encodeValue(itemB.indexes[indexName]) + itemB.itemId;
+    const aValue = IndexLevel.encodeValue(itemA.indexes[indexName]) + itemA.messageCid;
+    const bValue = IndexLevel.encodeValue(itemB.indexes[indexName]) + itemB.messageCid;
     return direction === SortDirection.Ascending ?
       lexicographicalCompare(aValue, bValue) :
       lexicographicalCompare(bValue, aValue);
   }
 
   /**
-   * Gets the indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
+   * Find the starting position for pagination within the IndexedItem array.
+   * Returns the index of the first item found which is either greater than or less than the given cursor, depending on sort order.
    */
-  private async getIndexes(tenant: string, itemId: string): Promise<KeyValues|undefined> {
+  private findCursorStartingIndex(items: IndexedItem[], sortDirection: SortDirection, sortProperty: string, cursorStartingKey: string): number {
+
+    const firstItemAfterCursor = (item: IndexedItem): boolean => {
+      const { messageCid, indexes } = item;
+      const sortValue = indexes[sortProperty];
+      const itemCompareValue = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), messageCid);
+
+      return sortDirection === SortDirection.Ascending ?
+        itemCompareValue > cursorStartingKey :
+        itemCompareValue < cursorStartingKey;
+    };
+
+    return items.findIndex(firstItemAfterCursor);
+  }
+
+  /**
+   * Gets the indexes given an messageCid. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
+   */
+  private async getIndexes(tenant: string, messageCid: string): Promise<KeyValues|undefined> {
     const indexesLookupPartition = await this.getIndexesLookupPartition(tenant);
-    const serializedIndexes = await indexesLookupPartition.get(itemId);
+    const serializedIndexes = await indexesLookupPartition.get(messageCid);
     if (serializedIndexes === undefined) {
-      // invalid itemId
+      // invalid messageCid
       return;
     }
 
@@ -572,7 +611,6 @@ export class IndexLevel {
     // only use in-memory paging if all filters are concise
     return true;
   }
-
 
   public static isFilterConcise(filter: Filter, queryOptions: QueryOptions): boolean {
     // if there is a specific recordId in the filter, return true immediately.

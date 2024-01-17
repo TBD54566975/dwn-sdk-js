@@ -1,5 +1,5 @@
 
-import type { Filter, KeyValues, QueryOptions } from '../types/query-types.js';
+import type { Filter, KeyValues, PaginationCursor, QueryOptions } from '../types/query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
@@ -87,7 +87,7 @@ export class MessageStoreLevel implements MessageStore {
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor}> {
     options?.signal?.throwIfAborted();
 
     // creates the query options including sorting and pagination.
@@ -95,21 +95,21 @@ export class MessageStoreLevel implements MessageStore {
     const queryOptions = MessageStoreLevel.buildQueryOptions(messageSort, pagination);
     const results = await this.index.query(tenant, filters, queryOptions, options);
 
-    const messages: GenericMessage[] = [];
-    for (let i = 0; i < results.length; i++) {
-      const messageCid = results[i];
-      const message = await this.get(tenant, messageCid, options);
-      if (message) { messages.push(message); }
+    let cursor: PaginationCursor | undefined;
+    // checks to see if the returned results are greater than the limit, which would indicate additional results.
+    if (pagination?.limit !== undefined && pagination.limit < results.length) {
+      // has additional records, remove last record and set cursor
+      results.splice(-1);
+
+      // set cursor to the last item remaining after the spliced result.
+      cursor = IndexLevel.createCursorFromLastArrayItem(results, queryOptions.sortProperty);
     }
 
-    // checks to see if the returned results are greater than the limit, which would indicate additional results.
-    const hasMoreResults = pagination?.limit !== undefined && pagination.limit < results.length;
-    let cursor: string | undefined;
-    if (hasMoreResults) {
-      // if there are additional results, we remove the extra result we queried for.
-      messages.splice(-1); // remove last element
-      const lastMessage = messages.at(-1); // we choose the last remaining result as a cursor point.
-      cursor = await Message.getCid(lastMessage!);
+    const messages: GenericMessage[] = [];
+    for (let i = 0; i < results.length; i++) {
+      const { messageCid } = results[i];
+      const message = await this.get(tenant, messageCid, options);
+      if (message) { messages.push(message); }
     }
 
     return { messages, cursor };
@@ -140,7 +140,7 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     // we add one more to the limit to determine whether there are additional results and to return a cursor.
-    if (limit && limit > 0) {
+    if (limit !== undefined && limit > 0) {
       limit = limit + 1;
     }
 

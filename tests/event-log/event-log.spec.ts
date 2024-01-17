@@ -1,5 +1,6 @@
 import type { EventLog } from '../../src/types/event-log.js';
 
+import { DidKeyResolver } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -38,11 +39,11 @@ export function testEventLog(): void {
       const messageCid2 = await Message.getCid(message2);
       await eventLog.append(author2.did, messageCid2, message2Index);
 
-      let events = await eventLog.getEvents(author.did);
+      let { events } = await eventLog.getEvents(author.did);
       expect(events.length).to.equal(1);
       expect(events[0]).to.equal(messageCid);
 
-      events = await eventLog.getEvents(author2.did);
+      ({ events } = await eventLog.getEvents(author2.did));
       expect(events.length).to.equal(1);
       expect(events[0]).to.equal(messageCid2);
     });
@@ -66,7 +67,7 @@ export function testEventLog(): void {
         expectedMessages.push(messageCid);
       }
 
-      const events = await eventLog.getEvents(author.did);
+      const { events } = await eventLog.getEvents(author.did);
       expect(events.length).to.equal(expectedMessages.length);
 
       for (let i = 0; i < 10; i += 1) {
@@ -93,7 +94,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const events = await eventLog.getEvents(author.did);
+        const { events } = await eventLog.getEvents(author.did);
         expect(events.length).to.equal(10);
 
         for (let i = 0; i < events.length; i += 1) {
@@ -102,31 +103,30 @@ export function testEventLog(): void {
       });
 
       it('gets all events that occurred after the cursor provided', async () => {
-        const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+        const author = await DidKeyResolver.generate();
+
+        // create an initial record to and, issue a getEvents and grab the cursor
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
         const index = await recordsWrite.constructRecordsWriteIndexes(true);
-
         await eventLog.append(author.did, messageCid, index);
+        const { events: cursorEvents, cursor } = await eventLog.getEvents(author.did);
+        expect(cursorEvents.length).to.equal(1);
+        expect(cursor).to.not.be.undefined;
+        expect(cursorEvents[0]).to.equal(messageCid);
 
+        // add more messages
         const expectedMessages: string[] = [];
-        let cursor = '';
-
-        for (let i = 0; i < 9; i += 1) {
+        for (let i = 0; i < 5; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
           const messageCid = await Message.getCid(message);
           const index = await recordsWrite.constructRecordsWriteIndexes(true);
-
           await eventLog.append(author.did, messageCid, index);
-          if (i === 4) {
-            cursor = messageCid;
-          }
-          if (i > 4) {
-            expectedMessages.push(messageCid);
-          }
+          expectedMessages.push(messageCid);
         }
 
-        const events = await eventLog.getEvents(author.did, { cursor: cursor });
-        expect(events.length).to.equal(4);
+        const { events } = await eventLog.getEvents(author.did, cursor);
+        expect(events.length).to.equal(5);
 
         for (let i = 0; i < events.length; i += 1) {
           expect(events[i]).to.equal(expectedMessages[i], `${i}`);
@@ -155,7 +155,7 @@ export function testEventLog(): void {
         }
 
         await eventLog.deleteEventsByCid(author.did, deleteMessages);
-        const remainingEvents = await eventLog.getEvents(author.did);
+        const { events: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(10 - deleteMessages.length);
         expect(remainingEvents).to.not.include.members(deleteMessages);
       });
@@ -181,7 +181,7 @@ export function testEventLog(): void {
         // does not error and deletes all messages
         await eventLog.deleteEventsByCid(author.did, [...cids, 'someInvalidCid' ]);
 
-        const remainingEvents = await eventLog.getEvents(author.did);
+        const { events: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(0);
       });
     });
@@ -222,7 +222,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        const { events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(expectedMessages.length);
 
         for (let i = 0; i < expectedMessages.length; i += 1) {
@@ -231,51 +231,55 @@ export function testEventLog(): void {
       });
 
       it('returns filtered events after cursor', async () => {
-        const expectedEvents: Array<string> = [];
-        let testCursor;
+        const author = await DidKeyResolver.generate();
 
-        const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
+        // message 1 schema1
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
         const messageCid = await Message.getCid(message);
         const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
         await eventLog.append(author.did, messageCid, indexes);
 
-        for (let i = 0; i < 5; i += 1) {
-          const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
-          const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
-          await eventLog.append(author.did, messageCid, indexes);
-
-          if (i === 3) {
-            testCursor = messageCid;
-          }
-
-          if (i > 3) {
-            expectedEvents.push(messageCid);
-          }
-        }
-
-        // insert a record that will not show up in the filtered query.
-        // not inserted into expected events because it's not a part of the schema.
-        const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
+        // message 2 schema1
+        const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
         const message2Cid = await Message.getCid(message2);
         const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);
         await eventLog.append(author.did, message2Cid, message2Indexes);
 
-        for (let i = 0; i < 5; i += 1) {
-          const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
-          const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
-          await eventLog.append(author.did, messageCid, indexes);
+        // message 3 schema1
+        const { message: message3, recordsWrite: recordsWrite3 } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const message3Cid = await Message.getCid(message3);
+        const message3Indexes = await recordsWrite3.constructRecordsWriteIndexes(true);
+        await eventLog.append(author.did, message3Cid, message3Indexes);
 
-          expectedEvents.push(messageCid);
-        }
+        // insert a record that will not show up in the filtered query.
+        // not inserted into expected events because it's not a part of the schema.
+        const { message: nonSchemaMessage1, recordsWrite: nonSchemaMessage1Write } = await TestDataGenerator.generateRecordsWrite({ author });
+        const nonSchemaMessage1Cid = await Message.getCid(nonSchemaMessage1);
+        const nonSchemaMessage1Indexes = await nonSchemaMessage1Write.constructRecordsWriteIndexes(true);
+        await eventLog.append(author.did, nonSchemaMessage1Cid, nonSchemaMessage1Indexes);
 
-        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testCursor);
-        expect(events.length).to.equal(expectedEvents.length);
+        // make initial query
+        let { events, cursor } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        expect(events.length).to.equal(3);
+        expect(events[0]).to.equal(await Message.getCid(message));
+        expect(events[1]).to.equal(await Message.getCid(message2));
+        expect(events[2]).to.equal(await Message.getCid(message3));
 
-        for (let i = 0; i < expectedEvents.length; i += 1) {
-          expect(events[i]).to.equal(expectedEvents[i]);
-        }
+        // add an additional message to schema 1
+        const { message: message4, recordsWrite: recordsWrite4 } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const message4Cid = await Message.getCid(message4);
+        const message4Indexes = await recordsWrite4.constructRecordsWriteIndexes(true);
+        await eventLog.append(author.did, message4Cid, message4Indexes);
+
+        // insert another non schema record
+        const { message: nonSchemaMessage2, recordsWrite: nonSchemaMessage2Write } = await TestDataGenerator.generateRecordsWrite({ author });
+        const nonSchemaMessage2Cid = await Message.getCid(nonSchemaMessage2);
+        const nonSchemaMessage2Indexes = await nonSchemaMessage2Write.constructRecordsWriteIndexes(true);
+        await eventLog.append(author.did, nonSchemaMessage2Cid, nonSchemaMessage2Indexes);
+
+        ({ events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], cursor));
+        expect(events.length).to.equal(1);
+        expect(events[0]).to.equal(await Message.getCid(message4));
       });
     });
   });

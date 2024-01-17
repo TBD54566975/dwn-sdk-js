@@ -1,6 +1,5 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
-import type { GetEventsOptions } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventsGetMessage, EventsGetReply } from '../types/event-types.js';
 
@@ -31,16 +30,13 @@ export class EventsGetHandler implements MethodHandler {
 
     // if a cursor was provided in message, get all events _after_ the cursor.
     // Otherwise, get all events.
-    let options: GetEventsOptions | undefined;
-    if (message.descriptor.cursor) {
-      options = { cursor: message.descriptor.cursor };
-    }
-
-    const events = await this.eventLog.getEvents(tenant, options);
+    const { cursor: queryCursor } = message.descriptor;
+    const { events, cursor } = await this.eventLog.getEvents(tenant, queryCursor);
 
     return {
       status  : { code: 200, detail: 'OK' },
-      entries : events
+      entries : events,
+      cursor
     };
   }
 }

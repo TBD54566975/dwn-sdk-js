@@ -2,7 +2,7 @@ export type QueryOptions = {
   sortProperty: string;
   sortDirection?: SortDirection;
   limit?: number;
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export enum SortDirection {
@@ -49,4 +49,9 @@ export type RangeCriterion = {
    * Inclusive end date-time.
    */
   to?: string;
+};
+
+export type PaginationCursor = {
+  messageCid: string;
+  value: string | number;
 };

@@ -31,13 +31,13 @@ export class EventsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const { filters, cursor } = eventsQuery.message.descriptor;
-    const logFilters = EventsQuery.convertFilters(filters);
-    const events = await this.eventLog.queryEvents(tenant, logFilters, cursor);
+    const logFilters = EventsQuery.convertFilters(message.descriptor.filters);
+    const { events, cursor } = await this.eventLog.queryEvents(tenant, logFilters, message.descriptor.cursor);
 
     return {
       status  : { code: 200, detail: 'OK' },
-      entries : events
+      entries : events,
+      cursor
     };
   }
 }

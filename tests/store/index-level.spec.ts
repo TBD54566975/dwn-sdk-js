@@ -1,4 +1,5 @@
 import type { Filter } from '../../src/types/query-types.js';
+import type { IndexedItem } from '../../src/store/index-level.js';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
@@ -14,7 +15,6 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
-
 
 describe('IndexLevel', () => {
   let testIndex: IndexLevel;
@@ -53,7 +53,7 @@ describe('IndexLevel', () => {
       });
       await expect(successfulIndex).to.eventually.not.be.rejected;
       const results = await testIndex.query(tenant, [{ id: id }], { sortProperty: 'id' });
-      expect(results[0]).to.equal(id);
+      expect(results[0].messageCid).to.equal(id);
     });
 
     it('adds one index key per property, aside from id', async () => {
@@ -94,8 +94,8 @@ describe('IndexLevel', () => {
       const indexPromise = testIndex.put(tenant, id, index, { signal: controller.signal });
       await expect(indexPromise).to.eventually.rejectedWith('reason');
 
-      const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
-      expect(result.length).to.equal(0);
+      const entries = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
+      expect(entries.length).to.equal(0);
     });
   });
 
@@ -142,13 +142,13 @@ describe('IndexLevel', () => {
       await testIndex.put(tenant, id2, doc2);
       await testIndex.put(tenant, id3, doc3);
 
-      const result = await testIndex.query(tenant, [{
+      const entries = await testIndex.query(tenant, [{
         'a' : 'b',
         'c' : 'e'
       }], { sortProperty: 'id' });
 
-      expect(result.length).to.equal(1);
-      expect(result[0]).to.equal(id3);
+      expect(entries.length).to.equal(1);
+      expect(entries[0].messageCid).to.equal(id3);
     });
 
     it('should return all records if an empty filter array is passed', async () => {
@@ -159,114 +159,197 @@ describe('IndexLevel', () => {
 
       // empty array
       let allResults = await testIndex.query(tenant, [],{ sortProperty: 'letter' });
-      expect(allResults).to.eql(['a', 'b', 'c', 'd']);
+      expect(allResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b', 'c', 'd']);
 
       // empty filter
       allResults = await testIndex.query(tenant, [{}],{ sortProperty: 'letter' });
-      expect(allResults).to.eql(['a', 'b', 'c', 'd']);
+      expect(allResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b', 'c', 'd']);
     });
 
     describe('queryWithIteratorPaging()', () => {
-      it('invalid sort property returns no results', async () => {
+      it('paginates using cursor', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        const filters = [{ schema: 'schema' }];
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
+
+        // query with limit, default (ascending)
+        const results = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(results.length).to.equal(2);
+        expect(results.map(({ messageCid }) => messageCid)).to.eql(['a', 'b']);
+
+        // query with cursor, default (ascending)
+        const resultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(results, 'val') });
+        expect(resultsAfterCursor.length).to.equal(2);
+        expect(resultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['c', 'd']);
+
+        // query with limit, explicit ascending
+        const ascResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(ascResults.length).to.equal(2);
+        expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b']);
+
+        // query with cursor, explicit ascending
+        const ascResultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(ascResults, 'val') });
+        expect(ascResultsAfterCursor.length).to.equal(2);
+        expect(ascResultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['c', 'd']);
+
+        // query with limit, descending
+        const descResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', limit: 2 });
+        expect(descResults.length).to.equal(2);
+        expect(descResults.map(({ messageCid }) => messageCid)).to.eql(['d', 'c']);
+
+        // query with cursor, descending
+        const descResultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(descResults, 'val') });
+        expect(descResultsAfterCursor.length).to.equal(2);
+        expect(descResultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['b', 'a']);
+      });
+
+      it('returns empty array if sort property is invalid', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
+        }
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return all results
-        let validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
+        const validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
         expect(validResults.length).to.equal(4);
 
         // sort by invalid property returns no results
-        let invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid' });
-        expect(invalidResults.length).to.equal(0);
-
-        // control test: returns after cursor
-        validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-        expect(validResults.length).to.equal(3);
-
-        // invalid sort property with a valid cursor value
-        invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
+        const invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid' });
         expect(invalidResults.length).to.equal(0);
       });
 
-      it('invalid cursor returns no results', async () => {
-        const testVals = ['e', 'b', 'd', 'c'];
+      it('cursor is valid but out of range of matched results', async () => {
+        const testVals = ['b', 'd', 'c']; // a is missing
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, `${val}-id`, { val, schema: 'schema', published: true });
+        }
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, `${val}-id`, { val: otherVal, schema: 'schema', published: false });
         }
 
-        //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
-        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2' });
+        const filters = [{ schema: 'schema', published: true }];
+        // cursor `a-id` doesn't actually exist, but the value `a` is sorted prior to the result set.
+        const cursorA = { messageCid: 'a-id', value: 'a' };
 
-        const filters = [{ schema: 'schema' }];
+        const allResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
+        expect(allResults.map(({ messageCid }) => messageCid)).to.eql(['b-id', 'c-id', 'd-id']);
 
-        // control test: return all results
-        const validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'b' });
-        expect(validResults.length).to.equal(3);
-        expect(validResults).to.eql([ 'c', 'd', 'e' ]);
-
-        // pass invalid cursor returns no results
-        let invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
-        expect(invalidResults.length).to.equal(0);
-
-        // pass valid cursor that isn't part of the query/matches
-        invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-        expect(invalidResults.length).to.equal(0);
+        // cursor `e-id` doesn't actually exist, but the value `e` is sorted after to the result set.
+        const cursorE = { messageCid: 'e-id', value: 'e' };
+        const noResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
+        expect(noResults.length).to.eql(0);
       });
     });
 
     describe('queryWithInMemoryPaging()', () => {
-      it('invalid sort property returns no results', async () => {
+      it('paginates using cursor', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        const filters = [{ schema: 'schema' }];
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
+
+        // query with limit, default (ascending)
+        const results = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(results.length).to.equal(2);
+        expect(results.map(({ messageCid }) => messageCid)).to.eql(['a', 'b']);
+
+        // query with cursor, default (ascending)
+        const resultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(results, 'val') });
+        expect(resultsAfterCursor.length).to.equal(2);
+        expect(resultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['c', 'd']);
+
+        // query with limit, explicit ascending
+        const ascResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(ascResults.length).to.equal(2);
+        expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b']);
+
+        // query with cursor, explicit ascending
+        const ascResultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(ascResults, 'val') });
+        expect(ascResultsAfterCursor.length).to.equal(2);
+        expect(ascResultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['c', 'd']);
+
+        // query with limit, descending
+        const descResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', limit: 2 });
+        expect(descResults.length).to.equal(2);
+        expect(descResults.map(({ messageCid }) => messageCid)).to.eql(['d', 'c']);
+
+        // query with cursor, descending
+        const descResultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(descResults, 'val') });
+        expect(descResultsAfterCursor.length).to.equal(2);
+        expect(descResultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql(['b', 'a']);
+      });
+
+      it('returns empty array if sort property is invalid', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
+        }
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return all results
-        let validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val' });
-        expect(validResults.length).to.equal(4);
-
-        // sort by invalid property returns no results
-        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid' });
-        expect(invalidResults.length).to.equal(0);
-
-        // control test: returns after cursor
-        validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
+        const validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 3 });
         expect(validResults.length).to.equal(3);
 
-        // invalid sort property with a valid cursor value
-        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
+        // sort by invalid property returns no results
+        const invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid' });
         expect(invalidResults.length).to.equal(0);
       });
 
-      it('invalid cursor returns no results', async () => {
-        const testVals = ['e', 'b', 'd', 'c'];
+      it('cursor is valid but out of range of matched results', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
-        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2' });
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
 
-        const filters = [{ schema: 'schema' }];
+        const filters = [{ schema: 'schema', published: true }];
+        const cursorA = { messageCid: 'a', value: 'a' }; // before results
 
-        // control test: return all results
-        const validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'b' });
-        expect(validResults.length).to.equal(3);
-        expect(validResults).to.eql([ 'c', 'd', 'e' ]);
+        const allResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
+        expect(allResults.map(({ messageCid }) => messageCid)).to.eql(['b', 'c', 'd']);
 
-        // pass invalid cursor returns no results
-        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
-        expect(invalidResults.length).to.equal(0);
-
-        // pass valid cursor that isn't part of the query/matches
-        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-        expect(invalidResults.length).to.equal(0);
+        const cursorE = { messageCid: 'e', value: 'e' }; // after results
+        const noResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
+        expect(noResults.length).to.eql(0);
       });
 
       it('supports range queries', async () => {
@@ -298,10 +381,10 @@ describe('IndexLevel', () => {
           }
         }];
 
-        const resp = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'id' });
+        const entries = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(2);
-        expect(resp).to.have.members([id2, id3]);
+        expect(entries.length).to.equal(2);
+        expect(entries.map(({ messageCid }) => messageCid)).to.have.members([id2, id3]);
 
         // only upper bounds
         const lteFilter = [{
@@ -312,7 +395,7 @@ describe('IndexLevel', () => {
         const lteReply = await testIndex.queryWithInMemoryPaging(tenant, lteFilter, { sortProperty: 'id' });
 
         expect(lteReply.length).to.equal(3);
-        expect(lteReply).to.have.members([id, id2, id3]);
+        expect(lteReply.map(({ messageCid }) => messageCid)).to.have.members([id, id2, id3]);
 
       });
     });
@@ -328,8 +411,8 @@ describe('IndexLevel', () => {
         await testIndex.put(tenant, id, doc);
 
         const filters = [{ value: 'foo' }];
-        const resp = await testIndex.query(tenant, filters, { sortProperty: 'id' });
-        expect(resp.length).to.equal(0);
+        const entries = await testIndex.query(tenant, filters, { sortProperty: 'id' });
+        expect(entries.length).to.equal(0);
 
       });
 
@@ -360,11 +443,11 @@ describe('IndexLevel', () => {
           a: [ 'a', 'b' ]
         }];
 
-        const resp = await testIndex.query(tenant, filters , { sortProperty: 'id' });
+        const entries = await testIndex.query(tenant, filters , { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(2);
-        expect(resp).to.include(id1);
-        expect(resp).to.include(id2);
+        expect(entries.length).to.equal(2);
+        expect(entries.map(({ messageCid }) => messageCid)).to.include(id1);
+        expect(entries.map(({ messageCid }) => messageCid)).to.include(id2);
       });
 
       it('supports range queries', async () => {
@@ -383,9 +466,9 @@ describe('IndexLevel', () => {
             gte: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 }).toString({ smallestUnit: 'microseconds' })
           }
         }];
-        const resp = await testIndex.query(tenant, filters, { sortProperty: 'id' });
+        const entries = await testIndex.query(tenant, filters, { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(5);
+        expect(entries.length).to.equal(5);
       });
 
       it('supports prefixed range queries', async () => {
@@ -403,10 +486,10 @@ describe('IndexLevel', () => {
           }
         }];
 
-        const resp = await testIndex.query(tenant, filters, { sortProperty: 'id' });
+        const entries = await testIndex.query(tenant, filters, { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(1);
-        expect(resp).to.include(id);
+        expect(entries.length).to.equal(1);
+        expect(entries.map(({ messageCid }) => messageCid)).to.include(id);
       });
 
       it('supports suffixed range queries', async () => {
@@ -431,10 +514,10 @@ describe('IndexLevel', () => {
           }
         }];
 
-        const resp = await testIndex.query(tenant, filters, { sortProperty: 'id' });
+        const entries = await testIndex.query(tenant, filters, { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(1);
-        expect(resp).to.include(id1);
+        expect(entries.length).to.equal(1);
+        expect(entries.map(({ messageCid }) => messageCid)).to.include(id1);
       });
 
       it('treats strings differently', async () => {
@@ -457,10 +540,10 @@ describe('IndexLevel', () => {
           foo: true
         }];
 
-        const resp = await testIndex.query(tenant, filters, { sortProperty: 'id' });
+        const entries = await testIndex.query(tenant, filters, { sortProperty: 'id' });
 
-        expect(resp.length).to.equal(1);
-        expect(resp).to.include(id1);
+        expect(entries.length).to.equal(1);
+        expect(entries.map(({ messageCid }) => messageCid)).to.include(id1);
       });
 
       describe('numbers', () => {
@@ -481,10 +564,10 @@ describe('IndexLevel', () => {
             digit: testNumbers.at(index)!
           }];
 
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
-          expect(resp.length).to.equal(1);
-          expect(resp.at(0)).to.equal(testNumbers.at(index)!.toString());
+          expect(entries.length).to.equal(1);
+          expect(entries.at(0)?.messageCid).to.equal(testNumbers.at(index)!.toString());
         });
 
         it ('should not return records that do not match provided number equality filter', async() => {
@@ -494,9 +577,9 @@ describe('IndexLevel', () => {
           }
 
           const filters = [{ digit: 1 }];
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
-          expect(resp.length).to.equal(0);
+          expect(entries.length).to.equal(0);
         });
 
         it('supports range queries with positive numbers inclusive', async () => {
@@ -513,10 +596,10 @@ describe('IndexLevel', () => {
             }
           }];
 
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
           const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
 
         it('supports range queries with negative numbers inclusive', async () => {
@@ -533,10 +616,10 @@ describe('IndexLevel', () => {
               lte : upperBound
             }
           }];
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
           const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
 
         it('should return numbers gt a negative digit', async () => {
@@ -550,10 +633,10 @@ describe('IndexLevel', () => {
               gt: lowerBound,
             }
           }];
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
           const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
 
         it('should return numbers gt a digit', async () => {
@@ -569,9 +652,9 @@ describe('IndexLevel', () => {
             }
           }];
 
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
           const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
 
         it('should return numbers lt a negative digit', async () => {
@@ -587,10 +670,10 @@ describe('IndexLevel', () => {
             }
           }];
 
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
           const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
 
         it('should return numbers lt a digit', async () => {
@@ -606,10 +689,10 @@ describe('IndexLevel', () => {
             }
           }];
 
-          const resp = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
+          const entries = await testIndex.query(tenant, filters, { sortProperty: 'digit' });
 
           const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
-          expect(resp).to.eql(testResults);
+          expect(entries.map(({ messageCid }) => messageCid)).to.eql(testResults);
         });
       });
 
@@ -633,21 +716,21 @@ describe('IndexLevel', () => {
 
           const bothFilter = [{ schema: 'schema' }];
           // control
-          const resp = await testIndex.query(tenant, bothFilter, { sortProperty: 'id' });
-          expect(resp.length).to.equal(2);
-          expect(resp).to.have.members([ itemTrueId, itemFalseId ]);
+          const entries = await testIndex.query(tenant, bothFilter, { sortProperty: 'id' });
+          expect(entries.length).to.equal(2);
+          expect(entries.map(({ messageCid }) => messageCid)).to.have.members([ itemTrueId, itemFalseId ]);
 
           const trueFilter = [{ published: true, schema: 'schema' }];
           // equality true
           const respTrue = await testIndex.query(tenant, trueFilter, { sortProperty: 'id' });
           expect(respTrue.length).to.equal(1);
-          expect(respTrue).to.have.members([ itemTrueId ]);
+          expect(respTrue.map(({ messageCid }) => messageCid)).to.have.members([ itemTrueId ]);
 
           const falseFilter = [{ published: false, schema: 'schema' }];
           // equality false
           const respFalse = await testIndex.query(tenant, falseFilter, { sortProperty: 'id' });
           expect(respFalse.length).to.equal(1);
-          expect(respFalse).to.have.members([ itemFalseId ]);
+          expect(respFalse.map(({ messageCid }) => messageCid)).to.have.members([ itemFalseId ]);
         });
       });
 
@@ -663,12 +746,12 @@ describe('IndexLevel', () => {
           // limit results without cursor
           let ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val', limit: 2 });
           expect(ascResults.length).to.equal(2);
-          expect(ascResults).to.eql(['a', 'b']);
+          expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b']);
 
           // limit results with a cursor
-          ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val', limit: 2, cursor: 'b' });
+          ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val', limit: 2, cursor: IndexLevel.createCursorFromLastArrayItem(ascResults, 'val') });
           expect(ascResults.length).to.equal(2);
-          expect(ascResults).to.eql(['c', 'd']);
+          expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['c', 'd']);
         });
 
         it('can sort by any indexed property', async () => {
@@ -682,49 +765,39 @@ describe('IndexLevel', () => {
           // sort by value ascending
           const ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val' });
           expect(ascResults.length).to.equal(testVals.length);
-          expect(ascResults).to.eql(['a', 'b', 'c', 'd']);
+          expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b', 'c', 'd']);
 
           // sort by index ascending
           const ascIndexResults = await testIndex.query(tenant, filters, { sortProperty: 'index' });
           expect(ascIndexResults.length).to.equal(testVals.length);
-          expect(ascIndexResults).eql(testVals);
+          expect(ascIndexResults.map(({ messageCid }) => messageCid)).eql(testVals);
 
           // sort by value descending
           const descResults = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending });
           expect(descResults.length).to.equal(testVals.length);
-          expect(descResults).to.eql(['d', 'c', 'b', 'a']);
+          expect(descResults.map(({ messageCid }) => messageCid)).to.eql(['d', 'c', 'b', 'a']);
 
           // sort by index descending
           const descIndexResults = await testIndex.query(tenant, filters, { sortProperty: 'index', sortDirection: SortDirection.Descending });
           expect(descIndexResults.length).to.equal(testVals.length);
-          expect(descIndexResults).eql([...testVals].reverse());
+          expect(descIndexResults.map(({ messageCid }) => messageCid)).eql([...testVals].reverse());
         });
 
-        it('sorts lexicographic with and without a cursor', async () => {
+        it('sorts lexicographic', async () => {
           const testVals = [ 'b', 'a', 'd', 'c'];
           for (const val of testVals) {
             await testIndex.put(tenant, val, { val, schema: 'schema' });
           }
           const filters = [{ schema: 'schema' }];
-          // sort ascending without a cursor
+          // sort ascending
           const ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val' });
           expect(ascResults.length).to.equal(4);
-          expect(ascResults).to.eql(['a', 'b', 'c', 'd']);
+          expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['a', 'b', 'c', 'd']);
 
-          // sort ascending with cursor
-          const ascResultsCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'b' });
-          expect(ascResultsCursor.length).to.equal(2);
-          expect(ascResultsCursor).to.eql(['c', 'd']);
-
-          // sort descending without a cursor
+          // sort descending
           const descResults = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending });
           expect(descResults.length).to.equal(4);
-          expect(descResults).to.eql(['d', 'c', 'b', 'a']);
-
-          // sort descending with cursor
-          const descResultsCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending, cursor: 'b' });
-          expect(descResultsCursor.length).to.equal(1);
-          expect(descResultsCursor).to.eql(['a']);
+          expect(descResults.map(({ messageCid }) => messageCid)).to.eql(['d', 'c', 'b', 'a']);
         });
 
         it('sorts numeric with and without a cursor', async () => {
@@ -734,25 +807,15 @@ describe('IndexLevel', () => {
           }
 
           const filters = [{ schema: 'schema' }];
-          // sort ascending without a cursor
+          // sort ascending
           const ascResults = await testIndex.query(tenant, filters, { sortProperty: 'val' });
           expect(ascResults.length).to.equal(testVals.length);
-          expect(ascResults).to.eql(['-2', '-1', '0', '1', '2' , '3' , '4']);
+          expect(ascResults.map(({ messageCid }) => messageCid)).to.eql(['-2', '-1', '0', '1', '2' , '3' , '4']);
 
-          // sort ascending with a cursor
-          const ascResultsCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: '2' });
-          expect(ascResultsCursor.length).to.equal(2);
-          expect(ascResultsCursor).to.eql(['3', '4']);
-
-          // sort descending without a cursor
+          // sort descending
           const descResults = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending });
           expect(descResults.length).to.eql(testVals.length);
-          expect(descResults).to.eql(['4', '3', '2', '1', '0' , '-1' , '-2']);
-
-          // sort descending with a cursor
-          const descResultsCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending, cursor: '2' });
-          expect(descResultsCursor.length).to.equal(4);
-          expect(descResultsCursor).to.eql(['1', '0', '-1', '-2']);
+          expect(descResults.map(({ messageCid }) => messageCid)).to.eql(['4', '3', '2', '1', '0' , '-1' , '-2']);
         });
 
         it('sorts range queries with or without a cursor', async () => {
@@ -775,20 +838,19 @@ describe('IndexLevel', () => {
           }];
 
           // ascending without a cursor
-          let response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter' });
-          expect(response).to.eql(['b', 'c', 'd', 'e', 'f', 'g']);
+          let response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['b', 'c', 'd', 'e']);
+          // ascending with a cursor
+          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'f', 'g' ]); // should only return greater than e
 
           // descending without a cursor
-          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending });
-          expect(response).to.eql(['g', 'f', 'e', 'd', 'c', 'b']);
-
-          // ascending with a cursor
-          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', cursor: 'e' });
-          expect(response).to.eql([ 'f', 'g' ]); // should only return greater than e
+          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['g', 'f', 'e', 'd']);
 
           // descending with a cursor
-          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: 'e' });
-          expect(response).to.eql([ 'd', 'c', 'b' ]); // should only return less than e
+          response = await testIndex.query(tenant, bothBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'c', 'b' ]); // should only return less than d
 
 
           // test only upper bounds
@@ -799,20 +861,19 @@ describe('IndexLevel', () => {
           }];
 
           // ascending without a cursor
-          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter' });
-          expect(response).to.eql(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['a', 'b', 'c', 'd']);
+          // ascending with a cursor
+          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'e', 'f', 'g' ]); // should only return items greater than d
 
           // descending without a cursor
-          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending });
-          expect(response).to.eql(['g', 'f', 'e', 'd', 'c', 'b', 'a']);
-
-          // ascending with a cursor
-          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', cursor: 'e' });
-          expect(response).to.eql([ 'f', 'g' ]); // should only return items greater than e
+          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['g', 'f', 'e', 'd' ]);
 
           // descending with a cursor
-          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: 'e' });
-          expect(response).to.eql([ 'd', 'c', 'b', 'a' ]); // should only return items less than e
+          response = await testIndex.query(tenant, upperBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'c', 'b', 'a' ]); // should only return items less than c
 
           // test only lower bounds
           const lowerBoundsFilters = [{
@@ -822,20 +883,20 @@ describe('IndexLevel', () => {
           }];
 
           // ascending without a cursor
-          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter' });
-          expect(response).to.eql(['b', 'c', 'd', 'e', 'f', 'g', 'h']);
-
-          // descending without a cursor
-          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending });
-          expect(response).to.eql(['h', 'g', 'f', 'e', 'd', 'c', 'b']);
+          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['b', 'c', 'd', 'e']);
 
           // ascending with a cursor
-          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', cursor: 'e' });
-          expect(response).to.eql([ 'f', 'g', 'h' ]); // should only return items greater than e
+          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'f', 'g', 'h' ]); // should only return items greater than e
+
+          // descending without a cursor
+          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql(['h', 'g', 'f', 'e']);
 
           // descending with a cursor
-          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: 'e' });
-          expect(response).to.eql([ 'd', 'c', 'b' ]); // should only return items less than e
+          response = await testIndex.query(tenant, lowerBoundsFilters, { sortProperty: 'letter', sortDirection: SortDirection.Descending, cursor: IndexLevel.createCursorFromLastArrayItem(response, 'letter') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'd', 'c', 'b' ]); // should only return items less than e
         });
 
         it('sorts range queries negative integers with or without a cursor', async () => {
@@ -854,11 +915,14 @@ describe('IndexLevel', () => {
             }
           }];
 
-          let results = await testIndex.query(tenant,filters , { sortProperty: 'digit' });
-          expect(results).to.eql([ '-2', '-1', '0', '1', '2', '3' ]);
+          let results = await testIndex.query(tenant,filters , { sortProperty: 'digit', limit: 4 });
+          expect(results.map(({ messageCid }) => messageCid)).to.eql([ '-2', '-1', '0', '1' ]);
 
-          results = await testIndex.query(tenant, filters, { sortProperty: 'digit', cursor: '-2' });
-          expect(results).to.eql(['-1', '0', '1', '2', '3']);
+          const cursor = IndexLevel.createCursorFromLastArrayItem(results, 'digit');
+          expect(typeof cursor?.value).to.equal('number'); // the cursor value is a number, as it was indexed
+
+          results = await testIndex.query(tenant, filters, { sortProperty: 'digit', cursor });
+          expect(results.map(({ messageCid }) => messageCid)).to.eql(['2', '3']);
         });
 
         it('sorts range queries with remaining results in lte after cursor', async () => {
@@ -897,16 +961,31 @@ describe('IndexLevel', () => {
           const upperBound = 4;
 
           // with both lower and upper bounds
-          // ascending with a cursor
-          // this cursor should ony return results from the 'lte' part of the filter
+          // first issue with a limit
           let response = await testIndex.query(tenant, [{
             digit: {
               gte : lowerBound,
               lte : upperBound
             },
-          }], { sortProperty: 'id', cursor: 'd' });
+          }], { sortProperty: 'id', limit: 3 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'b', 'c', 'd' ]);
 
-          expect(response).to.eql([ 'e', 'f', 'g' ]);
+          // this cursor should ony return results from the 'lte' part of the filter
+          response = await testIndex.query(tenant, [{
+            digit: {
+              gte : lowerBound,
+              lte : upperBound
+            },
+          }], { sortProperty: 'id', cursor: IndexLevel.createCursorFromLastArrayItem(response, 'id') });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'e', 'f', 'g' ]);
+
+          // issue a range with no lower bounds but a limit
+          response = await testIndex.query(tenant, [{
+            digit: {
+              lte: upperBound
+            },
+          }], { sortProperty: 'id', limit: 4 });
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'a', 'b', 'c', 'd' ]);
 
           // with no lower bounds
           // ascending with a cursor
@@ -915,9 +994,9 @@ describe('IndexLevel', () => {
             digit: {
               lte: upperBound
             },
-          }], { sortProperty: 'id', cursor: 'd' });
+          }], { sortProperty: 'id', cursor: IndexLevel.createCursorFromLastArrayItem(response, 'id') });
 
-          expect(response).to.eql([ 'e', 'f', 'g']); // should only return two matching items
+          expect(response.map(({ messageCid }) => messageCid)).to.eql([ 'e', 'f', 'g']); // should only return three matching items
         });
 
         it('sorts OR queries with or without a cursor', async () => {
@@ -936,12 +1015,12 @@ describe('IndexLevel', () => {
           }];
 
           // sort ascending without cursor
-          let results = await testIndex.query(tenant, filters, { sortProperty: 'val' });
-          expect(results).to.eql(['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2']);
+          let results = await testIndex.query(tenant, filters, { sortProperty: 'val', limit: 4 });
+          expect(results.map(({ messageCid }) => messageCid)).to.eql(['a1', 'a2', 'b1', 'b2']);
 
           // sort ascending from b2 onwards
-          results = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'b2' });
-          expect(results).to.eql(['c1', 'c2', 'd1', 'd2']);
+          results = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(results, 'val') });
+          expect(results.map(({ messageCid }) => messageCid)).to.eql(['c1', 'c2', 'd1', 'd2']);
         });
 
         it('supports multiple filtered queries', async () => {
@@ -970,7 +1049,6 @@ describe('IndexLevel', () => {
             items.push(item);
           }
 
-          const cursor = items.at(4)!.val;
           // create the expected results;
           const compareResults = new Set([
             ...items.filter(i => i.digit >= lowerBounds && i.digit <= upperBounds),
@@ -984,30 +1062,21 @@ describe('IndexLevel', () => {
           ];
 
           // query in ascending order.
-          const results = await testIndex.query(tenant, filters, { sortProperty: 'val' });
-          expect(results).to.eql([...compareResults], 'results ascending');
-
-          const compareResultsAfterCursor = new Set([
-            ...items.slice(5).filter(i => i.digit >= lowerBounds && i.digit <= upperBounds),
-            ...items.slice(5).filter(i => i.property === true),
-          ].sort((a,b) => lexicographicalCompare(a.val, b.val))
-            .map(i => i.val));
+          const results = await testIndex.query(tenant, filters, { sortProperty: 'val', limit: 10 });
+          expect(results.length).to.be.lte(10);
+          expect(results.map(({ messageCid }) => messageCid)).to.eql([...compareResults].slice(0, 10), 'results ascending');
 
           // query in ascending order with cursor.
-          const resultsWithCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: cursor });
-          expect(resultsWithCursor).to.eql([...compareResultsAfterCursor], 'results after cursor ascending');
+          const resultsWithCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: IndexLevel.createCursorFromLastArrayItem(results, 'val') });
+          expect(resultsWithCursor.map(({ messageCid }) => messageCid)).to.eql([...compareResults].slice(10), 'results after cursor ascending');
 
-          const descResults = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending });
-          expect(descResults).to.eql([...compareResults].reverse(), 'results descending');
+          const descResults = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending, limit: 10 });
+          expect(descResults.length).to.be.lte(10);
+          expect(descResults.map(({ messageCid }) => messageCid)).to.eql([...compareResults].reverse().slice(0, 10), 'results descending');
 
-          const descResultsAfterCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending, cursor: cursor });
+          const descResultsAfterCursor = await testIndex.query(tenant, filters, { sortProperty: 'val', sortDirection: SortDirection.Descending, cursor: IndexLevel.createCursorFromLastArrayItem(descResults, 'val') });
 
-          const compareResultsAfterCursorDesc = new Set([
-            ...items.slice(0, 4).filter(i => i.digit >= lowerBounds && i.digit <= upperBounds),
-            ...items.slice(0, 4).filter(i => i.property === true),
-          ].sort((a,b) => lexicographicalCompare(b.val, a.val))
-            .map(i => i.val));
-          expect(descResultsAfterCursor).to.eql([...compareResultsAfterCursorDesc], 'results after cursor descending');
+          expect(descResultsAfterCursor.map(({ messageCid }) => messageCid)).to.eql([...compareResults].reverse().slice(10), 'results after cursor descending');
         });
       });
     });
@@ -1051,7 +1120,7 @@ describe('IndexLevel', () => {
       let result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(2);
-      expect(result).to.contain(id1);
+      expect(result.map(({ messageCid }) => messageCid)).to.contain(id1);
 
       await testIndex.delete(tenant, id1);
 
@@ -1085,7 +1154,7 @@ describe('IndexLevel', () => {
 
       const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
       expect(result.length).to.equal(1);
-      expect(result).to.contain(id);
+      expect(result.map(({ messageCid }) => messageCid)).to.contain(id);
     });
 
     it('does nothing when attempting to purge key that does not exist', async () => {
@@ -1101,11 +1170,86 @@ describe('IndexLevel', () => {
       await testIndex.put(tenant, id, doc);
 
       // attempt purge an invalid id
-      await testIndex.delete(tenant, 'invalid-id');
+      await testIndex.delete(tenant, 'invalidCid');
 
       const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
       expect(result.length).to.equal(1);
-      expect(result).to.contain(id);
+      expect(result.map(({ messageCid }) => messageCid)).to.contain(id);
+    });
+  });
+
+  describe('createCursorFromItem', () => {
+    it('throws if cursor value is not a number or boolean', async () => {
+      const item: IndexedItem = {
+        messageCid : 'message-cid',
+        indexes    : {
+          sortProperty: true,
+        }
+      };
+
+      expect(() => IndexLevel.createCursorFromItem(item, 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType);
+    });
+
+    it('throws if sort property is not defined within the IndexedItem', async () => {
+      const item: IndexedItem = {
+        messageCid : 'message-cid',
+        indexes    : {
+          sortProperty: 1234,
+        }
+      };
+
+      expect(() => IndexLevel.createCursorFromItem(item, 'unknownProperty')).to.throw(DwnErrorCode.IndexInvalidCursorSortProperty);
+    });
+
+    it('returns numeric type cursor value', async () => {
+      const item: IndexedItem = {
+        messageCid : 'message-cid',
+        indexes    : {
+          sortProperty: 1234,
+        }
+      };
+
+      const cursor = IndexLevel.createCursorFromItem(item, 'sortProperty');
+      expect(cursor.value).to.equal(1234);
+    });
+
+    it('returns string type cursor value', async () => {
+      const item: IndexedItem = {
+        messageCid : 'message-cid',
+        indexes    : {
+          sortProperty: '1234',
+        }
+      };
+
+      const cursor = IndexLevel.createCursorFromItem(item, 'sortProperty');
+      expect(cursor.value).to.equal('1234');
+    });
+  });
+
+  describe('createCursorFromLastArrayItem', () => {
+    it('returns undefined if an empty array is provided', async () => {
+      const cursor = IndexLevel.createCursorFromLastArrayItem([], 'someProperty');
+      expect(cursor).to.equal(undefined);
+    });
+    it('returns a PaginationCursor for the last item given a valid sort property', async () => {
+      const items:IndexedItem[] = [{
+        messageCid : 'cid-1',
+        indexes    : {
+          prop1 : true,
+          prop2 : 'prop-2',
+          date  : '2023-12-13T11:22:33.000000Z'
+        }
+      }, {
+        messageCid : 'cid-2',
+        indexes    : {
+          prop1 : true,
+          prop2 : 'prop-2',
+          date  : '2023-12-14T11:22:33.000000Z'
+        }
+      }];
+      const cursor = IndexLevel.createCursorFromLastArrayItem(items, 'date');
+      expect(cursor?.messageCid).to.equal('cid-2'); // expect the cursor to equal the messageCid
+      expect(cursor?.value).to.equal('2023-12-14T11:22:33.000000Z');
     });
   });
 
@@ -1152,7 +1296,7 @@ describe('IndexLevel', () => {
   });
 
   describe('isFilterConcise', () => {
-    const queryOptionsWithCursor = { sortProperty: 'sort', cursor: 'cursor' };
+    const queryOptionsWithCursor = { sortProperty: 'sort', cursor: { messageCid: 'messageCid', value: 'value' } };
     const queryOptionsWithoutCursor = { sortProperty: 'sort' };
 
     it('recordId is always concise', async () => {

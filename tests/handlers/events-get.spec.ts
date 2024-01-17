@@ -111,10 +111,10 @@ export function testEventsGetHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
       let reply: EventsGetReply = await dwn.processMessage(alice.did, message);
-
       expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(5);
+      expect(reply.cursor).to.not.be.undefined;
 
-      const cursor = reply.entries![reply.entries!.length - 1];
       const expectedCids: string[] = [];
 
       for (let i = 0; i < 3; i += 1) {
@@ -126,7 +126,7 @@ export function testEventsGetHandler(): void {
         expectedCids.push(messageCid);
       }
 
-      const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, cursor });
+      const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, cursor: reply.cursor });
       reply = await dwn.processMessage(alice.did, m);
 
       expect(reply.status.code).to.equal(200);

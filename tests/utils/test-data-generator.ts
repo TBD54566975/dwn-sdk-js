@@ -5,6 +5,7 @@ import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { MessagesGetMessage } from '../../src/types/messages-types.js';
 import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
+import type { PaginationCursor } from '../../src/types/query-types.js';
 import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-configure.js';
 import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
@@ -225,7 +226,7 @@ export type GeneratePermissionsRevokeOutput = {
 
 export type GenerateEventsGetInput = {
   author?: Persona;
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type GenerateEventsGetOutput = {
@@ -237,7 +238,7 @@ export type GenerateEventsGetOutput = {
 export type GenerateEventsQueryInput = {
   author?: Persona;
   filters: EventsQueryFilter[];
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type GenerateEventsQueryOutput = {
