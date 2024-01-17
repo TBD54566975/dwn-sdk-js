@@ -174,14 +174,14 @@ export class Dwn {
       return errorMessageReply;
     }
 
-    const { dataStream, handler } = options;
+    const { dataStream, subscriptionHandler } = options;
 
     const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
       message: rawMessage as GenericMessage,
       dataStream,
-      handler
+      subscriptionHandler
     });
 
     return methodHandlerReply;

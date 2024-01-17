@@ -1,5 +1,5 @@
 import type { ProtocolsQueryFilter } from './protocols-types.js';
-import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericMessageSubscription, MessageSubscriptionHandler } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageReply, MessageSubscription, MessageSubscriptionHandler } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
@@ -44,7 +44,7 @@ export type EventsGetReply = GenericMessageReply & {
 
 
 export type EventsSubscribeMessageOptions = {
-  handler: MessageSubscriptionHandler;
+  subscriptionHandler: MessageSubscriptionHandler;
 };
 
 export type EventsSubscribeMessage = {
@@ -53,7 +53,7 @@ export type EventsSubscribeMessage = {
 };
 
 export type EventsSubscribeReply = GenericMessageReply & {
-  subscription?: GenericMessageSubscription;
+  subscription?: MessageSubscription;
 };
 
 export type EventsSubscribeDescriptor = {

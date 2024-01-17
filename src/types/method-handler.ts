@@ -12,6 +12,6 @@ export interface MethodHandler {
     tenant: string;
     message: GenericMessage;
     dataStream?: Readable
-    handler?: MessageSubscriptionHandler;
+    subscriptionHandler?: MessageSubscriptionHandler;
   }): Promise<GenericMessageReply>;
 }

@@ -21,11 +21,11 @@ export class EventsSubscribeHandler implements MethodHandler {
   public async handle({
     tenant,
     message,
-    handler
+    subscriptionHandler
   }: {
     tenant: string;
     message: EventsSubscribeMessage;
-    handler: MessageSubscriptionHandler;
+    subscriptionHandler: MessageSubscriptionHandler;
   }): Promise<EventsSubscribeReply> {
     if (this.eventStream === undefined) {
       return messageReplyFromError(new DwnError(
@@ -54,7 +54,7 @@ export class EventsSubscribeHandler implements MethodHandler {
 
     const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
-        handler(eventMessage);
+        subscriptionHandler(eventMessage);
       }
     };
 

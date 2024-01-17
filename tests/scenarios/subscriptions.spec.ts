@@ -63,7 +63,7 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to all messages
         const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
-        const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { handler });
+        const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { subscriptionHandler: handler });
         expect(eventsSubscriptionReply.status.code).to.equal(200);
         expect(eventsSubscriptionReply.subscription?.id).to.equal(await Message.getCid(eventsSubscription.message));
 
@@ -144,7 +144,7 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to proto1 messages
         const proto1Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto1 }] });
-        const proto1SubscriptionReply = await dwn.processMessage(alice.did, proto1Subscription.message, { handler: proto1Handler });
+        const proto1SubscriptionReply = await dwn.processMessage(alice.did, proto1Subscription.message, { subscriptionHandler: proto1Handler });
         expect(proto1SubscriptionReply.status.code).to.equal(200);
         expect(proto1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto1Subscription.message));
 
@@ -156,7 +156,7 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to proto2 messages
         const proto2Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ protocol: proto2 }] });
-        const proto2SubscriptionReply = await dwn.processMessage(alice.did, proto2Subscription.message, { handler: proto2Handler });
+        const proto2SubscriptionReply = await dwn.processMessage(alice.did, proto2Subscription.message, { subscriptionHandler: proto2Handler });
         expect(proto2SubscriptionReply.status.code).to.equal(200);
         expect(proto2SubscriptionReply.subscription?.id).to.equal(await Message.getCid(proto2Subscription.message));
 
@@ -218,7 +218,7 @@ export function testSubscriptionScenarios(): void {
           author  : alice,
           filters : [{ recipient: alice.did }]
         });
-        const authorQueryReply = await dwn.processMessage(alice.did, recipientSubscription.message, { handler });
+        const authorQueryReply = await dwn.processMessage(alice.did, recipientSubscription.message, { subscriptionHandler: handler });
         expect(authorQueryReply.status.code).to.equal(200);
 
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
@@ -304,7 +304,7 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to all events
         const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
-        const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { handler });
+        const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { subscriptionHandler: handler });
         expect(eventsSubscriptionReply.status.code).to.equal(200);
 
         expect(messageCids.length).to.equal(0); // no events exist yet

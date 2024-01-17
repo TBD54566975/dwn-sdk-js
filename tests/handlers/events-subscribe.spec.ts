@@ -69,7 +69,7 @@ export function testEventsSubscribeHandler(): void {
         const alice = await DidKeyResolver.generate();
         // attempt to subscribe
         const { message } = await EventsSubscribe.create({ signer: Jws.createSigner(alice) });
-        const subscriptionMessageReply = await dwn.processMessage(alice.did, message, { handler: (_) => {} });
+        const subscriptionMessageReply = await dwn.processMessage(alice.did, message, { subscriptionHandler: (_) => {} });
         expect(subscriptionMessageReply.status.code).to.equal(501, subscriptionMessageReply.status.detail);
         expect(subscriptionMessageReply.status.detail).to.include(DwnErrorCode.EventsSubscribeEventStreamUnimplemented);
       });
@@ -127,7 +127,7 @@ export function testEventsSubscribeHandler(): void {
 
         const eventsSubscribeHandler = new EventsSubscribeHandler(didResolver, eventStream);
 
-        const reply = await eventsSubscribeHandler.handle({ tenant: alice.did, message, handler: (_) => {} });
+        const reply = await eventsSubscribeHandler.handle({ tenant: alice.did, message, subscriptionHandler: (_) => {} });
         expect(reply.status.code).to.equal(400);
       });
 
@@ -148,7 +148,7 @@ export function testEventsSubscribeHandler(): void {
         const subscriptionRequest = await EventsSubscribe.create({
           signer: Jws.createSigner(alice),
         });
-        const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message, { handler });
+        const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message, { subscriptionHandler: handler });
         expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
         expect(subscriptionReply.subscription).to.not.be.undefined;
 
