@@ -16,7 +16,7 @@ export type GenericMessage = {
  */
 export type MessageOptions = {
   dataStream?: Readable;
-  handler?: GenericMessageSubscriptionHandler;
+  handler?: MessageSubscriptionHandler;
 };
 
 /**
@@ -76,7 +76,7 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
-export type GenericMessageSubscriptionHandler = (message: GenericMessage) => void;
+export type MessageSubscriptionHandler = (message: GenericMessage) => void;
 
 export interface GenericMessageSubscription {
   id: string;

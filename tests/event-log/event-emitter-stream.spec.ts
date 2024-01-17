@@ -36,11 +36,11 @@ describe('EventEmitterStream', () => {
     await eventStream.close();
   });
 
-  it('should remove listeners when unsubscribe method is used', async () => {
+  it('should remove listeners when `close` method is used', async () => {
     const emitter = new EventEmitter();
     eventStream = new EventEmitterStream({ emitter });
 
-    // count the `events_bus` listeners, which represents all listeners
+    // count the `events` listeners, which represents all listeners
     expect(emitter.listenerCount('events')).to.equal(0);
 
     const sub = await eventStream.subscribe('id', () => {});

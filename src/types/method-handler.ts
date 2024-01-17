@@ -1,5 +1,5 @@
 import type { Readable } from 'readable-stream';
-import type { GenericMessage, GenericMessageReply, GenericMessageSubscriptionHandler } from './message-types.js';
+import type { GenericMessage, GenericMessageReply, MessageSubscriptionHandler } from './message-types.js';
 
 /**
  * Interface that defines a message handler of a specific method.
@@ -12,6 +12,6 @@ export interface MethodHandler {
     tenant: string;
     message: GenericMessage;
     dataStream?: Readable
-    handler?: GenericMessageSubscriptionHandler;
+    handler?: MessageSubscriptionHandler;
   }): Promise<GenericMessageReply>;
 }

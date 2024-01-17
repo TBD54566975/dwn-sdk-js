@@ -1,5 +1,5 @@
 import type { DidResolver } from '../did/did-resolver.js';
-import type { GenericMessageSubscriptionHandler } from '../types/message-types.js';
+import type { MessageSubscriptionHandler } from '../types/message-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
 import type { EventsSubscribeMessage, EventsSubscribeReply } from '../types/events-types.js';
@@ -25,7 +25,7 @@ export class EventsSubscribeHandler implements MethodHandler {
   }: {
     tenant: string;
     message: EventsSubscribeMessage;
-    handler: GenericMessageSubscriptionHandler;
+    handler: MessageSubscriptionHandler;
   }): Promise<EventsSubscribeReply> {
     if (this.eventStream === undefined) {
       return messageReplyFromError(new DwnError(
