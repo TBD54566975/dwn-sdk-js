@@ -78,7 +78,7 @@ export type QueryResultEntry = GenericMessage & {
 
 export type GenericMessageSubscriptionHandler = (message: GenericMessage) => void;
 
-export type GenericMessageSubscription = {
+export interface GenericMessageSubscription {
   id: string;
   close: () => Promise<void>;
 };
