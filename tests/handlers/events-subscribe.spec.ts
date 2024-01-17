@@ -158,7 +158,7 @@ export function testEventsSubscribeHandler(): void {
         const messageCid = await Message.getCid(messageWrite.message);
 
         // control: ensure that the event exists
-        const events = await eventLog.getEvents(alice.did);
+        const { events } = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(1);
         expect(events[0]).to.equal(messageCid);
 
