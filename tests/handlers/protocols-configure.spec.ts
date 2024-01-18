@@ -18,6 +18,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { ProtocolsConfigureHandler } from '../../src/handlers/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -65,6 +66,22 @@ export function testProtocolsConfigureHandler(): void {
 
       after(async () => {
         await dwn.close();
+      });
+
+      it('should process a ProtocolsConfigure with EventStream not set', async () => {
+        // eventStream not defined
+        const protocolsConfigureHandler = new ProtocolsConfigureHandler(didResolver, messageStore, eventLog);
+
+        const alice = await DidKeyResolver.generate();
+
+        const protocolDefinition = minimalProtocolDefinition;
+        const { message } = await TestDataGenerator.generateProtocolsConfigure({
+          author: alice,
+          protocolDefinition,
+        });
+
+        const reply = await protocolsConfigureHandler.handle({ tenant: alice.did, message });
+        expect(reply.status.code).to.equal(202);
       });
 
       it('should allow a protocol definition with schema or dataFormat omitted', async () => {

@@ -71,6 +71,25 @@ export function testRecordsDeleteHandler(): void {
         await dwn.close();
       });
 
+      it('should process a RecordsDelete with EventStream not set', async () => {
+        // eventStream not defined
+        const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
+
+        const alice = await DidKeyResolver.generate();
+
+        const { message: record, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const writeReply = await dwn.processMessage(alice.did, record, { dataStream });
+        expect(writeReply.status.code).to.equal(202);
+
+        const { message } = await RecordsDelete.create({
+          recordId : record.recordId,
+          signer   : Jws.createSigner(alice)
+        });
+
+        const deleteReply = await recordsDeleteHandler.handle({ tenant: alice.did, message });
+        expect(deleteReply.status.code).to.equal(202);
+      });
+
       it('should handle RecordsDelete successfully and return 404 if deleting a deleted record', async () => {
         const alice = await DidKeyResolver.generate();
 

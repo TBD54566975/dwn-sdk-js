@@ -24,7 +24,6 @@ export function testSubscriptionScenarios(): void {
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
-
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {

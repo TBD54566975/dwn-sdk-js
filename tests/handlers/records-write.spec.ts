@@ -88,6 +88,17 @@ export function testRecordsWriteHandler(): void {
         await dwn.close();
       });
 
+      it('should process a RecordsWrite with EventStream not set', async () => {
+        // eventStream not defined
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+
+        const alice = await DidKeyResolver.generate();
+
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
+        expect(writeReply.status.code).to.equal(202);
+      });
+
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
         const author = await DidKeyResolver.generate();

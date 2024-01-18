@@ -24,8 +24,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
   public async handle({
     tenant,
     message,
-    dataStream: _dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<GenericMessageReply> {
+  }: {tenant: string, message: ProtocolsConfigureMessage }): Promise<GenericMessageReply> {
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);

@@ -60,6 +60,22 @@ export function testPermissionsGrantHandler(): void {
         await dwn.close();
       });
 
+      it('should process a PermissionsGrant with EventStream not set', async () => {
+        // eventStream not defined
+        const permissionsGrantHandler = new PermissionsGrantHandler(didResolver, messageStore, eventLog);
+
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generatePermissionsGrant({
+          author     : alice,
+          grantedBy  : alice.did,
+          grantedFor : alice.did,
+        });
+
+        const reply = await permissionsGrantHandler.handle({ tenant: alice.did, message });
+        expect(reply.status.code).to.equal(202);
+      });
+
       it('should accept a PermissionsGrant with permissionsRequestId omitted', async () => {
         const alice = await DidKeyResolver.generate();
 
