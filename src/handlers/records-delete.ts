@@ -89,9 +89,8 @@ export class RecordsDeleteHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const recordsWrite = await RecordsWrite.getInitialWrite(existingMessages);
-    const published = (newestExistingMessage as RecordsWriteMessage).descriptor.published;
-    const indexes = recordsDelete.constructIndexes(recordsWrite, published);
+    const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+    const indexes = recordsDelete.constructIndexes(initialWrite);
     const messageCid = await Message.getCid(message);
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, messageCid, indexes);

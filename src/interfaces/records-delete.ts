@@ -1,5 +1,4 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
@@ -71,12 +70,10 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   }
 
   /**
-   * Authorizes the delegate who signed this message.
   * Indexed properties needed for MessageStore indexing.
   */
   public constructIndexes(
     initialWrite: RecordsWriteMessage,
-    published?: boolean,
   ): KeyValues {
     const message = this.message;
     const descriptor = { ...message.descriptor };
@@ -91,7 +88,6 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
     const indexes: { [key:string]: string | boolean | undefined } = {
       // isLatestBaseState : "true", // intentionally showing that this index is omitted
       protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
-      published : !!published,
       contextId : initialWrite.contextId,
       author    : this.author!,
       ...descriptor
@@ -115,9 +111,5 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
       permissionsGrantMessage   : delegatedGrantMessage,
       messageStore
     });
-  }
-
-  public static isRecordsDeleteMessage(message: GenericMessage): message is RecordsDeleteMessage {
-    return message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Delete;
   }
 }

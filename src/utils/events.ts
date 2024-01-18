@@ -5,6 +5,7 @@ import type { EventsFilter, EventsMessageFilter, EventsRecordsFilter } from '../
 import { FilterUtility } from '../utils/filter.js';
 import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { Records } from '../utils/records.js';
+import { isEmptyObject, removeUndefinedProperties } from './object.js';
 
 
 /**
@@ -17,15 +18,23 @@ export class Events {
 
     // normalize each filter individually by the type of filter it is.
     for (const filter of filters) {
+      let eventsFilter: EventsFilter;
       if (this.isRecordsFilter(filter)) {
-        eventsQueryFilters.push(Records.normalizeFilter(filter));
+        eventsFilter = Records.normalizeFilter(filter);
       } else if (this.isProtocolFilter(filter)) {
-        eventsQueryFilters.push(ProtocolsQuery.normalizeFilter(filter));
+        eventsFilter = ProtocolsQuery.normalizeFilter(filter);
       } else {
         // no normalization needed
-        eventsQueryFilters.push(filter);
+        eventsFilter = filter;
+      }
+
+      // remove any empty filter properties and do not add if empty
+      removeUndefinedProperties(eventsFilter);
+      if (!isEmptyObject(eventsFilter)) {
+        eventsQueryFilters.push(eventsFilter);
       }
     }
+
 
     return eventsQueryFilters;
   }

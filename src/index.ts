@@ -30,6 +30,7 @@ export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
+export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { executeUnlessAborted } from './utils/abort.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
@@ -52,14 +53,11 @@ export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';
 
-// store implementations
+// concrete implementations of stores and event stream
 export { DataStoreLevel } from './store/data-store-level.js';
 export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
-
-// eventing implementations
 export { EventEmitterStream } from './event-log/event-emitter-stream.js';
-export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 
 // test library exports
 export { Persona, TestDataGenerator } from '../tests/utils/test-data-generator.js';
