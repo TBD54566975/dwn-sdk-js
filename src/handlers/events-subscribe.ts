@@ -34,16 +34,16 @@ export class EventsSubscribeHandler implements MethodHandler {
       ), 501);
     }
 
-    let subscriptionRequest: EventsSubscribe;
+    let eventsSubscribe: EventsSubscribe;
     try {
-      subscriptionRequest = await EventsSubscribe.parse(message);
+      eventsSubscribe = await EventsSubscribe.parse(message);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorizeOwner(tenant, subscriptionRequest);
+      await authorizeOwner(tenant, eventsSubscribe);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }

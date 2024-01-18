@@ -8,6 +8,7 @@ import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type EventsQueryOptions = {
   signer: Signer;
@@ -21,6 +22,15 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
+
+    for (const filter of message.descriptor.filters) {
+      if ('protocol' in filter && filter.protocol !== undefined) {
+        validateProtocolUrlNormalized(filter.protocol);
+      }
+      if ('schema' in filter && filter.schema !== undefined) {
+        validateSchemaUrlNormalized(filter.schema);
+      }
+    }
 
     return new EventsQuery(message);
   }

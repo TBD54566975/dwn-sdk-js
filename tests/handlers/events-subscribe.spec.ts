@@ -144,11 +144,11 @@ export function testEventsSubscribeHandler(): void {
           };
         });
 
-        // testing Subscription Request
-        const subscriptionRequest = await EventsSubscribe.create({
+        // testing EventsSubscribe
+        const eventsSubscribe = await EventsSubscribe.create({
           signer: Jws.createSigner(alice),
         });
-        const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message, { subscriptionHandler: handler });
+        const subscriptionReply = await dwn.processMessage(alice.did, eventsSubscribe.message, { subscriptionHandler: handler });
         expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
         expect(subscriptionReply.subscription).to.not.be.undefined;
 
@@ -179,12 +179,12 @@ export function testEventsSubscribeHandler(): void {
         expect(anonymousReply.status.detail).to.include(`EventsSubscribe: must have required property 'authorization'`);
         expect(anonymousReply.subscription).to.be.undefined;
 
-        // testing Subscription Request
-        const subscriptionRequest = await EventsSubscribe.create({
+        // testing EventsSubscribe
+        const eventsSubscribe = await EventsSubscribe.create({
           signer: Jws.createSigner(bob),
         });
 
-        const subscriptionReply = await dwn.processMessage(alice.did, subscriptionRequest.message);
+        const subscriptionReply = await dwn.processMessage(alice.did, eventsSubscribe.message);
         expect(subscriptionReply.status.code).to.equal(401);
         expect(subscriptionReply.subscription).to.be.undefined;
       });

@@ -6,13 +6,13 @@ import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 
 export type EventsSubscribeOptions = {
   signer: Signer;
   messageTimestamp?: string;
   filters?: EventsFilter[]
-  permissionsGrantId?: string;
 };
 
 export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
@@ -20,19 +20,27 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
+    for (const filter of message.descriptor.filters) {
+      if ('protocol' in filter && filter.protocol !== undefined) {
+        validateProtocolUrlNormalized(filter.protocol);
+      }
+      if ('schema' in filter && filter.schema !== undefined) {
+        validateSchemaUrlNormalized(filter.schema);
+      }
+    }
+
     Time.validateTimestamp(message.descriptor.messageTimestamp);
     return new EventsSubscribe(message);
   }
 
   /**
-   * Creates a SubscriptionRequest message.
+   * Creates a EventsSubscribe message.
    *
-   * @throws {DwnError} when a combination of required SubscriptionRequestOptions are missing
+   * @throws {DwnError} if json schema validation fails.
    */
   public static async create(
     options: EventsSubscribeOptions
   ): Promise<EventsSubscribe> {
-    const { permissionsGrantId } = options;
     const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: EventsSubscribeDescriptor = {
@@ -44,10 +52,8 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
 
     removeUndefinedProperties(descriptor);
 
-    // only generate the `authorization` property if signature input is given
     const authorization = await Message.createAuthorization({
       descriptor,
-      permissionsGrantId,
       signer: options.signer
     });
 

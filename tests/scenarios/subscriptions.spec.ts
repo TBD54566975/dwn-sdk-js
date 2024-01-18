@@ -103,6 +103,79 @@ export function testSubscriptionScenarios(): void {
         expect(messageCids).to.eql([ write1MessageCid, grant1MessageCid, protocol1MessageCid, delete1MessageCid ]);
       });
 
+      it('filters by schema', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // we will add messageCids to these arrays as they are received by their handler to check against later
+        const schema1Messages:string[] = [];
+        const schema2Messages:string[] = [];
+
+        // we add a handler to the subscription and add the messageCid to the appropriate array
+        const schema1Handler = async (message:GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          schema1Messages.push(messageCid);
+        };
+
+        // subscribe to schema1 messages
+        const schema1Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ schema: 'http://schema1' }] });
+        const schema1SubscriptionReply = await dwn.processMessage(alice.did, schema1Subscription.message, { subscriptionHandler: schema1Handler });
+        expect(schema1SubscriptionReply.status.code).to.equal(200);
+        expect(schema1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(schema1Subscription.message));
+
+        // we add a handler to the subscription and add the messageCid to the appropriate array
+        const schema2Handler = async (message:GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          schema2Messages.push(messageCid);
+        };
+
+        // subscribe to schema2 messages
+        const schema2Subscription = await TestDataGenerator.generateEventsSubscribe({ author: alice, filters: [{ schema: 'http://schema2' }] });
+        const schema2SubscriptionReply = await dwn.processMessage(alice.did, schema2Subscription.message, { subscriptionHandler: schema2Handler });
+        expect(schema2SubscriptionReply.status.code).to.equal(200);
+        expect(schema2SubscriptionReply.subscription?.id).to.equal(await Message.getCid(schema2Subscription.message));
+
+        // create some random record, will not show up in records subscription
+        const write1Random = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const write1RandomResponse = await dwn.processMessage(alice.did, write1Random.message, { dataStream: write1Random.dataStream });
+        expect(write1RandomResponse.status.code).to.equal(202);
+
+        // create a record for schema1
+        const write1schema1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
+        const write1Response = await dwn.processMessage(alice.did, write1schema1.message, { dataStream: write1schema1.dataStream });
+        expect(write1Response.status.code).equals(202);
+
+        // create a record for schema2
+        const write1schema2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema2' });
+        const write1Proto2Response = await dwn.processMessage(alice.did, write1schema2.message, { dataStream: write1schema2.dataStream });
+        expect(write1Proto2Response.status.code).equals(202);
+
+        expect(schema1Messages.length).to.equal(1, 'schema1');
+        expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
+        expect(schema2Messages.length).to.equal(1, 'schema2');
+        expect(schema2Messages).to.include(await Message.getCid(write1schema2.message));
+
+        // remove listener for schema1
+        schema1SubscriptionReply.subscription?.close();
+
+        // create another record for schema1
+        const write2proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
+        const write2Response = await dwn.processMessage(alice.did, write2proto1.message, { dataStream: write2proto1.dataStream });
+        expect(write2Response.status.code).equals(202);
+
+        // create another record for schema2
+        const write2schema2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema2' });
+        const write2Schema2Response = await dwn.processMessage(alice.did, write2schema2.message, { dataStream: write2schema2.dataStream });
+        expect(write2Schema2Response.status.code).equals(202);
+
+        // schema1 messages from handler do not change.
+        expect(schema1Messages.length).to.equal(1, 'schema1 after close()');
+        expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
+
+        // schema2 messages from handler have the new message.
+        expect(schema2Messages.length).to.equal(2, 'schema2 after close()');
+        expect(schema2Messages).to.have.members([await Message.getCid(write1schema2.message), await Message.getCid(write2schema2.message)]);
+      });
+
       it('filters by protocol', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -289,7 +362,6 @@ export function testSubscriptionScenarios(): void {
 
         expect(receivedMessages).to.not.include.members([ await Message.getCid(messageFromAliceToBob2.message)]);
       });
-
 
       it('does not emit events after subscription is closed', async () => {
         const alice = await DidKeyResolver.generate();

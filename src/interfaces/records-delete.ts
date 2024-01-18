@@ -70,8 +70,8 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   }
 
   /**
-  * Indexed properties needed for MessageStore indexing.
-  */
+    * Indexed properties needed for MessageStore indexing.
+    */
   public constructIndexes(
     initialWrite: RecordsWriteMessage,
   ): KeyValues {
