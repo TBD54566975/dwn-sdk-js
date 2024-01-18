@@ -96,7 +96,9 @@ export class PermissionsRevokeHandler implements MethodHandler {
     await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
     // only emit if the event stream is set
-    this.eventStream?.emit(tenant, message, indexes);
+    if (this.eventStream !== undefined) {
+      this.eventStream.emit(tenant, message, indexes);
+    }
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];

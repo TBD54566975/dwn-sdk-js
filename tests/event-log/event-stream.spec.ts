@@ -63,12 +63,12 @@ describe('EventStream', () => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
-    const subcription = await eventStream.subscribe('sub-1', handler);
+    const subscription = await eventStream.subscribe('sub-1', handler);
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
     eventStream.emit('did:alice', message1.message, {});
-    await subcription.close();
+    await subscription.close();
 
     const message2 = await TestDataGenerator.generateRecordsWrite({});
     eventStream.emit('did:alice', message2.message, {});
@@ -78,15 +78,15 @@ describe('EventStream', () => {
     expect(messageCids).to.have.members([ message1Cid ]);
   });
 
-  it('does not emit messages if emitter is closed', async () => {
+  it('does not emit messages if event stream is closed', async () => {
     const messageCids: string[] = [];
     const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
-    const subcription = await eventStream.subscribe('sub-1', handler);
+    const subscription = await eventStream.subscribe('sub-1', handler);
 
-    // close eventEmitter
+    // close eventStream
     await eventStream.close();
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
@@ -94,7 +94,7 @@ describe('EventStream', () => {
     const message2 = await TestDataGenerator.generateRecordsWrite({});
     eventStream.emit('did:alice', message2.message, {});
 
-    await subcription.close();
+    await subscription.close();
 
     await Time.minimalSleep();
     expect(messageCids).to.have.length(0);

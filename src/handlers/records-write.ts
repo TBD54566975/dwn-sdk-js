@@ -132,7 +132,9 @@ export class RecordsWriteHandler implements MethodHandler {
       await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
       // only emit if the event stream is set
-      this.eventStream?.emit(tenant, message, indexes);
+      if (this.eventStream !== undefined) {
+        this.eventStream.emit(tenant, message, indexes);
+      }
     } catch (error) {
       const e = error as any;
       if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||

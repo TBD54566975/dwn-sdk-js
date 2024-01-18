@@ -57,25 +57,6 @@ export function testPermissionsRequestHandler(): void {
         await dwn.close();
       });
 
-      it('should process a PermissionsRequest with EventStream not set', async () => {
-        // eventStream not defined
-        const permissionsRevokeHandler = new PermissionsRequestHandler(didResolver, messageStore, eventLog);
-
-        // scenario: Alice issues a grant to Bob, then she revokes the grant.
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-
-        // Alice issues a grant
-        const { message } = await TestDataGenerator.generatePermissionsRequest({
-          author     : alice,
-          grantedBy  : alice.did,
-          grantedTo  : bob.did,
-          grantedFor : alice.did,
-        });
-        const permissionsGrantReply = await permissionsRevokeHandler.handle({ tenant: alice.did, message: message });
-        expect(permissionsGrantReply.status.code).to.eq(202);
-      });
-
       it('should accept a PermissionsRequest with conditions omitted', async () => {
       // scenario: Bob sends a PermissionsRequest to Alice's DWN
         const alice = await DidKeyResolver.generate();

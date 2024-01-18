@@ -12,7 +12,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyResolver, DidResolver, Dwn, Message } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
 
@@ -100,6 +100,169 @@ export function testSubscriptionScenarios(): void {
         // test the messageCids array for the appropriate messages
         expect(messageCids.length).to.equal(4);
         expect(messageCids).to.eql([ write1MessageCid, grant1MessageCid, protocol1MessageCid, delete1MessageCid ]);
+      });
+
+      it('filters by interface type', async () => {
+        // scenario:
+        // alice subscribes to 3 different message interfaces (Permissions, Records, Grants)
+        // alice creates (3) messages, (RecordsWrite, PermissionsGrant and ProtocolsConfigure
+        // alice checks that each handler emitted the appropriate message
+        // alice deletes the record, and revokes the grant
+        // alice checks that the Records and Permissions handlers emitted the appropriate message
+        const alice = await DidKeyResolver.generate();
+
+        // subscribe to records
+        const recordsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ interface: DwnInterfaceName.Records }]
+        });
+        const recordsMessageCids:string[] = [];
+        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          recordsMessageCids.push(messageCid);
+        };
+
+        const recordsInterfaceSubscriptionReply = await dwn.processMessage(
+          alice.did,
+          recordsInterfaceSubscription.message,
+          { subscriptionHandler: recordsSubscribeHandler }
+        );
+        expect(recordsInterfaceSubscriptionReply.status.code).to.equal(200);
+        expect(recordsInterfaceSubscriptionReply.subscription).to.exist;
+
+        // subscribe to permissions
+        const permissionsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ interface: DwnInterfaceName.Permissions }]
+        });
+        const permissionsMessageCids:string[] = [];
+        const permissionsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          permissionsMessageCids.push(messageCid);
+        };
+
+        const permissionsInterfaceSubscriptionReply = await dwn.processMessage(
+          alice.did,
+          permissionsInterfaceSubscription.message,
+          { subscriptionHandler: permissionsSubscribeHandler }
+        );
+        expect(permissionsInterfaceSubscriptionReply.status.code).to.equal(200);
+        expect(permissionsInterfaceSubscriptionReply.subscription).to.exist;
+
+        // subscribe to protocols
+        const protocolsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ interface: DwnInterfaceName.Protocols }]
+        });
+        const protocolsMessageCids:string[] = [];
+        const protocolsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          protocolsMessageCids.push(messageCid);
+        };
+
+        const protocolsInterfaceSubscriptionReply = await dwn.processMessage(
+          alice.did,
+          protocolsInterfaceSubscription.message,
+          { subscriptionHandler: protocolsSubscribeHandler }
+        );
+        expect(protocolsInterfaceSubscriptionReply.status.code).to.equal(200);
+        expect(protocolsInterfaceSubscriptionReply.subscription).to.exist;
+
+        // create one of each message types
+        const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
+        const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+
+        // insert data
+        const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
+        const grantReply = await dwn.processMessage(alice.did, grant.message);
+        const protocolReply = await dwn.processMessage(alice.did, protocol.message);
+        expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
+        expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
+        expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
+
+        // check record message
+        expect(recordsMessageCids.length).to.equal(1);
+        expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
+
+        // check permissions message
+        expect(permissionsMessageCids.length).to.equal(1);
+        expect(permissionsMessageCids).to.have.members([ await Message.getCid(grant.message) ]);
+
+        // check protocols message
+        expect(protocolsMessageCids.length).to.equal(1);
+        expect(protocolsMessageCids).to.have.members([ await Message.getCid(protocol.message) ]);
+
+        // insert additional data to query beyond a cursor
+        const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
+        const revokeGrant = await TestDataGenerator.generatePermissionsRevoke({
+          author: alice, permissionsGrantId: await Message.getCid(grant.message)
+        });
+        const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
+        const revokeGrantReply = await dwn.processMessage(alice.did, revokeGrant.message);
+        expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
+        expect(revokeGrantReply.status.code).to.equal(202, 'PermissionsRevoke');
+
+        // check record messages to include the delete message
+        expect(recordsMessageCids.length).to.equal(2);
+        expect(recordsMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
+
+        // check permissions messages to include the revoke message
+        expect(permissionsMessageCids.length).to.equal(2);
+        expect(permissionsMessageCids).to.include.members([ await Message.getCid(revokeGrant.message) ]);
+
+        // protocols remains unchanged
+        expect(protocolsMessageCids.length).to.equal(1);
+      });
+
+      it('filters by method type', async () => {
+        // scenario:
+        // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure, PermissionsGrant)
+        // alice queries for only RecordsWrite messages
+        // alice creates more messages to query beyond a cursor
+
+        const alice = await DidKeyResolver.generate();
+
+        // subscribe to records write
+        const recordsWriteSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
+        });
+        const recordsMessageCids:string[] = [];
+        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+          const messageCid = await Message.getCid(message);
+          recordsMessageCids.push(messageCid);
+        };
+
+        const recordsWriteSubscriptionReply = await dwn.processMessage(
+          alice.did,
+          recordsWriteSubscription.message,
+          { subscriptionHandler: recordsSubscribeHandler }
+        );
+        expect(recordsWriteSubscriptionReply.status.code).to.equal(200);
+        expect(recordsWriteSubscriptionReply.subscription).to.exist;
+
+        // create one of each message types
+        const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
+
+        // insert data
+        const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
+        expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
+
+        // sleep to make sure event was processed and added to array asynchronously
+        await Time.minimalSleep();
+
+        // check record message
+        expect(recordsMessageCids.length).to.equal(1);
+        expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
+
+        // delete the message
+        const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
+        const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
+        expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
+
+        // check record messages remain unchanged and do not include the delete since we only subscribe to writes
+        expect(recordsMessageCids.length).to.equal(1);
       });
 
       it('filters by schema', async () => {

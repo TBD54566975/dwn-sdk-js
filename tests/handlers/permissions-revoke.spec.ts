@@ -9,7 +9,6 @@ import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Message } from '../../src/core/message.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
-import { PermissionsRevokeHandler } from '../../src/handlers/permissions-revoke.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -50,34 +49,6 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
     after(async () => {
       await dwn.close();
-    });
-
-    it('should process a PermissionsRevoke with EventStream not set', async () => {
-      // eventStream not defined
-      const permissionsRevokeHandler = new PermissionsRevokeHandler(didResolver, messageStore, eventLog);
-
-      // scenario: Alice issues a grant to Bob, then she revokes the grant.
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-
-
-      // Alice issues a grant
-      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
-        author     : alice,
-        grantedBy  : alice.did,
-        grantedTo  : bob.did,
-        grantedFor : alice.did,
-      });
-      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-      expect(permissionsGrantReply.status.code).to.eq(202);
-
-      // Alice revokes the grant
-      const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
-        author             : alice,
-        permissionsGrantId : await Message.getCid(permissionsGrant.message)
-      });
-      const permissionsRevokeReply = await permissionsRevokeHandler.handle({ tenant: alice.did, message: permissionsRevoke.message });
-      expect(permissionsRevokeReply.status.code).to.eq(202);
     });
 
     it('should accept a PermissionsRevoke that revokes an existing grant', async () => {

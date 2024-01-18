@@ -66,7 +66,9 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await this.eventLog.append(tenant, messageCid, indexes);
 
       // only emit if the event stream is set
-      this.eventStream?.emit(tenant, message, indexes);
+      if (this.eventStream !== undefined) {
+        this.eventStream.emit(tenant, message, indexes);
+      }
 
       messageReply = {
         status: { code: 202, detail: 'Accepted' }

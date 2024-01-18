@@ -1,4 +1,3 @@
-import type { EventEmitter } from 'events';
 import type { MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
@@ -37,7 +36,7 @@ describe('EventEmitterStream', () => {
 
   it('should remove listeners when `close` method is used', async () => {
     eventStream = new EventEmitterStream();
-    const emitter = (eventStream as any).eventEmitter as EventEmitter;
+    const emitter = eventStream['eventEmitter'];
 
     // count the `events` listeners, which represents all listeners
     expect(emitter.listenerCount('events')).to.equal(0);
@@ -53,7 +52,7 @@ describe('EventEmitterStream', () => {
   it('logs message when the emitter experiences an error', async () => {
     const eventErrorSpy = sinon.spy(EventEmitterStream.prototype as any, 'eventError');
     eventStream = new EventEmitterStream();
-    const emitter = (eventStream as any).eventEmitter as EventEmitter;
+    const emitter = eventStream['eventEmitter'];
     emitter.emit('error', new Error('random error'));
     expect(eventErrorSpy.callCount).to.equal(1);
   });

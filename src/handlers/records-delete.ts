@@ -96,7 +96,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     await this.eventLog.append(tenant, messageCid, indexes);
 
     // only emit if the event stream is set
-    this.eventStream?.emit(tenant, message, indexes);
+    if (this.eventStream !== undefined) {
+      this.eventStream.emit(tenant, message, indexes);
+    }
 
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
