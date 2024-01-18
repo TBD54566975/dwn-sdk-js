@@ -17,13 +17,13 @@ export class Events {
 
     // normalize each filter individually by the type of filter it is.
     for (const filter of filters) {
-      if (this.isMessagesFilter(filter)) {
-        eventsQueryFilters.push(filter);
-      } else if (this.isRecordsFilter(filter)) {
+      if (this.isRecordsFilter(filter)) {
         eventsQueryFilters.push(Records.normalizeFilter(filter));
       } else if (this.isProtocolFilter(filter)) {
-        const protocolFilter = ProtocolsQuery.normalizeFilter(filter);
-        eventsQueryFilters.push(protocolFilter!);
+        eventsQueryFilters.push(ProtocolsQuery.normalizeFilter(filter));
+      } else {
+        // no normalization needed
+        eventsQueryFilters.push(filter);
       }
     }
 
@@ -40,13 +40,18 @@ export class Events {
 
     const eventsQueryFilters: Filter[] = [];
 
-    // normalize each filter individually by the type of filter it is.
+    // convert each filter individually by the specific type of filter it is
+    // we must check for the type of filter in a specific order to make a reductive decision as to which filters need converting
+    // first we check for `EventsRecordsFilter` fields for conversion
+    // then we check for the `EventsMessageFilter` fields for conversion
+    // finally we pass through the filters as `ProtocolQueryFilter` does not require conversion
     for (const filter of filters) {
-      if (this.isMessagesFilter(filter)) {
-        eventsQueryFilters.push(this.convertFilter(filter));
-      } else if (this.isRecordsFilter(filter)) {
+      if (this.isRecordsFilter(filter)) {
         eventsQueryFilters.push(Records.convertFilter(filter));
-      } else if (this.isProtocolFilter(filter)) {
+      } else if (this.isMessagesFilter(filter)) {
+        eventsQueryFilters.push(this.convertFilter(filter));
+      } else {
+        // protocol filters do not need any conversion
         eventsQueryFilters.push(filter);
       }
     }
@@ -67,11 +72,14 @@ export class Events {
   }
 
   private static isMessagesFilter(filter: EventsFilter): filter is EventsMessageFilter {
-    return 'method' in filter || 'interface' in filter || 'dateUpdated' in filter || 'author' in filter;
+    return 'method' in filter || 'interface' in filter || 'dateUpdated' in filter;
   }
 
+  // we deliberately do not check for `dateUpdated` in this filter.
+  // if it were the only property that matched, it could be handled by `EventMessageFilter`
   private static isRecordsFilter(filter: EventsFilter): filter is EventsRecordsFilter {
-    return 'dateCreated' in filter ||
+    return 'author' in filter ||
+      'dateCreated' in filter ||
       'dataFormat' in filter ||
       'dataSize' in filter ||
       'parentId' in filter ||
