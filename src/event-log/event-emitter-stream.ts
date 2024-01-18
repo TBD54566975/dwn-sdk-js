@@ -6,17 +6,13 @@ import { EventEmitter } from 'events';
 
 const EVENTS_LISTENER_CHANNEL = 'events';
 
-type EventStreamEmitterConfig = {
-  emitter?: EventEmitter;
-};
-
 export class EventEmitterStream implements EventStream {
   private eventEmitter: EventEmitter;
   private isOpen: boolean = false;
 
-  constructor(config?: EventStreamEmitterConfig) {
+  constructor() {
     // we capture the rejections and currently just log the errors that are produced
-    this.eventEmitter = config?.emitter || new EventEmitter({ captureRejections: true });
+    this.eventEmitter = new EventEmitter({ captureRejections: true });
     this.eventEmitter.on('error', this.eventError);
   }
 

@@ -3,6 +3,7 @@ import type { AuthorizationModel, GenericMessage, GenericMessageReply, MessageSu
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
+// filters used when filtering for any type of Message across interfaces
 export type EventsMessageFilter = {
   interface?: string;
   method?: string;
@@ -23,6 +24,8 @@ export type EventsRecordsFilter = {
   dateCreated?: RangeCriterion;
 };
 
+// a union type of the different types of filters a user can use when issuing an EventsQuery or EventsSubscribe
+//TODO: simplify the EventsFilters to only the necessary in order to reduce complexity https://github.com/TBD54566975/dwn-sdk-js/issues/663
 export type EventsFilter = EventsMessageFilter | EventsRecordsFilter | ProtocolsQueryFilter;
 
 export type EventsGetDescriptor = {

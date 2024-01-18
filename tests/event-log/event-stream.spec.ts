@@ -23,12 +23,20 @@ describe('EventStream', () => {
   });
 
   it('emits all messages to each subscriptions', async () => {
-    const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const messageCids1: string[] = [];
+    const handler1 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
       const messageCid = await Message.getCid(message);
-      messageCids.push(messageCid);
+      messageCids1.push(messageCid);
     };
-    const subcription = await eventStream.subscribe('sub-1', handler);
+
+    const messageCids2: string[] = [];
+    const handler2 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+      const messageCid = await Message.getCid(message);
+      messageCids2.push(messageCid);
+    };
+
+    const subscription1 = await eventStream.subscribe('sub-1', handler1);
+    const subscription2 = await eventStream.subscribe('sub-2', handler2);
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
@@ -40,11 +48,13 @@ describe('EventStream', () => {
     const message3Cid = await Message.getCid(message3.message);
     eventStream.emit('did:alice', message3.message, {});
 
-    await subcription.close();
+    await subscription1.close();
+    await subscription2.close();
 
     await Time.minimalSleep();
 
-    expect(messageCids).to.have.members([ message1Cid, message2Cid, message3Cid ]);
+    expect(messageCids1).to.have.members([ message1Cid, message2Cid, message3Cid ]);
+    expect(messageCids2).to.have.members([ message1Cid, message2Cid, message3Cid ]);
   });
 
   it('does not emit messages if subscription is closed', async () => {

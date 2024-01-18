@@ -266,11 +266,11 @@ export function testSubscriptionScenarios(): void {
         expect(write2Proto2Response.status.code).equals(202);
 
         // proto1 messages from handler do not change.
-        expect(proto1Messages.length).to.equal(1, 'proto1 after subscription.off()');
+        expect(proto1Messages.length).to.equal(1, 'proto1 after subscription.close()');
         expect(proto1Messages).to.include(await Message.getCid(write1proto1.message));
 
         //proto2 messages from handler have the new message.
-        expect(proto2Messages.length).to.equal(2, 'proto2 after subscription.off()');
+        expect(proto2Messages.length).to.equal(2, 'proto2 after subscription.close()');
         expect(proto2Messages).to.have.members([await Message.getCid(write1proto2.message), await Message.getCid(write2proto2.message)]);
       });
 
