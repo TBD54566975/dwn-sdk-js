@@ -10,7 +10,7 @@ export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, Pag
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
 export type { PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
+export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
@@ -30,7 +30,6 @@ export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
-export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { executeUnlessAborted } from './utils/abort.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
@@ -48,6 +47,7 @@ export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-qu
 export { Records } from './utils/records.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
+export { RecordsSubscribe, RecordsSubscribeOptions } from './interfaces/records-subscribe.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';

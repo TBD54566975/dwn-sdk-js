@@ -1,5 +1,5 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, PermissionScope, RecordsDeleteMessage, RecordsWriteMessage } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -21,7 +21,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -43,7 +43,6 @@ export function testDelegatedGrantScenarios(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
-
       eventStream = TestEventStream.get();
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
@@ -227,6 +226,63 @@ export function testDelegatedGrantScenarios(): void {
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
+      // Alice creates a delegated subscribe grant for device X to act as Alice.
+      const subscribeGrantForDeviceX = await PermissionsGrant.create({
+        delegated   : true, // this is a delegated grant
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        grantedBy   : alice.did,
+        grantedTo   : deviceX.did,
+        grantedFor  : alice.did,
+        scope       : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Subscribe,
+          protocol
+        },
+        signer: Jws.createSigner(alice)
+      });
+
+      const subscriptionChatRecords:Set<string> = new Set();
+      const captureChatRecords = async (message: RecordsWriteMessage | RecordsDeleteMessage): Promise<void> => {
+        if (message.descriptor.method === DwnMethodName.Delete) {
+          const recordId = message.descriptor.recordId;
+          subscriptionChatRecords.delete(recordId);
+        } else {
+          const recordId = (message as RecordsWriteMessage).recordId;
+          subscriptionChatRecords.add(recordId);
+        }
+      };
+
+      // verify device X is able to subscribe the chat message from Bob's DWN
+      const recordsSubscribeByDeviceX = await RecordsSubscribe.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : subscribeGrantForDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        filter         : {
+          contextId    : threadRecord.message.contextId,
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'thread/chat'
+        }
+      });
+      const recordsSubscribeByDeviceXReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message, {
+        subscriptionHandler: captureChatRecords
+      });
+      expect(recordsSubscribeByDeviceXReply.status.code).to.equal(200, 'subscribe');
+
+      // Verify that Carol cannot subscribe as Alice by invoking the delegated grant granted to Device X
+      const recordsSubscribeByCarol = await RecordsSubscribe.create({
+        signer         : Jws.createSigner(carol),
+        delegatedGrant : subscribeGrantForDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        filter         : {
+          contextId    : threadRecord.message.contextId,
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'thread/chat'
+        }
+      });
+      const recordsSubscribeByCarolReply = await dwn.processMessage(bob.did, recordsSubscribeByCarol.message);
+      expect(recordsSubscribeByCarolReply.status.code).to.equal(400, 'carol subscribe');
+      expect(recordsSubscribeByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
+
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
         author       : bob,
@@ -346,6 +402,10 @@ export function testDelegatedGrantScenarios(): void {
       const recordsReadByCarolReply = await dwn.processMessage(bob.did, recordsReadByCarol.message);
       expect(recordsReadByCarolReply.status.code).to.equal(400);
       expect(recordsQueryByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
+
+      await recordsSubscribeByDeviceXReply.subscription?.close();
+      expect(subscriptionChatRecords.size).to.equal(1);
+      expect([...subscriptionChatRecords]).to.have.members([chatRecord.message.recordId]);
     });
 
     it('should only allow correct entity invoking a delegated grant to delete', async () => {

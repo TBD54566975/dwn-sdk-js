@@ -73,7 +73,6 @@ export function testEventsSubscribeHandler(): void {
         expect(subscriptionMessageReply.status.code).to.equal(501, subscriptionMessageReply.status.detail);
         expect(subscriptionMessageReply.status.detail).to.include(DwnErrorCode.EventsSubscribeEventStreamUnimplemented);
       });
-
     });
 
     describe('EventStream enabled', () => {

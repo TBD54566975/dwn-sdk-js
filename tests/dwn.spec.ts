@@ -162,12 +162,14 @@ export function testDwnClass(): void {
         const messageStoreStub = stubInterface<MessageStore>();
         const dataStoreStub = stubInterface<DataStore>();
         const eventLogStub = stubInterface<EventLog>();
+        const eventStreamStub = stubInterface<EventStream>();
 
         const dwnWithConfig = await Dwn.create({
           tenantGate   : blockAllTenantGate,
           messageStore : messageStoreStub,
           dataStore    : dataStoreStub,
-          eventLog     : eventLogStub
+          eventLog     : eventLogStub,
+          eventStream  : eventStreamStub
         });
 
         const alice = await DidKeyResolver.generate();

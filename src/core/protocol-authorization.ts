@@ -3,6 +3,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsQuery } from '../interfaces/records-query.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
+import type { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
@@ -148,6 +149,47 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       ancestorMessageChain,
+      messageStore,
+    );
+  }
+
+  public static async authorizeSubscription(
+    tenant: string,
+    incomingMessage: RecordsSubscribe,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // validate that required properties exist in subscription filter
+    const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      protocol!, // `authorizeSubscription` is only called if `protocol` is present
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      protocolPath!, // presence of `protocolPath` is verified in `parse()`
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      protocol!,
+      contextId,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      [], // ancestor chain is not relevant to subscriptions
       messageStore,
     );
   }
@@ -423,7 +465,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
@@ -481,7 +523,7 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
 
@@ -494,6 +536,9 @@ export class ProtocolAuthorization {
 
     case DwnMethodName.Read:
       return [ProtocolAction.Read];
+
+    case DwnMethodName.Subscribe:
+      return [ProtocolAction.Subscribe];
 
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
@@ -519,7 +564,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,

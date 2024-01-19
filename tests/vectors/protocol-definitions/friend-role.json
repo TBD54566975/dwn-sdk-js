@@ -35,6 +35,10 @@
           "can": "query"
         },
         {
+          "role": "friend",
+          "can": "subscribe"
+        },
+        {
           "role": "admin",
           "can": "update"
         },

@@ -3,14 +3,15 @@ import type { EventLog } from './types/event-log.js';
 import type { EventStream } from './types/subscriptions.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
+import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
 import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply } from './types/events-types.js';
-import type { GenericMessage, GenericMessageReply, MessageOptions } from './types/message-types.js';
+import type { GenericMessage, GenericMessageReply, MessageSubscriptionHandler } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
+import type { RecordsDeleteMessage, RecordsHandler, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -28,6 +29,7 @@ import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
+import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
@@ -43,6 +45,7 @@ export class Dwn {
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
     this.tenantGate = config.tenantGate!;
+    this.eventStream = config.eventStream!;
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
     this.eventLog = config.eventLog;
@@ -112,6 +115,11 @@ export class Dwn {
         this.messageStore,
         this.dataStore
       ),
+      [DwnInterfaceName.Records + DwnMethodName.Subscribe]: new RecordsSubscribeHandler(
+        this.didResolver,
+        this.messageStore,
+        this.eventStream
+      ),
       [DwnInterfaceName.Records + DwnMethodName.Write]: new RecordsWriteHandler(
         this.didResolver,
         this.messageStore,
@@ -165,6 +173,8 @@ export class Dwn {
   public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
+  public async processMessage(
+    tenant: string, rawMessage: RecordsSubscribeMessage, options: RecordsSubscribeMessageOptions): Promise<RecordsSubscribeReply>;
   public async processMessage(tenant: string, rawMessage: RecordsReadMessage): Promise<RecordsReadReply>;
   public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, options?: RecordsWriteMessageOptions): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: unknown, options?: MessageOptions): Promise<UnionMessageReply>;
@@ -231,6 +241,14 @@ export class Dwn {
       return messageReplyFromError(error, 400);
     }
   }
+};
+
+/**
+ *  MessageOptions that are used when processing a message.
+ */
+export interface MessageOptions {
+  dataStream?: Readable;
+  subscriptionHandler?: MessageSubscriptionHandler | RecordsHandler;
 };
 
 /**

@@ -11,7 +11,7 @@ import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-c
 import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryOptions } from '../../src/interfaces/records-query.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { RecordsSubscribeOptions } from '../../src/interfaces/records-subscribe.js';
 import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
@@ -21,6 +21,7 @@ import type { PermissionConditions, PermissionScope } from '../../src/types/perm
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
+import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
 
 
 import * as cbor from '@ipld/dag-cbor';
@@ -42,6 +43,7 @@ import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
 import { Records } from '../../src/utils/records.js';
 import { RecordsDelete } from '../../src/interfaces/records-delete.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
+import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
@@ -164,6 +166,22 @@ export type GenerateRecordsQueryInput = {
 export type GenerateRecordsQueryOutput = {
   author: Persona | undefined;
   message: RecordsQueryMessage;
+};
+
+export type GenerateRecordsSubscribeInput = {
+    /**
+   * Treated as `false` if not given.
+   */
+    anonymous?: boolean;
+    author?: Persona;
+    messageTimestamp?: string;
+    filter?: RecordsFilter;
+    protocolRole?: string;
+};
+
+export type GenerateRecordsSubscribeOutput = {
+  author: Persona | undefined;
+  message: RecordsSubscribeMessage;
 };
 
 export type GenerateRecordsDeleteInput = {
@@ -651,6 +669,44 @@ export class TestDataGenerator {
       message
     };
   };
+
+  /**
+   * Generates a RecordsSubscribe message for testing.
+   */
+  public static async generateRecordsSubscribe(input?: GenerateRecordsSubscribeInput): Promise<GenerateRecordsSubscribeOutput> {
+    let author = input?.author;
+    const anonymous: boolean = input?.anonymous ?? false;
+
+    if (anonymous && author) {
+      throw new Error('Cannot have `author` and be anonymous at the same time.');
+    }
+
+    // generate author if needed
+    if (author === undefined && !anonymous) {
+      author = await TestDataGenerator.generatePersona();
+    }
+
+    let signer = undefined;
+    if (author !== undefined) {
+      signer = Jws.createSigner(author);
+    }
+
+    const options: RecordsSubscribeOptions = {
+      messageTimestamp : input?.messageTimestamp,
+      signer,
+      filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      protocolRole     : input?.protocolRole,
+    };
+    removeUndefinedProperties(options);
+
+    const recordsSubscribe = await RecordsSubscribe.create(options);
+    const message = recordsSubscribe.message;
+
+    return {
+      author,
+      message
+    };
+  }
 
   /**
    * Generates a RecordsDelete for testing.
