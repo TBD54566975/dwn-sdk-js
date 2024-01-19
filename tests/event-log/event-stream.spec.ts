@@ -10,14 +10,20 @@ import chai, { expect } from 'chai';
 chai.use(chaiAsPromised);
 
 describe('EventStream', () => {
+  // saving the original `console.error` function to re-assign after tests complete
+  const originalConsoleErrorFunction = console.error;
   let eventStream: EventStream;
 
   before(async () => {
     eventStream = TestEventStream.get();
     await eventStream.open();
+
+    // do not print the console error statements from the emitter error
+    console.error = (_):void => { };
   });
 
   after(async () => {
+    console.error = originalConsoleErrorFunction;
     // Clean up after each test by closing and clearing the event stream
     await eventStream.close();
   });

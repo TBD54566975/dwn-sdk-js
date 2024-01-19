@@ -1,9 +1,7 @@
 import type { Filter } from '../types/query-types.js';
-import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
 import type { EventsFilter, EventsMessageFilter, EventsRecordsFilter } from '../types/events-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
-import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { Records } from '../utils/records.js';
 import { isEmptyObject, removeUndefinedProperties } from './object.js';
 
@@ -21,8 +19,6 @@ export class Events {
       let eventsFilter: EventsFilter;
       if (this.isRecordsFilter(filter)) {
         eventsFilter = Records.normalizeFilter(filter);
-      } else if (this.isProtocolFilter(filter)) {
-        eventsFilter = ProtocolsQuery.normalizeFilter(filter);
       } else {
         // no normalization needed
         eventsFilter = filter;
@@ -52,16 +48,12 @@ export class Events {
     // convert each filter individually by the specific type of filter it is
     // we must check for the type of filter in a specific order to make a reductive decision as to which filters need converting
     // first we check for `EventsRecordsFilter` fields for conversion
-    // then we check for the `EventsMessageFilter` fields for conversion
-    // finally we pass through the filters as `ProtocolQueryFilter` does not require conversion
+    // otherwise it is `EventsMessageFilter` fields for conversion
     for (const filter of filters) {
       if (this.isRecordsFilter(filter)) {
         eventsQueryFilters.push(Records.convertFilter(filter));
-      } else if (this.isMessagesFilter(filter)) {
-        eventsQueryFilters.push(this.convertFilter(filter));
       } else {
-        // protocol filters do not need any conversion
-        eventsQueryFilters.push(filter);
+        eventsQueryFilters.push(this.convertFilter(filter));
       }
     }
 
@@ -80,10 +72,6 @@ export class Events {
     return filterCopy as Filter;
   }
 
-  private static isMessagesFilter(filter: EventsFilter): filter is EventsMessageFilter {
-    return 'method' in filter || 'interface' in filter || 'dateUpdated' in filter;
-  }
-
   // we deliberately do not check for `dateUpdated` in this filter.
   // if it were the only property that matched, it could be handled by `EventMessageFilter`
   private static isRecordsFilter(filter: EventsFilter): filter is EventsRecordsFilter {
@@ -94,11 +82,8 @@ export class Events {
       'parentId' in filter ||
       'recordId' in filter ||
       'schema' in filter ||
-      ('protocolPath' in filter && 'protocol' in filter) ||
+      'protocol' in filter ||
+      'protocolPath' in filter ||
       'recipient' in filter;
-  }
-
-  private static isProtocolFilter(filter: EventsFilter): filter is ProtocolsQueryFilter {
-    return 'protocol' in filter;
   }
 }

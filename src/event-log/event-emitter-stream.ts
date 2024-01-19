@@ -41,7 +41,7 @@ export class EventEmitterStream implements EventStream {
 
   emit(tenant: string, message: GenericMessage, indexes: KeyValues): void {
     if (!this.isOpen) {
-      // silently ignore
+      console.error('message emitted when EventEmitterStream is closed', tenant, message, indexes);
       return;
     }
     this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, message, indexes);
