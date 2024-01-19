@@ -7,7 +7,7 @@ import { DidIonResolver } from '../../src/did/did-ion-resolver.js';
 chai.use(chaiAsPromised);
 
 describe('DidIonResolver', () => {
-  const defaultResolutionEndpoint = 'https://discover.did.msidentity.com/1.0/identifiers/';
+  const defaultResolutionEndpoint = 'https://ion.tbd.engineering/identifiers/';
 
   it('should set a default resolution endpoint when none is given in constructor', async () => {
     const didIonResolver = new DidIonResolver();

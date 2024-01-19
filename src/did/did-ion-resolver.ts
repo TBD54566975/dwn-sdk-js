@@ -17,7 +17,7 @@ export class DidIonResolver implements DidMethodResolver {
   /**
    * @param resolutionEndpoint optional custom URL to send DID resolution request to
    */
-  constructor (private resolutionEndpoint: string = 'https://discover.did.msidentity.com/1.0/identifiers/') { }
+  constructor (private resolutionEndpoint: string = 'https://ion.tbd.engineering/identifiers/') { }
 
   method(): string {
     return 'ion';
