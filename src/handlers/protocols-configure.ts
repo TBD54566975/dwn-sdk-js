@@ -1,6 +1,6 @@
-import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
@@ -14,14 +14,17 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 
 export class ProtocolsConfigureHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private eventLog: EventLog,
+    private eventStream?: EventStream
+  ) { }
 
   public async handle({
     tenant,
     message,
-    dataStream: _dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<GenericMessageReply> {
-
+  }: {tenant: string, message: ProtocolsConfigureMessage }): Promise<GenericMessageReply> {
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);
@@ -58,9 +61,14 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = ProtocolsConfigureHandler.constructIndexes(protocolsConfigure);
 
-      const messageCid = await Message.getCid(message);
       await this.messageStore.put(tenant, message, indexes);
+      const messageCid = await Message.getCid(message);
       await this.eventLog.append(tenant, messageCid, indexes);
+
+      // only emit if the event stream is set
+      if (this.eventStream !== undefined) {
+        this.eventStream.emit(tenant, message, indexes);
+      }
 
       messageReply = {
         status: { code: 202, detail: 'Accepted' }

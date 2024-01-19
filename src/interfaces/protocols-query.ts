@@ -36,11 +36,12 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
   }
 
   public static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQuery> {
+
     const descriptor: ProtocolsQueryDescriptor = {
       interface        : DwnInterfaceName.Protocols,
       method           : DwnMethodName.Query,
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
-      filter           : ProtocolsQuery.normalizeFilter(options.filter),
+      filter           : options.filter ? ProtocolsQuery.normalizeFilter(options.filter) : undefined,
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
@@ -65,11 +66,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     return protocolsQuery;
   }
 
-  static normalizeFilter(filter: ProtocolsQueryFilter | undefined): ProtocolsQueryFilter | undefined {
-    if (filter === undefined) {
-      return undefined;
-    }
-
+  static normalizeFilter(filter: ProtocolsQueryFilter): ProtocolsQueryFilter {
     return {
       ...filter,
       protocol: normalizeProtocolUrl(filter.protocol),

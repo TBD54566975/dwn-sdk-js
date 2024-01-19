@@ -7,6 +7,7 @@ import { testEventLog } from './event-log/event-log.spec.js';
 import { testEventsGetHandler } from './handlers/events-get.spec.js';
 import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
+import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
@@ -18,6 +19,7 @@ import { testRecordsQueryHandler } from './handlers/records-query.spec.js';
 import { testRecordsReadHandler } from './handlers/records-read.spec.js';
 import { testRecordsWriteHandler } from './handlers/records-write.spec.js';
 import { TestStores } from './test-stores.js';
+import { testSubscriptionScenarios } from './scenarios/subscriptions.spec.js';
 
 /**
  * Class for running DWN tests from an external repository that depends on this SDK.
@@ -40,6 +42,7 @@ export class TestSuite {
 
     // handler tests
     testEventsGetHandler();
+    testEventsSubscribeHandler();
     testEventsQueryHandler();
     testMessagesGetHandler();
     testPermissionsGrantHandler();
@@ -55,5 +58,6 @@ export class TestSuite {
     testDelegatedGrantScenarios();
     testEndToEndScenarios();
     testEventsQueryScenarios();
+    testSubscriptionScenarios();
   }
 }

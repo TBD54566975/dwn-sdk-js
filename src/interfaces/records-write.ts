@@ -689,7 +689,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
 
-  public async constructRecordsWriteIndexes(
+  public async constructIndexes(
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;

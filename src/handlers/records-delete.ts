@@ -1,8 +1,8 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessageReply } from '../types/message-types.js';
-import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
@@ -13,20 +13,24 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { removeUndefinedProperties } from '../utils/object.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private dataStore: DataStore,
+    private eventLog: EventLog,
+    private eventStream?: EventStream
+  ) { }
 
   public async handle({
     tenant,
     message
   }: { tenant: string, message: RecordsDeleteMessage}): Promise<GenericMessageReply> {
-
     let recordsDelete: RecordsDelete;
     try {
       recordsDelete = await RecordsDelete.parse(message);
@@ -85,12 +89,16 @@ export class RecordsDeleteHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const recordsWrite = await RecordsWrite.getInitialWrite(existingMessages);
-    const indexes = RecordsDeleteHandler.constructIndexes(recordsDelete, recordsWrite);
-    await this.messageStore.put(tenant, message, indexes);
-
+    const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+    const indexes = recordsDelete.constructIndexes(initialWrite);
     const messageCid = await Message.getCid(message);
+    await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, messageCid, indexes);
+
+    // only emit if the event stream is set
+    if (this.eventStream !== undefined) {
+      this.eventStream.emit(tenant, message, indexes);
+    }
 
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
@@ -124,31 +132,5 @@ export class RecordsDeleteHandler implements MethodHandler {
         'RecordsDelete message failed authorization'
       );
     }
-  }
-
-  /**
-  * Indexed properties needed for MessageStore indexing.
-  */
-  static constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): KeyValues {
-    const message = recordsDelete.message;
-    const descriptor = { ...message.descriptor };
-
-    // we add the immutable properties from the initial RecordsWrite message in order to use them when querying relevant deletes.
-    const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
-
-    // NOTE: the "trick" not may not be apparent on how a query is able to omit deleted records:
-    // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
-    // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
-    // `isLatestBaseState` for the initial delete would have been toggled to `false`
-    const indexes: { [key:string]: string | undefined } = {
-      // isLatestBaseState : "true", // intentionally showing that this index is omitted
-      protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
-      contextId : recordsWrite.contextId,
-      author    : recordsDelete.author,
-      ...descriptor
-    };
-    removeUndefinedProperties(indexes);
-
-    return indexes as KeyValues;
   }
 };

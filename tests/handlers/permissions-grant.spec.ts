@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type {
   DataStore,
   EventLog,
@@ -16,6 +17,7 @@ import { Message } from '../../src/core/message.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
@@ -26,6 +28,7 @@ export function testPermissionsGrantHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -39,8 +42,9 @@ export function testPermissionsGrantHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {
@@ -134,7 +138,7 @@ export function testPermissionsGrantHandler(): void {
         const alice = await DidKeyResolver.generate();
         const { message } = await TestDataGenerator.generatePermissionsGrant();
 
-        const permissionsRequestHandler = new PermissionsGrantHandler(didResolver, messageStore, eventLog);
+        const permissionsRequestHandler = new PermissionsGrantHandler(didResolver, messageStore, eventLog, eventStream);
 
         // stub the `parse()` function to throw an error
         sinon.stub(PermissionsGrant, 'parse').throws('anyError');

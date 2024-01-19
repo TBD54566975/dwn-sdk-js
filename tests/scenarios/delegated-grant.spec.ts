@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -16,6 +17,7 @@ import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
@@ -29,6 +31,7 @@ export function testDelegatedGrantScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -41,7 +44,9 @@ export function testDelegatedGrantScenarios(): void {
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      eventStream = TestEventStream.get();
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {
@@ -179,7 +184,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    it('should only allow correct entity invoking a delegated grant to read or query', async () => {
+    it('should only allow correct entity invoking a delegated grant to read and query ', async () => {
       // scenario:
       // 1. Alice creates read and query delegated grants for device X,
       // 2. Bob starts a chat thread with Alice on his DWN

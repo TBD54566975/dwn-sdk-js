@@ -1,23 +1,25 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
+import type { DataStore, EventLog, EventStream, MessageStore } from '../../src/index.js';
+
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
+import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
+  let eventStream: EventStream;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -26,20 +28,14 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
       // important to follow this pattern to initialize and clean the message and data store in tests
       // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
+      const stores = TestStores.get();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
+      eventStream = TestEventStream.get();
 
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
-
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

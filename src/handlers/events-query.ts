@@ -1,8 +1,9 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { EventsQueryMessage, EventsQueryReply } from '../types/event-types.js';
+import type { EventsQueryMessage, EventsQueryReply } from '../types/events-types.js';
 
+import { Events } from '../utils/events.js';
 import { EventsQuery } from '../interfaces/events-query.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { authenticate, authorizeOwner } from '../core/auth.js';
@@ -31,7 +32,7 @@ export class EventsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const logFilters = EventsQuery.convertFilters(message.descriptor.filters);
+    const logFilters = Events.convertFilters(message.descriptor.filters);
     const { events, cursor } = await this.eventLog.queryEvents(tenant, logFilters, message.descriptor.cursor);
 
     return {

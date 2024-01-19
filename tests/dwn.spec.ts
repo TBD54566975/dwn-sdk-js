@@ -1,3 +1,4 @@
+import type { EventStream } from '../src/types/subscriptions.js';
 import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 
@@ -10,6 +11,7 @@ import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { TestEventStream } from './test-event-stream.js';
 import { TestStores } from './test-stores.js';
 
 chai.use(chaiAsPromised);
@@ -19,6 +21,7 @@ export function testDwnClass(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -29,7 +32,9 @@ export function testDwnClass(): void {
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
 
-      dwn = await Dwn.create({ messageStore, dataStore, eventLog });
+      eventStream = TestEventStream.get();
+
+      dwn = await Dwn.create({ messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {
@@ -125,12 +130,14 @@ export function testDwnClass(): void {
         const messageStoreStub = stubInterface<MessageStore>();
         const dataStoreStub = stubInterface<DataStore>();
         const eventLogStub = stubInterface<EventLog>();
+        const eventStreamStub = stubInterface<EventStream>();
 
         const dwnWithConfig = await Dwn.create({
           tenantGate   : blockAllTenantGate,
           messageStore : messageStoreStub,
           dataStore    : dataStoreStub,
-          eventLog     : eventLogStub
+          eventLog     : eventLogStub,
+          eventStream  : eventStreamStub
         });
 
         const alice = await DidKeyResolver.generate();

@@ -1,6 +1,7 @@
 import type {
   DataStore,
   EventLog,
+  EventStream,
   MessageStore
 } from '../../src/index.js';
 
@@ -12,6 +13,7 @@ import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMet
 
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 
 export function testEventsQueryScenarios(): void {
   describe('events query tests', () => {
@@ -19,6 +21,7 @@ export function testEventsQueryScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -30,8 +33,9 @@ export function testEventsQueryScenarios(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

@@ -43,7 +43,7 @@ export class TestStores {
     return {
       messageStore : TestStores.messageStore,
       dataStore    : TestStores.dataStore,
-      eventLog     : TestStores.eventLog
+      eventLog     : TestStores.eventLog,
     };
   }
 }

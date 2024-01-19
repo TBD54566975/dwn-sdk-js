@@ -2,6 +2,7 @@ import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolutionResult } from '../../src/types/did-types.js';
 import type { EventsGetOptions } from '../../src/interfaces/events-get.js';
 import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
+import type { EventsSubscribeOptions } from '../../src/interfaces/events-subscribe.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { MessagesGetMessage } from '../../src/types/messages-types.js';
 import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
@@ -15,7 +16,7 @@ import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
-import type { EventsGetMessage, EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
+import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
@@ -29,6 +30,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { EventsGet } from '../../src/interfaces/events-get.js';
 import { EventsQuery } from '../../src/interfaces/events-query.js';
+import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
@@ -237,7 +239,7 @@ export type GenerateEventsGetOutput = {
 
 export type GenerateEventsQueryInput = {
   author?: Persona;
-  filters: EventsQueryFilter[];
+  filters: EventsFilter[];
   cursor?: PaginationCursor;
 };
 
@@ -245,6 +247,18 @@ export type GenerateEventsQueryOutput = {
   author: Persona;
   eventsQuery: EventsQuery;
   message: EventsQueryMessage;
+};
+
+export type GenerateEventsSubscribeInput = {
+  author: Persona;
+  filters?: EventsFilter[];
+  messageTimestamp?: string;
+};
+
+export type GenerateEventsSubscribeOutput = {
+  author: Persona;
+  eventsSubscribe: EventsSubscribe;
+  message: EventsSubscribeMessage;
 };
 
 export type GenerateMessagesGetInput = {
@@ -763,6 +777,30 @@ export class TestDataGenerator {
       author,
       eventsQuery,
       message: eventsQuery.message
+    };
+  }
+
+  /**
+   * Generates a EventsSubscribe message for testing.
+   */
+  public static async generateEventsSubscribe(input?: GenerateEventsSubscribeInput): Promise<GenerateEventsSubscribeOutput> {
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const signer = Jws.createSigner(author);
+
+    const options: EventsSubscribeOptions = {
+      filters          : input?.filters,
+      messageTimestamp : input?.messageTimestamp,
+      signer,
+    };
+    removeUndefinedProperties(options);
+
+    const eventsSubscribe = await EventsSubscribe.create(options);
+    const message = eventsSubscribe.message;
+
+    return {
+      author,
+      eventsSubscribe,
+      message
     };
   }
 

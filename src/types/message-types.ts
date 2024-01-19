@@ -16,6 +16,7 @@ export type GenericMessage = {
  */
 export type MessageOptions = {
   dataStream?: Readable;
+  subscriptionHandler?: MessageSubscriptionHandler;
 };
 
 /**
@@ -73,6 +74,13 @@ export type Descriptor = {
  */
 export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
+};
+
+export type MessageSubscriptionHandler = (message: GenericMessage) => void;
+
+export interface MessageSubscription {
+  id: string;
+  close: () => Promise<void>;
 };
 
 /**

@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type {
   DataStore,
   EventLog,
@@ -13,6 +14,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
@@ -26,6 +28,7 @@ export function testProtocolsQueryHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -39,8 +42,9 @@ export function testProtocolsQueryHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {

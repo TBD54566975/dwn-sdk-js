@@ -1,4 +1,5 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -11,6 +12,7 @@ import { Encoder } from '../../src/index.js';
 import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
@@ -25,6 +27,7 @@ export function testEndToEndScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -37,7 +40,9 @@ export function testEndToEndScenarios(): void {
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      eventStream = TestEventStream.get();
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

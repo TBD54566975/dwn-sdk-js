@@ -2,7 +2,8 @@
 export type { DwnConfig } from './dwn.js';
 export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
+export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply } from './types/events-types.js';
+export type { EventStream, SubscriptionReply } from './types/subscriptions.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
@@ -29,6 +30,7 @@ export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
+export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { executeUnlessAborted } from './utils/abort.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
@@ -51,10 +53,11 @@ export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';
 
-// store interfaces
+// concrete implementations of stores and event stream
 export { DataStoreLevel } from './store/data-store-level.js';
 export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
+export { EventEmitterStream } from './event-log/event-emitter-stream.js';
 
 // test library exports
 export { Persona, TestDataGenerator } from '../tests/utils/test-data-generator.js';

@@ -1,6 +1,7 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
@@ -25,7 +26,13 @@ type HandlerArgs = { tenant: string, message: RecordsWriteMessage, dataStream?: 
 
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private dataStore: DataStore,
+    private eventLog: EventLog,
+    private eventStream?: EventStream
+  ) { }
 
   public async handle({
     tenant,
@@ -120,9 +127,14 @@ export class RecordsWriteHandler implements MethodHandler {
         }
       }
 
-      const indexes = await recordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
+      const indexes = await recordsWrite.constructIndexes(isLatestBaseState);
       await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
       await this.eventLog.append(tenant, await Message.getCid(message), indexes);
+
+      // only emit if the event stream is set
+      if (this.eventStream !== undefined) {
+        this.eventStream.emit(tenant, message, indexes);
+      }
     } catch (error) {
       const e = error as any;
       if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
