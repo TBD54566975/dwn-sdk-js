@@ -9,16 +9,6 @@ const EVENTS_LISTENER_CHANNEL = 'events';
 
 export interface EventEmitterStreamConfig {
   /**
-   * The maximum number of listeners per eventName before a warning is emitted.
-   * 0 would represent infinity, which is the default if no value is set.
-   *
-   * this is not a hard limit, only a limit for warnings to be emitted so that a memory leak could be found.
-   * it will output a trace warning to stderr indicating that a "possible EventEmitter memory leak"
-   * https://nodejs.org/api/events.html#emittersetmaxlistenersn
-   * */
-  maxListeners?: number;
-
-  /**
    * An optional error handler in order to be able to react to any errors or warnings triggers by `EventEmitter`.
    * By default we log errors with `console.error`.
    */
@@ -33,12 +23,10 @@ export class EventEmitterStream implements EventStream {
     // we capture the rejections and currently just log the errors that are produced
     this.eventEmitter = new EventEmitter({ captureRejections: true });
 
-    // set number of listeners per particular eventName before a warning is emitted, the default is 10, 0 is infinity.
-    // this is not a hard limit, only a limit for warnings to be emitted so that a memory leak could be found.
-    // it will output a trace warning to stderr indicating that a "possible EventEmitter memory leak"
+    // number of listeners per particular eventName before a warning is emitted
+    // we set to 0 which represents infinity.
     // https://nodejs.org/api/events.html#emittersetmaxlistenersn
-    const maxListeners = config?.maxListeners ?? 0;
-    this.eventEmitter.setMaxListeners(maxListeners);
+    this.eventEmitter.setMaxListeners(0);
 
     if (config?.errorHandler) {
       this.errorHandler = config.errorHandler;

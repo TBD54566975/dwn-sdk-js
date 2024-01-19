@@ -86,15 +86,9 @@ describe('EventEmitterStream', () => {
     expect(messageCids).to.have.length(0);
   });
 
-  it('prints a warning to stderr if maxListeners have been exceeded', async () => {
-    // set maxListeners to 1 and create 2 subscriptions to trigger
-    const eventStreamOne = new EventEmitterStream({ maxListeners: 1 });
+  it('sets max listeners to 0 which represents infinity', async () => {
+    const eventStreamOne = new EventEmitterStream();
     const emitterOne = eventStreamOne['eventEmitter'];
-    expect(emitterOne.getMaxListeners()).to.equal(1);
-
-    // test default control is 0 which represents infinity.
-    const eventStream = new EventEmitterStream();
-    const emitter = eventStream['eventEmitter'];
-    expect(emitter.getMaxListeners()).to.equal(0);
+    expect(emitterOne.getMaxListeners()).to.equal(0);
   });
 });
