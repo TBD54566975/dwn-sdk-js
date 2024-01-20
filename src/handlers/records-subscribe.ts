@@ -1,12 +1,10 @@
-import EventEmitter from 'events';
-
 import type { DidResolver } from '../did/did-resolver.js';
 import type { Filter } from '../types/query-types.js';
+import type { GenericMessage } from '../index.js';
 import type { MessageStore } from '../types//message-store.js';
-import type { MessageSubscription } from '../types/message-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { RecordsHandler, RecordsSubscribeMessage, RecordsSubscribeReply } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsHandler, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { FilterUtility } from '../utils/filter.js';
@@ -14,7 +12,9 @@ import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
+import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -68,52 +68,23 @@ export class RecordsSubscribeHandler implements MethodHandler {
       }
     }
 
+    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
+      if (tenant === eventTenant && this.isRecordsMessage(eventMessage) && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
+        subscriptionHandler(eventMessage);
+      }
+    };
+
     const messageCid = await Message.getCid(message);
-    const subscription = await RecordsSubscribeHandler.createEventSubscription(tenant, messageCid, subscriptionHandler, filters, this.eventStream);
+    const subscription = await this.eventStream.subscribe(messageCid, listener);
     return {
       status: { code: 200, detail: 'OK' },
       subscription
     };
   }
 
-  /**
-   * Creates an EventStream subscription and assigns the message handler to the listener.
-   * The listener checks that the incoming message matches the supplied filters, as well as is attributed to the tenant.
-   */
-  private static async createEventSubscription(
-    tenant: string,
-    messageCid: string,
-    handler: RecordsHandler,
-    filters: Filter[],
-    eventStream: EventStream
-  ): Promise<MessageSubscription> {
-
-    const eventEmitter = new EventEmitter();
-    const eventChannel = `${tenant}_${messageCid}`;
-
-    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
-      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
-        eventEmitter.emit(eventChannel, eventMessage);
-      }
-    };
-
-    const eventsSubscription = await eventStream.subscribe(messageCid, listener);
-    eventEmitter.on(eventChannel, handler);
-
-    return {
-      id    : messageCid,
-      close : async (): Promise<void> => {
-        await eventsSubscription.close();
-        eventEmitter.off(eventChannel, handler);
-      },
-    };
-  }
-
-  // 1) owner filters
-  // 2) public filters
-  // 3) authorized filters
-  //    a) protocol authorized
-  //    b) grant authorized
+  private isRecordsMessage(message:GenericMessage): message is RecordsWriteMessage | RecordsDeleteMessage {
+    return RecordsWrite.isRecordsWriteMessage(message) || RecordsDelete.isRecordsDeleteMessage(message);
+  };
 
   /**
    * Fetches the records as the owner of the DWN with no additional filtering.
