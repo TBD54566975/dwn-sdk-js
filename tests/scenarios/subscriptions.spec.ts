@@ -925,7 +925,44 @@ export function testSubscriptionScenarios(): void {
       });
     });
 
-    describe('events subscribe', () => {
+    describe('records subscribe', () => {
+      it('allows for anonymous subscriptions to published records', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // subscribe to this thread's events
+        const messages:string[] = [];
+        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+          messages.push(await Message.getCid(message));
+        };
+
+        const anonymousSubscription = await TestDataGenerator.generateRecordsSubscribe({
+          anonymous : true,
+          filter    : { schema: 'http://schema1' }
+        });
+
+        const threadSubscriptionReply = await dwn.processMessage(alice.did, anonymousSubscription.message, {
+          subscriptionHandler
+        });
+        expect(threadSubscriptionReply.status.code).to.equal(200);
+        expect(threadSubscriptionReply.subscription).to.exist;
+
+        const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
+        const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        expect(write1Reply.status.code).to.equal(202);
+        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
+        const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        expect(write2Reply.status.code).to.equal(202);
+
+        // await for handler to receive and process the message
+        await Time.minimalSleep();
+
+        expect(messages.length).to.equal(2);
+        expect(messages).to.have.members([
+          await Message.getCid(write1.message),
+          await Message.getCid(write2.message),
+        ]);
+      });
+
       it('filters by protocol & parentId across multiple protocolPaths', async () => {
         // scenario: subscribe to multiple protocolPaths for a given protocol and parentId
         //    alice installs a protocol and creates a thread

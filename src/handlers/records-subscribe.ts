@@ -47,6 +47,9 @@ export class RecordsSubscribeHandler implements MethodHandler {
     if (Records.filterIncludesPublishedRecords(recordsSubscribe.message.descriptor.filter) && recordsSubscribe.author === undefined) {
       // build filters for a stream of published records
       filters = await RecordsSubscribeHandler.subscribePublishedRecords(recordsSubscribe);
+      // delete the undefined authorization property else the code will encounter the following IPLD issue when attempting to generate CID:
+      // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
+      delete message.authorization;
     } else {
       // authentication and authorization
       try {

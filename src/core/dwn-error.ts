@@ -106,8 +106,6 @@ export enum DwnErrorCode {
   RecordsReadAuthorizationFailed = 'RecordsReadAuthorizationFailed',
   RecordsSubscribeEventStreamUnimplemented = 'RecordsSubscribeEventStreamUnimplemented',
   RecordsSubscribeFilterMissingRequiredProperties = 'RecordsSubscribeFilterMissingRequiredProperties',
-  RecordsSubscribeUnauthorized = 'RecordsSubscribeUnauthorized',
-  RecordsSubscribeUnknownError = 'RecordsSubscribeUnknownError',
   RecordsSchemasDerivationSchemeMissingSchema = 'RecordsSchemasDerivationSchemeMissingSchema',
   RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch = 'RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch',
   RecordsValidateIntegrityGrantedToAndSignerMismatch = 'RecordsValidateIntegrityGrantedToAndSignerMismatch',
