@@ -1,7 +1,9 @@
-import type { MessageStore } from '../../src/index.js';
+import type { KeyValues } from '../../src/types/query-types.js';
+import type { GenericMessage, MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
 import { TestStores } from '../test-stores.js';
+import { Message, TestDataGenerator, Time } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -11,16 +13,10 @@ import chai, { expect } from 'chai';
 chai.use(chaiAsPromised);
 
 describe('EventEmitterStream', () => {
-  // saving the original `console.error` function to re-assign after tests complete
-  const originalConsoleErrorFunction = console.error;
-  let eventStream: EventEmitterStream;
   let messageStore: MessageStore;
 
   before(() => {
     ({ messageStore } = TestStores.get());
-
-    // do not print the console error statements from the emitter error
-    console.error = (_):void => { };
   });
 
   beforeEach(async () => {
@@ -28,14 +24,13 @@ describe('EventEmitterStream', () => {
   });
 
   after(async () => {
-    console.error = originalConsoleErrorFunction;
     // Clean up after each test by closing and clearing the event stream
     await messageStore.close();
-    await eventStream.close();
+    sinon.restore();
   });
 
   it('should remove listeners when `close` method is used', async () => {
-    eventStream = new EventEmitterStream();
+    const eventStream = new EventEmitterStream();
     const emitter = eventStream['eventEmitter'];
 
     // count the `events` listeners, which represents all listeners
@@ -50,10 +45,50 @@ describe('EventEmitterStream', () => {
   });
 
   it('logs message when the emitter experiences an error', async () => {
-    const eventErrorSpy = sinon.spy(EventEmitterStream.prototype as any, 'eventError');
-    eventStream = new EventEmitterStream();
+    const testHandler = {
+      errorHandler: (_:any):void => {},
+    };
+    const eventErrorSpy = sinon.spy(testHandler, 'errorHandler');
+
+    const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
     const emitter = eventStream['eventEmitter'];
     emitter.emit('error', new Error('random error'));
     expect(eventErrorSpy.callCount).to.equal(1);
+  });
+
+  it('does not emit messages if event stream is closed', async () => {
+    const testHandler = {
+      errorHandler: (_:any):void => {},
+    };
+    const eventErrorSpy = sinon.spy(testHandler, 'errorHandler');
+
+    const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
+
+    const messageCids: string[] = [];
+    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+      const messageCid = await Message.getCid(message);
+      messageCids.push(messageCid);
+    };
+    const subscription = await eventStream.subscribe('sub-1', handler);
+
+    // close eventStream
+    await eventStream.close();
+
+    const message1 = await TestDataGenerator.generateRecordsWrite({});
+    eventStream.emit('did:alice', message1.message, {});
+    const message2 = await TestDataGenerator.generateRecordsWrite({});
+    eventStream.emit('did:alice', message2.message, {});
+
+    expect(eventErrorSpy.callCount).to.equal(2);
+    await subscription.close();
+
+    await Time.minimalSleep();
+    expect(messageCids).to.have.length(0);
+  });
+
+  it('sets max listeners to 0 which represents infinity', async () => {
+    const eventStreamOne = new EventEmitterStream();
+    const emitterOne = eventStreamOne['eventEmitter'];
+    expect(emitterOne.getMaxListeners()).to.equal(0);
   });
 });

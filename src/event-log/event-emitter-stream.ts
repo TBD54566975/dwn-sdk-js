@@ -3,24 +3,42 @@ import type { KeyValues } from '../types/query-types.js';
 import type { EventListener, EventStream, EventSubscription } from '../types/subscriptions.js';
 
 import { EventEmitter } from 'events';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 const EVENTS_LISTENER_CHANNEL = 'events';
+
+export interface EventEmitterStreamConfig {
+  /**
+   * An optional error handler in order to be able to react to any errors or warnings triggers by `EventEmitter`.
+   * By default we log errors with `console.error`.
+   */
+  errorHandler?: (error: any) => void;
+};
 
 export class EventEmitterStream implements EventStream {
   private eventEmitter: EventEmitter;
   private isOpen: boolean = false;
 
-  constructor() {
+  constructor(config: EventEmitterStreamConfig = {}) {
     // we capture the rejections and currently just log the errors that are produced
     this.eventEmitter = new EventEmitter({ captureRejections: true });
-    this.eventEmitter.on('error', this.eventError);
+
+    // number of listeners per particular eventName before a warning is emitted
+    // we set to 0 which represents infinity.
+    // https://nodejs.org/api/events.html#emittersetmaxlistenersn
+    this.eventEmitter.setMaxListeners(0);
+
+    if (config.errorHandler) {
+      this.errorHandler = config.errorHandler;
+    }
+
+    this.eventEmitter.on('error', this.errorHandler);
   }
 
-  // we subscribe to the general `EventEmitter` error events with this handler.
-  // this handler is also called when there is a caught error upon emitting an event from a handler.
-  private eventError(error: any): void {
-    console.error('event emitter error', error);
-  };
+  /**
+   * we subscribe to the `EventEmitter` error handler with a provided handler or set one which logs the errors.
+   */
+  private errorHandler: (error:any) => void = (error) => { console.error('event emitter error', error); };
 
   async subscribe(id: string, listener: EventListener): Promise<EventSubscription> {
     this.eventEmitter.on(EVENTS_LISTENER_CHANNEL, listener);
@@ -41,7 +59,10 @@ export class EventEmitterStream implements EventStream {
 
   emit(tenant: string, message: GenericMessage, indexes: KeyValues): void {
     if (!this.isOpen) {
-      console.error('message emitted when EventEmitterStream is closed', tenant, message, indexes);
+      this.errorHandler(new DwnError(
+        DwnErrorCode.EventEmitterStreamNotOpenError,
+        'a message emitted when EventEmitterStream is closed'
+      ));
       return;
     }
     this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, message, indexes);
