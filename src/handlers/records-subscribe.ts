@@ -1,6 +1,5 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { Filter } from '../types/query-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
@@ -12,9 +11,7 @@ import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
-import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsSubscribe } from '../interfaces/records-subscribe.js';
-import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -69,8 +66,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
     }
 
     const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
-      if (tenant === eventTenant && this.isRecordsMessage(eventMessage) && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
-        subscriptionHandler(eventMessage);
+      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
+        // the filters check for interface and method
+        // if matched the messages are either a `RecordsWriteMessage` or `RecordsDeleteMessage`
+        subscriptionHandler(eventMessage as RecordsWriteMessage | RecordsDeleteMessage);
       }
     };
 
@@ -81,10 +80,6 @@ export class RecordsSubscribeHandler implements MethodHandler {
       subscription
     };
   }
-
-  private isRecordsMessage(message:GenericMessage): message is RecordsWriteMessage | RecordsDeleteMessage {
-    return RecordsWrite.isRecordsWriteMessage(message) || RecordsDelete.isRecordsDeleteMessage(message);
-  };
 
   /**
    * Fetches the records as the owner of the DWN with no additional filtering.

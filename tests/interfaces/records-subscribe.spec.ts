@@ -2,8 +2,8 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
-import { Jws } from '../../src/index.js';
-import { RecordsQuery } from '../../src/interfaces/records-query.js';
+import { Jws } from '../../src/utils/jws.js';
+import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
@@ -30,7 +30,7 @@ describe('RecordsSubscribe', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = Time.getCurrentTimestamp();
-      const recordsQuery = await RecordsQuery.create({
+      const recordsQuery = await RecordsSubscribe.create({
         filter           : { schema: 'anything' },
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
@@ -50,7 +50,7 @@ describe('RecordsSubscribe', () => {
         filter     : { protocol: 'example.com/' },
         definition : dexProtocolDefinition
       };
-      const recordsQuery = await RecordsQuery.create(options);
+      const recordsQuery = await RecordsSubscribe.create(options);
 
       const message = recordsQuery.message;
 
@@ -68,7 +68,7 @@ describe('RecordsSubscribe', () => {
         filter     : { schema: 'example.com/' },
         definition : dexProtocolDefinition
       };
-      const recordsQuery = await RecordsQuery.create(options);
+      const recordsQuery = await RecordsSubscribe.create(options);
 
       const message = recordsQuery.message;
 

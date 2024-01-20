@@ -932,8 +932,4 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;
   }
-
-  public static isRecordsWriteMessage(message: GenericMessage): message is RecordsWriteMessage {
-    return message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write;
-  }
 }

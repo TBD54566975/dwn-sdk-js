@@ -1,5 +1,4 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsSubscribeDescriptor, RecordsSubscribeMessage } from '../types/records-types.js';
@@ -101,9 +100,5 @@ export class RecordsSubscribe extends AbstractMessage<RecordsSubscribeMessage> {
       permissionsGrantMessage   : delegatedGrant,
       messageStore
     });
-  }
-
-  public static isRecordsSubscribeMessage(message: GenericMessage): message is RecordsSubscribeMessage {
-    return message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Subscribe;
   }
 }
