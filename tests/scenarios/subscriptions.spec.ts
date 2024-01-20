@@ -924,5 +924,179 @@ export function testSubscriptionScenarios(): void {
         expect(messageCids).to.eql([ record1MessageCid ]);
       });
     });
+
+    describe('events subscribe', () => {
+      it('filters by protocol & parentId across multiple protocolPaths', async () => {
+        // scenario: subscribe to multiple protocolPaths for a given protocol and parentId
+        //    alice installs a protocol and creates a thread
+        //    alice subscribes to update to that thread, it's participant as well as thread chats
+        //    alice adds bob and carol as participants to the thread
+        //    alice, bob, and carol all create messages
+        //    alice deletes carol participant message
+        //    alice checks that the correct messages were omitted
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const carol = await DidKeyResolver.generate();
+
+        // create protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...threadProtocol }
+        });
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+        const protocol = protocolConfigure.message.descriptor.definition.protocol;
+
+        // alice creates thread
+        const thread = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol,
+          protocolPath : 'thread'
+        });
+        const threadReply = await dwn.processMessage(alice.did, thread.message, { dataStream: thread.dataStream });
+        expect(threadReply.status.code).to.equal(202);
+
+
+        // subscribe to this thread's events
+        const messages:string[] = [];
+        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+          messages.push(await Message.getCid(message));
+        };
+
+        const threadSubscription = await TestDataGenerator.generateRecordsSubscribe({
+          author : alice,
+          filter : { protocol: protocol, protocolPath: 'thread', parentId: thread.message.recordId }, // thread updates
+        });
+        const threadSubscriptionReply = await dwn.processMessage(alice.did, threadSubscription.message, {
+          subscriptionHandler
+        });
+        expect(threadSubscriptionReply.status.code).to.equal(200);
+        expect(threadSubscriptionReply.subscription).to.exist;
+
+        const participantSubscription = await TestDataGenerator.generateRecordsSubscribe({
+          author : alice,
+          filter : { protocol: protocol, protocolPath: 'thread/participant', parentId: thread.message.recordId }, // participant updates
+        });
+        const participantSubscriptionReply = await dwn.processMessage(alice.did, participantSubscription.message, {
+          subscriptionHandler
+        });
+        expect(participantSubscriptionReply.status.code).to.equal(200);
+        expect(participantSubscriptionReply.subscription).to.exist;
+
+        const chatSubscription = await TestDataGenerator.generateRecordsSubscribe({
+          author : alice,
+          filter : { protocol: protocol, protocolPath: 'thread/chat', parentId: thread.message.recordId } // chat updates
+        });
+        const chatSubscriptionReply = await dwn.processMessage(alice.did, chatSubscription.message, {
+          subscriptionHandler
+        });
+        expect(chatSubscriptionReply.status.code).to.equal(200);
+        expect(chatSubscriptionReply.subscription).to.exist;
+
+        // add bob as participant
+        const bobParticipant = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/participant'
+        });
+        const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
+        expect(bobParticipantReply.status.code).to.equal(202);
+
+        // add carol as participant
+        const carolParticipant = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : carol.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/participant'
+        });
+        const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
+        expect(carolParticipantReply.status.code).to.equal(202);
+
+        // add another thread as a control, will not show up in handled events
+        const additionalThread = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol,
+          protocolPath : 'thread'
+        });
+        const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
+        expect(additionalThreadReply.status.code).to.equal(202);
+
+        // sleep to allow all messages to be processed by the handler message
+        await Time.minimalSleep();
+
+        expect(messages.length).to.equal(2);
+        expect(messages).to.have.members([
+          await Message.getCid(bobParticipant.message),
+          await Message.getCid(carolParticipant.message),
+        ]);
+
+        // add a message to protocol1
+        const message1 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
+        expect(message1Reply.status.code).to.equal(202);
+
+        const message2 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
+        expect(message2Reply.status.code).to.equal(202);
+
+        const message3 = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
+        expect(message3Reply.status.code).to.equal(202);
+
+        // sleep in order to allow messages to process and check for the added messages
+        await Time.minimalSleep();
+        expect(messages.length).to.equal(5);
+        expect(messages).to.include.members([
+          await Message.getCid(message1.message),
+          await Message.getCid(message2.message),
+          await Message.getCid(message3.message),
+        ]);
+
+        // delete carol participant
+        const deleteCarol = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : carolParticipant.message.recordId
+        });
+        const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
+        expect(deleteCarolReply.status.code).to.equal(202);
+
+        // sleep in order to allow messages to process and check for the delete message
+        await Time.minimalSleep();
+        expect(messages.length).to.equal(6);
+        expect(messages).to.include.members([
+          await Message.getCid(deleteCarol.message)
+        ]);
+      });
+    });
   });
 }

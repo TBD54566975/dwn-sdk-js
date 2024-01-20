@@ -35,7 +35,7 @@ export class RecordsQueryHandler implements MethodHandler {
     let recordsWrites: RecordsQueryReplyEntry[];
     let cursor: PaginationCursor | undefined;
     // if this is an anonymous query and the filter supports published records, query only published records
-    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
+    if (Records.filterIncludesPublishedRecords(recordsQuery.message.descriptor.filter) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
       recordsWrites = results.messages as RecordsQueryReplyEntry[];
       cursor = results.cursor;
@@ -144,13 +144,13 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsNonOwner(
     tenant: string, recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor }> {
-    const { dateSort, pagination } = recordsQuery.message.descriptor;
+    const { dateSort, pagination, filter } = recordsQuery.message.descriptor;
     const filters = [];
-    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
+    if (Records.filterIncludesPublishedRecords(filter)) {
       filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
     }
 
-    if (RecordsQueryHandler.filterIncludesUnpublishedRecords(recordsQuery)) {
+    if (Records.filterIncludesUnpublishedRecords(filter)) {
       filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
 
       const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
@@ -158,7 +158,7 @@ export class RecordsQueryHandler implements MethodHandler {
         filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
       }
 
-      if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+      if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
       }
     }
@@ -239,34 +239,6 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Determines if ProtocolAuthorization.authorizeQuery should be run and if the corresponding filter should be used.
-   */
-  private static shouldProtocolAuthorizeQuery(recordsQuery: RecordsQuery): boolean {
-    return recordsQuery.signaturePayload!.protocolRole !== undefined;
-  }
-
-  /**
-   * Checks if the recordQuery filter supports returning published records.
-   */
-  private static filterIncludesPublishedRecords(recordsQuery: RecordsQuery): boolean {
-    const { filter } = recordsQuery.message.descriptor;
-    // When `published` and `datePublished` range are both undefined, published records can be returned.
-    return filter.datePublished !== undefined || filter.published !== false;
-  }
-
-  /**
-   * Checks if the recordQuery filter supports returning unpublished records.
-   */
-  private static filterIncludesUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
-    const { filter } = recordsQuery.message.descriptor;
-    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
-    if (filter.datePublished === undefined && filter.published === undefined) {
-      return true;
-    }
-    return filter.published === false;
-  }
-
-  /**
    * @param messageStore Used to check if the grant has been revoked.
    */
   private static async authorizeRecordsQuery(
@@ -280,7 +252,7 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     // Only run protocol authz if message deliberately invokes it
-    if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+    if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
       await ProtocolAuthorization.authorizeQuery(tenant, recordsQuery, messageStore);
     }
   }

@@ -27,6 +27,61 @@ chai.use(chaiAsPromised);
 
 export function testRecordsSubscribeHandler(): void {
   describe('RecordsSubscribeHandler.handle()', () => {
+    describe('EventStream disabled',() => {
+      let didResolver: DidResolver;
+      let messageStore: MessageStore;
+      let dataStore: DataStore;
+      let eventLog: EventLog;
+      let dwn: Dwn;
+
+      // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+      // so that different test suites can reuse the same backend store for testing
+      before(async () => {
+        didResolver = new DidResolver([new DidKeyResolver()]);
+
+        const stores = TestStores.get();
+        messageStore = stores.messageStore;
+        dataStore = stores.dataStore;
+        eventLog = stores.eventLog;
+
+        dwn = await Dwn.create({
+          didResolver,
+          messageStore,
+          dataStore,
+          eventLog,
+        });
+
+      });
+
+
+      beforeEach(async () => {
+        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
+
+        // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+        await messageStore.clear();
+        await dataStore.clear();
+        await eventLog.clear();
+      });
+
+      after(async () => {
+        await dwn.close();
+      });
+
+      it('should respond with a 501 if subscriptions are not supported', async () => {
+        await dwn.close(); // close the original dwn instance
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog }); // leave out eventStream
+
+        const alice = await DidKeyResolver.generate();
+        // attempt to subscribe
+        const { message } = await TestDataGenerator.generateRecordsSubscribe({
+          author: alice,
+        });
+        const subscriptionMessageReply = await dwn.processMessage(alice.did, message, { subscriptionHandler: (_) => {} });
+        expect(subscriptionMessageReply.status.code).to.equal(501, subscriptionMessageReply.status.detail);
+        expect(subscriptionMessageReply.status.detail).to.include(DwnErrorCode.RecordsSubscribeEventStreamUnimplemented);
+      });
+    });
+
     describe('functional tests', () => {
       let didResolver: DidResolver;
       let messageStore: MessageStore;

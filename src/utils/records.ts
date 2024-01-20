@@ -316,4 +316,30 @@ export class Records {
       }
     }
   }
+
+  /**
+   * Determines if ProtocolAuthorization.authorizeSubscribe should be run and if the corresponding filter should be used.
+   */
+  static shouldProtocolAuthorize(signaturePayload: GenericSignaturePayload): boolean {
+    return signaturePayload.protocolRole !== undefined;
+  }
+
+  /**
+ * Checks if the recordSubscribe filter supports returning published records.
+ */
+  static filterIncludesPublishedRecords(filter: RecordsFilter): boolean {
+    // When `published` and `datePublished` range are both undefined, published records can be returned.
+    return filter.datePublished !== undefined || filter.published !== false;
+  }
+
+  /**
+   * Checks if the recordSubscribe filter supports returning unpublished records.
+   */
+  static filterIncludesUnpublishedRecords(filter: RecordsFilter): boolean {
+    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
+    if (filter.datePublished === undefined && filter.published === undefined) {
+      return true;
+    }
+    return filter.published === false;
+  }
 }

@@ -47,7 +47,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
 
     let filters:Filter[] = [];
     // if this is an anonymous subscribe and the filter supports published records, subscribe to only published records
-    if (RecordsSubscribeHandler.filterIncludesPublishedRecords(recordsSubscribe) && recordsSubscribe.author === undefined) {
+    if (Records.filterIncludesPublishedRecords(recordsSubscribe.message.descriptor.filter) && recordsSubscribe.author === undefined) {
       // build filters for a stream of published records
       filters = await RecordsSubscribeHandler.subscribePublishedRecords(recordsSubscribe);
     } else {
@@ -124,12 +124,12 @@ export class RecordsSubscribeHandler implements MethodHandler {
     recordsSubscribe: RecordsSubscribe
   ): Promise<Filter[]> {
     const filters:Filter[] = [];
-
-    if (RecordsSubscribeHandler.filterIncludesPublishedRecords(recordsSubscribe)) {
+    const { filter } = recordsSubscribe.message.descriptor;
+    if (Records.filterIncludesPublishedRecords(filter)) {
       filters.push(RecordsSubscribeHandler.buildPublishedRecordsFilter(recordsSubscribe));
     }
 
-    if (RecordsSubscribeHandler.filterIncludesUnpublishedRecords(recordsSubscribe)) {
+    if (Records.filterIncludesUnpublishedRecords(filter)) {
       filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsBySubscribeAuthorFilter(recordsSubscribe));
 
       const recipientFilter = recordsSubscribe.message.descriptor.filter.recipient;
@@ -137,7 +137,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
         filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
       }
 
-      if (RecordsSubscribeHandler.shouldProtocolAuthorizeSubscribe(recordsSubscribe)) {
+      if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsSubscribe));
       }
     }
@@ -206,34 +206,6 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
-   * Determines if ProtocolAuthorization.authorizeSubscribe should be run and if the corresponding filter should be used.
-   */
-  private static shouldProtocolAuthorizeSubscribe(recordsSubscribe: RecordsSubscribe): boolean {
-    return recordsSubscribe.signaturePayload!.protocolRole !== undefined;
-  }
-
-  /**
-   * Checks if the recordSubscribe filter supports returning published records.
-   */
-  private static filterIncludesPublishedRecords(recordsSubscribe: RecordsSubscribe): boolean {
-    const { filter } = recordsSubscribe.message.descriptor;
-    // When `published` and `datePublished` range are both undefined, published records can be returned.
-    return filter.datePublished !== undefined || filter.published !== false;
-  }
-
-  /**
-   * Checks if the recordSubscribe filter supports returning unpublished records.
-   */
-  private static filterIncludesUnpublishedRecords(recordsSubscribe: RecordsSubscribe): boolean {
-    const { filter } = recordsSubscribe.message.descriptor;
-    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
-    if (filter.datePublished === undefined && filter.published === undefined) {
-      return true;
-    }
-    return filter.published === false;
-  }
-
-  /**
  * @param messageStore Used to check if the grant has been revoked.
  */
   public static async authorizeRecordsSubscribe(
@@ -247,7 +219,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
     }
 
     // Only run protocol authz if message deliberately invokes it
-    if (RecordsSubscribeHandler.shouldProtocolAuthorizeSubscribe(recordsSubscribe)) {
+    if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
       await ProtocolAuthorization.authorizeSubscription(tenant, recordsSubscribe, messageStore);
     }
   }
