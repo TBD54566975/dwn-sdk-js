@@ -1,5 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { GenericMessage } from '../index.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
