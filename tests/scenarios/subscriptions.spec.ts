@@ -940,18 +940,24 @@ export function testSubscriptionScenarios(): void {
           filter    : { schema: 'http://schema1' }
         });
 
-        const threadSubscriptionReply = await dwn.processMessage(alice.did, anonymousSubscription.message, {
+        const anonymousSubscriptionReply = await dwn.processMessage(alice.did, anonymousSubscription.message, {
           subscriptionHandler
         });
-        expect(threadSubscriptionReply.status.code).to.equal(200);
-        expect(threadSubscriptionReply.subscription).to.exist;
+        expect(anonymousSubscriptionReply.status.code).to.equal(200);
+        expect(anonymousSubscriptionReply.subscription).to.exist;
 
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
         expect(write1Reply.status.code).to.equal(202);
+
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
         expect(write2Reply.status.code).to.equal(202);
+
+        // will not be emitted as it is not explicitly published
+        const writeNotPublished = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
+        const writeNotPublishedReply = await dwn.processMessage(alice.did, writeNotPublished.message, { dataStream: writeNotPublished.dataStream });
+        expect(writeNotPublishedReply.status.code).to.equal(202);
 
         // await for handler to receive and process the message
         await Time.minimalSleep();
@@ -960,6 +966,73 @@ export function testSubscriptionScenarios(): void {
         expect(messages).to.have.members([
           await Message.getCid(write1.message),
           await Message.getCid(write2.message),
+        ]);
+      });
+
+      it('allows authorized subscriptions to records intended for a recipient', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const carol = await DidKeyResolver.generate();
+
+        // bob subscribes to any messages he's authorized to see
+        const bobMessages:string[] = [];
+        const bobSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+          bobMessages.push(await Message.getCid(message));
+        };
+
+        const bobSubscribe = await TestDataGenerator.generateRecordsSubscribe({
+          author : bob,
+          filter : { schema: 'http://schema1' }
+        });
+
+        const bobSubscribeReply = await dwn.processMessage(alice.did, bobSubscribe.message, {
+          subscriptionHandler: bobSubscribeHandler
+        });
+        expect(bobSubscribeReply.status.code).to.equal(200);
+        expect(bobSubscribeReply.subscription).to.exist;
+
+        // carol subscribes to any messages she's the recipient of.
+        const carolMessages:string[] = [];
+        const carolSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+          carolMessages.push(await Message.getCid(message));
+        };
+
+        const carolSubscribe = await TestDataGenerator.generateRecordsSubscribe({
+          author : carol,
+          filter : { schema: 'http://schema1', recipient: carol.did }
+        });
+
+        const carolSubscribeReply = await dwn.processMessage(alice.did, carolSubscribe.message, {
+          subscriptionHandler: carolSubscribeHandler
+        });
+        expect(carolSubscribeReply.status.code).to.equal(200);
+        expect(carolSubscribeReply.subscription).to.exist;
+
+        const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
+        const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        expect(write1Reply.status.code).to.equal(202);
+
+        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
+        const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
+        expect(write2Reply.status.code).to.equal(202);
+
+        // will not be emitted as it is not intended for bob
+        const writeForCarol = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: carol.did });
+        const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
+        expect(writeForCarolReply.status.code).to.equal(202);
+
+        // await for handler to receive and process the message
+        await Time.minimalSleep();
+
+        expect(bobMessages.length).to.equal(2);
+        expect(bobMessages).to.have.members([
+          await Message.getCid(write1.message),
+          await Message.getCid(write2.message),
+        ]);
+
+        expect(carolMessages.length).to.equal(1);
+        expect(carolMessages).to.have.members([
+          await Message.getCid(writeForCarol.message),
         ]);
       });
 

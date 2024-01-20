@@ -51,6 +51,7 @@ export class Cid {
 
     const payloadBytes = codec.encode(payload);
     const payloadHash = await hasher.digest(payloadBytes);
+
     const cid = await CID.createV1(codec.code, payloadHash);
     return cid.toString();
   }
