@@ -19,7 +19,7 @@ export class EventEmitterStream implements EventStream {
   private eventEmitter: EventEmitter;
   private isOpen: boolean = false;
 
-  constructor(config?: EventEmitterStreamConfig) {
+  constructor(config: EventEmitterStreamConfig = {}) {
     // we capture the rejections and currently just log the errors that are produced
     this.eventEmitter = new EventEmitter({ captureRejections: true });
 
@@ -28,7 +28,7 @@ export class EventEmitterStream implements EventStream {
     // https://nodejs.org/api/events.html#emittersetmaxlistenersn
     this.eventEmitter.setMaxListeners(0);
 
-    if (config?.errorHandler) {
+    if (config.errorHandler) {
       this.errorHandler = config.errorHandler;
     }
 
