@@ -119,7 +119,7 @@ export class RecordsGrantAuthorization {
       messageStore
     });
 
-    // If the grant specifies a protocol, the query must specify the same protocol.
+    // If the grant specifies a protocol, the subscribe must specify the same protocol.
     const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
     const protocolInSubscribe = recordsSubscribeMessage.descriptor.filter.protocol;
     if (protocolInGrant !== undefined && protocolInSubscribe !== protocolInGrant) {

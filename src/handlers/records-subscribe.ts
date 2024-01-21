@@ -85,7 +85,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
-   * Fetches the records as the owner of the DWN with no additional filtering.
+   * Subscribe to records as the owner of the DWN with no additional filtering.
    */
   private static async subscribeAsOwner(RecordsSubscribe: RecordsSubscribe): Promise<Filter[]> {
     const { filter } = RecordsSubscribe.message.descriptor;
@@ -93,10 +93,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
     const subscribeFilter = {
       ...Records.convertFilter(filter),
       interface : DwnInterfaceName.Records,
-      method    : [ DwnMethodName.Write, DwnMethodName.Delete ], // we fetch both write and delete so that subscriber can update state.
+      method    : [ DwnMethodName.Write, DwnMethodName.Delete ], // we filter for both write and delete so that subscriber can update state.
     };
 
-    return [subscribeFilter];
+    return [ subscribeFilter ];
   }
 
   /**
@@ -116,7 +116,6 @@ export class RecordsSubscribeHandler implements MethodHandler {
    * C) UNPUBLISHED:
    *    1. unpublished records intended for the subscription author (where `recipient` is the subscription author); and
    *    2. unpublished records authorized by a protocol rule.
-   *
    */
   private static async subscribeAsNonOwner(
     recordsSubscribe: RecordsSubscribe
@@ -143,7 +142,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
-   * Fetches only published records.
+   * Filters for only published records.
    */
   private static async subscribePublishedRecords(
     recordsSubscribe: RecordsSubscribe
@@ -152,8 +151,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
     return [filter];
   }
 
+  /**
+   * Creates a filter for all published records matching the subscribe
+   */
   private static buildPublishedRecordsFilter(recordsSubscribe: RecordsSubscribe): Filter {
-    // fetch all published records matching the subscribe
     return {
       ...Records.convertFilter(recordsSubscribe.message.descriptor.filter),
       interface : DwnInterfaceName.Records,
@@ -204,8 +205,8 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
- * @param messageStore Used to check if the grant has been revoked.
- */
+   * @param messageStore Used to check if the grant has been revoked.
+   */
   public static async authorizeRecordsSubscribe(
     tenant: string,
     recordsSubscribe: RecordsSubscribe,
