@@ -46,7 +46,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
     // if this is an anonymous subscribe and the filter supports published records, subscribe to only published records
     if (Records.filterIncludesPublishedRecords(recordsSubscribe.message.descriptor.filter) && recordsSubscribe.author === undefined) {
       // build filters for a stream of published records
-      filters = await RecordsSubscribeHandler.subscribePublishedRecords(recordsSubscribe);
+      filters = await RecordsSubscribeHandler.filterPublishedRecords(recordsSubscribe);
       // delete the undefined authorization property else the code will encounter the following IPLD issue when attempting to generate CID:
       // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
       delete message.authorization;
@@ -61,10 +61,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
 
       if (recordsSubscribe.author === tenant) {
         // if the subscribe author is the tenant, filter as owner.
-        filters = await RecordsSubscribeHandler.subscribeAsOwner(recordsSubscribe);
+        filters = await RecordsSubscribeHandler.filterAsOwner(recordsSubscribe);
       } else {
         // otherwise build filters based on published records, permissions, or protocol rules
-        filters = await RecordsSubscribeHandler.subscribeAsNonOwner(recordsSubscribe);
+        filters = await RecordsSubscribeHandler.filterAsNonOwner(recordsSubscribe);
       }
     }
 
@@ -87,7 +87,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   /**
    * Subscribe to records as the owner of the DWN with no additional filtering.
    */
-  private static async subscribeAsOwner(RecordsSubscribe: RecordsSubscribe): Promise<Filter[]> {
+  private static async filterAsOwner(RecordsSubscribe: RecordsSubscribe): Promise<Filter[]> {
     const { filter } = RecordsSubscribe.message.descriptor;
 
     const subscribeFilter = {
@@ -100,9 +100,9 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
-   * Subscribe to records as a non-owner.
+   * Creates filters in order to subscribe to records as a non-owner.
    *
-   * Filters can support returning both published and unpublished records,
+   * Filters can support emitting messages for both published and unpublished records,
    * as well as explicitly only published or only unpublished records.
    *
    * A) BOTH published and unpublished:
@@ -117,7 +117,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
    *    1. unpublished records intended for the subscription author (where `recipient` is the subscription author); and
    *    2. unpublished records authorized by a protocol rule.
    */
-  private static async subscribeAsNonOwner(
+  private static async filterAsNonOwner(
     recordsSubscribe: RecordsSubscribe
   ): Promise<Filter[]> {
     const filters:Filter[] = [];
@@ -134,7 +134,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
         filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
       }
 
-      if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
+      if (Records.hasProtocolRole(recordsSubscribe.signaturePayload!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsSubscribe));
       }
     }
@@ -144,7 +144,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   /**
    * Filters for only published records.
    */
-  private static async subscribePublishedRecords(
+  private static async filterPublishedRecords(
     recordsSubscribe: RecordsSubscribe
   ): Promise<Filter[]> {
     const filter = RecordsSubscribeHandler.buildPublishedRecordsFilter(recordsSubscribe);
@@ -218,7 +218,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
     }
 
     // Only run protocol authz if message deliberately invokes it
-    if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
+    if (Records.hasProtocolRole(recordsSubscribe.signaturePayload!)) {
       await ProtocolAuthorization.authorizeSubscription(tenant, recordsSubscribe, messageStore);
     }
   }

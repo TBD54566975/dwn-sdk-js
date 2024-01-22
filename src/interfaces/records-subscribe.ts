@@ -42,7 +42,7 @@ export class RecordsSubscribe extends AbstractMessage<RecordsSubscribeMessage> {
       if (message.descriptor.filter.protocolPath === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsSubscribeFilterMissingRequiredProperties,
-          'Role-authorized queries must include `protocolPath` in the filter'
+          'Role-authorized subscriptions must include `protocolPath` in the filter'
         );
       }
     }
