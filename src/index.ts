@@ -4,7 +4,7 @@ export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocumen
 export type { EventLog } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply } from './types/events-types.js';
 export type { EventStream, SubscriptionReply } from './types/subscriptions.js';
-export type { GenericMessage, GenericMessageReply, MessageSort, Pagination, QueryResultEntry } from './types/message-types.js';
+export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, MessageSubscriptionHandler, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
