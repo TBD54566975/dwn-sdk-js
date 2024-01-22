@@ -79,3 +79,6 @@
   - `write` - allows a DID to create and update the record they have created
   - `update` - allows a DID to update a record, regardless of the initial author
 
+  ## Subscriptions
+ - Same considerations as for `RecordsQuery` wrt invoking a protocol role for a specific `protocolPath`.
+ - Currently if a subscription is no longer authorized but it is still active, the subscriber will still receive updates until they close the subscription. This will be addressed ina separate PR https://github.com/TBD54566975/dwn-sdk-js/issues/668 - last updated (2024/01/22)
