@@ -3,7 +3,7 @@ import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { RecordsDeleteMessage, RecordsHandler, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { FilterUtility } from '../utils/filter.js';
@@ -26,7 +26,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }: {
     tenant: string,
     message: RecordsSubscribeMessage,
-    subscriptionHandler: RecordsHandler,
+    subscriptionHandler: RecordSubscriptionHandler,
   }): Promise<RecordsSubscribeReply> {
     if (this.eventStream === undefined) {
       return messageReplyFromError(new DwnError(
@@ -46,7 +46,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
     // if this is an anonymous subscribe and the filter supports published records, subscribe to only published records
     if (Records.filterIncludesPublishedRecords(recordsSubscribe.message.descriptor.filter) && recordsSubscribe.author === undefined) {
       // build filters for a stream of published records
-      filters = await RecordsSubscribeHandler.filterPublishedRecords(recordsSubscribe);
+      filters = [ RecordsSubscribeHandler.buildPublishedRecordsFilter(recordsSubscribe) ];
       // delete the undefined authorization property else the code will encounter the following IPLD issue when attempting to generate CID:
       // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
       delete message.authorization;
@@ -142,16 +142,6 @@ export class RecordsSubscribeHandler implements MethodHandler {
   }
 
   /**
-   * Filters for only published records.
-   */
-  private static async filterPublishedRecords(
-    recordsSubscribe: RecordsSubscribe
-  ): Promise<Filter[]> {
-    const filter = RecordsSubscribeHandler.buildPublishedRecordsFilter(recordsSubscribe);
-    return [filter];
-  }
-
-  /**
    * Creates a filter for all published records matching the subscribe
    */
   private static buildPublishedRecordsFilter(recordsSubscribe: RecordsSubscribe): Filter {
@@ -219,7 +209,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
 
     // Only run protocol authz if message deliberately invokes it
     if (Records.hasProtocolRole(recordsSubscribe.signaturePayload!)) {
-      await ProtocolAuthorization.authorizeSubscription(tenant, recordsSubscribe, messageStore);
+      await ProtocolAuthorization.authorizeSubscribe(tenant, recordsSubscribe, messageStore);
     }
   }
 }

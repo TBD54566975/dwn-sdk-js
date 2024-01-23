@@ -11,7 +11,7 @@ import type { GenericMessage, GenericMessageReply, MessageSubscriptionHandler } 
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-import type { RecordsDeleteMessage, RecordsHandler, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -248,7 +248,7 @@ export class Dwn {
  */
 export interface MessageOptions {
   dataStream?: Readable;
-  subscriptionHandler?: MessageSubscriptionHandler | RecordsHandler;
+  subscriptionHandler?: MessageSubscriptionHandler | RecordSubscriptionHandler;
 };
 
 /**

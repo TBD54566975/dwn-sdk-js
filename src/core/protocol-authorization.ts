@@ -153,7 +153,7 @@ export class ProtocolAuthorization {
     );
   }
 
-  public static async authorizeSubscription(
+  public static async authorizeSubscribe(
     tenant: string,
     incomingMessage: RecordsSubscribe,
     messageStore: MessageStore,
@@ -164,7 +164,7 @@ export class ProtocolAuthorization {
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!, // `authorizeSubscription` is only called if `protocol` is present
+      protocol!, // `authorizeSubscribe` is only called if `protocol` is present
       messageStore,
     );
 
