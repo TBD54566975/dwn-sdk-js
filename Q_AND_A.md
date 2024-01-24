@@ -66,7 +66,7 @@
 
   No.
 
-- When making `RecordsQuery` by invoking a protocol role, why is `protocolPath` a required filter property? This means that one cannot filter records under a `protocol` or `contextId` irrespective of the `protocolPath`, thus is forced to make multiple queries (ie. one per `protocolPath`).
+- When making `RecordsQuery` or `RecordsSubscribe` by invoking a protocol role, why is `protocolPath` a required filter property? This means that one cannot filter records under a `protocol` or `contextId` irrespective of the `protocolPath`, thus is forced to make multiple queries (ie. one per `protocolPath`).
 
   (Last update: 2023/11/03)
 
@@ -79,3 +79,11 @@
   - `write` - allows a DID to create and update the record they have created
   - `update` - allows a DID to update a record, regardless of the initial author
 
+  ## Subscriptions
+- What happens to a subscription which is listening to events, but is no longer authorized due to revocation of a grant or role?
+
+  (Last update: 2024/01/23)
+
+  Currently if a subscription is no longer authorized but it is still active, the subscriber will still receive updates until they close the subscription themselves. If they try to re-subscribe after that, it will be rejected with a 401.
+
+  This will be addressed in a future upgrade and we've created an issue to track it. https://github.com/TBD54566975/dwn-sdk-js/issues/668 - last updated (2024/01/22)

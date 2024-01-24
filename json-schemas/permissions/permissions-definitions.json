@@ -28,6 +28,9 @@
         },
         {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-query-scope"
+        },
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-subscribe-scope"
         }
       ]
     },

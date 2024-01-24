@@ -3,6 +3,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsQuery } from '../interfaces/records-query.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
+import type { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
@@ -152,22 +153,17 @@ export class ProtocolAuthorization {
     );
   }
 
-  /**
-   * Performs protocol-based authorization against the incoming RecordsQuery message.
-   * @throws {Error} if authorization fails.
-   */
-  public static async authorizeQuery(
+  public static async authorizeQueryOrSubscribe(
     tenant: string,
-    incomingMessage: RecordsQuery,
+    incomingMessage: RecordsQuery | RecordsSubscribe,
     messageStore: MessageStore,
   ): Promise<void> {
-    // validate that required properties exist in query filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!, // authorizeQuery` is only called if `protocol` is present
+      protocol!, // `authorizeQueryOrSubscribe` is only called if `protocol` is present
       messageStore,
     );
 
@@ -192,7 +188,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
-      [], // ancestor chain is not relevant to queries
+      [], // ancestor chain is not relevant to subscriptions
       messageStore,
     );
   }
@@ -423,7 +419,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
@@ -481,7 +477,7 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
 
@@ -494,6 +490,9 @@ export class ProtocolAuthorization {
 
     case DwnMethodName.Read:
       return [ProtocolAction.Read];
+
+    case DwnMethodName.Subscribe:
+      return [ProtocolAction.Subscribe];
 
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
@@ -519,7 +518,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,

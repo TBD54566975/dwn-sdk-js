@@ -3,7 +3,7 @@ import type { GeneralJws } from './jws-types.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericSignaturePayload, Pagination } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericSignaturePayload, MessageSubscription, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
@@ -106,6 +106,13 @@ export type RecordsQueryDescriptor = {
   pagination?: Pagination;
 };
 
+export type RecordsSubscribeDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Subscribe;
+  messageTimestamp: string;
+  filter: RecordsFilter;
+};
+
 export type RecordsFilter = {
   /**the logical author of the record */
   author?: string;
@@ -144,6 +151,20 @@ export type RecordsQueryMessage = GenericMessage & {
 export type RecordsQueryReply = GenericMessageReply & {
   entries?: RecordsQueryReplyEntry[];
   cursor?: PaginationCursor;
+};
+
+export type RecordSubscriptionHandler = (message: RecordsWriteMessage | RecordsDeleteMessage) => void;
+
+export type RecordsSubscribeMessageOptions = {
+  subscriptionHandler: RecordSubscriptionHandler;
+};
+
+export type RecordsSubscribeMessage = GenericMessage & {
+  descriptor: RecordsSubscribeDescriptor;
+};
+
+export type RecordsSubscribeReply = GenericMessageReply & {
+  subscription?: MessageSubscription;
 };
 
 export type RecordsReadMessage = {

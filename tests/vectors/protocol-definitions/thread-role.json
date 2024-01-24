@@ -50,6 +50,10 @@
             "can": "query"
           },
           {
+            "role": "thread/participant",
+            "can": "subscribe"
+          },
+          {
             "role": "thread/admin",
             "can": "update"
           },

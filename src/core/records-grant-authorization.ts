@@ -1,7 +1,7 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, RecordsPermissionsGrantMessage } from '../types/permissions-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsConditionPublication } from '../types/permissions-grant-descriptor.js';
@@ -63,35 +63,35 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes the scope of a PermissionsGrant for RecordsQuery.
+   * Authorizes the scope of a PermissionsGrant for RecordsQuery or RecordsSubscribe.
    * @param messageStore Used to check if the grant has been revoked.
    */
-  public static async authorizeQuery(input: {
-    recordsQueryMessage: RecordsQueryMessage,
+  public static async authorizeQueryOrSubscribe(input: {
+    incomingMessage: RecordsQueryMessage | RecordsSubscribeMessage,
     expectedGrantedToInGrant: string,
     expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsQueryMessage, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
+      incomingMessage, expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
-      incomingMessage: recordsQueryMessage,
+      incomingMessage,
       expectedGrantedToInGrant,
       expectedGrantedForInGrant,
       permissionsGrantMessage,
       messageStore
     });
 
-    // If the grant specifies a protocol, the query must specify the same protocol.
-    const protocolInGrant = (permissionsGrantMessage as RecordsPermissionsGrantMessage).descriptor.scope.protocol;
-    const protocolInQuery = recordsQueryMessage.descriptor.filter.protocol;
-    if (protocolInGrant !== undefined && protocolInQuery !== protocolInGrant) {
+    // If the grant specifies a protocol, the subscribe or query must specify the same protocol.
+    const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
+    const protocolInMessage = incomingMessage.descriptor.filter.protocol;
+    if (protocolInGrant !== undefined && protocolInMessage !== protocolInGrant) {
       throw new DwnError(
-        DwnErrorCode.RecordsGrantAuthorizationQueryProtocolScopeMismatch,
-        `Grant protocol scope ${protocolInGrant} does not match protocol in query ${protocolInQuery}`
+        DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch,
+        `Grant protocol scope ${protocolInGrant} does not match protocol in message ${protocolInMessage}`
       );
     }
   }

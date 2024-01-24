@@ -2,7 +2,7 @@ import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Filter } from '../types/query-types.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
@@ -289,7 +289,7 @@ export class Records {
    *                         Usage of this property is purely for performance optimization so we don't have to decode the signature payload again.
    */
   public static validateDelegatedGrantReferentialIntegrity(
-    message: RecordsReadMessage | RecordsQueryMessage | RecordsWriteMessage | RecordsDeleteMessage,
+    message: RecordsReadMessage | RecordsQueryMessage | RecordsWriteMessage | RecordsDeleteMessage | RecordsSubscribeMessage,
     signaturePayload: GenericSignaturePayload | undefined
   ): void {
     // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
@@ -315,5 +315,31 @@ export class Records {
         );
       }
     }
+  }
+
+  /**
+   * Determines if signature payload contains a protocolRole and should be authorized as such.
+   */
+  static shouldProtocolAuthorize(signaturePayload: GenericSignaturePayload): boolean {
+    return signaturePayload.protocolRole !== undefined;
+  }
+
+  /**
+   * Checks if the filter supports returning published records.
+   */
+  static filterIncludesPublishedRecords(filter: RecordsFilter): boolean {
+    // When `published` and `datePublished` range are both undefined, published records can be returned.
+    return filter.datePublished !== undefined || filter.published !== false;
+  }
+
+  /**
+   * Checks if the filter supports returning unpublished records.
+   */
+  static filterIncludesUnpublishedRecords(filter: RecordsFilter): boolean {
+    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
+    if (filter.datePublished === undefined && filter.published === undefined) {
+      return true;
+    }
+    return filter.published === false;
   }
 }

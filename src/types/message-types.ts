@@ -1,6 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
-import type { Readable } from 'readable-stream';
 import type { PaginationCursor, SortDirection } from './query-types.js';
 
 /**
@@ -9,14 +8,6 @@ import type { PaginationCursor, SortDirection } from './query-types.js';
 export type GenericMessage = {
   descriptor: Descriptor;
   authorization?: AuthorizationModel;
-};
-
-/**
- *  MessageOptions that are used when processing a message.
- */
-export type MessageOptions = {
-  dataStream?: Readable;
-  subscriptionHandler?: MessageSubscriptionHandler;
 };
 
 /**

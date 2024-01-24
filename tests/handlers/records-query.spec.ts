@@ -50,7 +50,6 @@ export function testRecordsQueryHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
-
         eventStream = TestEventStream.get();
 
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
@@ -2030,8 +2029,7 @@ export function testRecordsQueryHandler(): void {
         });
 
         it('allows $contextRole authorized queries', async () => {
-          // scenario: Alice writes some chat messages writes a chat message. Bob invokes his
-          //           friend role in order to query the chat message.
+          // scenario: Alice writes some chat messages. Bob invokes his friend role in order to query the chat messages.
 
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
