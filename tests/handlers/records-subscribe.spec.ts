@@ -1,7 +1,7 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenericMessage } from '../../src/types/message-types.js';
 import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsDeleteMessage, RecordsFilter } from '../../src/types/records-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -120,7 +120,6 @@ export function testRecordsSubscribeHandler(): void {
       it('should return a subscription object', async () => {
         const alice = await DidKeyResolver.generate();
 
-        // subscribe for non-normalized protocol
         const recordsSubscribe = await TestDataGenerator.generateRecordsSubscribe({
           author : alice,
           filter : { schema: 'some-schema' },
@@ -383,8 +382,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(friendRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord = async (message: GenericMessage): Promise<void> => {
-            if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
+          const addRecord:RecordSubscriptionHandler = async (message) => {
+            if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
             }
@@ -426,8 +425,8 @@ export function testRecordsSubscribeHandler(): void {
         });
 
         it('allows protocol authorized subscriptions', async () => {
-          // scenario: Alice writes some chat messages writes a chat message.
-          //   Bob, having a thread/participant record, can subscribe to the chat.
+          // scenario: Alice writes some chat messages.
+          //           Bob, having a thread/participant record, can subscribe to the chat.
 
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
@@ -490,8 +489,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(participantRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord = async (message: GenericMessage): Promise<void> => {
-            if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
+          const addRecord:RecordSubscriptionHandler = async (message) => {
+            if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
             }
@@ -593,8 +592,8 @@ export function testRecordsSubscribeHandler(): void {
         });
 
         it('does not execute $contextRole authorized subscriptions where contextId is missing from the filter', async () => {
-          // scenario: Alice writes some chat messages and gives Bob a role allowing him to access them. But Bob's filter
-          //           does not contain a contextId so the subscription fails.
+          // scenario: Alice gives Bob a role allowing him to access a particular chat thread.
+          //           But Bob's filter does not contain a contextId so the subscription fails.
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
 
@@ -630,25 +629,7 @@ export function testRecordsSubscribeHandler(): void {
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
           expect(participantRoleReply.status.code).to.equal(202);
 
-          // Alice writes three 'chat' records
-          const chatRecordIds = [];
-          for (let i = 0; i < 3; i++) {
-            const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
-            });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
-            chatRecordIds.push(chatRecord.message.recordId);
-          }
-
-          // Bob invokes his thread participant role to subscribe
+          // Bob invokes his thread participant role to subscribe but omits the contextId
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
             author : bob,
             filter : {
@@ -665,8 +646,8 @@ export function testRecordsSubscribeHandler(): void {
         });
 
         it('rejects $globalRole authorized subscriptions if the request author does not have a matching $globalRole', async () => {
-          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes a
-          //           $globalRole but fails because he does not actually have a role.
+          // scenario: Alice installs a chat protocol.
+          // Bob invokes a $globalRole within that protocol to subscribe but fails because he does not actually have a role.
 
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
@@ -680,23 +661,7 @@ export function testRecordsSubscribeHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // Alice writes three 'chat' records
-          const chatRecordIds = [];
-          for (let i = 0; i < 3; i++) {
-            const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'chat',
-              published    : false,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
-            });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
-            chatRecordIds.push(chatRecord.message.recordId);
-          }
-
-          // Bob invokes his friendRole to subscribe to the records
+          // Bob invokes a friendRole he does not have to subscribe to the records
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
             author : bob,
             filter : {
@@ -734,25 +699,7 @@ export function testRecordsSubscribeHandler(): void {
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
-          // Alice writes three 'chat' records
-          const chatRecordIds = [];
-          for (let i = 0; i < 3; i++) {
-            const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
-            });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
-            chatRecordIds.push(chatRecord.message.recordId);
-          }
-
-          // Bob invokes his friendRole to subscribe to the records
+          // Bob invokes his a `thread/participant` role which he does not have to subscribe to the records
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
             author : bob,
             filter : {

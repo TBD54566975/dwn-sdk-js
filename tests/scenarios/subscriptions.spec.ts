@@ -929,7 +929,6 @@ export function testSubscriptionScenarios(): void {
       it('allows for anonymous subscriptions to published records', async () => {
         const alice = await DidKeyResolver.generate();
 
-        // subscribe to this thread's events
         const messages:string[] = [];
         const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
           messages.push(await Message.getCid(message));
@@ -1016,7 +1015,7 @@ export function testSubscriptionScenarios(): void {
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
         expect(write2Reply.status.code).to.equal(202);
 
-        // will not be emitted as it is not intended for bob
+        // message for carol only
         const writeForCarol = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: carol.did });
         const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
         expect(writeForCarolReply.status.code).to.equal(202);
