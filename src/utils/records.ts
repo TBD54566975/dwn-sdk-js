@@ -320,7 +320,7 @@ export class Records {
   /**
    * Determines if signature payload contains a protocolRole and should be authorized as such.
    */
-  static hasProtocolRole(signaturePayload: GenericSignaturePayload): boolean {
+  static shouldProtocolAuthorize(signaturePayload: GenericSignaturePayload): boolean {
     return signaturePayload.protocolRole !== undefined;
   }
 

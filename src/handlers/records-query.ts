@@ -158,7 +158,7 @@ export class RecordsQueryHandler implements MethodHandler {
         filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
       }
 
-      if (Records.hasProtocolRole(recordsQuery.signaturePayload!)) {
+      if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
       }
     }
@@ -252,7 +252,7 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     // Only run protocol authz if message deliberately invokes it
-    if (Records.hasProtocolRole(recordsQuery.signaturePayload!)) {
+    if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
       await ProtocolAuthorization.authorizeQueryOrSubscribe(tenant, recordsQuery, messageStore);
     }
   }
