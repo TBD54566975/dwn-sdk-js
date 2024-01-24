@@ -719,9 +719,9 @@ export function testDelegatedGrantScenarios(): void {
           protocolPath : 'thread/chat'
         }
       });
-      const deviceXSubscribeQueryReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
-      expect(deviceXSubscribeQueryReply.status.code).to.equal(401);
-      expect(deviceXSubscribeQueryReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
+      const deviceXRecordsSubscribeReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
+      expect(deviceXRecordsSubscribeReply.status.code).to.equal(401);
+      expect(deviceXRecordsSubscribeReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
