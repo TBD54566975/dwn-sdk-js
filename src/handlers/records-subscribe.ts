@@ -209,7 +209,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
 
     // Only run protocol authz if message deliberately invokes it
     if (Records.hasProtocolRole(recordsSubscribe.signaturePayload!)) {
-      await ProtocolAuthorization.authorizeSubscribe(tenant, recordsSubscribe, messageStore);
+      await ProtocolAuthorization.authorizeQueryOrSubscribe(tenant, recordsSubscribe, messageStore);
     }
   }
 }

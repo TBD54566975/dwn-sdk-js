@@ -747,7 +747,7 @@ export function testDelegatedGrantScenarios(): void {
       });
       const deviceXRecordsQueryReply = await dwn.processMessage(bob.did, recordsQueryByDeviceX.message);
       expect(deviceXRecordsQueryReply.status.code).to.equal(401);
-      expect(deviceXRecordsQueryReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryProtocolScopeMismatch);
+      expect(deviceXRecordsQueryReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
 
       // verify device X reading for the chat message from Bob's DWN fails
       const recordsReadByDeviceX = await RecordsRead.create({
@@ -835,7 +835,7 @@ export function testDelegatedGrantScenarios(): void {
       });
       const deviceXSubscribeQueryReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
       expect(deviceXSubscribeQueryReply.status.code).to.equal(401);
-      expect(deviceXSubscribeQueryReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationSubscribeProtocolScopeMismatch);
+      expect(deviceXSubscribeQueryReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
     });
 
     it('should fail if delegated grant has a mismatching protocol scope - delete', async () => {

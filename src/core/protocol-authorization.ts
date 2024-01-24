@@ -153,18 +153,18 @@ export class ProtocolAuthorization {
     );
   }
 
-  public static async authorizeSubscribe(
+  public static async authorizeQueryOrSubscribe(
     tenant: string,
-    incomingMessage: RecordsSubscribe,
+    incomingMessage: RecordsQuery | RecordsSubscribe,
     messageStore: MessageStore,
   ): Promise<void> {
-    // validate that required properties exist in subscription filter
+    // validate that required properties exist in the record filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!, // `authorizeSubscribe` is only called if `protocol` is present
+      protocol!, // `authorizeQueryOrSubscribe` is only called if `protocol` is present
       messageStore,
     );
 
@@ -190,51 +190,6 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       [], // ancestor chain is not relevant to subscriptions
-      messageStore,
-    );
-  }
-
-  /**
-   * Performs protocol-based authorization against the incoming RecordsQuery message.
-   * @throws {Error} if authorization fails.
-   */
-  public static async authorizeQuery(
-    tenant: string,
-    incomingMessage: RecordsQuery,
-    messageStore: MessageStore,
-  ): Promise<void> {
-    // validate that required properties exist in query filter
-    const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
-
-    // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      protocol!, // authorizeQuery` is only called if `protocol` is present
-      messageStore,
-    );
-
-    // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      protocolPath!, // presence of `protocolPath` is verified in `parse()`
-      protocolDefinition,
-    );
-
-    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
-    await ProtocolAuthorization.verifyInvokedRole(
-      tenant,
-      incomingMessage,
-      protocol!,
-      contextId,
-      protocolDefinition,
-      messageStore,
-    );
-
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
-      tenant,
-      incomingMessage,
-      inboundMessageRuleSet,
-      [], // ancestor chain is not relevant to queries
       messageStore,
     );
   }

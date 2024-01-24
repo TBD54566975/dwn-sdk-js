@@ -93,8 +93,8 @@ export class RecordsSubscribe extends AbstractMessage<RecordsSubscribeMessage> {
  */
   public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
-    await RecordsGrantAuthorization.authorizeSubscribe({
-      recordsSubscribeMessage   : this.message,
+    await RecordsGrantAuthorization.authorizeQueryOrSubscribe({
+      incomingMessage           : this.message,
       expectedGrantedToInGrant  : this.signer!,
       expectedGrantedForInGrant : this.author!,
       permissionsGrantMessage   : delegatedGrant,
