@@ -158,7 +158,6 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsQuery | RecordsSubscribe,
     messageStore: MessageStore,
   ): Promise<void> {
-    // validate that required properties exist in the record filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition

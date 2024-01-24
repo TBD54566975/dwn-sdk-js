@@ -560,22 +560,6 @@ export function testRecordsSubscribeHandler(): void {
           const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
           expect(friendRoleReply.status.code).to.equal(202);
 
-          // Alice writes three 'chat' records
-          const chatRecordIds = [];
-          for (let i = 0; i < 3; i++) {
-            const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'chat',
-              published    : false,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
-            });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
-            chatRecordIds.push(chatRecord.message.recordId);
-          }
-
           // Bob invokes his friendRole to subscribe but does not have `protocolPath` in the filter
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
             author : bob,

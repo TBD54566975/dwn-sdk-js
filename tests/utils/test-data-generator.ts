@@ -170,8 +170,8 @@ export type GenerateRecordsQueryOutput = {
 
 export type GenerateRecordsSubscribeInput = {
     /**
-   * Treated as `false` if not given.
-   */
+     * Treated as `false` if not given.
+     */
     anonymous?: boolean;
     author?: Persona;
     messageTimestamp?: string;
