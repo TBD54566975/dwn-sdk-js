@@ -28,6 +28,7 @@ export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
+export { EventsSubscribe, EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
 export { executeUnlessAborted } from './utils/abort.js';
