@@ -1,4 +1,4 @@
-import type { DidResolver } from '../did/did-resolver.js';
+import type { DidResolver } from '@web5/dids';
 import type { MessageSubscriptionHandler } from '../types/message-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';

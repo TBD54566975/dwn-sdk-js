@@ -1,4 +1,4 @@
-import type { DidResolver } from '../did/did-resolver.js';
+import type { DidResolver } from '@web5/dids';
 import type { EventLog } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventsQueryMessage, EventsQueryReply } from '../types/events-types.js';
@@ -32,8 +32,8 @@ export class EventsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const logFilters = Events.convertFilters(message.descriptor.filters);
-    const { events, cursor } = await this.eventLog.queryEvents(tenant, logFilters, message.descriptor.cursor);
+    const eventFilters = Events.convertFilters(message.descriptor.filters);
+    const { events, cursor } = await this.eventLog.queryEvents(tenant, eventFilters, message.descriptor.cursor);
 
     return {
       status  : { code: 200, detail: 'OK' },

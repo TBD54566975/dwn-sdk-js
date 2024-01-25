@@ -1,6 +1,5 @@
 import type { EventLog } from '../../src/types/event-log.js';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -103,7 +102,7 @@ export function testEventLog(): void {
       });
 
       it('gets all events that occurred after the cursor provided', async () => {
-        const author = await DidKeyResolver.generate();
+        const author = await TestDataGenerator.generateDidKeyPersona();
 
         // create an initial record to and, issue a getEvents and grab the cursor
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
@@ -233,7 +232,7 @@ export function testEventLog(): void {
       });
 
       it('returns filtered events after cursor', async () => {
-        const author = await DidKeyResolver.generate();
+        const author = await TestDataGenerator.generateDidKeyPersona();
 
         // message 1 schema1
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });

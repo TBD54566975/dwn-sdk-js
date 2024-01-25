@@ -14,7 +14,6 @@ import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryRe
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
-import { DidResolver } from './did/did-resolver.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
@@ -31,6 +30,7 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
+import { DidDhtMethod, DidIonMethod, DidKeyMethod, DidResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {
@@ -134,7 +134,7 @@ export class Dwn {
    * Creates an instance of the DWN.
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
-    config.didResolver ??= new DidResolver();
+    config.didResolver ??= new DidResolver({ didResolvers: [DidKeyMethod, DidIonMethod, DidDhtMethod] });
     config.tenantGate ??= new AllowAllTenantGate();
 
     const dwn = new Dwn(config);

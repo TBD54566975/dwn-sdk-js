@@ -17,7 +17,6 @@ import recipientCanProtocolDefinition from '../vectors/protocol-definitions/reci
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { ArrayUtility } from '../../src/utils/array.js';
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { Message } from '../../src/core/message.js';
@@ -29,7 +28,8 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { DataStream, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -47,7 +47,7 @@ export function testRecordsDeleteHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -72,7 +72,7 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should handle RecordsDelete successfully and return 404 if deleting a deleted record', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // insert data
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -114,8 +114,8 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should not affect other records or tenants with the same data', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const data = Encoder.stringToBytes('test');
 
         // alice writes a records with data
@@ -188,7 +188,7 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should return 404 if deleting a non-existent record', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // testing deleting a non-existent record
         const recordsDelete = await RecordsDelete.create({
@@ -201,7 +201,7 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should be disallowed if there is a newer RecordsWrite already in the DWN ', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // initial write
         const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -241,7 +241,7 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should be able to delete then rewrite the same data', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const data = Encoder.stringToBytes('test');
         const encodedData = Encoder.bytesToBase64Url(data);
 
@@ -509,9 +509,9 @@ export function testRecordsDeleteHandler(): void {
             //           Bob invokes his admin role to delete the 'thread/chat'. Carol is unable to delete
             //           the 'thread/chat'.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
-            const carol = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
+            const carol = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -579,9 +579,9 @@ export function testRecordsDeleteHandler(): void {
             // scenario: Alice adds Bob as an 'admin' $globalRole. She writes a 'chat'.
             //           Bob invokes his admin role to delete the 'chat'.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
-            const carol = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
+            const carol = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -637,8 +637,8 @@ export function testRecordsDeleteHandler(): void {
       it('should return 401 if message is not authorized', async () => {
         // scenario: Alice creates a record and Bob is unable to delete it.
 
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const recordsWrite = await TestDataGenerator.generateRecordsWrite({
           author: alice,
@@ -656,7 +656,7 @@ export function testRecordsDeleteHandler(): void {
       });
 
       it('should index additional properties from the RecordsWrite being deleted', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // initial write
         const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'testSchema' });
@@ -687,7 +687,7 @@ export function testRecordsDeleteHandler(): void {
 
       describe('event log', () => {
         it('should include RecordsDelete event and keep initial RecordsWrite event', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
           const writeReply = await dwn.processMessage(alice.did, message, { dataStream });

@@ -13,7 +13,6 @@ import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DateSort } from '../../src/types/records-types.js';
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
@@ -27,7 +26,8 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidResolver, Dwn, RecordsWrite, Time } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, RecordsWrite, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -44,7 +44,7 @@ export function testRecordsQueryHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -157,7 +157,7 @@ export function testRecordsQueryHandler(): void {
 
       it('should return `encodedData` if data size is within the spec threshold', async () => {
         const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded); // within/on threshold
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
         const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
@@ -173,7 +173,7 @@ export function testRecordsQueryHandler(): void {
 
       it('should not return `encodedData` if data size is greater then spec threshold', async () => {
         const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1); // exceeding threshold
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
         const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
@@ -188,7 +188,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should include `initialWrite` property if RecordsWrite is not initial write', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write = await TestDataGenerator.generateRecordsWrite({ author: alice, published: false });
 
         const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
@@ -212,8 +212,8 @@ export function testRecordsQueryHandler(): void {
 
       it('should be able to query by attester', async () => {
       // scenario: 2 records authored by alice, 1st attested by alice, 2nd attested by bob
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const recordsWrite1 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
         const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob] });
 
@@ -241,7 +241,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply2Attester).to.equal(bob.did);
 
         // testing attester filter that yields no results
-        const carol = await DidKeyResolver.generate();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: carol.did } });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
         expect(reply3.entries?.length).to.equal(0);
@@ -250,8 +250,8 @@ export function testRecordsQueryHandler(): void {
       it('should be able to query by author', async () => {
         // scenario alice and bob both author records into alice's DWN.
         // alice is able to filter for records authored by bob.
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition = freeForAll;
 
@@ -314,8 +314,8 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query for published records', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -382,7 +382,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query for unpublished records', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -417,8 +417,8 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should not be able to query for unpublished records if unauthorized', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -464,7 +464,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query for a record by a dataCid', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create a record
         const writeRecord = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -481,7 +481,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query with `dataSize` filter (half-open range)', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(10) });
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(50) });
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
@@ -555,7 +555,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to range query with `dataSize` filter (open & closed range)', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(10) });
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(50) });
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
@@ -613,7 +613,7 @@ export function testRecordsQueryHandler(): void {
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022 });
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
@@ -680,7 +680,7 @@ export function testRecordsQueryHandler(): void {
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
         });
@@ -798,7 +798,7 @@ export function testRecordsQueryHandler(): void {
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
         });
@@ -875,7 +875,7 @@ export function testRecordsQueryHandler(): void {
         expect(anonymousReplyIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
 
         // check for non owner range query
-        const bob = await DidKeyResolver.generate();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const nonOwnerRange = await TestDataGenerator.generateRecordsQuery({
           author   : bob,
           filter   : { datePublished: { from: lastDayOf2021 } },
@@ -898,7 +898,7 @@ export function testRecordsQueryHandler(): void {
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, dateCreated: firstDayOf2020, messageTimestamp: firstDayOf2020
@@ -1001,7 +1001,7 @@ export function testRecordsQueryHandler(): void {
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const schema = '2021And2022Schema';
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021, schema
@@ -1062,7 +1062,7 @@ export function testRecordsQueryHandler(): void {
       it('should include `attestation` in returned records', async () => {
       // scenario: alice and bob attest to a message alice authored
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
         const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
@@ -1285,7 +1285,7 @@ export function testRecordsQueryHandler(): void {
         // setup: 3 messages with the same `dateCreated` value
         const dateCreated = Time.getCurrentTimestamp();
         const messageTimestamp = dateCreated;
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const schema = 'aSchema';
         const published = true;
         const write1Data = await TestDataGenerator.generateRecordsWrite({ messageTimestamp, dateCreated, author: alice, schema, published });
@@ -1333,7 +1333,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should paginate all records in ascending order', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const messages = await Promise.all(Array(12).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
           author : alice,
@@ -1374,7 +1374,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should paginate all records in descending order', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const messages = await Promise.all(Array(12).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
           author : alice,
@@ -1418,7 +1418,7 @@ export function testRecordsQueryHandler(): void {
       // write 2 records into Alice's DB:
       // 1st is unpublished
       // 2nd is published
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const record1Data = await TestDataGenerator.generateRecordsWrite(
           { author: alice, schema: 'https://schema1', published: false }
         );
@@ -1469,9 +1469,9 @@ export function testRecordsQueryHandler(): void {
       // 4th is published
       // 5th is published, authored by Alice and is meant for Carol as recipient;
 
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const carol = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         const schema = 'schema1';
         const record1Data = await TestDataGenerator.generateRecordsWrite(
@@ -1579,8 +1579,8 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should paginate correctly for fetchRecordsAsNonOwner()', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const schema = 'schema1';
 
         // published messages bob
@@ -1719,8 +1719,8 @@ export function testRecordsQueryHandler(): void {
 
       // https://github.com/TBD54566975/dwn-sdk-js/issues/170
       it('#170 - should treat records with `published` explicitly set to `false` as unpublished', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const schema = 'schema1';
         const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite(
           { author: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
@@ -1749,8 +1749,8 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should allow DWN owner to use `recipient` as a filter in queries', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
@@ -1764,8 +1764,8 @@ export function testRecordsQueryHandler(): void {
 
       it('should not fetch entries across tenants', async () => {
       // insert three messages into DB, two with matching schema
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const schema = 'myAwesomeSchema';
         const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWrite({ author: alice, schema });
         const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWrite({ author: bob, schema });
@@ -1786,7 +1786,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should return 400 if protocol is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // query for non-normalized protocol
         const recordsQuery = await TestDataGenerator.generateRecordsQuery({
@@ -1810,7 +1810,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should return 400 if schema is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // query for non-normalized schema
         const recordsQuery = await TestDataGenerator.generateRecordsQuery({
@@ -1835,7 +1835,7 @@ export function testRecordsQueryHandler(): void {
 
       it('should return 400 if published is set to false and a datePublished range is provided', async () => {
         const fromDatePublished = Time.getCurrentTimestamp();
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         // set to true so create does not fail
         const recordQuery = await TestDataGenerator.generateRecordsQuery({
           author : alice,
@@ -1850,7 +1850,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should return 401 for anonymous queries that filter explicitly for unpublished records', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
@@ -1877,8 +1877,8 @@ export function testRecordsQueryHandler(): void {
           //           only one chat message to Bob. Bob queries by protocol URI without invoking a protocolRole,
           //           and he is able to receive the message addressed to him.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -1959,8 +1959,8 @@ export function testRecordsQueryHandler(): void {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
           //           thread member role in order to query the chat messages.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2031,8 +2031,8 @@ export function testRecordsQueryHandler(): void {
         it('allows $contextRole authorized queries', async () => {
           // scenario: Alice writes some chat messages. Bob invokes his friend role in order to query the chat messages.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2104,8 +2104,8 @@ export function testRecordsQueryHandler(): void {
           // scenario: Alice writes some chat messages. Bob invokes his $globalRole to query those messages,
           //           but his query filter does not include protocolPath.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2160,8 +2160,8 @@ export function testRecordsQueryHandler(): void {
         it('does not execute $contextRole authorized queries where contextId is missing from the filter', async () => {
           // scenario: Alice writes some chat messages and gives Bob a role allowing him to access them. But Bob's filter
           //           does not contain a contextId so the query fails.
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2232,8 +2232,8 @@ export function testRecordsQueryHandler(): void {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes a
           //           $globalRole but fails because he does not actually have a role.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2276,8 +2276,8 @@ export function testRecordsQueryHandler(): void {
 
         it('rejects $contextRole authorized queries where the query author does not have a matching $contextRole', async () => {
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 

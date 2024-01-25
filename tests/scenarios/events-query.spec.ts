@@ -8,12 +8,12 @@ import type {
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
 import threadProtocol from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
-import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
-
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
+import { TestStores } from '../test-stores.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
 
 export function testEventsQueryScenarios(): void {
   describe('events query tests', () => {
@@ -27,7 +27,7 @@ export function testEventsQueryScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -50,7 +50,7 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('supports multiple filter types', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
@@ -88,7 +88,7 @@ export function testEventsQueryScenarios(): void {
       // alice creates 2 additional messages (RecordsDelete, ProtocolsRevoke)
       // alice queries for messages for each interface respectively providing a cursor.
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
@@ -176,7 +176,7 @@ export function testEventsQueryScenarios(): void {
       // alice queries for only RecordsWrite messages
       // alice creates more messages to query beyond a cursor
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // write 1
       const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -246,7 +246,7 @@ export function testEventsQueryScenarios(): void {
       const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
       const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const write = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
       const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice, messageTimestamp: firstDayOf2022 });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice, messageTimestamp: firstDayOf2023 });
@@ -295,7 +295,7 @@ export function testEventsQueryScenarios(): void {
       const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
       const firstDayOf2024 = Time.createTimestamp({ year: 2024, month: 1, day: 1 });
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
       const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022 });
       const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
@@ -414,7 +414,7 @@ export function testEventsQueryScenarios(): void {
       //    when issuing an EventsQuery for the specific protocol, only Events related to it should be returned.
       //    alice then creates an additional messages to query after a cursor
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // create a proto1
       const protoConf1 = await TestDataGenerator.generateProtocolsConfigure({
@@ -519,9 +519,9 @@ export function testEventsQueryScenarios(): void {
       //    alice deletes carol participant message
       //    alice filters for 'thread/participant' after a cursor
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+      const carol = await TestDataGenerator.generateDidKeyPersona();
 
       // create protocol
       const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
@@ -671,9 +671,9 @@ export function testEventsQueryScenarios(): void {
       // alice queries for events meant for specific recipients
       // alice then makes another message to query for using the pervious as a cursor
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+      const carol = await TestDataGenerator.generateDidKeyPersona();
 
       const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
@@ -769,7 +769,7 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('filters by schema', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const schema1Message1 = await TestDataGenerator.generateRecordsWrite({
         author : alice,
@@ -839,7 +839,7 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('filters by recordId', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // a write as a control, will not show up in query
       const controlWrite = await TestDataGenerator.generateRecordsWrite({
@@ -897,7 +897,7 @@ export function testEventsQueryScenarios(): void {
       //  alice queries for `image/jpeg` retrieving the one message
       //  alice adds another image to query for using the prior image as a cursor
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const textFile = await TestDataGenerator.generateRecordsWrite({
         author     : alice,
@@ -958,7 +958,7 @@ export function testEventsQueryScenarios(): void {
       //    alice inserts both small and large data
       //    alice requests events for messages with data size under a threshold
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const smallSize1 = await TestDataGenerator.generateRecordsWrite({
         author: alice,
@@ -1020,9 +1020,9 @@ export function testEventsQueryScenarios(): void {
       //    alice writes more messages to both bob and carol in their respective threads
       //    alice queries for events beyond the latest from the last query, retrieving the additional messages to bob
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+      const carol = await TestDataGenerator.generateDidKeyPersona();
 
       const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,

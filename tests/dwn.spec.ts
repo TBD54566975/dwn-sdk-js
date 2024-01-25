@@ -6,7 +6,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { stubInterface } from 'ts-sinon';
@@ -50,7 +49,7 @@ export function testDwnClass(): void {
     describe('processMessage()', () => {
       it('should process RecordsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
           author: alice,
@@ -62,7 +61,7 @@ export function testDwnClass(): void {
       });
 
       it('should process RecordsQuery message', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
         const tenant = author!.did;
@@ -73,7 +72,7 @@ export function testDwnClass(): void {
       });
 
       it('should process an EventsGet message', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
 
         const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
@@ -95,7 +94,7 @@ export function testDwnClass(): void {
 
         const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const reply = await dwn.processMessage(alice.did, invalidMessage);
 
         sinon.assert.calledOnce(validateJsonSchemaSpy);
@@ -105,7 +104,7 @@ export function testDwnClass(): void {
       });
 
       it('should throw 400 if given no interface or method found in message', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const reply1 = await dwn.processMessage(alice.did, undefined ); // missing message entirely, thus missing both `interface` and `method`
         expect(reply1.status.code).to.equal(400);
         expect(reply1.status.detail).to.contain('Both interface and method must be present');
@@ -140,7 +139,7 @@ export function testDwnClass(): void {
           eventStream  : eventStreamStub
         });
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
         const tenant = author!.did;
@@ -172,7 +171,7 @@ export function testDwnClass(): void {
           eventStream  : eventStreamStub
         });
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
         const tenant = author!.did;

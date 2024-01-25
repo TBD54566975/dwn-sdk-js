@@ -10,7 +10,7 @@ import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyResolver, DwnErrorCode, DwnInterfaceName, DwnMethodName, Jws, PrivateKeySigner } from '../../src/index.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Jws, PrivateKeySigner } from '../../src/index.js';
 
 describe('PermissionsGrant', () => {
   describe('create()', async () => {
@@ -185,9 +185,9 @@ describe('PermissionsGrant', () => {
     });
 
     it('should create a PermissionsGrant from a PermissionsRequest and overrides', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+      const carol = await TestDataGenerator.generateDidKeyPersona();
 
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const signer = new PrivateKeySigner({ privateJwk, keyId: `${alice.did}#key1` });

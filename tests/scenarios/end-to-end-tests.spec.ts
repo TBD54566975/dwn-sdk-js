@@ -7,7 +7,6 @@ import sinon from 'sinon';
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { authenticate } from '../../src/core/auth.js';
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Encoder } from '../../src/index.js';
 import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
@@ -17,7 +16,8 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import chai, { expect } from 'chai';
-import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../../src/index.js';
+import { DataStream, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -33,7 +33,7 @@ export function testEndToEndScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;

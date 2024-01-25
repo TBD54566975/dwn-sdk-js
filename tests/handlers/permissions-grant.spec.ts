@@ -7,8 +7,6 @@ import type {
 
 import sinon from 'sinon';
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
@@ -20,6 +18,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 
 export function testPermissionsGrantHandler(): void {
@@ -36,7 +35,7 @@ export function testPermissionsGrantHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -61,7 +60,7 @@ export function testPermissionsGrantHandler(): void {
       });
 
       it('should accept a PermissionsGrant with permissionsRequestId omitted', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generatePermissionsGrant({
           author     : alice,
@@ -74,7 +73,7 @@ export function testPermissionsGrantHandler(): void {
       });
 
       it('should accept a PermissionsGrant with associated PermissionsRequest', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest({
           author: alice,
@@ -94,20 +93,23 @@ export function testPermissionsGrantHandler(): void {
       });
 
       it('should return 401 if authentication fails', async () => {
-        const alice = await DidKeyResolver.generate();
-        alice.keyId = 'wrongValue'; // to fail authentication
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generatePermissionsGrant({
           author: alice,
         });
 
+        // use a bad signature to fail authentication
+        const badSignature = await TestDataGenerator.randomSignatureString();
+        message.authorization.signature.signatures[0].signature = badSignature;
+
         const reply = await dwn.processMessage(alice.did, message);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('not a valid DID');
+        expect(reply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
       });
 
       it('should reject if author does not match grantedBy', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generatePermissionsGrant({
           author    : alice,
@@ -120,8 +122,8 @@ export function testPermissionsGrantHandler(): void {
       });
 
       it('should reject if grantedBy is not a delegate and does not match grantedFor', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generatePermissionsGrant({
           author     : alice,
@@ -135,7 +137,7 @@ export function testPermissionsGrantHandler(): void {
       });
 
       it('should return 400 if failure parsing the message', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generatePermissionsGrant();
 
         const permissionsRequestHandler = new PermissionsGrantHandler(didResolver, messageStore, eventLog, eventStream);
@@ -149,7 +151,7 @@ export function testPermissionsGrantHandler(): void {
 
       describe('scope validation', () => {
         it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath` are not both present', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // Options to create a grant with `schema` in its `scope`
           const permissionsGrantBaseOptions = {
@@ -220,7 +222,7 @@ export function testPermissionsGrantHandler(): void {
         });
 
         it('ensures that `contextId` and `protocolPath` are not both present in grant scope', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const contextIdAndProtocolPathGrant = await TestDataGenerator.generatePermissionsGrant({
             author      : alice,
@@ -254,7 +256,7 @@ export function testPermissionsGrantHandler(): void {
 
       describe('event log', () => {
         it('should add event for PermissionsGrant', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message } = await TestDataGenerator.generatePermissionsGrant({
             author    : alice,
             grantedBy : alice.did,
@@ -271,7 +273,7 @@ export function testPermissionsGrantHandler(): void {
         });
 
         it('should not add a new event if we have already stored this PermissionsRequest', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message } = await TestDataGenerator.generatePermissionsGrant({
             author    : alice,
             grantedBy : alice.did,

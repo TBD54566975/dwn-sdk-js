@@ -6,18 +6,15 @@ import type {
   MessageStore
 } from '../../src/index.js';
 
+import { Dwn } from '../../src/index.js';
 import { EventsGetHandler } from '../../src/handlers/events-get.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import {
-  DidKeyResolver,
-  DidResolver,
-  Dwn,
-} from '../../src/index.js';
 
 import { Message } from '../../src/core/message.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 export function testEventsGetHandler(): void {
   describe('EventsGetHandler.handle()', () => {
@@ -31,7 +28,7 @@ export function testEventsGetHandler(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -54,8 +51,8 @@ export function testEventsGetHandler(): void {
     });
 
     it('returns a 401 if tenant is not author', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
       const eventsGetHandler = new EventsGetHandler(didResolver, eventLog);
@@ -66,7 +63,7 @@ export function testEventsGetHandler(): void {
     });
 
     it('returns a 400 if message is invalid', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
       (message['descriptor'] as any)['troll'] = 'hehe';
@@ -78,7 +75,7 @@ export function testEventsGetHandler(): void {
     });
 
     it('returns all events for a tenant if cursor is not provided', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const expectedCids: string[] = [];
 
       for (let i = 0; i < 5; i += 1) {
@@ -104,7 +101,7 @@ export function testEventsGetHandler(): void {
     });
 
     it('returns all events after cursor if provided', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       for (let i = 0; i < 5; i += 1) {
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });

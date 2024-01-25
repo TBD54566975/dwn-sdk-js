@@ -1,5 +1,5 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
-import type { DidResolutionResult } from '../../src/types/did-types.js';
+import type { DidResolutionResult } from '@web5/dids';
 import type { EventsGetOptions } from '../../src/interfaces/events-get.js';
 import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
 import type { EventsSubscribeOptions } from '../../src/interfaces/events-subscribe.js';
@@ -23,11 +23,13 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
 
-
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
+import { Did } from '../../src/did/did.js';
+import { DidKeyMethod } from '@web5/dids';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
+import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { EventsGet } from '../../src/interfaces/events-get.js';
 import { EventsQuery } from '../../src/interfaces/events-query.js';
@@ -712,7 +714,7 @@ export class TestDataGenerator {
    * Generates a RecordsDelete for testing.
    */
   public static async generateRecordsDelete(input?: GenerateRecordsDeleteInput): Promise<GenerateRecordsDeleteOutput> {
-    const author = input?.author ?? await DidKeyResolver.generate();
+    const author = input?.author ?? await TestDataGenerator.generateDidKeyPersona();
 
     const recordsDelete = await RecordsDelete.create({
       recordId     : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
@@ -901,6 +903,17 @@ export class TestDataGenerator {
   }
 
   /**
+   * Generates a random but well-formed signature string in Base64Url format.
+   */
+  public static async randomSignatureString(): Promise<string> {
+    const keyPair = await ed25519.generateKeyPair();
+    const signatureBytes = await ed25519.sign(TestDataGenerator.randomBytes(32), keyPair.privateJwk);
+    const signatureString = Encoder.bytesToBase64Url(signatureBytes);
+    return signatureString;
+  }
+
+
+  /**
    * Generates a random alpha-numeric string.
    */
   public static randomString(length: number): string {
@@ -979,10 +992,45 @@ export class TestDataGenerator {
           controller   : persona.did,
           id           : persona.keyId,
           type         : 'JsonWebKey2020',
-          publicKeyJwk : persona.keyPair.publicJwk
+          // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
+          publicKeyJwk : persona.keyPair.publicJwk as any
         }]
       },
       didDocumentMetadata: {}
     };
+  }
+
+  /**
+   * Generates a did:key persona.
+   */
+  public static async generateDidKeyPersona(): Promise<Persona> {
+
+    const portableDid = await DidKeyMethod.create();
+    const keyId = TestDataGenerator.getKeyId(portableDid.did);
+    const keyPair = {
+      // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
+      publicJwk  : portableDid.keySet.verificationMethodKeys![0].publicKeyJwk as PublicJwk,
+      privateJwk : portableDid.keySet.verificationMethodKeys![0].privateKeyJwk as PrivateJwk,
+    };
+
+    return {
+      did    : portableDid.did,
+      keyId,
+      keyPair,
+      signer : new PrivateKeySigner({
+        privateJwk : keyPair.privateJwk,
+        algorithm  : keyPair.privateJwk.alg,
+        keyId
+      })
+    };
+  }
+
+  /**
+   * Gets the fully qualified key ID of a `did:key` DID. ie. '<did>#<method-specific-id>'
+   */
+  public static getKeyId(did: string): string {
+    const methodSpecificId = Did.getMethodSpecificId(did);
+    const keyId = `${did}#${methodSpecificId}`;
+    return keyId;
   }
 }

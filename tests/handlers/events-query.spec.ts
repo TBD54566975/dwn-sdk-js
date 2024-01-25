@@ -5,16 +5,13 @@ import type {
   MessageStore
 } from '../../src/index.js';
 
+import { Dwn } from '../../src/index.js';
 import { EventsQueryHandler } from '../../src/handlers/events-query.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import {
-  DidKeyResolver,
-  DidResolver,
-  Dwn,
-} from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 
 export function testEventsQueryHandler(): void {
@@ -29,7 +26,7 @@ export function testEventsQueryHandler(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -52,8 +49,8 @@ export function testEventsQueryHandler(): void {
     });
 
     it('returns a 401 if tenant is not author', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -67,7 +64,7 @@ export function testEventsQueryHandler(): void {
     });
 
     it('returns a 400 if message is invalid', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -83,7 +80,7 @@ export function testEventsQueryHandler(): void {
     });
 
     it('returns 400 if no filters are provided', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -98,7 +95,7 @@ export function testEventsQueryHandler(): void {
     });
 
     it('returns 400 if an empty filter without properties is provided', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,

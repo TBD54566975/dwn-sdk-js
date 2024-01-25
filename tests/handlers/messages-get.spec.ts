@@ -13,7 +13,8 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnConstant } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, DwnConstant } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -29,7 +30,7 @@ export function testMessagesGetHandler(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -54,8 +55,8 @@ export function testMessagesGetHandler(): void {
     });
 
     it('returns a 401 if tenant is not author', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       const { message } = await TestDataGenerator.generateMessagesGet({
@@ -69,7 +70,7 @@ export function testMessagesGetHandler(): void {
     });
 
     it('returns a 400 if message is invalid', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       const { message } = await TestDataGenerator.generateMessagesGet({
@@ -85,7 +86,7 @@ export function testMessagesGetHandler(): void {
     });
 
     it('returns a 400 if message contains an invalid message cid', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       const { message } = await TestDataGenerator.generateMessagesGet({
@@ -103,7 +104,7 @@ export function testMessagesGetHandler(): void {
     });
 
     it('returns all requested messages', async () => {
-      const did = await DidKeyResolver.generate();
+      const did = await TestDataGenerator.generateDidKeyPersona();
       const alice = await TestDataGenerator.generatePersona(did);
       const messageCids: string[] = [];
 
@@ -158,7 +159,7 @@ export function testMessagesGetHandler(): void {
     });
 
     it('returns message as undefined in reply entry when a messageCid is not found', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
 
@@ -187,7 +188,7 @@ export function testMessagesGetHandler(): void {
 
       const messagesGetHandler = new MessagesGetHandler(didResolver, messageStore, dataStore);
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
 
@@ -208,7 +209,7 @@ export function testMessagesGetHandler(): void {
     });
 
     it('includes encodedData in reply entry if the data is available and dataSize < threshold', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
         author : alice,
@@ -238,8 +239,8 @@ export function testMessagesGetHandler(): void {
     });
 
     it('does not return messages that belong to other tenants', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
       const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
         author: alice

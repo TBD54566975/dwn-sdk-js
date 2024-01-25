@@ -1,5 +1,5 @@
 import type { DataStore } from '../types/data-store.js';
-import type { DidResolver } from '../did/did-resolver.js';
+import type { DidResolver } from '@web5/dids';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { Filter, PaginationCursor } from '../types/query-types.js';
@@ -251,7 +251,9 @@ export class RecordsQueryHandler implements MethodHandler {
       await recordsQuery.authorizeDelegate(messageStore);
     }
 
-    // Only run protocol authz if message deliberately invokes it
+    // NOTE: not all RecordsQuery messages require protocol authorization even if the filter includes protocol-related fields,
+    // this is because we dynamically filter out records that the caller is not authorized to see.
+    // Currently only run protocol authorization if message deliberately invokes a protocol role.
     if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
       await ProtocolAuthorization.authorizeQueryOrSubscribe(tenant, recordsQuery, messageStore);
     }

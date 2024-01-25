@@ -1,13 +1,13 @@
 import { authorizeOwner } from '../../src/core/auth.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
-import { DidKeyResolver, DwnInterfaceName, DwnMethodName, Jws, Time } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Jws, TestDataGenerator, Time } from '../../src/index.js';
 
 import { expect } from 'chai';
 
 describe('EventsSubscribe', () => {
   describe('create()', () => {
     it('should be able to create and authorize EventsSubscribe', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const timestamp = Time.getCurrentTimestamp();
       const eventsSubscribe = await EventsSubscribe.create({
         signer           : Jws.createSigner(alice),

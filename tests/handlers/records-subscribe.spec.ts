@@ -10,7 +10,6 @@ import chai, { expect } from 'chai';
 import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
@@ -20,7 +19,8 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidResolver, Dwn, Time } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, Time } from '../../src/index.js';
 import { DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -37,7 +37,7 @@ export function testRecordsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -71,7 +71,7 @@ export function testRecordsSubscribeHandler(): void {
         await dwn.close(); // close the original dwn instance
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog }); // leave out eventStream
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         // attempt to subscribe
         const { message } = await TestDataGenerator.generateRecordsSubscribe({
           author: alice,
@@ -93,7 +93,7 @@ export function testRecordsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -118,7 +118,7 @@ export function testRecordsSubscribeHandler(): void {
       });
 
       it('should return a subscription object', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const recordsSubscribe = await TestDataGenerator.generateRecordsSubscribe({
           author : alice,
@@ -132,7 +132,7 @@ export function testRecordsSubscribeHandler(): void {
       });
 
       it('should return 400 if protocol is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe for non-normalized protocol
         const recordsSubscribe = await TestDataGenerator.generateRecordsSubscribe({
@@ -156,7 +156,7 @@ export function testRecordsSubscribeHandler(): void {
       });
 
       it('should return 400 if schema is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe for non-normalized schema
         const recordsSubscribe = await TestDataGenerator.generateRecordsSubscribe({
@@ -181,7 +181,7 @@ export function testRecordsSubscribeHandler(): void {
 
       it('should return 400 if published is set to false and a datePublished range is provided', async () => {
         const fromDatePublished = Time.getCurrentTimestamp();
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         // set to true so create does not fail
         const recordSubscribe = await TestDataGenerator.generateRecordsSubscribe({
           author : alice,
@@ -196,7 +196,7 @@ export function testRecordsSubscribeHandler(): void {
       });
 
       it('should return 401 for anonymous subscriptions that filter explicitly for unpublished records', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
@@ -257,8 +257,8 @@ export function testRecordsSubscribeHandler(): void {
           //           only one chat message to Bob. Bob subscribes by protocol URI without invoking a protocolRole,
           //           and he is able to receive the message addressed to him.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -333,8 +333,8 @@ export function testRecordsSubscribeHandler(): void {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
           //           thread member role in order to subscribe to the chat messages.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -428,8 +428,8 @@ export function testRecordsSubscribeHandler(): void {
           // scenario: Alice writes some chat messages.
           //           Bob, having a thread/participant record, can subscribe to the chat.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -537,8 +537,8 @@ export function testRecordsSubscribeHandler(): void {
           // scenario: Alice writes some chat messages. Bob invokes his $globalRole to subscribe those messages,
           //           but his subscription filter does not include protocolPath.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -578,8 +578,8 @@ export function testRecordsSubscribeHandler(): void {
         it('does not execute $contextRole authorized subscriptions where contextId is missing from the filter', async () => {
           // scenario: Alice gives Bob a role allowing him to access a particular chat thread.
           //           But Bob's filter does not contain a contextId so the subscription fails.
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -633,8 +633,8 @@ export function testRecordsSubscribeHandler(): void {
           // scenario: Alice installs a chat protocol.
           // Bob invokes a $globalRole within that protocol to subscribe but fails because he does not actually have a role.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -662,8 +662,8 @@ export function testRecordsSubscribeHandler(): void {
 
         it('rejects protocol authorized subscriptions where the subscription author does not have a matching $contextRole', async () => {
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = threadRoleProtocolDefinition;
 

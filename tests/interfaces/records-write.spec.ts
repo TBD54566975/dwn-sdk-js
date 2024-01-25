@@ -12,7 +12,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidKeyResolver, DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -402,7 +402,7 @@ describe('RecordsWrite', () => {
       expect(recordsWrite.author).to.not.exist;
       expect(recordsWrite.signaturePayload).to.not.exist;
 
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
 
       expect(recordsWrite.owner).to.be.undefined;

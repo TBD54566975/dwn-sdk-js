@@ -1,8 +1,6 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, GenericMessage, MessageStore } from '../../src/index.js';
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
@@ -11,6 +9,7 @@ import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -32,7 +31,7 @@ export function testEventsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -66,7 +65,7 @@ export function testEventsSubscribeHandler(): void {
         await dwn.close(); // close the original dwn instance
         dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog }); // leave out eventStream
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         // attempt to subscribe
         const { message } = await EventsSubscribe.create({ signer: Jws.createSigner(alice) });
         const subscriptionMessageReply = await dwn.processMessage(alice.did, message, { subscriptionHandler: (_) => {} });
@@ -86,7 +85,7 @@ export function testEventsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -118,7 +117,7 @@ export function testEventsSubscribeHandler(): void {
       });
 
       it('returns a 400 if message is invalid', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateEventsSubscribe({ author: alice });
 
         // add an invalid property to the descriptor
@@ -132,7 +131,7 @@ export function testEventsSubscribeHandler(): void {
 
 
       it('should allow tenant to subscribe their own event stream', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // set up a promise to read later that captures the emitted messageCid
         let handler;
@@ -166,8 +165,8 @@ export function testEventsSubscribeHandler(): void {
       });
 
       it('should not allow non-tenant to subscribe to an event stream they are not authorized for', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         // test anonymous request
         const anonymousSubscription = await TestDataGenerator.generateEventsSubscribe();

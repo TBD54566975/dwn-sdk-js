@@ -14,7 +14,6 @@ import chai, { expect } from 'chai';
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
@@ -24,7 +23,8 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -42,7 +42,7 @@ export function testProtocolsConfigureHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -67,7 +67,7 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('should allow a protocol definition with schema or dataFormat omitted', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition = minimalProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -102,17 +102,20 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('should return 401 if auth fails', async () => {
-        const alice = await DidKeyResolver.generate();
-        alice.keyId = 'wrongValue'; // to fail authentication
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+
+        // use a bad signature to fail authentication
+        const badSignature = await TestDataGenerator.randomSignatureString();
+        message.authorization.signature.signatures[0].signature = badSignature;
 
         const reply = await dwn.processMessage(alice.did, message);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('not a valid DID');
+        expect(reply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
       });
 
       it('should be able to overwrite existing protocol if timestamp is newer', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition = minimalProtocolDefinition;
 
@@ -154,7 +157,7 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('should only be able to overwrite existing protocol if new protocol is lexicographically larger and timestamps are identical', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // Alter each protocol slightly to create lexicographic difference between them
         const protocolDefinition1 = {
@@ -224,7 +227,7 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('should return 400 if protocol is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // query for non-normalized protocol
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -248,7 +251,7 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('should return 400 if schema is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition = dexProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -273,8 +276,8 @@ export function testProtocolsConfigureHandler(): void {
 
       it('rejects non-tenant non-granted ProtocolsConfigures with 401', async () => {
         // Bob tries to ProtocolsConfigure to Alice's DWN without a PermissionsGrant
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition = dexProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -288,7 +291,7 @@ export function testProtocolsConfigureHandler(): void {
 
       describe('event log', () => {
         it('should add event for ProtocolsConfigure', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
           const reply = await dwn.processMessage(alice.did, message);
@@ -302,7 +305,7 @@ export function testProtocolsConfigureHandler(): void {
         });
 
         it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
           await Time.minimalSleep();
           const newestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });

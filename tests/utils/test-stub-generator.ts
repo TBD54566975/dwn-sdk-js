@@ -1,9 +1,9 @@
-import type { DidResolutionResult } from '../../src/types/did-types.js';
+import type { DidResolutionResult } from '@web5/dids';
 import type { Persona } from './test-data-generator.js';
 
 import sinon from 'sinon';
 
-import { DidResolver } from '../../src/did/did-resolver.js';
+import { DidResolver } from '@web5/dids';
 import { TestDataGenerator } from './test-data-generator.js';
 
 /**

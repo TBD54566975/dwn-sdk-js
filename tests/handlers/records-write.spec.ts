@@ -25,8 +25,8 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../src/did/did-resolver.js';
+import { DidKeyMethod } from '@web5/dids';
+import { DidResolver } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
@@ -63,7 +63,7 @@ export function testRecordsWriteHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -89,7 +89,7 @@ export function testRecordsWriteHandler(): void {
 
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
-        const author = await DidKeyResolver.generate();
+        const author = await TestDataGenerator.generateDidKeyPersona();
         const data1 = new TextEncoder().encode('data1');
         const recordsWriteMessageData = await TestDataGenerator.generateRecordsWrite({ author, data: data1 });
 
@@ -323,7 +323,7 @@ export function testRecordsWriteHandler(): void {
         //scenario:  you have an initial write without the data and a subsequent write with data to be able to write.
         // the DWN should accept an initial write without data, however prevent the user from querying for it until it's updated.
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
@@ -365,7 +365,7 @@ export function testRecordsWriteHandler(): void {
         //scenario:  you have an initial write without the data and a subsequent write with data to be able to write.
         // the DWN should accept an initial write without data, however prevent the user from querying for it until it's updated.
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // write a record into the dwn
         const { recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -405,7 +405,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should throw if associate returns undefined', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // write a record into the dwn
         const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
@@ -434,8 +434,8 @@ export function testRecordsWriteHandler(): void {
       describe('owner signature tests', () => {
         it('should use `ownerSignature` for authorization when it is given - flat-space', async () => {
           // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Bob writes a message to his DWN
           const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
@@ -476,8 +476,8 @@ export function testRecordsWriteHandler(): void {
         it('should use `ownerSignature` for authorization when it is given - protocol-space', async () => {
           // scenario: Alice and Bob both have the same protocol which does NOT allow external entities to write,
           // but Alice can store a message authored by Bob as a owner in her own DWN
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = minimalProtocolDefinition;
 
@@ -525,9 +525,9 @@ export function testRecordsWriteHandler(): void {
 
         it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - flat-space', async () => {
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const carol = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+          const carol = await TestDataGenerator.generateDidKeyPersona();
 
           // Bob creates a message, we skip writing to bob's DWN because that's orthogonal to this test
           const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
@@ -544,9 +544,9 @@ export function testRecordsWriteHandler(): void {
         it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - protocol-space', async () => {
           // scenario: Alice, Bob, and Carol all have the same protocol which does NOT allow external entities to write,
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const carol = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+          const carol = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = minimalProtocolDefinition;
 
@@ -576,8 +576,8 @@ export function testRecordsWriteHandler(): void {
 
         it('should throw if `ownerSignature` fails verification', async () => {
           // scenario: Malicious Bob attempts to retain an externally authored message in Alice's DWN by providing an invalid `ownerSignature`
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Bob creates a message, we skip writing to bob's DWN because that's orthogonal to this test
           const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
@@ -664,7 +664,7 @@ export function testRecordsWriteHandler(): void {
 
       describe('should return 400 if actual data size mismatches with `dataSize` in descriptor', () => {
         it('with dataStream and `dataSize` larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author : alice,
             data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
@@ -692,7 +692,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('with only `dataSize` larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author : alice,
             data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
@@ -720,7 +720,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('with only dataStream larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author : alice,
             data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
@@ -748,7 +748,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('with both `dataSize` and dataStream below than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author: alice
           });
@@ -840,7 +840,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should return 400 for data CID mismatch with both dataStream and `dataSize` larger than encodedData threshold', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateRecordsWrite({
           author : alice,
           data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
@@ -854,7 +854,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should return 400 for data CID mismatch with `dataSize` larger than encodedData threshold', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateRecordsWrite({
           author : alice,
           data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
@@ -868,7 +868,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should return 400 for data CID mismatch with dataStream larger than encodedData threshold', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateRecordsWrite({
           author : alice,
           data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
@@ -882,7 +882,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should return 400 for data CID mismatch with both dataStream and `dataSize` below than encodedData threshold', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateRecordsWrite({
           author : alice,
           data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
@@ -896,7 +896,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite` with large data', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // alice writes a record
         const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
@@ -953,7 +953,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // alice writes a record
         const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded);
@@ -1241,8 +1241,8 @@ export function testRecordsWriteHandler(): void {
           // scenario: Alice creates a record on her DWN, and Bob (anyone) is able to update it. Bob is not able to
           //           create a record.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = anyoneCollaborateProtocolDefinition;
 
@@ -1365,8 +1365,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice creates a post with Bob as recipient. Alice adds a tag to the post. Bob is able to update
             //           the tag because he is recipient of the post. Bob is not able to create a new tag.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = recipientCanProtocol;
 
@@ -1555,8 +1555,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Bob authors a post on Alice's DWN. Alice adds a comment to the post. Bob is able to update the comment,
             //           since he authored the post.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = authorCanProtocolDefinition;
 
@@ -1620,8 +1620,8 @@ export function testRecordsWriteHandler(): void {
             it('allows a $globalRole record with unique recipient to be created and updated', async () => {
               // scenario: Alice adds Bob to the 'friend' role. Then she updates the 'friend' record.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -1656,7 +1656,7 @@ export function testRecordsWriteHandler(): void {
             it('rejects writes to a $globalRole if recipient is undefined', async () => {
               // scenario: Alice writes a global role record with no recipient and it is rejected
 
-              const alice = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -1683,8 +1683,8 @@ export function testRecordsWriteHandler(): void {
               // scenario: Alice adds Bob to the 'friend' role. Then she tries and fails to write another separate record
               //           adding Bob as a 'friend' again.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -1723,8 +1723,8 @@ export function testRecordsWriteHandler(): void {
             it('allows a new $globalRole record to be created for the same recipient if their old one was deleted', async () => {
               // scenario: Alice adds Bob to the 'friend' role, then deletes the role. Alice writes a new record adding Bob as a 'friend' again.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -1772,8 +1772,8 @@ export function testRecordsWriteHandler(): void {
             it('allows a $contextRole record with recipient unique to the context to be created and updated', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Then she updates Bob's role record.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -1820,8 +1820,8 @@ export function testRecordsWriteHandler(): void {
             it('allows a $contextRole record to be created even if there is a $contextRole in a different context', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice repeats the steps with a new thread.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -1882,8 +1882,8 @@ export function testRecordsWriteHandler(): void {
             it('rejects writes to a $contextRole record if there already exists one in the same context', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She adds Bob to the role second time and fails
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -1935,8 +1935,8 @@ export function testRecordsWriteHandler(): void {
             it('allows a new $contextRole record to be created for the same recipient in the same context if their old one was deleted', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She deletes the role and then adds a new one.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -1998,8 +1998,8 @@ export function testRecordsWriteHandler(): void {
               // scenario: Alice gives Bob a friend role. Bob invokes his
               //           friend role in order to write a chat message
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2038,8 +2038,8 @@ export function testRecordsWriteHandler(): void {
               // scenario: Alice gives Bob a admin role. Bob invokes his
               //           admin role in order to update a chat message that Alice wrote
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2085,8 +2085,8 @@ export function testRecordsWriteHandler(): void {
             it('rejects role-authorized writes if the protocolRole is not a valid protocol path to a role record', async () => {
               // scenario: Bob tries to invoke the 'chat' role to write to Alice's DWN, but 'chat' is not a role.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2125,8 +2125,8 @@ export function testRecordsWriteHandler(): void {
             it('rejects global-authorized writes if there is no active role for the recipient', async () => {
               // scenario: Bob tries to invoke a role to write, but he has not been given one.
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = friendRoleProtocolDefinition;
 
@@ -2154,8 +2154,8 @@ export function testRecordsWriteHandler(): void {
             it('uses a contextRole to authorize a write', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Bob invokes the record to write in the thread
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2206,8 +2206,8 @@ export function testRecordsWriteHandler(): void {
               // scenario: Alice creates a thread and adds Bob to the 'thread/admin' role.
               //           Bob invokes the record to write in the thread
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2267,8 +2267,8 @@ export function testRecordsWriteHandler(): void {
               // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
               //           contextRole to write a chat in the second thread
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2329,8 +2329,8 @@ export function testRecordsWriteHandler(): void {
             it('rejects attempts to invoke an invalid path as a protocolRole', async () => {
               // scenario: Bob tries to invoke 'notARealPath' as a protocolRole and fails
 
-              const alice = await DidKeyResolver.generate();
-              const bob = await DidKeyResolver.generate();
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+              const bob = await TestDataGenerator.generateDidKeyPersona();
 
               const protocolDefinition = threadRoleProtocolDefinition;
 
@@ -2621,7 +2621,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should fail authorization if protocol definition cannot be found for a protocol-based RecordsWrite', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const protocol = 'nonExistentProtocol';
           const data = Encoder.stringToBytes('any data');
           const credentialApplication = await TestDataGenerator.generateRecordsWrite({
@@ -2638,7 +2638,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should fail authorization if record schema is incorrect for a protocol-based RecordsWrite', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = credentialIssuanceProtocolDefinition;
           const protocol = protocolDefinition.protocol;
@@ -2666,7 +2666,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should fail authorization if given `protocolPath` contains an invalid record type', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = credentialIssuanceProtocolDefinition;
           const protocol = protocolDefinition.protocol;
@@ -2694,7 +2694,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should fail authorization if given `protocolPath` is mismatching with actual path', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = credentialIssuanceProtocolDefinition;
           const protocol = protocolDefinition.protocol;
@@ -2722,7 +2722,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = socialMediaProtocolDefinition;
           const protocol = protocolDefinition.protocol;
@@ -2767,7 +2767,7 @@ export function testRecordsWriteHandler(): void {
 
         it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
         // scenario: Attempt writing of records at 3 levels in the hierarchy to cover all possible cases of missing rule sets
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = credentialIssuanceProtocolDefinition;
           const protocol = protocolDefinition.protocol;
@@ -2859,7 +2859,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should only allow DWN owner to write if record does not have an action rule defined', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // write a protocol definition without an explicit action rule
           const protocolDefinition = privateProtocol;
@@ -2888,7 +2888,7 @@ export function testRecordsWriteHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           // test that Bob is not allowed to write to Alice's DWN
-          const bob = await DidKeyResolver.generate();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
           const bobWriteMessageData = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             recipient    : alice.did,
@@ -2908,8 +2908,8 @@ export function testRecordsWriteHandler(): void {
         // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
         // make sure recipient of offer can send fulfillment
 
-          const alice = await DidKeyResolver.generate();
-          const pfi = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const pfi = await TestDataGenerator.generateDidKeyPersona();
 
           // write a DEX protocol definition
           const protocolDefinition = dexProtocolDefinition;
@@ -2986,8 +2986,8 @@ export function testRecordsWriteHandler(): void {
           // 2. Alice sends an ask to a PFI
           // 3. Alice sends a fulfillment to an non-existent offer to the PFI
 
-          const alice = await DidKeyResolver.generate();
-          const pfi = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const pfi = await TestDataGenerator.generateDidKeyPersona();
 
           // write a DEX protocol definition
           const protocolDefinition = dexProtocolDefinition;
@@ -3089,7 +3089,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should return 400 if protocol is not normalized', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = emailProtocolDefinition;
 
@@ -3129,8 +3129,8 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('#359 - should not allow access of data by referencing `dataCid` in protocol authorized `RecordsWrite`', async () => {
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // alice writes a private record
           const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded);
@@ -3221,8 +3221,8 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('#359 - should not allow access of data by referencing `dataCid` in protocol authorized `RecordsWrite` with large data', async () => {
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // alice writes a private record
           const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
@@ -3317,7 +3317,7 @@ export function testRecordsWriteHandler(): void {
 
           // write a protocol definition that has a record type without schema
           const protocolDefinition = anyoneCollaborateProtocolDefinition as ProtocolDefinition;
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
@@ -3376,8 +3376,8 @@ export function testRecordsWriteHandler(): void {
           // scenario: Alice gives Bob a grant with unrestricted RecordsWrite scope.
           //           Bob is able to write both a protocol and a non-protocol record.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = minimalProtocolDefinition;
 
@@ -3430,8 +3430,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to read all records in the protocol
             //           Bob invokes that grant to write a protocol record.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = minimalProtocolDefinition;
 
@@ -3473,8 +3473,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to write to a protocol. Bob tries and fails to
             //           invoke the grant to write to another protocol.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = minimalProtocolDefinition;
 
@@ -3517,8 +3517,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice issues Bob a grant allowing him to write some non-protocol records.
             //           Bob invokes the grant to write a protocol record
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = minimalProtocolDefinition;
 
@@ -3561,8 +3561,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to write to a specific contextId.
             //           Bob invokes that grant to write a record in the allowed contextId.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
@@ -3622,8 +3622,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to write to a specific contextId. Bob tries and fails to
             //           invoke the grant to write to another contextId.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
@@ -3684,8 +3684,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to write to a specific protocolPath.
             //           Bob invokes that grant to write a record in the allowed protocolPath.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = minimalProtocolDefinition;
 
@@ -3728,8 +3728,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant to write to a specific protocolPath. Bob tries and fails to
             //           invoke the grant to write to another protocolPath.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             const protocolDefinition = minimalProtocolDefinition;
 
@@ -3775,8 +3775,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice issues Bob a grant allowing him to write to flat records of a given schema.
             //           Bob invokes that grant to write a record with matching schema
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice gives Bob a PermissionsGrant for a certain schema
             const schema = 'http://example.com/schema';
@@ -3808,8 +3808,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice issues a grant for Bob to write flat records of a certain schema.
             //           Bob tries and fails to write records of a different schema
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
 
             // Alice gives Bob a PermissionsGrant for a certain schema
@@ -3844,8 +3844,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant with condition `published` === required.
             //           Bob is able to write a public record but not able to write an unpublished record.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === required
             const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -3895,8 +3895,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant with condition `published` === prohibited.
             //           Bob is able to write a unpublished record but not able to write a public record.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === prohibited
             const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -3946,8 +3946,8 @@ export function testRecordsWriteHandler(): void {
             // scenario: Alice gives Bob a grant without condition `published`.
             //           Bob is able to write both an unpublished record and a published record.
 
-            const alice = await DidKeyResolver.generate();
-            const bob = await DidKeyResolver.generate();
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+            const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === prohibited
             const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -4000,7 +4000,7 @@ export function testRecordsWriteHandler(): void {
 
         // Pruned RecordsWrite
         // Data large enough to use the DataStore
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
         const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author    : alice,
@@ -4028,7 +4028,7 @@ export function testRecordsWriteHandler(): void {
 
         // Pruned RecordsWrite
         // Data that would be encoded within the message
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
         const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author    : alice,
@@ -4052,8 +4052,8 @@ export function testRecordsWriteHandler(): void {
 
       describe('reference counting tests', () => {
         it('should not allow referencing data across tenants', async () => {
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
           const data = Encoder.stringToBytes('test');
           const dataCid = await Cid.computeDagPbCidFromBytes(data);
           const encodedData = Encoder.bytesToBase64Url(data);
@@ -4106,7 +4106,7 @@ export function testRecordsWriteHandler(): void {
 
       describe('encodedData threshold', async () => {
         it('should call cloneAndAddEncodedData and not validateDataStoreIntegrity if dataSize is less than or equal to the threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
           const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
@@ -4119,7 +4119,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should call validateDataStoreIntegrity and not cloneAndAddEncodedData if dataSize is greater than the threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
           const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
@@ -4132,7 +4132,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
 
@@ -4145,7 +4145,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should not have encodedData field if dataSize greater than threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
 
@@ -4158,7 +4158,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should retain original RecordsWrite message but without the encodedData if data is under threshold', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
 
@@ -4306,8 +4306,8 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should fail validation with 400 if more than 1 attester is given ', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice, bob] });
 
         const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
@@ -4318,7 +4318,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should fail validation with 400 if the `attestation` does not include the correct `descriptorCid`', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
         // create another write and use its `attestation` value instead, that `attestation` will point to an entirely different `descriptorCid`
@@ -4333,11 +4333,11 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should fail validation with 400 if expected CID of `attestation` mismatches the `attestationCid` in `authorization`', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
         // replace valid attestation (the one signed by `authorization` with another attestation to the same message (descriptorCid)
-        const bob = await DidKeyResolver.generate();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
         const descriptorCid = await Cid.computeCid(message.descriptor);
         const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSigners([bob]));
         message.attestation = attestationNotReferencedByAuthorization;
