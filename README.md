@@ -91,7 +91,8 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
     const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
     // Generate a did:key DID (Decentralized Identifier).
-    const didKey = await DidKeyResolver.generate();
+    // TODO:
+    const didKey = await TestDataGenerator.generateDidKeyPersona();
 
     // Create some data to be stored.
     const encoder = new TextEncoder();
@@ -199,7 +200,7 @@ const eventLog = new EventLogLevel();
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
 // Generate a did:key DID (Decentralized Identifier).
-const didKey = await DidKeyResolver.generate();
+const didKey = await TestDataGenerator.generateDidKeyPersona();
 
 // Create some data to be stored.
 const encoder = new TextEncoder();

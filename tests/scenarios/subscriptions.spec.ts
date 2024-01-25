@@ -13,7 +13,8 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
 
@@ -28,7 +29,7 @@ export function testSubscriptionScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -52,7 +53,7 @@ export function testSubscriptionScenarios(): void {
 
     describe('events subscribe', () => {
       it('all events', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create a handler that adds the messageCid of each message to an array.
         const messageCids: string[] = [];
@@ -110,7 +111,7 @@ export function testSubscriptionScenarios(): void {
         // alice checks that each handler emitted the appropriate message
         // alice deletes the record, and revokes the grant
         // alice checks that the Records and Permissions handlers emitted the appropriate message
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe to records
         const recordsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
@@ -222,7 +223,7 @@ export function testSubscriptionScenarios(): void {
         // alice queries for only RecordsWrite messages
         // alice creates more messages to query beyond a cursor
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe to records write
         const recordsWriteSubscription = await TestDataGenerator.generateEventsSubscribe({
@@ -271,7 +272,7 @@ export function testSubscriptionScenarios(): void {
         //    alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, RecordsDelete)
         //    alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, RecordsDelete)
         //    when subscribing for a specific protocol, only Messages related to it should be emitted.
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const proto1Messages:string[] = [];
         const proto1Handler = async (message:GenericMessage):Promise<void> => {
@@ -374,9 +375,9 @@ export function testSubscriptionScenarios(): void {
         //    alice deletes carol participant message
         //    alice checks that the correct messages were omitted
 
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const carol = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         // create protocol
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
@@ -522,7 +523,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('filters by schema', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // we will add messageCids to these arrays as they are received by their handler to check against later
         const schema1Messages:string[] = [];
@@ -595,7 +596,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('filters by recordId', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const write = await TestDataGenerator.generateRecordsWrite({
           author : alice,
@@ -657,9 +658,9 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('filters by recipient', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const carol = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         const receivedMessages:string[] = [];
 
@@ -750,7 +751,7 @@ export function testSubscriptionScenarios(): void {
         //  alice queries for `image/jpeg` retrieving the one message
         //  alice adds another image to query for using the prior image as a cursor
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const imageMessages: string[] = [];
         const imageHandler = async (message:GenericMessage):Promise<void> => {
@@ -827,7 +828,7 @@ export function testSubscriptionScenarios(): void {
         //    alice subscribes to messages with data size under a threshold
         //    alice inserts both small and large data
 
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const smallMessages: string[] = [];
         const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
@@ -884,7 +885,7 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('does not emit events after subscription is closed', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // messageCids of events
         const messageCids:string[] = [];
@@ -927,7 +928,7 @@ export function testSubscriptionScenarios(): void {
 
     describe('records subscribe', () => {
       it('allows for anonymous subscriptions to published records', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const messages:string[] = [];
         const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
@@ -969,9 +970,9 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('allows authorized subscriptions to records intended for a recipient', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const carol = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         // bob subscribes to any messages he's authorized to see
         const bobMessages:string[] = [];
@@ -1044,9 +1045,9 @@ export function testSubscriptionScenarios(): void {
         //    alice deletes carol participant message
         //    alice checks that the correct messages were omitted
 
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const carol = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         // create protocol
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({

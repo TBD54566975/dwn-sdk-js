@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { DidResolver } from '../../../src/did/did-resolver.js';
+import { DidResolver } from '@web5/dids';
 import { GeneralJwsBuilder } from '../../../src/jose/jws/general/builder.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
@@ -43,7 +43,7 @@ describe('General JWS Sign/Verify', () => {
 
     const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
-      resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
+      resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult),
     });
 
     const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);

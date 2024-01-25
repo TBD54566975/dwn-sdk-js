@@ -1,4 +1,4 @@
-import type { DidResolver } from '../did/did-resolver.js';
+import type { DidResolver } from '@web5/dids';
 import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';

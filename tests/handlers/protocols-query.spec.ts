@@ -10,7 +10,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -18,7 +17,8 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -36,7 +36,7 @@ export function testProtocolsQueryHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver([new DidKeyResolver()]);
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -166,7 +166,7 @@ export function testProtocolsQueryHandler(): void {
       });
 
       it('should return 400 if protocol is not normalized', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // query for non-normalized protocol
         const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -209,21 +209,23 @@ export function testProtocolsQueryHandler(): void {
       });
 
       it('should return 401 if auth fails', async () => {
-        const alice = await DidKeyResolver.generate();
-        alice.keyId = 'wrongValue'; // to fail authentication
+        const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateProtocolsQuery({ author: alice });
 
-        const reply = await dwn.processMessage(alice.did, message);
+        // use a bad signature to fail authentication
+        const badSignature = await TestDataGenerator.randomSignatureString();
+        message.authorization!.signature.signatures[0].signature = badSignature;
 
+        const reply = await dwn.processMessage(alice.did, message);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('not a valid DID');
+        expect(reply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
       });
 
       describe('Grant authorization', () => {
         it('allows an external party to ProtocolsConfigure if they have an active grant', async () => {
           // scenario: Alice grants Bob the access to ProtocolsConfigure on her DWN, then Bob does a ProtocolsConfigure
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -250,8 +252,8 @@ export function testProtocolsQueryHandler(): void {
 
         it('rejects with 401 an external party attempt to ProtocolsConfigure if they present an expired grant', async () => {
           // scenario: Alice grants Bob access to ProtocolsConfigure, but when Bob invokes the grant it has expired
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure and an expiry time
           const dateGranted = Time.getCurrentTimestamp();
@@ -284,8 +286,8 @@ export function testProtocolsQueryHandler(): void {
         it('rejects with 401 an external partys attempt to ProtocolsQuery if the grant is not yet active', async () => {
           // scenario: Alice grants Bob access to ProtocolsConfigure, but Bob's message has a timestamp just before the grant is active
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Set up timestamps
           const protocolsQueryTimestamp = Time.getCurrentTimestamp();
@@ -321,8 +323,8 @@ export function testProtocolsQueryHandler(): void {
         it('rejects with 401 an external partys attempt to ProtocolsQuery if the grant has been revoked', async () => {
           // Alice grants and revokes Bob access to ProtocolsConfigure. Bob tries to invoke the revoked grant
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -360,8 +362,8 @@ export function testProtocolsQueryHandler(): void {
         it('rejects with 401 an external party attempts to ProtocolsQuery if grant has different DWN interface scope', async () => {
           // scenario: Alice grants Bob access to RecordsRead, then Bob tries to invoke the grant with ProtocolsConfigure
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope RecordsRead
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -390,8 +392,8 @@ export function testProtocolsQueryHandler(): void {
         it('rejects with 401 if the PermissionsGrant cannot be found', async () => {
           // scenario: Bob uses a permissionsGrantId to ProtocolsConfigure, but no PermissionsGrant can be found.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
 
           // Bob tries to ProtocolsConfigure
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -405,9 +407,9 @@ export function testProtocolsQueryHandler(): void {
 
         it('rejects with 401 if the PermissionsGrant has not been grantedTo the author', async () => {
           // Alice gives a PermissionsGrant to Bob, then Carol tries to invoke it to ProtocolsConfigure on Alice's DWN
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const carol = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+          const carol = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
@@ -436,9 +438,9 @@ export function testProtocolsQueryHandler(): void {
         it('rejects with 401 if the PermissionsGrant has not been grantedFor the tenant', async () => {
           // Alice gives a PermissionsGrant to Carol, which Bob stores on his DWN.
           // Then Carol tries to invoke it to ProtocolsConfigure on Bob's DWN.
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const carol = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+          const carol = await TestDataGenerator.generateDidKeyPersona();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({

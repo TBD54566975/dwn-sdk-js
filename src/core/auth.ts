@@ -1,4 +1,4 @@
-import type { DidResolver } from '../did/did-resolver.js';
+import type { DidResolver } from '@web5/dids';
 import type { MessageInterface } from '../types/message-interface.js';
 import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 

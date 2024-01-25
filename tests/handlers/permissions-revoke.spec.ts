@@ -3,8 +3,6 @@ import sinon from 'sinon';
 
 import type { DataStore, EventLog, EventStream, MessageStore } from '../../src/index.js';
 
-import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Message } from '../../src/core/message.js';
@@ -13,6 +11,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -24,7 +23,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
   describe('functional tests', () => {
     before(async () => {
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
       // important to follow this pattern to initialize and clean the message and data store in tests
       // so that different suites can reuse the same block store and index location for testing
@@ -53,8 +52,8 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
     it('should accept a PermissionsRevoke that revokes an existing grant', async () => {
       // scenario: Alice issues a grant to Bob, then she revokes the grant.
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
 
       // Alice issues a grant
@@ -77,19 +76,22 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should return 401 if authentication fails', async () => {
-      const alice = await DidKeyResolver.generate();
-      alice.keyId = 'wrongValue'; // to fail authentication
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { message } = await TestDataGenerator.generatePermissionsRevoke({
         author: alice,
       });
 
+      // use a bad signature to fail authentication
+      const badSignature = await TestDataGenerator.randomSignatureString();
+      message.authorization.signature.signatures[0].signature = badSignature;
+
       const reply = await dwn.processMessage(alice.did, message);
       expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('not a valid DID');
+      expect(reply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
     });
 
     it('should reject with 400 if failure parsing the message', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
       const { message } = await TestDataGenerator.generatePermissionsRevoke();
 
       // stub the `parse()` function to throw an error
@@ -100,7 +102,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should reject with 400 if the associated grant cannot be found', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
         author             : alice,
@@ -112,7 +114,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should reject with 400 if the associated grant was issued after the revoke was created', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const preGrantTimeStamp = Time.getCurrentTimestamp();
       await Time.sleep(10);
@@ -139,8 +141,8 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
     it('should reject with 401 if the revoke was not authored by the DID in the `grantedFor` of the grant', async () => {
       // scenario: Alice issues a grant. Bob tries and failes to revoke the grant.
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
       const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
         author     : alice,
@@ -160,7 +162,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should reject with 409 if older PermissionsRevoke messages exist for the same grant', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // Create a grant
       const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
@@ -189,7 +191,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should reject with 409 if a PermissionsRevoke message exists for same grant, same revocation time, and lower lexicographic CID', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // Create a grant
       const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
@@ -234,7 +236,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
     });
 
     it('should accept revokes that are older than the oldest existing revoke', async () => {
-      const alice = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // Create a grant
       const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
@@ -268,7 +270,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
     describe('event log', () => {
       it('should add event for PermissionsRevoke', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // Create a grant, adding one event
         const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
@@ -300,7 +302,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
       it('should remove events for existing PermissionsRevoke messages with timestamp after the incoming message', async () => {
         // scenario: A grant is issued, adding one event. Then the grant is revoked, adding another event.
         //           Then, a slightly earlier revoke is processed, causing the existing revoke to be purged.
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // Create a grant, adding one event
         const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({

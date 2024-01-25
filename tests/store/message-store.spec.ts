@@ -4,7 +4,6 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { SortDirection } from '../../src/types/query-types.js';
@@ -34,7 +33,7 @@ export function testMessageStore(): void {
       });
 
       it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generatePermissionsRequest();
         const { messageTimestamp } = message.descriptor;
@@ -51,7 +50,7 @@ export function testMessageStore(): void {
 
       // https://github.com/TBD54566975/dwn-sdk-js/issues/170
       it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -78,7 +77,7 @@ export function testMessageStore(): void {
       });
 
       it('should index properties with characters beyond just letters and digits', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const schema = 'http://my-awesome-schema/awesomeness_schema';
         const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
@@ -91,7 +90,7 @@ export function testMessageStore(): void {
       });
 
       it('should not store anything if aborted beforehand', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -113,7 +112,7 @@ export function testMessageStore(): void {
       });
 
       it('should not index anything if aborted during', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
         const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
@@ -141,7 +140,7 @@ export function testMessageStore(): void {
       });
 
       it('should not store anything if aborted beforehand', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -163,7 +162,7 @@ export function testMessageStore(): void {
       });
 
       it('should not delete if aborted', async () => {
-        const alice = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -183,8 +182,8 @@ export function testMessageStore(): void {
       });
 
       it('should not delete the message of another tenant', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -208,8 +207,8 @@ export function testMessageStore(): void {
       });
 
       it('should not clear the MessageStore index of another tenant', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
@@ -254,7 +253,7 @@ export function testMessageStore(): void {
 
       describe('sorting', async () => {
         it('should sort on messageTimestamp Ascending if no sort is specified', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
@@ -274,7 +273,7 @@ export function testMessageStore(): void {
         });
 
         it('should sort on messageTimestamp Ascending', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
@@ -293,7 +292,7 @@ export function testMessageStore(): void {
         });
 
         it('should sort on dateCreated Ascending', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             dateCreated: TestDataGenerator.randomTimestamp(),
           })));
@@ -313,7 +312,7 @@ export function testMessageStore(): void {
         });
 
         it('should sort on dateCreated Descending', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             dateCreated: TestDataGenerator.randomTimestamp(),
           })));
@@ -333,7 +332,7 @@ export function testMessageStore(): void {
         });
 
         it('should sort on datePublished Ascending', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
             datePublished : TestDataGenerator.randomTimestamp()
@@ -354,7 +353,7 @@ export function testMessageStore(): void {
         });
 
         it('should sort on datePublished Descending', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
             datePublished : TestDataGenerator.randomTimestamp()
@@ -377,7 +376,7 @@ export function testMessageStore(): void {
 
       describe('pagination', async () => {
         it('should return all records if no limit is specified', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
@@ -390,7 +389,7 @@ export function testMessageStore(): void {
         });
 
         it('should limit records', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
@@ -411,7 +410,7 @@ export function testMessageStore(): void {
         });
 
         it('should only return a cursor if there are additional results', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
@@ -429,7 +428,7 @@ export function testMessageStore(): void {
         });
 
         it('should return all records from the cursor onwards when no limit is provided', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(13).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
@@ -452,7 +451,7 @@ export function testMessageStore(): void {
         });
 
         it('should limit records when a cursor and limit are provided', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
@@ -476,7 +475,7 @@ export function testMessageStore(): void {
         });
 
         it('should paginate through all of the records', async () => {
-          const alice = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generateDidKeyPersona();
           const messages = await Promise.all(Array(23).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
