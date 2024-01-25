@@ -87,7 +87,7 @@ const schemas = {
   RecordsWriteSignaturePayload
 };
 
-const ajv = new Ajv({ code: { source: true, esm: true } });
+const ajv = new Ajv({ code: { source: true, esm: true }, allowUnionTypes: true });
 
 for (const schemaName in schemas) {
   ajv.addSchema(schemas[schemaName], schemaName);
