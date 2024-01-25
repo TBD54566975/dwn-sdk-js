@@ -251,7 +251,9 @@ export class RecordsQueryHandler implements MethodHandler {
       await recordsQuery.authorizeDelegate(messageStore);
     }
 
-    // Only run protocol authz if message deliberately invokes it
+    // NOTE: not all RecordsQuery messages require protocol authorization even if the filter includes protocol-related fields,
+    // this is because we dynamically filter out records that the caller is not authorized to see.
+    // Currently only run protocol authorization if message deliberately invokes a protocol role.
     if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
       await ProtocolAuthorization.authorizeQueryOrSubscribe(tenant, recordsQuery, messageStore);
     }

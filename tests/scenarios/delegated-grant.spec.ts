@@ -651,14 +651,15 @@ export function testDelegatedGrantScenarios(): void {
 
     it('should fail if delegated grant has a mismatching protocol scope - query, subscribe & read', async () => {
       // scenario:
-      // 1. Alice creates a delegated grant for device X to act as her for a protocol that is NOT chat protocol
-      // 2. Bob starts a chat thread with Alice on his DWN
-      // 3. Device X attempts to use the delegated grant to read, query and subscribe to the chat thread.
-      // 4. Bob's DWN should reject Device X's read query or subscribe attempts
+      // 1. Bob starts a chat thread with Alice on his DWN
+      // 2. Alice creates a delegated grant for device X to act as her for a protocol that is NOT chat protocol
+      // 3. Device X attempts to use the delegated grant to read, query and subscribe to the chat thread and gets rejected by Bob's DWN
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const deviceX = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
+
+      // 1. Bob starts a chat thread with Alice on his DWN
 
       // Bob has the chat protocol installed
       const protocolDefinition = threadRoleProtocolDefinition;
@@ -692,36 +693,6 @@ export function testDelegatedGrantScenarios(): void {
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
-      // Alice creates a delegated subscribe grant for device X to act as Alice but not for chat protocol
-      const subscribeGrantForDeviceX = await PermissionsGrant.create({
-        delegated   : true, // this is a delegated grant
-        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
-        grantedTo   : deviceX.did,
-        grantedFor  : alice.did,
-        scope       : {
-          interface : DwnInterfaceName.Records,
-          method    : DwnMethodName.Subscribe,
-          protocol  : 'some-protocol'
-        },
-        signer: Jws.createSigner(alice)
-      });
-
-      // verify device X subscribing to the chat message from Bob's DWN fails
-      const recordsSubscribeByDeviceX = await RecordsSubscribe.create({
-        signer         : Jws.createSigner(deviceX),
-        delegatedGrant : subscribeGrantForDeviceX.asDelegatedGrant(),
-        protocolRole   : 'thread/participant',
-        filter         : {
-          protocol,
-          contextId    : threadRecord.message.contextId,
-          protocolPath : 'thread/chat'
-        }
-      });
-      const deviceXRecordsSubscribeReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
-      expect(deviceXRecordsSubscribeReply.status.code).to.equal(401);
-      expect(deviceXRecordsSubscribeReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
-
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
         author       : bob,
@@ -733,6 +704,9 @@ export function testDelegatedGrantScenarios(): void {
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
 
+
+      // 2. Alice creates a delegated grant for device X to act as her for a protocol that is NOT chat protocol
+
       // Alice creates a delegated query grant for device X to act as Alice but not for chat protocol
       const queryGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
@@ -743,7 +717,7 @@ export function testDelegatedGrantScenarios(): void {
         scope       : {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Query,
-          protocol  : 'some-protocol'
+          protocol  : 'some-other-protocol'
         },
         signer: Jws.createSigner(alice)
       });
@@ -758,10 +732,28 @@ export function testDelegatedGrantScenarios(): void {
         scope       : {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Read,
-          protocol  : 'some-protocol'
+          protocol  : 'some-other-protocol'
         },
         signer: Jws.createSigner(alice)
       });
+
+      // Alice creates a delegated subscribe grant for device X to act as Alice but not for chat protocol
+      const subscribeGrantForDeviceX = await PermissionsGrant.create({
+        delegated   : true, // this is a delegated grant
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        grantedBy   : alice.did,
+        grantedTo   : deviceX.did,
+        grantedFor  : alice.did,
+        scope       : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Subscribe,
+          protocol  : 'some-other-protocol'
+        },
+        signer: Jws.createSigner(alice)
+      });
+
+
+      // 3. Device X attempts to use the delegated grant to read, query and subscribe to the chat thread and gets rejected by Bob's DWN
 
       // verify device X querying for the chat message from Bob's DWN fails
       const recordsQueryByDeviceX = await RecordsQuery.create({
@@ -787,10 +779,24 @@ export function testDelegatedGrantScenarios(): void {
           recordId: chatRecord.message.recordId
         }
       });
-
       const deviceXReadReply = await dwn.processMessage(bob.did, recordsReadByDeviceX.message);
       expect(deviceXReadReply.status.code).to.equal(401);
       expect(deviceXReadReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch);
+
+      // verify device X subscribing to the chat message from Bob's DWN fails
+      const recordsSubscribeByDeviceX = await RecordsSubscribe.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : subscribeGrantForDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        filter         : {
+          protocol,
+          contextId    : threadRecord.message.contextId,
+          protocolPath : 'thread/chat'
+        }
+      });
+      const deviceXRecordsSubscribeReply = await dwn.processMessage(bob.did, recordsSubscribeByDeviceX.message);
+      expect(deviceXRecordsSubscribeReply.status.code).to.equal(401);
+      expect(deviceXRecordsSubscribeReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationQueryOrSubscribeProtocolScopeMismatch);
     });
 
     it('should fail if delegated grant has a mismatching protocol scope - delete', async () => {

@@ -10,6 +10,9 @@ import { isEmptyObject, removeUndefinedProperties } from './object.js';
  * Class containing Events related utility methods.
  */
 export class Events {
+  /**
+   * Normalizes/fixes the formatting of the given filters (such as URLs) so that they provide a consistent search experience.
+   */
   public static normalizeFilters(filters: EventsFilter[]): EventsFilter[] {
 
     const eventsQueryFilters: EventsFilter[] = [];
@@ -60,6 +63,9 @@ export class Events {
     return eventsQueryFilters;
   }
 
+  /**
+   * Converts an external-facing filter model into an internal-facing filer model used by data store.
+   */
   private static convertFilter(filter: EventsMessageFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 

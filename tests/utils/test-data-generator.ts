@@ -17,9 +17,9 @@ import type { AuthorizationModel, Pagination } from '../../src/types/message-typ
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
 import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
-import type { KeyMaterial, PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
+import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
 
@@ -992,20 +992,24 @@ export class TestDataGenerator {
           controller   : persona.did,
           id           : persona.keyId,
           type         : 'JsonWebKey2020',
-          publicKeyJwk : persona.keyPair.publicJwk as any // TODO: fix type
+          // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
+          publicKeyJwk : persona.keyPair.publicJwk as any
         }]
       },
       didDocumentMetadata: {}
     };
   }
 
-  // TODO: fix return type
-  public static async generateDidKeyPersona(): Promise<{ did: string, signer: Signer } & KeyMaterial> {
+  /**
+   * Generates a did:key persona.
+   */
+  public static async generateDidKeyPersona(): Promise<Persona> {
 
     const portableDid = await DidKeyMethod.create();
     const keyId = TestDataGenerator.getKeyId(portableDid.did);
     const keyPair = {
-      publicJwk  : portableDid.keySet.verificationMethodKeys![0].publicKeyJwk as PublicJwk, // TODO: sanity verify
+      // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
+      publicJwk  : portableDid.keySet.verificationMethodKeys![0].publicKeyJwk as PublicJwk,
       privateJwk : portableDid.keySet.verificationMethodKeys![0].privateKeyJwk as PrivateJwk,
     };
 

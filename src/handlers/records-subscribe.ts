@@ -207,7 +207,9 @@ export class RecordsSubscribeHandler implements MethodHandler {
       await recordsSubscribe.authorizeDelegate(messageStore);
     }
 
-    // Only run protocol authz if message deliberately invokes it
+    // NOTE: not all RecordsSubscribe messages require protocol authorization even if the filter includes protocol-related fields,
+    // this is because we dynamically filter out records that the caller is not authorized to see.
+    // Currently only run protocol authorization if message deliberately invokes a protocol role.
     if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
       await ProtocolAuthorization.authorizeQueryOrSubscribe(tenant, recordsSubscribe, messageStore);
     }
