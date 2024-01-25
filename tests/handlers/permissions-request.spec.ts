@@ -79,7 +79,6 @@ export function testPermissionsRequestHandler(): void {
 
       it('should return 401 if auth fails', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
-        // alice.keyId = 'wrongValue';
         const { message } = await TestDataGenerator.generatePermissionsRequest({
           author : alice,
           scope  : {
