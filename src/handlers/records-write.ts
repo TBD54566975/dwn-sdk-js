@@ -188,16 +188,18 @@ export class RecordsWriteHandler implements MethodHandler {
       // split the dataStream into two: one for CID computation and one for storage
       const [dataStreamCopy1, dataStreamCopy2] = DataStream.duplicateDataStream(dataStream, 2);
 
-      // TODO: make these two tasks run in parallel
-      const dataCid = await Cid.computeDagPbCidFromStream(dataStreamCopy1);
-      // TODO: change interface to not return dataCid
-      const putResult = await this.dataStore.put(tenant, message.recordId, message.descriptor.dataCid, dataStreamCopy2);
-
       try {
+        const [dataCid, putResult] = await Promise.all([
+          Cid.computeDagPbCidFromStream(dataStreamCopy1),
+          // TODO: change interface to not return dataCid
+          this.dataStore.put(tenant, message.recordId, message.descriptor.dataCid, dataStreamCopy2)
+        ]);
+
         RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, putResult.dataSize);
       } catch (error) {
-        // unwind/delete data we just stored if the data turned out to be bad, we then throw throw error to caller
+        // unwind/delete data we we have issue with storage or the data failed integrity validation
         await this.dataStore.delete(tenant, message.recordId, message.descriptor.dataCid);
+
         throw error;
       }
     }
