@@ -47,11 +47,12 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.close();
   }
 
-  async put(tenant: string, messageCid: string, dataCid: string, dataStream: Readable): Promise<PutResult> {
-    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
-    await blockstoreForReferenceCounting.put(messageCid, PLACEHOLDER_VALUE);
+  async put(tenant: string, recordId: string, dataCid: string, dataStream: Readable): Promise<PutResult> {
+    // TODO: reference counting store is NOT a blockstore
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, recordId);
+    await blockstoreForReferenceCounting.put(dataCid, PLACEHOLDER_VALUE);
 
-    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId);
 
     const asyncDataBlocks = importer([{ content: dataStream }], blockstoreForData, { cidVersion: 1 });
 
@@ -65,15 +66,16 @@ export class DataStoreLevel implements DataStore {
     };
   }
 
-  public async get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult | undefined> {
-    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
+  public async get(tenant: string, recordId: string, dataCid: string): Promise<GetResult | undefined> {
+    // TODO: add reference counting tests or remove this reference counting table completely.
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, recordId);
 
-    const allowed = await blockstoreForReferenceCounting.has(messageCid);
-    if (!allowed) {
+    const recordHasReferenceToDataCid = await blockstoreForReferenceCounting.has(dataCid);
+    if (!recordHasReferenceToDataCid) {
       return undefined;
     }
 
-    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId);
 
     const exists = await blockstoreForData.has(dataCid);
     if (!exists) {
@@ -108,22 +110,25 @@ export class DataStoreLevel implements DataStore {
     };
   }
 
-  public async associate(tenant: string, messageCid: string, dataCid: string): Promise<AssociateResult | undefined> {
-    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
+  public async associate(tenant: string, recordId: string, dataCid: string): Promise<AssociateResult | undefined> {
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, recordId);
 
     const noExistingReference = await blockstoreForReferenceCounting.isEmpty();
     if (noExistingReference) {
       return undefined;
     }
 
-    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
+    const referenceExists = await blockstoreForReferenceCounting.has(dataCid);
+    if (!referenceExists) {
+      return undefined;
+    }
+
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId);
 
     const dataExists = await blockstoreForData.has(dataCid);
     if (!dataExists) {
       return undefined;
     }
-
-    await blockstoreForReferenceCounting.put(messageCid, PLACEHOLDER_VALUE);
 
     const dataDagRoot = await exporter(dataCid, blockstoreForData);
 
@@ -139,16 +144,16 @@ export class DataStoreLevel implements DataStore {
     };
   }
 
-  public async delete(tenant: string, messageCid: string, dataCid: string): Promise<void> {
-    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
-    await blockstoreForReferenceCounting.delete(messageCid);
+  public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, recordId);
+    await blockstoreForReferenceCounting.delete(dataCid);
 
     const wasLastReference = await blockstoreForReferenceCounting.isEmpty();
     if (!wasLastReference) {
       return;
     }
 
-    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId);
     await blockstoreForData.clear();
   }
 
@@ -160,25 +165,25 @@ export class DataStoreLevel implements DataStore {
   }
 
   /**
-   * Gets the blockstore used for reference counting purposes for the given `dataCid` in the given `tenant`.
+   * Gets the blockstore used for reference counting purposes for the given `recordId` in the given `tenant`.
    */
-  private async getBlockstoreForReferenceCounting(tenant: string, dataCid: string): Promise<BlockstoreLevel> {
+  private async getBlockstoreForReferenceCounting(tenant: string, recordId: string): Promise<BlockstoreLevel> {
     const referenceCountingPartitionName = 'references';
     const blockstoreForReferenceCounting = await this.blockstore.partition(referenceCountingPartitionName);
     const blockstoreForReferenceCountingByTenant = await blockstoreForReferenceCounting.partition(tenant);
-    const blockstoreForReferenceCountingDataCid = await blockstoreForReferenceCountingByTenant.partition(dataCid);
-    return blockstoreForReferenceCountingDataCid;
+    const blockstoreForReferenceCountingByRecordId = await blockstoreForReferenceCountingByTenant.partition(recordId);
+    return blockstoreForReferenceCountingByRecordId;
   }
 
   /**
-   * Gets the blockstore used for storing data for the given `dataCid` in the given `tenant`.
+   * Gets the blockstore used for storing data for the given `recordId` in the given `tenant`.
    */
-  private async getBlockstoreForStoringData(tenant: string, dataCid: string): Promise<BlockstoreLevel> {
+  private async getBlockstoreForStoringData(tenant: string, recordId: string): Promise<BlockstoreLevel> {
     const dataPartitionName = 'data';
     const blockstoreForData = await this.blockstore.partition(dataPartitionName);
     const blockstoreOfGivenTenant = await blockstoreForData.partition(tenant);
-    const blockstoreOfGivenDataCid = await blockstoreOfGivenTenant.partition(dataCid);
-    return blockstoreOfGivenDataCid;
+    const blockstoreOfGivenRecordId = await blockstoreOfGivenTenant.partition(recordId);
+    return blockstoreOfGivenRecordId;
   }
 }
 

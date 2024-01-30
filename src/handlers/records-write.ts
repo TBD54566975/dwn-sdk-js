@@ -140,7 +140,6 @@ export class RecordsWriteHandler implements MethodHandler {
       if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
           e.code === DwnErrorCode.RecordsWriteMissingDataInPrevious ||
           e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
-          e.code === DwnErrorCode.RecordsWriteMissingDataAssociation ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
           e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
         return messageReplyFromError(error, 400);
@@ -186,9 +185,21 @@ export class RecordsWriteHandler implements MethodHandler {
       RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
       messageWithOptionalEncodedData = await this.cloneAndAddEncodedData(message, dataBytes);
     } else {
-      const messageCid = await Message.getCid(message);
-      const result = await this.dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
-      await this.validateDataStoreIntegrity(tenant, message, result.dataCid, result.dataSize);
+      // split the dataStream into two: one for CID computation and one for storage
+      const [dataStreamCopy1, dataStreamCopy2] = DataStream.duplicateDataStream(dataStream, 2);
+
+      // TODO: make these two tasks run in parallel
+      const dataCid = await Cid.computeDagPbCidFromStream(dataStreamCopy1);
+      // TODO: change interface to not return dataCid
+      const putResult = await this.dataStore.put(tenant, message.recordId, message.descriptor.dataCid, dataStreamCopy2);
+
+      try {
+        RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, putResult.dataSize);
+      } catch (error) {
+        // unwind/delete data we just stored if the data turned out to be bad, we then throw throw error to caller
+        await this.dataStore.delete(tenant, message.recordId, message.descriptor.dataCid);
+        throw error;
+      }
     }
 
     return messageWithOptionalEncodedData;
@@ -219,50 +230,20 @@ export class RecordsWriteHandler implements MethodHandler {
         );
       }
     } else {
-      // attempt to retrieve the data from the previous message
-      const previousWriteMessageCid = await Message.getCid(newestExistingWrite);
-      const dataResults = await this.dataStore.get(tenant, previousWriteMessageCid, message.descriptor.dataCid);
+      // else just make sure the data is in the data store
 
-      // if it does not exist we have no previous data to associate.
-      if (dataResults === undefined) {
+      // attempt to retrieve the data from the previous message
+      const getResult = await this.dataStore.get(tenant, newestExistingWrite.recordId, message.descriptor.dataCid);
+
+      if (getResult === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingDataInPrevious,
           `No dataStream was provided and unable to get data from previous message`
         );
       }
-
-      const result = await this.dataStore.associate(tenant, await Message.getCid(message), message.descriptor.dataCid);
-      if (result === undefined) {
-        throw new DwnError(
-          DwnErrorCode.RecordsWriteMissingDataAssociation,
-          'No dataStream was provided and unable to associate with previous data'
-        );
-      }
-      await this.validateDataStoreIntegrity(tenant, message, result.dataCid, result.dataSize);
     }
 
     return messageWithOptionalEncodedData;
-  }
-
-  /**
-   * Validates the data integrity after either putting the data or associating it with a new message.
-   * Upon failure deletes the association, and subsequently the data if there are no other associations.
-   */
-  private async validateDataStoreIntegrity(
-    tenant: string,
-    message: RecordsWriteMessage,
-    dataCid: string,
-    dataSize: number
-  ): Promise<void> {
-    const messageCid = await Message.getCid(message);
-
-    try {
-      RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataSize);
-    } catch (error) {
-      // delete data and throw error to caller
-      await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
-      throw error;
-    }
   }
 
   /**

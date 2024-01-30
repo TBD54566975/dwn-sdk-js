@@ -404,33 +404,6 @@ export function testRecordsWriteHandler(): void {
         expect(newRecordsQueryReply.entries![0].encodedData).to.equal(originalEncodedData);
       });
 
-      it('should throw if associate returns undefined', async () => {
-        const alice = await TestDataGenerator.generateDidKeyPersona();
-
-        // write a record into the dwn
-        const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
-          author : alice,
-          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
-        });
-        const reply = await dwn.processMessage(alice.did, recordsWrite.message);
-        expect(reply.status.code).to.equal(202);
-
-        const write2 = await RecordsWrite.createFrom({
-          recordsWriteMessage : recordsWrite.message,
-          published           : true,
-          signer              : Jws.createSigner(alice)
-        });
-
-        const prevMessageCid = await Message.getCid(recordsWrite.message);
-        const dataCid = recordsWrite.message.descriptor.dataCid;
-        const dataSize = recordsWrite.message.descriptor.dataSize;
-        sinon.stub(dataStore, 'get').withArgs(alice.did, prevMessageCid, dataCid).resolves({ dataCid, dataSize } as GetResult);
-
-        const write2Reply = await dwn.processMessage(alice.did, write2.message);
-        expect(write2Reply.status.code).to.equal(400);
-        expect(write2Reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
-      });
-
       describe('owner signature tests', () => {
         it('should use `ownerSignature` for authorization when it is given - flat-space', async () => {
           // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
@@ -4105,30 +4078,26 @@ export function testRecordsWriteHandler(): void {
       });
 
       describe('encodedData threshold', async () => {
-        it('should call cloneAndAddEncodedData and not validateDataStoreIntegrity if dataSize is less than or equal to the threshold', async () => {
+        it('should call cloneAndAddEncodedData if dataSize is less than or equal to the threshold', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
           const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
-          const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, { dataStream });
           expect(writeMessage.status.code).to.equal(202);
           sinon.assert.calledOnce(processEncoded);
-          sinon.assert.notCalled(validateStore);
         });
 
-        it('should call validateDataStoreIntegrity and not cloneAndAddEncodedData if dataSize is greater than the threshold', async () => {
+        it('should not call cloneAndAddEncodedData if dataSize is greater than the threshold', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
           const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
-          const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, { dataStream });
           expect(writeMessage.status.code).to.equal(202);
           sinon.assert.notCalled(processEncoded);
-          sinon.assert.calledOnce(validateStore);
         });
 
         it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {

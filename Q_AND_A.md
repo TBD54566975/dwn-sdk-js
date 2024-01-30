@@ -87,3 +87,19 @@
   Currently if a subscription is no longer authorized but it is still active, the subscriber will still receive updates until they close the subscription themselves. If they try to re-subscribe after that, it will be rejected with a 401.
 
   This will be addressed in a future upgrade and we've created an issue to track it. https://github.com/TBD54566975/dwn-sdk-js/issues/668 - last updated (2024/01/22)
+
+
+  ## Datastore
+- Is it possible to implement the datastore interface purely using a blob/binary data storage service such as Amazon S3, Azure Blob Storage, or Google Cloud Storage?
+
+  (Last update: 2024/01/30)
+
+  The short answer is: yes.
+
+  The long answer, with context:
+
+  Keys to objects are generally immutable once the object is created by all three vendors. Amazon S3 and Google Cloud Storage do not have built-in mechanisms to search by their metadata/tags on the server side, even though they support the modification of metadata/tags. Only Azure Blob Storage allows both search and modification of metadata for a written object. Amazon S3 and Google Cloud Storage also have limited support for "partitions": a finite limit in S3 or a limited rate of 1 per 2 seconds, while Azure Blob Storage fully supports partitions.
+
+  All of the above means that an implementation using Azure Blob Storage could be the most "clean". However, it should still be straightforward to implement the datastore using Amazon S3 or Google Cloud Storage by using recordId + dataCid as the object key.
+
+  Implementers have the liberty to introduce advanced features such as reference counting to avoid storing the same data twice, but this is not a requirement.
