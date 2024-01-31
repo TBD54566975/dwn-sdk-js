@@ -1,7 +1,7 @@
 import type { Readable } from 'readable-stream';
 
 /**
- * The interface that defines how to store and fetch data associated with a message
+ * The interface that defines how to store and fetch data associated with a message.
  */
 export interface DataStore {
   /**
@@ -31,16 +31,6 @@ export interface DataStore {
   get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult | undefined>;
 
   /**
-   * Associates dataCid of existing data with the given messageCid.
-   * The returned dataCid and returned dataSize will be verified against the given dataCid (and inferred dataSize).
-   * @param tenant The tenant in which the data must exist under for the association to occur.
-   * @param messageCid CID of the message that references the data.
-   * @param dataCid The CID of the data stored.
-   * @returns {AssociateResult} if association succeeds. `undefined` if data to be associated is not found.
-   */
-  associate(tenant: string, messageCid: string, dataCid: string): Promise<AssociateResult | undefined>;
-
-  /**
    * Deletes the specified data.
    * @param messageCid CID of the message that references the data.
    */
@@ -65,12 +55,4 @@ export type PutResult = {
 export type GetResult = {
   dataSize: number;
   dataStream: Readable;
-};
-
-/**
- * Result of a data store `associate()` method call.
- */
-export type AssociateResult = {
-  dataCid: string;
-  dataSize: number;
 };

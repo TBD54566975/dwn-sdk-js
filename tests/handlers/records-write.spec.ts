@@ -4023,58 +4023,56 @@ export function testRecordsWriteHandler(): void {
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious);
       });
 
-      describe('reference counting tests', () => {
-        it('should not allow referencing data across tenants', async () => {
-          const alice = await TestDataGenerator.generateDidKeyPersona();
-          const bob = await TestDataGenerator.generateDidKeyPersona();
-          const data = Encoder.stringToBytes('test');
-          const dataCid = await Cid.computeDagPbCidFromBytes(data);
-          const encodedData = Encoder.bytesToBase64Url(data);
+      it('should not allow referencing data across tenants', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const data = Encoder.stringToBytes('test');
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+        const encodedData = Encoder.bytesToBase64Url(data);
 
-          // alice writes data to her DWN
-          const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
-            author: alice,
-            data
-          });
-          const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, { dataStream: aliceWriteData.dataStream });
-          expect(aliceWriteReply.status.code).to.equal(202);
-
-          const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: aliceWriteData.message.recordId }
-          });
-          const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
-          expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-          expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
-          expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
-
-          // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
-          const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
-            author   : bob,
-            dataCid,
-            dataSize : 4
-          });
-          const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, { dataStream: bobAssociateData.dataStream });
-          expect(bobAssociateReply.status.code).to.equal(202); // allows write but does not allow read or query
-
-          const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: aliceWriteData.message.recordId }
-          });
-          const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
-          expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
-          expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
-          expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
-
-          // verify that bob has not gained access to alice's data
-          const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-            author : bob,
-            filter : { recordId: bobAssociateData.message.recordId }
-          });
-          const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
-          expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
-          expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
+        // alice writes data to her DWN
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+          data
         });
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, { dataStream: aliceWriteData.dataStream });
+        expect(aliceWriteReply.status.code).to.equal(202);
+
+        const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
+        const bobWriteData = await TestDataGenerator.generateRecordsWrite({
+          author   : bob,
+          dataCid,
+          dataSize : 4
+        });
+        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message); // intentionally missing data stream
+        expect(bobWriteReply.status.code).to.equal(202); // NOTE: allows write here but does not allow read or query later
+
+        const aliceQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterBobWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobWriteData.message);
+        expect(aliceQueryWriteAfterBobWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        // verify that bob has not gained access to alice's data
+        const bobQueryAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
+          author : bob,
+          filter : { recordId: bobWriteData.message.recordId }
+        });
+        const bobQueryAfterBobWriteReply = await dwn.processMessage(bob.did, bobQueryAfterBobWriteData.message);
+        expect(bobQueryAfterBobWriteReply.status.code).to.equal(200);
+        expect(bobQueryAfterBobWriteReply.entries?.length).to.equal(0);
       });
 
       describe('encodedData threshold', async () => {

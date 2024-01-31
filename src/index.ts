@@ -14,7 +14,7 @@ export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
-export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';
+export { DataStore, PutResult, GetResult } from './types/data-store.js';
 export { DataStream } from './utils/data-stream.js';
 export { DateSort } from './types/records-types.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';

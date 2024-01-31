@@ -1,5 +1,5 @@
 import type { ImportResult } from 'ipfs-unixfs-importer';
-import type { AssociateResult, DataStore, GetResult, PutResult } from '../types/data-store.js';
+import type { DataStore, GetResult, PutResult } from '../types/data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';
@@ -86,28 +86,6 @@ export class DataStoreLevel implements DataStore {
     return {
       dataSize: Number(dataSize),
       dataStream,
-    };
-  }
-
-  public async associate(tenant: string, recordId: string, dataCid: string): Promise<AssociateResult | undefined> {
-    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId, dataCid);
-
-    const dataExists = await blockstoreForData.has(dataCid);
-    if (!dataExists) {
-      return undefined;
-    }
-
-    const dataDagRoot = await exporter(dataCid, blockstoreForData);
-
-    let dataSize = dataDagRoot.size;
-
-    if (dataDagRoot.type === 'file' || dataDagRoot.type === 'directory') {
-      dataSize = dataDagRoot.unixfs.fileSize();
-    }
-
-    return {
-      dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataSize)
     };
   }
 
