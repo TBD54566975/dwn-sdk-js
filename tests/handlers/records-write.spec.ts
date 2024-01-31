@@ -3167,13 +3167,13 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryReply.entries?.length).to.equal(0);
 
           //further sanity query for specific recordId
-          const bobRecordsQueryReordId = await RecordsQuery.create({
+          const bobRecordsQueryRecordId = await RecordsQuery.create({
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
             signer: Jws.createSigner(bob)
           });
-          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryReordId.message);
+          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryRecordId.message);
           expect(bobRecordsQueryRecordIdReply.status.code).to.equal(200);
           expect(bobRecordsQueryRecordIdReply.entries?.length).to.equal(0);
 
@@ -3259,13 +3259,13 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryReply.entries?.length).to.equal(0);
 
           //further sanity query for specific recordId
-          const bobRecordsQueryReordId = await RecordsQuery.create({
+          const bobRecordsQueryRecordId = await RecordsQuery.create({
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
             signer: Jws.createSigner(bob)
           });
-          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryReordId.message);
+          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryRecordId.message);
           expect(bobRecordsQueryRecordIdReply.status.code).to.equal(200);
           expect(bobRecordsQueryRecordIdReply.entries?.length).to.equal(0);
 

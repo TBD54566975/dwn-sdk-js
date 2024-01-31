@@ -92,13 +92,6 @@ export class DataStoreLevel implements DataStore {
   public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
     const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId, dataCid);
     await blockstoreForData.clear();
-
-    const partitionForRecordId = await this.getPartitionForRecordId(tenant, recordId);
-
-    const noDataLeft = await partitionForRecordId.isEmpty();
-    if (noDataLeft) {
-      await blockstoreForData.clear();
-    }
   }
 
   /**
@@ -112,20 +105,12 @@ export class DataStoreLevel implements DataStore {
    * Gets the blockstore used for storing data for the given `tenant -> `recordId` -> `dataCid`.
    */
   private async getBlockstoreForStoringData(tenant: string, recordId: string, dataCid: string): Promise<BlockstoreLevel> {
-    const blockstoreOfGivenRecordId = await this.getPartitionForRecordId(tenant, recordId);
-    const blockstoreOfGivenDataCidOfRecordId = await blockstoreOfGivenRecordId.partition(dataCid);
-    return blockstoreOfGivenDataCidOfRecordId;
-  }
-
-  /**
-   * Gets the partition used for a given recordId.
-   */
-  private async getPartitionForRecordId(tenant: string, recordId: string): Promise<BlockstoreLevel> {
     const dataPartitionName = 'data';
     const blockstoreForData = await this.blockstore.partition(dataPartitionName);
     const blockstoreOfGivenTenant = await blockstoreForData.partition(tenant);
     const blockstoreOfGivenRecordId = await blockstoreOfGivenTenant.partition(recordId);
-    return blockstoreOfGivenRecordId;
+    const blockstoreOfGivenDataCidOfRecordId = await blockstoreOfGivenRecordId.partition(dataCid);
+    return blockstoreOfGivenDataCidOfRecordId;
   }
 }
 
