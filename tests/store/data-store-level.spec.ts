@@ -79,10 +79,10 @@ describe('DataStoreLevel Test Suite', () => {
   describe('get', function () {
     it('should return `undefined if unable to find the data specified`', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const randomCid = await TestDataGenerator.randomCborSha256Cid();
-      const result = await store.get(tenant, messageCid, randomCid);
+      const result = await store.get(tenant, recordId, randomCid);
 
       expect(result).to.be.undefined;
     });
