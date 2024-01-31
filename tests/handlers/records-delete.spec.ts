@@ -124,9 +124,9 @@ export function testRecordsDeleteHandler(): void {
         expect(aliceWriteReply.status.code).to.equal(202);
 
         // alice writes another record with the same data
-        const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, { dataStream: aliceAssociateData.dataStream });
-        expect(aliceAssociateReply.status.code).to.equal(202);
+        const aliceWrite2Data = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
+        const aliceWrite2Reply = await dwn.processMessage(alice.did, aliceWrite2Data.message, { dataStream: aliceWrite2Data.dataStream });
+        expect(aliceWrite2Reply.status.code).to.equal(202);
 
         // bob writes a records with same data
         const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
@@ -134,9 +134,9 @@ export function testRecordsDeleteHandler(): void {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // bob writes another record with the same data
-        const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, { dataStream: bobAssociateData.dataStream });
-        expect(bobAssociateReply.status.code).to.equal(202);
+        const bobWrite2Data = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
+        const bobWrite2Reply = await dwn.processMessage(bob.did, bobWrite2Data.message, { dataStream: bobWrite2Data.dataStream });
+        expect(bobWrite2Reply.status.code).to.equal(202);
 
         // alice deletes one of the two records
         const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
@@ -149,7 +149,7 @@ export function testRecordsDeleteHandler(): void {
         // verify the other record with the same data is unaffected
         const aliceRead1 = await RecordsRead.create({
           filter: {
-            recordId: aliceAssociateData.message.recordId,
+            recordId: aliceWrite2Data.message.recordId,
           },
           signer: Jws.createSigner(alice)
         });
@@ -161,12 +161,12 @@ export function testRecordsDeleteHandler(): void {
         expect(ArrayUtility.byteArraysEqual(aliceDataFetched, data)).to.be.true;
 
         // alice deletes the other record
-        const aliceDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
+        const aliceDeleteWrite2Data = await TestDataGenerator.generateRecordsDelete({
           author   : alice,
-          recordId : aliceAssociateData.message.recordId
+          recordId : aliceWrite2Data.message.recordId
         });
-        const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
-        expect(aliceDeleteAssociateReply.status.code).to.equal(202);
+        const aliceDeleteWrite2Reply = await dwn.processMessage(alice.did, aliceDeleteWrite2Data.message);
+        expect(aliceDeleteWrite2Reply.status.code).to.equal(202);
 
         // verify that alice can no longer fetch the 2nd record
         const aliceRead2Reply = await dwn.processMessage(alice.did, aliceRead1.message);
@@ -175,7 +175,7 @@ export function testRecordsDeleteHandler(): void {
         // verify that bob can still fetch record with the same data
         const bobRead1 = await RecordsRead.create({
           filter: {
-            recordId: bobAssociateData.message.recordId,
+            recordId: bobWriteData.message.recordId,
           },
           signer: Jws.createSigner(bob)
         });
