@@ -69,8 +69,8 @@ describe('DataStoreLevel Test Suite', () => {
       await store.put(bob, bobRecordId, dataCid, bobDataStream);
 
       // verify that both alice and bob's blockstore have their own reference to data CID
-      const blockstoreOfAliceRecord = await store['getBlockstoreForStoringData'](alice, aliceRecordId);
-      const blockstoreOfBobRecord = await store['getBlockstoreForStoringData'](bob, bobRecordId);
+      const blockstoreOfAliceRecord = await store['getBlockstoreForStoringData'](alice, aliceRecordId, dataCid);
+      const blockstoreOfBobRecord = await store['getBlockstoreForStoringData'](bob, bobRecordId, dataCid);
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceRecord.db.keys())).to.eventually.eql([ dataCid ]);
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobRecord.db.keys())).to.eventually.eql([ dataCid ]);
     });
@@ -106,80 +106,21 @@ describe('DataStoreLevel Test Suite', () => {
     });
   });
 
-  describe('associate', function () {
-    it('should return `false` if tenant missing', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-      const randomCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeAssociate.length).to.equal(0);
-
-      const result = await store.associate(tenant, messageCid, randomCid);
-      expect(result).to.be.undefined;
-
-      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterAssociate.length).to.equal(0);
-    });
-
-    it('should return `false` if data missing', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-      const randomCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const dataBytes = TestDataGenerator.randomBytes(10);
-      const dataStream = DataStream.fromBytes(dataBytes);
-
-      const { dataCid } = await store.put(tenant, messageCid, randomCid, dataStream);
-      expect(dataCid).to.not.equal(randomCid);
-
-      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeAssociate.length).to.equal(2);
-
-      const result = await store.associate(tenant, messageCid, randomCid);
-      expect(result).to.be.undefined;
-
-      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterAssociate.length).to.equal(2);
-    });
-
-    it('should return the root CID', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const dataBytes = TestDataGenerator.randomBytes(10_000_000);
-      const dataStream = DataStream.fromBytes(dataBytes);
-      const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
-
-      await store.put(tenant, messageCid, dataCid, dataStream);
-
-      const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeDelete.length).to.equal(41);
-
-      const result = (await store.associate(tenant, messageCid, dataCid))!;
-      expect(result.dataCid).to.equal(dataCid);
-      expect(result.dataSize).to.equal(10_000_000);
-
-      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterDelete.length).to.equal(41);
-    });
-  });
-
   describe('delete', function () {
     it('should not leave anything behind when deleting the root CID', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const dataBytes = TestDataGenerator.randomBytes(10_000_000);
       const dataStream = DataStream.fromBytes(dataBytes);
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
 
-      await store.put(tenant, messageCid, dataCid, dataStream);
+      await store.put(tenant, recordId, dataCid, dataStream);
 
       const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeDelete.length).to.equal(41);
+      expect(keysBeforeDelete.length).to.equal(40);
 
-      await store.delete(tenant, messageCid, dataCid);
+      await store.delete(tenant, recordId, dataCid);
 
       const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterDelete.length).to.equal(0);
@@ -213,10 +154,10 @@ describe('DataStoreLevel Test Suite', () => {
       await store.put(bob, recordId4, dataCid, dataStream4);
 
       // verify that all 4 records have reference to the same data CID
-      const blockstoreOfRecord1 = await store['getBlockstoreForStoringData'](alice, recordId1);
-      const blockstoreOfRecord2 = await store['getBlockstoreForStoringData'](alice, recordId2);
-      const blockstoreOfRecord3 = await store['getBlockstoreForStoringData'](bob, recordId3);
-      const blockstoreOfRecord4 = await store['getBlockstoreForStoringData'](bob, recordId4);
+      const blockstoreOfRecord1 = await store['getBlockstoreForStoringData'](alice, recordId1, dataCid);
+      const blockstoreOfRecord2 = await store['getBlockstoreForStoringData'](alice, recordId2, dataCid);
+      const blockstoreOfRecord3 = await store['getBlockstoreForStoringData'](bob, recordId3, dataCid);
+      const blockstoreOfRecord4 = await store['getBlockstoreForStoringData'](bob, recordId4, dataCid);
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord1.db.keys())).to.eventually.eql([ dataCid ]);
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord2.db.keys())).to.eventually.eql([ dataCid ]);
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord3.db.keys())).to.eventually.eql([ dataCid ]);
