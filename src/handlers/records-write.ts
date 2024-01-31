@@ -189,12 +189,12 @@ export class RecordsWriteHandler implements MethodHandler {
       const [dataStreamCopy1, dataStreamCopy2] = DataStream.duplicateDataStream(dataStream, 2);
 
       try {
-        const [dataCid, putResult] = await Promise.all([
+        const [dataCid, DataStorePutResult] = await Promise.all([
           Cid.computeDagPbCidFromStream(dataStreamCopy1),
           this.dataStore.put(tenant, message.recordId, message.descriptor.dataCid, dataStreamCopy2)
         ]);
 
-        RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, putResult.dataSize);
+        RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, DataStorePutResult.dataSize);
       } catch (error) {
         // unwind/delete data we we have issue with storage or the data failed integrity validation
         await this.dataStore.delete(tenant, message.recordId, message.descriptor.dataCid);
@@ -234,9 +234,9 @@ export class RecordsWriteHandler implements MethodHandler {
       // else just make sure the data is in the data store
 
       // attempt to retrieve the data from the previous message
-      const getResult = await this.dataStore.get(tenant, newestExistingWrite.recordId, message.descriptor.dataCid);
+      const DataStoreGetResult = await this.dataStore.get(tenant, newestExistingWrite.recordId, message.descriptor.dataCid);
 
-      if (getResult === undefined) {
+      if (DataStoreGetResult === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingDataInPrevious,
           `No dataStream was provided and unable to get data from previous message`

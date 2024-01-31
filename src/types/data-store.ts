@@ -19,7 +19,7 @@ export interface DataStore {
    * @param recordId The logical ID of the record that references the data.
    * @param dataCid The IPFS CID of the data.
    */
-  put(tenant: string, recordId: string, dataCid: string, dataStream: Readable): Promise<PutResult>;
+  put(tenant: string, recordId: string, dataCid: string, dataStream: Readable): Promise<DataStorePutResult>;
 
   /**
    * Fetches the specified data.
@@ -27,7 +27,7 @@ export interface DataStore {
    * @param dataCid The IPFS CID of the data.
    * @returns the data size and data stream if found, otherwise `undefined`.
    */
-  get(tenant: string, recordId: string, dataCid: string): Promise<GetResult | undefined>;
+  get(tenant: string, recordId: string, dataCid: string): Promise<DataStoreGetResult | undefined>;
 
   /**
    * Deletes the specified data. No-op if the data does not exist.
@@ -37,7 +37,7 @@ export interface DataStore {
   delete(tenant: string, recordId: string, dataCid: string): Promise<void>;
 
   /**
-   * Clears the entire store. Mainly used for testing to cleaning up in test environment.
+   * Clears the entire store. Mainly used for testing to cleaning up in test environments.
    */
   clear(): Promise<void>;
 }
@@ -45,7 +45,7 @@ export interface DataStore {
 /**
  * Result of a data store `put()` method call.
  */
-export type PutResult = {
+export type DataStorePutResult = {
   /**
    * The number of bytes of the data stored.
    */
@@ -55,7 +55,7 @@ export type PutResult = {
 /**
  * Result of a data store `get()` method call if the data exists.
  */
-export type GetResult = {
+export type DataStoreGetResult = {
   /**
    * The number of bytes of the data stored.
    */

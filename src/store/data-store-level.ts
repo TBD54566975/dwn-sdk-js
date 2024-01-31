@@ -1,5 +1,5 @@
 import type { ImportResult } from 'ipfs-unixfs-importer';
-import type { DataStore, GetResult, PutResult } from '../types/data-store.js';
+import type { DataStore, DataStoreGetResult, DataStorePutResult } from '../types/data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';
@@ -40,7 +40,7 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.close();
   }
 
-  async put(tenant: string, recordId: string, dataCid: string, dataStream: Readable): Promise<PutResult> {
+  async put(tenant: string, recordId: string, dataCid: string, dataStream: Readable): Promise<DataStorePutResult> {
     const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId, dataCid);
 
     const asyncDataBlocks = importer([{ content: dataStream }], blockstoreForData, { cidVersion: 1 });
@@ -54,7 +54,7 @@ export class DataStoreLevel implements DataStore {
     };
   }
 
-  public async get(tenant: string, recordId: string, dataCid: string): Promise<GetResult | undefined> {
+  public async get(tenant: string, recordId: string, dataCid: string): Promise<DataStoreGetResult | undefined> {
     const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId, dataCid);
 
     const exists = await blockstoreForData.has(dataCid);
