@@ -191,7 +191,6 @@ export class RecordsWriteHandler implements MethodHandler {
       try {
         const [dataCid, putResult] = await Promise.all([
           Cid.computeDagPbCidFromStream(dataStreamCopy1),
-          // TODO: change interface to not return dataCid
           this.dataStore.put(tenant, message.recordId, message.descriptor.dataCid, dataStreamCopy2)
         ]);
 

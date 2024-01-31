@@ -87,21 +87,18 @@ describe('DataStoreLevel Test Suite', () => {
       expect(result).to.be.undefined;
     });
 
-    it('should return `undefined if the dataCid is different than the dataStream`', async () => {
+    it('should return `undefined` if the dataCid is different than the dataStream`', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const randomCid = await TestDataGenerator.randomCborSha256Cid();
 
       const dataBytes = TestDataGenerator.randomBytes(10_000_000);
       const dataStream = DataStream.fromBytes(dataBytes);
 
-      const { dataCid } = await store.put(tenant, messageCid, randomCid, dataStream);
+      await store.put(tenant, recordId, randomCid, dataStream);
 
-      expect(dataCid).to.not.equal(randomCid);
-
-      const result = await store.get(tenant, messageCid, randomCid);
-
+      const result = await store.get(tenant, recordId, randomCid);
       expect(result).to.be.undefined;
     });
   });

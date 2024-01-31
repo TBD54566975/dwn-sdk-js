@@ -50,8 +50,7 @@ export class DataStoreLevel implements DataStore {
     for await (dataDagRoot of asyncDataBlocks) { ; }
 
     return {
-      dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size)
+      dataSize: Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size)
     };
   }
 
@@ -85,8 +84,7 @@ export class DataStoreLevel implements DataStore {
     }
 
     return {
-      dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataSize),
+      dataSize: Number(dataSize),
       dataStream,
     };
   }
@@ -114,7 +112,6 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
-    // TODO: add test to make sure the recordId sublevel is clean up
     const blockstoreForData = await this.getBlockstoreForStoringData(tenant, recordId, dataCid);
     await blockstoreForData.clear();
 

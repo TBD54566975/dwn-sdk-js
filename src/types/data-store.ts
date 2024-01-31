@@ -56,7 +56,6 @@ export interface DataStore {
  * Result of a data store `put()` method call.
  */
 export type PutResult = {
-  dataCid: string;
   dataSize: number;
 };
 
@@ -64,7 +63,6 @@ export type PutResult = {
  * Result of a data store `get()` method call.
  */
 export type GetResult = {
-  dataCid: string;
   dataSize: number;
   dataStream: Readable;
 };
