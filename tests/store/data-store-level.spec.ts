@@ -33,7 +33,7 @@ describe('DataStoreLevel Test Suite', () => {
       let dataSizeInBytes = 10;
 
       // iterate through order of magnitude in size until hitting 10MB
-      while (dataSizeInBytes <= 10) {
+      while (dataSizeInBytes <= 10_000_000) {
         const dataBytes = TestDataGenerator.randomBytes(dataSizeInBytes);
         const dataStream = DataStream.fromBytes(dataBytes);
         const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);

@@ -3,7 +3,7 @@ import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { RecordsQueryReplyEntry } from '../../src/types/records-types.js';
-import type { DataStore, EventLog, GetResult, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
 import authorCanProtocolDefinition from '../vectors/protocol-definitions/author-can.json' assert { type: 'json' };
