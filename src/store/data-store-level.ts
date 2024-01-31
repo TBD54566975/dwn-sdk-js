@@ -11,8 +11,8 @@ import { Readable } from 'readable-stream';
  * A simple implementation of {@link DataStore} that works in both the browser and server-side.
  * Leverages LevelDB under the hood.
  *
- * It has the following structure (`+` represents a sublevel and `->` represents a key->value pair):
- *   'data' + <tenant> + <recordId> -> <data>
+ * It has the following structure (`+` represents an additional sublevel/partition):
+ *   'data' + <tenant> + <recordId> + <dataCid> -> <data>
  */
 export class DataStoreLevel implements DataStore {
   config: DataStoreLevelConfig;
