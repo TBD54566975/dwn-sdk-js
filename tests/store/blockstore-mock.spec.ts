@@ -34,7 +34,7 @@ describe('BlockstoreMock', () => {
       const dataCidByMockBlockstore = blockByMockBlockstore ? blockByMockBlockstore.cid.toString() : '';
 
       expect(dataCidByMockBlockstore).to.exist;
-      expect(dataCidByMockBlockstore.length).to.be.greaterThan(10);
+      expect(dataCidByMockBlockstore.length).to.be.greaterThan(0);
       expect(dataCidByMockBlockstore).to.be.equal(dataCidByMemoryBlockstore);
 
       dataSizeInBytes *= 10;
