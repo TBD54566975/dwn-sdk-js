@@ -5,10 +5,8 @@ import type { Blockstore, Pair } from 'interface-blockstore';
 /**
  * Mock implementation for the Blockstore interface.
  *
- * WARNING!!! Purely to be used with `ipfs-unixfs-importer` to compute CID without needing consume any memory,
- * particularly useful when dealing with:
- * 1. Large files; and
- * 2. Large-scale production service environment.
+ * WARNING!!! Purely to be used with `ipfs-unixfs-importer` to compute CID without needing consume any memory.
+ * This is particularly useful when dealing with large files and a necessity in a large-scale production service environment.
  */
 export class BlockstoreMock implements Blockstore {
 
