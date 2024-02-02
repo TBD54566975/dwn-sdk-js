@@ -18,7 +18,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 
 export function testPermissionsGrantHandler(): void {
@@ -35,7 +35,7 @@ export function testPermissionsGrantHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+        didResolver = new DidResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;

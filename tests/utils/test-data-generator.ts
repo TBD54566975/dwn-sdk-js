@@ -26,8 +26,7 @@ import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/typ
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { Did } from '../../src/did/did.js';
-import { DidKeyMethod } from '@web5/dids';
+import { DidKey } from '@web5/dids';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/utils/encryption.js';
@@ -1005,16 +1004,18 @@ export class TestDataGenerator {
    */
   public static async generateDidKeyPersona(): Promise<Persona> {
 
-    const portableDid = await DidKeyMethod.create();
-    const keyId = TestDataGenerator.getKeyId(portableDid.did);
+    const did = await DidKey.create();
+    const signingMethod = await DidKey.getSigningMethod({ didDocument: did.didDocument });
+    const keyId = signingMethod!.id;
+    const portableDid = await DidKey.toKeys({ did });
     const keyPair = {
       // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
-      publicJwk  : portableDid.keySet.verificationMethodKeys![0].publicKeyJwk as PublicJwk,
-      privateJwk : portableDid.keySet.verificationMethodKeys![0].privateKeyJwk as PrivateJwk,
+      publicJwk  : portableDid.verificationMethods[0].publicKeyJwk as PublicJwk,
+      privateJwk : portableDid.verificationMethods[0].privateKeyJwk as PrivateJwk,
     };
 
     return {
-      did    : portableDid.did,
+      did    : did.uri,
       keyId,
       keyPair,
       signer : new PrivateKeySigner({
@@ -1023,14 +1024,5 @@ export class TestDataGenerator {
         keyId
       })
     };
-  }
-
-  /**
-   * Gets the fully qualified key ID of a `did:key` DID. ie. '<did>#<method-specific-id>'
-   */
-  public static getKeyId(did: string): string {
-    const methodSpecificId = Did.getMethodSpecificId(did);
-    const keyId = `${did}#${methodSpecificId}`;
-    return keyId;
   }
 }

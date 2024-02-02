@@ -25,7 +25,7 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { DidKeyMethod } from '@web5/dids';
+import { DidKey } from '@web5/dids';
 import { DidResolver } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -63,7 +63,7 @@ export function testRecordsWriteHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+        didResolver = new DidResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
