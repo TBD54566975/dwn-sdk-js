@@ -19,7 +19,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -36,7 +36,7 @@ export function testDelegatedGrantScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+      didResolver = new DidResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
