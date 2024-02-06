@@ -49,8 +49,8 @@ export class ProtocolAuthorization {
       protocolDefinition,
     );
 
-    // If the incoming message is writing a $globalRole record, validate that the recipient is unique
-    await ProtocolAuthorization.verifyUniqueRoleRecipient(
+    // Validate as a role record if the incoming message is writing a role record
+    await ProtocolAuthorization.verifyAsRoleRecordIfNeeded(
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
@@ -314,7 +314,7 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Gets the rule set corresponding to the given message chain.
+   * Gets the rule set corresponding to the given protocolPath.
    */
   private static getRuleSet(
     protocolPath: string,
@@ -560,6 +560,7 @@ export class ProtocolAuthorization {
           // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
+
         if (recordsWriteMessage.descriptor.recipient === author) {
           return;
         }
@@ -580,20 +581,22 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies that writes to a $globalRole or $contextRole record do not have the same recipient as an existing RecordsWrite
-   * to the same $globalRole or the same $contextRole in the same context.
+   * If the given RecordsWrite is not a role record, this method does nothing and succeeds immediately.
+   *
+   * Else it verifies the validity of the given `RecordsWrite` including:
+   * 1. The same role has not been assigned to the same entity/recipient.
    */
-  private static async verifyUniqueRoleRecipient(
+  private static async verifyAsRoleRecordIfNeeded(
     tenant: string,
     incomingMessage: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    const incomingRecordsWrite = incomingMessage;
     if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
       return;
     }
 
+    const incomingRecordsWrite = incomingMessage;
     const recipient = incomingRecordsWrite.message.descriptor.recipient;
     if (recipient === undefined) {
       throw new DwnError(
@@ -601,6 +604,7 @@ export class ProtocolAuthorization {
         'Role records must have a recipient'
       );
     }
+
     const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
     const filter: Filter = {
       interface         : DwnInterfaceName.Records,
@@ -610,9 +614,11 @@ export class ProtocolAuthorization {
       protocolPath,
       recipient,
     };
+
     if (inboundMessageRuleSet.$contextRole) {
       filter.contextId = incomingRecordsWrite.message.contextId!;
     }
+
     const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
     const matchingRecords = matchingMessages as RecordsWriteMessage[];
     const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>
