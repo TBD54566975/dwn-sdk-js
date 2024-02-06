@@ -132,9 +132,9 @@ export class RecordsWriteHandler implements MethodHandler {
       await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
       await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
-      // NOTE: We only emit when the message is the latest base state.
-      // Because we allow an initial write to be written, but not queried, we shouldn't emit it either.
-      // It will be emitted as a part of the next write, if it has data and is the latest state.
+      // NOTE: We only emit a `RecordsWrite` when the message is the latest base state.
+      // Because we allow a `RecordsWrite` which is not the latest state to be written, but not queried, we shouldn't emit it either.
+      // It will be emitted as a part of a subsequent next write, if it is the latest base state.
       if (this.eventStream !== undefined && isLatestBaseState) {
         this.eventStream.emit(tenant, { message, initialWrite }, indexes);
       }
