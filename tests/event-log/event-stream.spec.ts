@@ -1,5 +1,6 @@
+import type { EventMessage } from '../../src/types/subscriptions.js';
+import type { EventStream } from '../../src/index.js';
 import type { KeyValues } from '../../src/types/query-types.js';
-import type { EventStream, GenericMessage } from '../../src/index.js';
 
 import { TestEventStream } from '../test-event-stream.js';
 import { Message, TestDataGenerator, Time } from '../../src/index.js';
@@ -30,13 +31,15 @@ describe('EventStream', () => {
 
   it('emits all messages to each subscriptions', async () => {
     const messageCids1: string[] = [];
-    const handler1 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler1 = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
+      delete message.initialWrite;
       const messageCid = await Message.getCid(message);
       messageCids1.push(messageCid);
     };
 
     const messageCids2: string[] = [];
-    const handler2 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler2 = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
+      delete message.initialWrite;
       const messageCid = await Message.getCid(message);
       messageCids2.push(messageCid);
     };
@@ -65,7 +68,8 @@ describe('EventStream', () => {
 
   it('does not emit messages if subscription is closed', async () => {
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
+      delete message.initialWrite;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
@@ -86,7 +90,8 @@ describe('EventStream', () => {
 
   it('does not emit messages if event stream is closed', async () => {
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
+      delete message.initialWrite;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };

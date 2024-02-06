@@ -1,5 +1,6 @@
+import type { EventMessage } from '../../src/types/subscriptions.js';
 import type { KeyValues } from '../../src/types/query-types.js';
-import type { GenericMessage, MessageStore } from '../../src/index.js';
+import type { MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -65,7 +66,8 @@ describe('EventEmitterStream', () => {
     const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
 
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
+      delete message.initialWrite;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };

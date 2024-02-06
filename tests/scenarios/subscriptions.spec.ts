@@ -1,8 +1,8 @@
+import type { EventMessage } from '../../src/types/subscriptions.js';
 import type {
   DataStore,
   EventLog,
   EventStream,
-  GenericMessage,
   MessageStore,
 } from '../../src/index.js';
 
@@ -57,7 +57,8 @@ export function testSubscriptionScenarios(): void {
 
         // create a handler that adds the messageCid of each message to an array.
         const messageCids: string[] = [];
-        const handler = async (message: GenericMessage): Promise<void> => {
+        const handler = async (message: EventMessage): Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           messageCids.push(messageCid);
         };
@@ -119,7 +120,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Records }]
         });
         const recordsMessageCids:string[] = [];
-        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const recordsSubscribeHandler = async (message: EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           recordsMessageCids.push(messageCid);
         };
@@ -138,7 +140,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Permissions }]
         });
         const permissionsMessageCids:string[] = [];
-        const permissionsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const permissionsSubscribeHandler = async (message: EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           permissionsMessageCids.push(messageCid);
         };
@@ -157,7 +160,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Protocols }]
         });
         const protocolsMessageCids:string[] = [];
-        const protocolsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const protocolsSubscribeHandler = async (message: EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           protocolsMessageCids.push(messageCid);
         };
@@ -231,7 +235,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
         });
         const recordsMessageCids:string[] = [];
-        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const recordsSubscribeHandler = async (message: EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           recordsMessageCids.push(messageCid);
         };
@@ -275,7 +280,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const proto1Messages:string[] = [];
-        const proto1Handler = async (message:GenericMessage):Promise<void> => {
+        const proto1Handler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           proto1Messages.push(await Message.getCid(message));
         };
 
@@ -290,7 +296,8 @@ export function testSubscriptionScenarios(): void {
         expect(proto1SubscriptionReply.subscription).to.exist;
 
         const proto2Messages:string[] = [];
-        const proto2Handler = async (message:GenericMessage):Promise<void> => {
+        const proto2Handler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           proto2Messages.push(await Message.getCid(message));
         };
 
@@ -400,7 +407,8 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to this thread's events
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           messages.push(await Message.getCid(message));
         };
 
@@ -530,7 +538,8 @@ export function testSubscriptionScenarios(): void {
         const schema2Messages:string[] = [];
 
         // we add a handler to the subscription and add the messageCid to the appropriate array
-        const schema1Handler = async (message:GenericMessage):Promise<void> => {
+        const schema1Handler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           schema1Messages.push(messageCid);
         };
@@ -542,7 +551,8 @@ export function testSubscriptionScenarios(): void {
         expect(schema1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(schema1Subscription.message));
 
         // we add a handler to the subscription and add the messageCid to the appropriate array
-        const schema2Handler = async (message:GenericMessage):Promise<void> => {
+        const schema2Handler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           schema2Messages.push(messageCid);
         };
@@ -607,7 +617,8 @@ export function testSubscriptionScenarios(): void {
 
         // create a subscription and capture the messages associated with the record
         const messages: string[] = [];
-        const subscriptionHandler = async (message: GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (message: EventMessage):Promise<void> => {
+          delete message.initialWrite;
           messages.push(await Message.getCid(message));
         };
 
@@ -664,7 +675,8 @@ export function testSubscriptionScenarios(): void {
 
         const receivedMessages:string[] = [];
 
-        const handler = async (message:GenericMessage): Promise<void> => {
+        const handler = async (message:EventMessage): Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           receivedMessages.push(messageCid);
         };
@@ -754,7 +766,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const imageMessages: string[] = [];
-        const imageHandler = async (message:GenericMessage):Promise<void> => {
+        const imageHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           imageMessages.push(await Message.getCid(message));
         };
 
@@ -831,7 +844,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const smallMessages: string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           smallMessages.push(await Message.getCid(message));
         };
         const smallMessageSubscription = await TestDataGenerator.generateEventsSubscribe({
@@ -890,7 +904,8 @@ export function testSubscriptionScenarios(): void {
         // messageCids of events
         const messageCids:string[] = [];
 
-        const handler = async (message: GenericMessage): Promise<void> => {
+        const handler = async (message: EventMessage): Promise<void> => {
+          delete message.initialWrite;
           const messageCid = await Message.getCid(message);
           messageCids.push(messageCid);
         };
@@ -931,7 +946,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           messages.push(await Message.getCid(message));
         };
 
@@ -976,7 +992,8 @@ export function testSubscriptionScenarios(): void {
 
         // bob subscribes to any messages he's authorized to see
         const bobMessages:string[] = [];
-        const bobSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+        const bobSubscribeHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           bobMessages.push(await Message.getCid(message));
         };
 
@@ -993,7 +1010,8 @@ export function testSubscriptionScenarios(): void {
 
         // carol subscribes to any messages she's the recipient of.
         const carolMessages:string[] = [];
-        const carolSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+        const carolSubscribeHandler = async (message:EventMessage):Promise<void> => {
+          delete message.initialWrite;
           carolMessages.push(await Message.getCid(message));
         };
 
@@ -1070,7 +1088,14 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to this thread's events
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const initialWrites: string[] = [];
+        const subscriptionHandler = async (message:EventMessage):Promise<void> => {
+          const initialWrite = message.initialWrite;
+          if (initialWrite !== undefined) {
+            initialWrites.push(await Message.getCid(initialWrite));
+          }
+
+          delete message.initialWrite;
           messages.push(await Message.getCid(message));
         };
 
@@ -1205,6 +1230,11 @@ export function testSubscriptionScenarios(): void {
         expect(messages.length).to.equal(6);
         expect(messages).to.include.members([
           await Message.getCid(deleteCarol.message)
+        ]);
+
+        // check the initial write was included with the delete
+        expect(initialWrites).to.include.members([
+          await Message.getCid(carolParticipant.message)
         ]);
       });
     });

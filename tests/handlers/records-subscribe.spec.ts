@@ -1,7 +1,7 @@
-import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenericMessage } from '../../src/types/message-types.js';
 import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsDeleteMessage, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
+import type { EventMessage, EventStream } from '../../src/types/subscriptions.js';
+import type { RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -270,7 +270,9 @@ export function testRecordsSubscribeHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           const messageCids: string[] = [];
-          const addCid = async (message: RecordsWriteMessage | RecordsDeleteMessage): Promise<void> => {
+          const addCid = async (message: EventMessage): Promise<void> => {
+            delete message.initialWrite;
+
             const messageCid = await Message.getCid(message);
             messageCids.push(messageCid);
           };
