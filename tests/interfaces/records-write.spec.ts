@@ -3,6 +3,7 @@ import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/
 import type { PermissionScope, Signer } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
+import Sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -12,7 +13,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsGrant } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -324,6 +325,22 @@ describe('RecordsWrite', () => {
   });
 
   describe('parse()', () => {
+    xit('should invoke JSON schema validation when parsing a RecordsWrite', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const recordsWrite = await RecordsWrite.create({
+        signer     : Jws.createSigner(alice),
+        dataFormat : 'application/octet-stream',
+        data       : TestDataGenerator.randomBytes(10),
+      });
+
+      const validateJsonSchemaSpy = Sinon.spy(Message, 'validateJsonSchema');
+
+      await RecordsWrite.parse(recordsWrite.message);
+
+      expect(validateJsonSchemaSpy.called).to.be.true;
+    });
+
     it('should throw if a delegate invokes a delegated grant (ID) but the delegated grant is not given', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();

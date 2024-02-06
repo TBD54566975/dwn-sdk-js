@@ -18,7 +18,7 @@
 
 - Why is `recordId` required in a `RecordsWrite`?
 
-  (Last updated: 2023/05/16)
+  (Last updated: 2024/02/06)
 
   This question should be further split into two:
   1. Why is `recordId` required in an initial `RecordsWrite` (create)?
@@ -26,7 +26,7 @@
 
   The latter question is much easier to answer: an update needs to reference the record that it is updating.
 
-  The answer to the first-part question is more complicated: `recordId` technically is not needed in an initial `RecordsWrite`, but we chose to include it for data model consistency with subsequent `RecordsWrite`, such that we can simply return the latest message of a record as the response to `RecordsRead` and `RecordsQuery` (for the most part, we still remove `authorization`) without needing to re-inject/rehydrate `recordId` into any initial `RecordsWrite`. It is also the same reason why `contextId` is required for the initial `RecordsWrite` of a protocol-authorized record.
+  The answer to the first-part question is more complicated: `recordId` technically is not needed in an initial `RecordsWrite`, but we chose to include it for data model consistency with subsequent `RecordsWrite`, such that we can simply return the latest message of a record as the response to `RecordsRead` and `RecordsQuery` without needing to re-inject/rehydrate `recordId` into any initial `RecordsWrite`. It is also the same reason why `contextId` is required for the initial `RecordsWrite` of a protocol-authorized record.
 
 
 ## Encryption
