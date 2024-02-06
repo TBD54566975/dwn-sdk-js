@@ -1,4 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { EventMessage } from './subscriptions.js';
 import type { GeneralJws } from './jws-types.js';
 import type { PaginationCursor, SortDirection } from './query-types.js';
 
@@ -67,7 +68,7 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
-export type MessageSubscriptionHandler = (message: GenericMessage) => void;
+export type MessageSubscriptionHandler = (event: EventMessage) => void;
 
 export interface MessageSubscription {
   id: string;

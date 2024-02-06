@@ -66,8 +66,8 @@ describe('EventEmitterStream', () => {
     const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
 
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: EventMessage, _indexes: KeyValues): Promise<void> => {
-      delete message.initialWrite;
+    const handler = async (_tenant: string, event: EventMessage, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
@@ -77,9 +77,9 @@ describe('EventEmitterStream', () => {
     await eventStream.close();
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', message1.message, {});
+    eventStream.emit('did:alice', { message: message1.message }, {});
     const message2 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', message2.message, {});
+    eventStream.emit('did:alice', { message: message2.message }, {});
 
     expect(eventErrorSpy.callCount).to.equal(2);
     await subscription.close();

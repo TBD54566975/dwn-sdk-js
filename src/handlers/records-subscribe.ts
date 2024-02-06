@@ -3,7 +3,7 @@ import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { RecordsDeleteMessage, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordEvent, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { FilterUtility } from '../utils/filter.js';
@@ -72,7 +72,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
         // the filters check for interface and method
         // if matched the messages are either a `RecordsWriteMessage` or `RecordsDeleteMessage`
-        subscriptionHandler(eventMessage as RecordsWriteMessage | RecordsDeleteMessage);
+        subscriptionHandler(eventMessage as RecordEvent);
       }
     };
 

@@ -136,9 +136,8 @@ export function testEventsSubscribeHandler(): void {
         // set up a promise to read later that captures the emitted messageCid
         let handler;
         const messageSubscriptionPromise: Promise<string> = new Promise((resolve) => {
-          handler = async (message: EventMessage):Promise<void> => {
-            delete message.initialWrite;
-
+          handler = async (event: EventMessage):Promise<void> => {
+            const { message } = event;
             const messageCid = await Message.getCid(message);
             resolve(messageCid);
           };

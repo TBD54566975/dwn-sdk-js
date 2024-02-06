@@ -136,7 +136,7 @@ export class RecordsWriteHandler implements MethodHandler {
       // Because we allow an initial write to be written, but not queried, we shouldn't emit it either.
       // It will be emitted as a part of the next write, if it has data and is the latest state.
       if (this.eventStream !== undefined && isLatestBaseState) {
-        this.eventStream.emit(tenant, { ...message, initialWrite }, indexes);
+        this.eventStream.emit(tenant, { message, initialWrite }, indexes);
       }
     } catch (error) {
       const e = error as any;
