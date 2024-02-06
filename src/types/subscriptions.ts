@@ -6,7 +6,7 @@ import type { GenericMessage, MessageSubscription } from './message-types.js';
 export type EventListener = (tenant: string, event: EventMessage, indexes: KeyValues) => void;
 
 /**
- * The EventMessage type is a generic message with an optional initialWrite property.
+ * EventMessage contains the message being emitted and an optional initial write message.
  */
 export type EventMessage = {
   message: GenericMessage;
