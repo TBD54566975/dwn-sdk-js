@@ -1,5 +1,6 @@
+import type { EventStream } from '../../src/index.js';
 import type { KeyValues } from '../../src/types/query-types.js';
-import type { EventStream, GenericMessage } from '../../src/index.js';
+import type { MessageEvent } from '../../src/types/subscriptions.js';
 
 import { TestEventStream } from '../test-event-stream.js';
 import { Message, TestDataGenerator, Time } from '../../src/index.js';
@@ -30,13 +31,15 @@ describe('EventStream', () => {
 
   it('emits all messages to each subscriptions', async () => {
     const messageCids1: string[] = [];
-    const handler1 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler1 = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids1.push(messageCid);
     };
 
     const messageCids2: string[] = [];
-    const handler2 = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler2 = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids2.push(messageCid);
     };
@@ -46,13 +49,13 @@ describe('EventStream', () => {
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
-    eventStream.emit('did:alice', message1.message, {});
+    eventStream.emit('did:alice', { message: message1.message }, {});
     const message2 = await TestDataGenerator.generateRecordsWrite({});
     const message2Cid = await Message.getCid(message2.message);
-    eventStream.emit('did:alice', message2.message, {});
+    eventStream.emit('did:alice', { message: message2.message }, {});
     const message3 = await TestDataGenerator.generateRecordsWrite({});
     const message3Cid = await Message.getCid(message3.message);
-    eventStream.emit('did:alice', message3.message, {});
+    eventStream.emit('did:alice', { message: message3.message }, {});
 
     await subscription1.close();
     await subscription2.close();
@@ -65,7 +68,8 @@ describe('EventStream', () => {
 
   it('does not emit messages if subscription is closed', async () => {
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
@@ -73,11 +77,11 @@ describe('EventStream', () => {
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
-    eventStream.emit('did:alice', message1.message, {});
+    eventStream.emit('did:alice', { message: message1.message }, {});
     await subscription.close();
 
     const message2 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', message2.message, {});
+    eventStream.emit('did:alice', { message: message2.message }, {});
 
     await Time.minimalSleep();
 
@@ -86,7 +90,8 @@ describe('EventStream', () => {
 
   it('does not emit messages if event stream is closed', async () => {
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
@@ -96,9 +101,9 @@ describe('EventStream', () => {
     await eventStream.close();
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', message1.message, {});
+    eventStream.emit('did:alice', { message: message1.message }, {});
     const message2 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', message2.message, {});
+    eventStream.emit('did:alice', { message: message2.message }, {});
 
     await subscription.close();
 

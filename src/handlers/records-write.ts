@@ -68,9 +68,10 @@ export class RecordsWriteHandler implements MethodHandler {
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
+    let initialWrite: RecordsWriteMessage | undefined;
     if (!newMessageIsInitialWrite) {
       try {
-        const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+        initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
         return messageReplyFromError(e, 400);
@@ -131,9 +132,11 @@ export class RecordsWriteHandler implements MethodHandler {
       await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
       await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
-      // only emit if the event stream is set
-      if (this.eventStream !== undefined) {
-        this.eventStream.emit(tenant, message, indexes);
+      // NOTE: We only emit a `RecordsWrite` when the message is the latest base state.
+      // Because we allow a `RecordsWrite` which is not the latest state to be written, but not queried, we shouldn't emit it either.
+      // It will be emitted as a part of a subsequent next write, if it is the latest base state.
+      if (this.eventStream !== undefined && isLatestBaseState) {
+        this.eventStream.emit(tenant, { message, initialWrite }, indexes);
       }
     } catch (error) {
       const e = error as any;

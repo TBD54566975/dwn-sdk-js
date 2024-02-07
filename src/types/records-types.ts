@@ -153,7 +153,12 @@ export type RecordsQueryReply = GenericMessageReply & {
   cursor?: PaginationCursor;
 };
 
-export type RecordSubscriptionHandler = (message: RecordsWriteMessage | RecordsDeleteMessage) => void;
+export type RecordEvent = {
+  message: RecordsWriteMessage | RecordsDeleteMessage
+  initialWrite?: RecordsWriteMessage;
+};
+
+export type RecordSubscriptionHandler = (event: RecordEvent) => void;
 
 export type RecordsSubscribeMessageOptions = {
   subscriptionHandler: RecordSubscriptionHandler;
