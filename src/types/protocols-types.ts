@@ -125,6 +125,8 @@ export type ProtocolRuleSet = {
    * by setting `protocolRole` property to the protocol path of the $contextRole record.
    */
   $contextRole?: boolean;
+  // If $sizeLimit is set, the record size must be less than or equal to the sizeLimit.
+  $sizeLimit?: number;
   // JSON Schema verifies that properties other than properties prefixed with $ will actually have type ProtocolRuleSet
   [key: string]: any;
 };

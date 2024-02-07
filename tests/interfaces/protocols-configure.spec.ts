@@ -370,6 +370,30 @@ describe('ProtocolsConfigure', () => {
         await expect(createProtocolsConfigurePromise)
           .to.be.rejected;
       });
+
+      it('allows $sizeLimit to be set on records', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $sizeLimit: 1000
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
     });
   });
 });

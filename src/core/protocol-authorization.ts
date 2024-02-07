@@ -56,6 +56,9 @@ export class ProtocolAuthorization {
       inboundMessageRuleSet,
       messageStore,
     );
+
+    // validate size limit
+    await ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
   }
 
   /**
@@ -577,6 +580,27 @@ export class ProtocolAuthorization {
 
     // No action rules were satisfied, author is not authorized
     throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
+  }
+
+  /**
+   * Verifies that writes adhere to the $sizeLimit if provided
+   * @throws {Error} if size is exceeded.
+   */
+  private static async verifySizeLimit(
+    incomingMessage: RecordsWrite,
+    inboundMessageRuleSet: ProtocolRuleSet
+  ): Promise<void> {
+    const sizeLimit = inboundMessageRuleSet.$sizeLimit;
+
+    if (sizeLimit === undefined) {
+      return;
+    }
+
+    const messageSize = incomingMessage.message.descriptor.dataSize;
+
+    if (messageSize > sizeLimit) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeLimitExceeded, `message size ${messageSize} exceeds size limit ${sizeLimit}`);
+    }
   }
 
   /**

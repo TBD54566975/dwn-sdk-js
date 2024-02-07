@@ -1,0 +1,12 @@
+{
+  "protocol": "http://blob-size.xyz",
+  "published": true,
+  "types": {
+    "blob": {}
+  },
+  "structure": {
+    "blob": {
+        "$sizeLimit": 1000
+    }
+  }
+}

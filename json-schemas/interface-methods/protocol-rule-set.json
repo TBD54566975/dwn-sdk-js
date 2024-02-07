@@ -84,6 +84,10 @@
     "$contextRole": {
       "$comment": "When `true`, this turns a record into `role` that may be used within a context",
       "type": "boolean"
+    },
+    "$sizeLimit": {
+      "$comment": "When set, this limits the size of the record in bytes",
+      "type": "number"
     }
   },
   "patternProperties": {
