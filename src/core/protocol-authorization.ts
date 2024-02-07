@@ -57,7 +57,7 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
-    // validate size limit
+    // Verify size limit
     await ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
   }
 
