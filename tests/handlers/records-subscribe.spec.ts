@@ -1,7 +1,6 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { GenericMessage } from '../../src/types/message-types.js';
 import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsDeleteMessage, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
+import type { RecordEvent, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -270,7 +269,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           const messageCids: string[] = [];
-          const addCid = async (message: RecordsWriteMessage | RecordsDeleteMessage): Promise<void> => {
+          const addCid = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
             const messageCid = await Message.getCid(message);
             messageCids.push(messageCid);
           };
@@ -352,8 +352,9 @@ export function testRecordsSubscribeHandler(): void {
           };
 
           const noRoleRecords: string[] = [];
-          const addNoRole = async (message: GenericMessage): Promise<void> => {
-            if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
+          const addNoRole = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
+            if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               noRoleRecords.push(recordsWriteMessage.recordId);
             }
@@ -382,7 +383,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(friendRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord:RecordSubscriptionHandler = async (message) => {
+          const addRecord:RecordSubscriptionHandler = async (event) => {
+            const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
@@ -457,7 +459,8 @@ export function testRecordsSubscribeHandler(): void {
           };
 
           const noRoleRecords: string[] = [];
-          const addNoRole = async (message: GenericMessage): Promise<void> => {
+          const addNoRole = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
             if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               noRoleRecords.push(recordsWriteMessage.recordId);
@@ -489,7 +492,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(participantRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord:RecordSubscriptionHandler = async (message) => {
+          const addRecord:RecordSubscriptionHandler = async (event) => {
+            const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
