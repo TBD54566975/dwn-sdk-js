@@ -1,5 +1,5 @@
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { EventMessage, EventStream } from '../../src/types/subscriptions.js';
+import type { EventStream, MessageEvent } from '../../src/types/subscriptions.js';
 
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -136,7 +136,7 @@ export function testEventsSubscribeHandler(): void {
         // set up a promise to read later that captures the emitted messageCid
         let handler;
         const messageSubscriptionPromise: Promise<string> = new Promise((resolve) => {
-          handler = async (event: EventMessage):Promise<void> => {
+          handler = async (event: MessageEvent):Promise<void> => {
             const { message } = event;
             const messageCid = await Message.getCid(message);
             resolve(messageCid);

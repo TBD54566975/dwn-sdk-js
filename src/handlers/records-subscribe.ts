@@ -68,11 +68,11 @@ export class RecordsSubscribeHandler implements MethodHandler {
       }
     }
 
-    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
+    const listener: EventListener = (eventTenant, event, eventIndexes):void => {
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, filters)) {
         // the filters check for interface and method
         // if matched the message is either a `RecordsWriteMessage` or `RecordsDeleteMessage` so we cast the event to a `RecordEvent`
-        subscriptionHandler(eventMessage as RecordEvent);
+        subscriptionHandler(event as RecordEvent);
       }
     };
 

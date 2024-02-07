@@ -51,9 +51,9 @@ export class EventsSubscribeHandler implements MethodHandler {
     const eventsFilters = Events.convertFilters(filters);
     const messageCid = await Message.getCid(message);
 
-    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
+    const listener: EventListener = (eventTenant, event, eventIndexes):void => {
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
-        subscriptionHandler(eventMessage);
+        subscriptionHandler(event);
       }
     };
 

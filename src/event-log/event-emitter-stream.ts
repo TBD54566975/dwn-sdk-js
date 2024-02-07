@@ -1,5 +1,5 @@
 import type { KeyValues } from '../types/query-types.js';
-import type { EventListener, EventMessage, EventStream, EventSubscription } from '../types/subscriptions.js';
+import type { EventListener, EventStream, EventSubscription, MessageEvent } from '../types/subscriptions.js';
 
 import { EventEmitter } from 'events';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -56,7 +56,7 @@ export class EventEmitterStream implements EventStream {
     this.eventEmitter.removeAllListeners();
   }
 
-  emit(tenant: string, event: EventMessage, indexes: KeyValues): void {
+  emit(tenant: string, event: MessageEvent, indexes: KeyValues): void {
     if (!this.isOpen) {
       this.errorHandler(new DwnError(
         DwnErrorCode.EventEmitterStreamNotOpenError,

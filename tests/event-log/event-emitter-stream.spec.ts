@@ -1,5 +1,5 @@
-import type { EventMessage } from '../../src/types/subscriptions.js';
 import type { KeyValues } from '../../src/types/query-types.js';
+import type { MessageEvent } from '../../src/types/subscriptions.js';
 import type { MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
@@ -66,7 +66,7 @@ describe('EventEmitterStream', () => {
     const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
 
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, event: EventMessage, _indexes: KeyValues): Promise<void> => {
+    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
       const { message } = event;
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);

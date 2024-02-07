@@ -3,12 +3,12 @@ import type { KeyValues } from './query-types.js';
 import type { RecordsWriteMessage } from './records-types.js';
 import type { GenericMessage, MessageSubscription } from './message-types.js';
 
-export type EventListener = (tenant: string, event: EventMessage, indexes: KeyValues) => void;
+export type EventListener = (tenant: string, event: MessageEvent, indexes: KeyValues) => void;
 
 /**
- * EventMessage contains the message being emitted and an optional initial write message.
+ * MessageEvent contains the message being emitted and an optional initial write message.
  */
-export type EventMessage = {
+export type MessageEvent = {
   message: GenericMessage;
   /** the initial write of the RecordsWrite or RecordsDelete message */
   initialWrite?: RecordsWriteMessage
@@ -19,7 +19,7 @@ export type EventMessage = {
  */
 export interface EventStream {
   subscribe(id: string, listener: EventListener): Promise<EventSubscription>;
-  emit(tenant: string, event: EventMessage, indexes: KeyValues): void;
+  emit(tenant: string, event: MessageEvent, indexes: KeyValues): void;
   open(): Promise<void>;
   close(): Promise<void>;
 }
