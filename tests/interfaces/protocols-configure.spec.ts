@@ -381,6 +381,33 @@ describe('ProtocolsConfigure', () => {
           structure: {
             message: {
               $size: {
+                min : 1,
+                max : 1000
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('allows $size max to be set on a protocol path (min defaults to 0)', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
                 max: 1000
               }
             }
