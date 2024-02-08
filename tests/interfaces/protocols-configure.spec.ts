@@ -381,8 +381,7 @@ describe('ProtocolsConfigure', () => {
           structure: {
             message: {
               $size: {
-                min : 1,
-                max : 1000
+                max: 1000
               }
             }
           }
@@ -396,6 +395,34 @@ describe('ProtocolsConfigure', () => {
         });
 
         expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('rejects $size when max is less than min', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                min : 1000,
+                max : 1
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejected;
       });
     });
   });
