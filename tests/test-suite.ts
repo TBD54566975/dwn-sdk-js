@@ -12,7 +12,6 @@ import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
 import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
-import { testProtocolMessageSizeLimits } from './scenarios/protocol-message-size-limits.spec.js';
 import { testProtocolsConfigureHandler } from './handlers/protocols-configure.spec.js';
 import { testProtocolsQueryHandler } from './handlers/protocols-query.spec.js';
 import { testRecordsDeleteHandler } from './handlers/records-delete.spec.js';
@@ -61,7 +60,6 @@ export class TestSuite {
     testDelegatedGrantScenarios();
     testEndToEndScenarios();
     testEventsQueryScenarios();
-    testProtocolMessageSizeLimits();
     testSubscriptionScenarios();
   }
 }

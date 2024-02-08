@@ -3342,6 +3342,90 @@ export function testRecordsWriteHandler(): void {
           expect(recordsReadReply.status.code).to.equal(200);
           expect(recordsReadReply.entries?.length).to.equal(2);
         });
+
+        it('should fail authorization if protocol message size is less than specified minimum size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  min: 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          const data = TestDataGenerator.randomBytes(999);
+          const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, credentialApplication.message, { dataStream: credentialApplication.dataStream });
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationSizeInvalid);
+        });
+
+        it('should fail authorization if protocol message size is more than specified maximum size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  max: 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          const data = TestDataGenerator.randomBytes(1001);
+          const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, credentialApplication.message, { dataStream: credentialApplication.dataStream });
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationSizeInvalid);
+        });
       });
 
       describe('grant based writes', () => {

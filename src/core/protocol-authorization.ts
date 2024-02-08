@@ -58,7 +58,7 @@ export class ProtocolAuthorization {
     );
 
     // Verify size limit
-    await ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
+    ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
   }
 
   /**
@@ -583,23 +583,27 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies that writes adhere to the $sizeLimit if provided
+   * Verifies that writes adhere to the $size constraints if provided
    * @throws {Error} if size is exceeded.
    */
-  private static async verifySizeLimit(
+  private static verifySizeLimit(
     incomingMessage: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet
-  ): Promise<void> {
-    const sizeLimit = inboundMessageRuleSet.$sizeLimit;
-
-    if (sizeLimit === undefined) {
-      return;
-    }
+  ): void {
+    const { min = 0, max } = inboundMessageRuleSet.$size || {};
 
     const messageSize = incomingMessage.message.descriptor.dataSize;
 
-    if (messageSize > sizeLimit) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeLimitExceeded, `message size ${messageSize} exceeds size limit ${sizeLimit}`);
+    if (messageSize < min) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeInvalid, `message size ${messageSize} is less than allowed ${min}`);
+    }
+
+    if (max === undefined) {
+      return;
+    }
+
+    if (messageSize > max) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeInvalid, `message size ${messageSize} is more than allowed ${max}`);
     }
   }
 

@@ -371,7 +371,7 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejected;
       });
 
-      it('allows $sizeLimit to be set on records', async () => {
+      it('allows $size min and max to be set on a protocol path', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
@@ -380,7 +380,10 @@ describe('ProtocolsConfigure', () => {
           },
           structure: {
             message: {
-              $sizeLimit: 1000
+              $size: {
+                min : 1,
+                max : 1000
+              }
             }
           }
         };
