@@ -1,5 +1,5 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition } from '../../src/index.js';
 import type { GenericMessage, RecordsWriteMessage } from '../../src/index.js';
 import type { RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
@@ -9,6 +9,7 @@ import chai, { expect } from 'chai';
 
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
 import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
+import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { ArrayUtility } from '../../src/utils/array.js';
@@ -1462,12 +1463,12 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should only return published records and unpublished records that is meant for author', async () => {
-      // write 4 records into Alice's DB:
-      // 1st is unpublished authored by Alice
-      // 2nd is also unpublished authored by Alice, but is meant for (has recipient as) Bob
-      // 3rd is also unpublished but is authored by Bob
-      // 4th is published
-      // 5th is published, authored by Alice and is meant for Carol as recipient;
+        // write 4 records into Alice's DB:
+        // 1st is unpublished authored by Alice
+        // 2nd is also unpublished authored by Alice, but is meant for (has recipient as) Bob
+        // 3rd is also unpublished but is authored by Bob
+        // 4th is published
+        // 5th is published, authored by Alice and is meant for Carol as recipient;
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -1872,6 +1873,125 @@ export function testRecordsQueryHandler(): void {
       });
 
       describe('protocol based queries', () => {
+        it.only('should return message scoped to the given `contextId`', async () => {
+          // scenario:
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          // 1. Alice writes 2 foos, 2 bars under foo1, and 2 bazes under bar1
+          // 2. Alice should be able to query for all messages under foo1
+          // 3. Alice should be able to query for all messages under bar1
+          // 4. Alice should be able to query for all messages under baz1
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = nestedProtocol as ProtocolDefinition;
+
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // 1. Alice writes 2 foos, 2 bars under foo1, and 2 bazes under bar1
+
+          // write 2 foos
+          const fooOptions = {
+            author       : alice,
+            protocol     : nestedProtocol.protocol,
+            protocolPath : 'foo',
+            schema       : nestedProtocol.types.foo.schema,
+            dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+          };
+
+          const foo1 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: foo1.dataStream });
+          expect(foo1WriteResponse.status.code).equals(202);
+
+          const foo2 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo2WriteResponse = await dwn.processMessage(alice.did, foo2.message, { dataStream: foo2.dataStream });
+          expect(foo2WriteResponse.status.code).equals(202);
+
+          // write 2 bars under foo1
+          const barOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar',
+            schema          : nestedProtocol.types.bar.schema,
+            dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+            parentContextId : foo1.message.contextId
+          };
+
+          const bar1 = await TestDataGenerator.generateRecordsWrite(barOptions);
+          const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message, { dataStream: bar1.dataStream });
+          expect(bar1WriteResponse.status.code).equals(202);
+
+          const bar2 = await TestDataGenerator.generateRecordsWrite(barOptions);
+          const bar2WriteResponse = await dwn.processMessage(alice.did, bar2.message, { dataStream: bar2.dataStream });
+          expect(bar2WriteResponse.status.code).equals(202);
+
+          // write 2 bazes under bar1
+          const bazOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar/baz',
+            schema          : nestedProtocol.types.baz.schema,
+            dataFormat      : nestedProtocol.types.baz.dataFormats[0],
+            parentContextId : bar1.message.contextId
+          };
+
+          const baz1 = await TestDataGenerator.generateRecordsWrite(bazOptions);
+          const baz1WriteResponse = await dwn.processMessage(alice.did, baz1.message, { dataStream: baz1.dataStream });
+          expect(baz1WriteResponse.status.code).equals(202);
+
+          const baz2 = await TestDataGenerator.generateRecordsWrite(bazOptions);
+          const baz2WriteResponse = await dwn.processMessage(alice.did, baz2.message, { dataStream: baz2.dataStream });
+          expect(baz2WriteResponse.status.code).equals(202);
+
+
+          // 2. Alice should be able to query for all messages under foo1
+          const foo1ContextIdQuery = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : { contextId: foo1.message.contextId }
+          });
+          const foo1ContextIdQueryReply = await dwn.processMessage(alice.did, foo1ContextIdQuery.message);
+          expect(foo1ContextIdQueryReply.status.code).to.equal(200);
+          expect(foo1ContextIdQueryReply.entries?.length).to.equal(5);
+          expect(foo1ContextIdQueryReply.entries!.map((entry) => entry.recordId)).to.include.members([
+            foo1.message.recordId,
+            bar1.message.recordId,
+            bar2.message.recordId,
+            baz1.message.recordId,
+            baz2.message.recordId
+          ]);
+
+          // 3. Alice should be able to query for all messages under bar1
+          const bar1ContextIdQuery = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : { contextId: bar1.message.contextId }
+          });
+          const bar1ContextIdQueryReply = await dwn.processMessage(alice.did, bar1ContextIdQuery.message);
+          expect(bar1ContextIdQueryReply.status.code).to.equal(200);
+          expect(bar1ContextIdQueryReply.entries?.length).to.equal(3);
+          expect(bar1ContextIdQueryReply.entries!.map((entry) => entry.recordId)).to.include.members([
+            bar1.message.recordId,
+            baz1.message.recordId,
+            baz2.message.recordId
+          ]);
+
+
+          // 4. Alice should be able to query for all messages under baz1
+          const baz1ContextIdQuery = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : { contextId: baz1.message.contextId }
+          });
+          const baz1ContextIdQueryReply = await dwn.processMessage(alice.did, baz1ContextIdQuery.message);
+          expect(baz1ContextIdQueryReply.status.code).to.equal(200);
+          expect(baz1ContextIdQueryReply.entries?.length).to.equal(1);
+          expect(baz1ContextIdQueryReply.entries!.map((entry) => entry.recordId)).to.include.members([ baz1.message.recordId ]);
+        });
+
         it('does not try protocol authorization if protocolRole is not invoked', async () => {
           // scenario: Alice creates a thread and writes some chat messages. Alice addresses
           //           only one chat message to Bob. Bob queries by protocol URI without invoking a protocolRole,
