@@ -40,7 +40,13 @@ export type RecordsWriteOptions = {
   protocolRole?: string;
   schema?: string;
   recordId?: string;
+
+  /**
+   * Must be given if this message is for a non-root protocol record.
+   * If not given, it either means this write is for a root protocol record or a flat-space record.
+   */
   parentContextId?: string;
+
   data?: Uint8Array;
   dataCid?: string;
   dataSize?: number;
@@ -248,13 +254,15 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   /**
    * Creates a RecordsWrite message.
-   * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
+   * @param options.recordId If `undefined`, will be auto-filled as the initial message as convenience for developer.
    * @param options.data Data used to compute the `dataCid`, must be the encrypted data bytes if `options.encryptionInput` is given.
    *                     Must specify `options.dataCid` if `undefined`.
    * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `options.data` if `undefined`.
    * @param options.dataSize Size of data in number of bytes. Must be defined if `options.dataCid` is defined; must be `undefined` otherwise.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.messageTimestamp If `undefined`, it will be auto-filled with current time.
+   * @param options.parentContextId Must be given if this message is for a non-root protocol record.
+   *                                If not given, it either means this write is for a root protocol record or a flat-space record.
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
@@ -322,18 +330,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       recordId,
       descriptor
     };
-
-    // NOTE:
-    // If `recordId` given, `parentContextId` is not given, possible scenarios:
-    //   1. An update write to an existing root protocol record; or
-    //   2. An update write to an existing flat-space Record;
-    // If `recordId` given, `parentContextId` is given, possible scenarios:
-    //   1. An update write to a non-root, existing protocol-space Record
-    // If `recordId` not given, `parentContextId` is not given, possible scenarios:
-    //   1. An initial write of a new root protocol record; or
-    //   2. An initial write of a new flat-space record;
-    // If `recordId` not given, `parentContextId` is given, possible scenarios:
-    //   1. An initial write of a new non-root protocol record
 
     // assign optional properties only if they exist
     if (attestation !== undefined) { message.attestation = attestation; }

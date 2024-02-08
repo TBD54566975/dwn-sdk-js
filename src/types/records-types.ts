@@ -114,13 +114,19 @@ export type RecordsSubscribeDescriptor = {
 };
 
 export type RecordsFilter = {
-  /**the logical author of the record */
+  /**
+   * The logical author of the record
+   */
   author?: string;
   attester?: string;
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
   published?: boolean;
+
+  /**
+   * When given all Records message under the context of the given `contextId` will be returned.
+   */
   contextId?: string;
   schema?: string;
   recordId?: string;

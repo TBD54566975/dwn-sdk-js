@@ -2960,7 +2960,7 @@ export function testRecordsWriteHandler(): void {
             author          : alice,
             recipient       : pfi.did,
             schema          : protocolDefinition.types.fulfillment.schema,
-            parentContextId : 'non-existent-id', // NOTE: this will point to a non-existent parent
+            parentContextId : 'nonExistentId', // NOTE: this will point to a non-existent parent
             protocolPath    : 'ask/offer/fulfillment',
             protocol,
             data
