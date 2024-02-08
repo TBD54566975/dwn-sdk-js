@@ -1900,14 +1900,13 @@ export function testRecordsQueryHandler(): void {
 
           // Alice writes one 'chat' record addressed to Bob
           const chatRecordForBob = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/chat',
-            published    : false,
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/chat',
+            published       : false,
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
           const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
           expect(chatRecordForBobReply.status.code).to.equal(202);
@@ -1915,14 +1914,13 @@ export function testRecordsQueryHandler(): void {
           // Alice writes two 'chat' records NOT addressed to Bob
           for (let i = 0; i < 2; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob cannot read this'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob cannot read this'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
@@ -2054,13 +2052,12 @@ export function testRecordsQueryHandler(): void {
 
           // Alice writes a 'participant' $contextRole record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/participant',
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/participant',
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob is my friend'),
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
@@ -2070,14 +2067,13 @@ export function testRecordsQueryHandler(): void {
           const chatRecordIds = [];
           for (let i = 0; i < 3; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
@@ -2183,13 +2179,12 @@ export function testRecordsQueryHandler(): void {
 
           // Alice writes a 'friend' $globalRole record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/participant',
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/participant',
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob is my friend'),
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
@@ -2199,14 +2194,13 @@ export function testRecordsQueryHandler(): void {
           const chatRecordIds = [];
           for (let i = 0; i < 3; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
@@ -2301,14 +2295,13 @@ export function testRecordsQueryHandler(): void {
           const chatRecordIds = [];
           for (let i = 0; i < 3; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);

@@ -1,7 +1,7 @@
 
 # DWN Q&A
 
-## Message ID (`messageCid`) and Record ID (`recordId`)
+## Message ID (`messageCid`), Record ID (`recordId`) and Context ID (`contextId`)
 
 - Why can't/don't we use the message ID (`messageCid`) of the initial `RecordsWrite` as the record ID?
 
@@ -27,6 +27,28 @@
   The latter question is much easier to answer: an update needs to reference the record that it is updating.
 
   The answer to the first-part question is more complicated: `recordId` technically is not needed in an initial `RecordsWrite`, but we chose to include it for data model consistency with subsequent `RecordsWrite`, such that we can simply return the latest message of a record as the response to `RecordsRead` and `RecordsQuery` without needing to re-inject/rehydrate `recordId` into any initial `RecordsWrite`. It is also the same reason why `contextId` is required for the initial `RecordsWrite` of a protocol-authorized record.
+
+- Why is `recordId` and `contextId` outside the `descriptor`.
+  
+  - Because of the chicken-and-egg problem: `recordId` computation requires the `descriptor` as the input, so we cannot have `recordId` itself as part of the `descriptor`. `contextId` is similar in the sense that a record's `contextId` contains its own `recordId`, so it also cannot be inside the `descriptor`.
+
+  (Last updated: 2024/02/07)
+
+- Why do we require `contextId` for protocol-based `RecordsWrite`? Can't it be inferred from `parentId` and `protocolPath`?
+
+  Yes, it can be inferred. But it is required for the same reason why `recordId` is required: for both implementation and developer convenience.
+
+  For example: for decryption, one would need to know the `contextId` to derive the decryption key at the right context, without this information readily available, the client would need to compute this value by walking up the ancestral chain themselves.
+  
+  An alternative viable approach is to still not require it in `RecordsWrite` message and compute it internally, and return a constructed `contextId` as additional metadata along side of the `RecordsWrite` message when handling a query. This could incur cognitive load on the developers because they will likely need to pass the `contextId` in addition to the `RecordsWrite` message around instead of just passing `RecordsWrite` message. This would also mean we need to store this constructed `contextId` in the store as metadata (not just as index) so that we can return it as part of the a query (e.g. looking up the `contextId` of the parent). While this is a bigger change, open to feedback if this is indeed the preferred approach.
+  
+  (Last update: 2024/02/07)
+
+- Why does the `contextId` include the `recordId` of the record itself? Couldn't we adopt an alternative approach where the `contextId` is a path that ends at a record's parent?
+
+  Yes, we could opt to exclude the `recordId` of the record from the `contextId` of the record itself. However, this would complicate the process of querying for all records of a given context when the root record itself needs to be included. For instance, if we have a root "Thread" context record and we want to retrieve all the records of this Thread, including the root Thread record, the absence of a `contextId` containing its own `recordId` would necessitate a separate or more complex query to fetch the Thread record.
+
+  (Last update: 2024/02/07)
 
 
 ## Encryption

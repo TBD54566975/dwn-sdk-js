@@ -429,24 +429,22 @@ export function testSubscriptionScenarios(): void {
 
         // add bob as participant
         const bobParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : bob.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : bob.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
         expect(bobParticipantReply.status.code).to.equal(202);
 
         // add carol as participant
         const carolParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : carol.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : carol.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
         expect(carolParticipantReply.status.code).to.equal(202);
@@ -471,37 +469,34 @@ export function testSubscriptionScenarios(): void {
 
         // add a message to protocol1
         const message1 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
         expect(message1Reply.status.code).to.equal(202);
 
         const message2 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
         expect(message2Reply.status.code).to.equal(202);
 
         const message3 = await TestDataGenerator.generateRecordsWrite({
-          author       : carol,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : carol,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
@@ -1130,24 +1125,22 @@ export function testSubscriptionScenarios(): void {
 
         // add bob as participant
         const bobParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : bob.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : bob.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
         expect(bobParticipantReply.status.code).to.equal(202);
 
         // add carol as participant
         const carolParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : carol.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : carol.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
         expect(carolParticipantReply.status.code).to.equal(202);
@@ -1172,37 +1165,34 @@ export function testSubscriptionScenarios(): void {
 
         // add a message to protocol1
         const message1 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
         expect(message1Reply.status.code).to.equal(202);
 
         const message2 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
         expect(message2Reply.status.code).to.equal(202);
 
         const message3 = await TestDataGenerator.generateRecordsWrite({
-          author       : carol,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : carol,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);

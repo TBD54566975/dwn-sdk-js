@@ -178,26 +178,6 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
     });
 
-    it('#434 - should required `contextId` when `parent` is specified', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-
-      const options: RecordsWriteOptions = {
-        schema       : 'http://any-schema.com',
-        protocol     : 'http://example.com',
-        protocolPath : 'foo/bar',
-        parentId     : await TestDataGenerator.randomCborSha256Cid(),
-        dataCid      : await TestDataGenerator.randomCborSha256Cid(),
-        dataSize     : 123,
-        dataFormat   : 'application/json',
-        recordId     : await TestDataGenerator.randomCborSha256Cid(),
-        signer       : Jws.createSigner(alice)
-      };
-
-      const createPromise = RecordsWrite.create(options);
-
-      await expect(createPromise).to.be.rejectedWith('`contextId` must also be given when `parentId` is specified');
-    });
-
     it('should be able to create a RecordsWrite successfully using a custom signer', async () => {
       // create a custom signer
       const hardCodedSignature = Encoder.stringToBytes('some_hard_coded_signature');

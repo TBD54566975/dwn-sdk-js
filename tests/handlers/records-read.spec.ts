@@ -661,12 +661,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/participant',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/participant',
+              parentContextId : threadRecord.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -674,11 +673,10 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
@@ -747,12 +745,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/participant',
-              contextId    : threadRecord1.message.contextId,
-              parentId     : threadRecord1.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/participant',
+              parentContextId : threadRecord1.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -770,11 +767,10 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord2.message.contextId,
-              parentId     : threadRecord2.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord2.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);

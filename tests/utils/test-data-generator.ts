@@ -108,10 +108,9 @@ export type GenerateRecordsWriteInput = {
   protocol?: string;
   protocolPath?: string;
   protocolRole?: string;
-  contextId?: string;
   schema?: string;
   recordId?: string;
-  parentId?: string;
+  parentContextId?: string;
   published?: boolean;
   data?: Uint8Array;
   dataCid?: string;
@@ -428,10 +427,9 @@ export class TestDataGenerator {
       protocol           : input?.protocol,
       protocolPath       : input?.protocolPath,
       protocolRole       : input?.protocolRole,
-      contextId          : input?.contextId,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
       recordId           : input?.recordId,
-      parentId           : input?.parentId,
+      parentContextId    : input?.parentContextId,
       published          : input?.published,
       dataFormat         : input?.dataFormat ?? 'application/json',
       dateCreated        : input?.dateCreated,
@@ -520,13 +518,12 @@ export class TestDataGenerator {
       {
         author,
         recipient,
-        protocol   : protocolDefinition.protocol,
+        protocol        : protocolDefinition.protocol,
         protocolPath,
-        contextId  : protocolContextId,
-        parentId   : protocolParentId,
-        schema     : protocolDefinition.types[recordType].schema,
-        dataFormat : protocolDefinition.types[recordType].dataFormats?.[0],
-        data       : encryptedDataBytes
+        parentContextId : protocolContextId, // TODO:
+        schema          : protocolDefinition.types[recordType].schema,
+        dataFormat      : protocolDefinition.types[recordType].dataFormats?.[0],
+        data            : encryptedDataBytes
       }
     );
 
