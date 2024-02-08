@@ -14,6 +14,7 @@ import emailProtocolDefinition from '../vectors/protocol-definitions/email.json'
 import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
+import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
 import recipientCanProtocol from '../vectors/protocol-definitions/recipient-can.json' assert { type: 'json' };
 import sinon from 'sinon';
@@ -3305,6 +3306,129 @@ export function testRecordsWriteHandler(): void {
           const recordsReadReply = await dwn.processMessage(alice.did, recordsQuery.message);
           expect(recordsReadReply.status.code).to.equal(200);
           expect(recordsReadReply.entries?.length).to.equal(2);
+        });
+
+        it('should fail if a write references a parent that has been deleted', async () => {
+          // scenario:
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          // 1. Alice writes foo1
+          // 2. Alice deletes foo1
+          // 3. Alice tries to write a bar1 referencing the deleted foo and should fail
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = nestedProtocol as ProtocolDefinition;
+
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // 1. Alice writes foo1
+          const fooOptions = {
+            author       : alice,
+            protocol     : nestedProtocol.protocol,
+            protocolPath : 'foo',
+            schema       : nestedProtocol.types.foo.schema,
+            dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+          };
+
+          const foo1 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: foo1.dataStream });
+          expect(foo1WriteResponse.status.code).equals(202);
+
+          // 2. Alice deletes foo1
+          const deleteFoo = await TestDataGenerator.generateRecordsDelete({
+            author   : alice,
+            recordId : foo1.message.recordId
+          });
+          const deleteFooReply = await dwn.processMessage(alice.did, deleteFoo.message);
+          expect(deleteFooReply.status.code).equals(202);
+
+          // 3. Alice tries to write a bar1 referencing the deleted foo and should fail
+          const barOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar',
+            schema          : nestedProtocol.types.bar.schema,
+            dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+            parentContextId : foo1.message.contextId
+          };
+          const bar1 = await TestDataGenerator.generateRecordsWrite(barOptions);
+          const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message, { dataStream: bar1.dataStream });
+          expect(bar1WriteResponse.status.code).equals(400);
+          expect(bar1WriteResponse.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
+        });
+
+        it('should fail if a write references a mismatching parent that compared to the parent in the `contextId` ', async () => {
+          // scenario:
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          // 1. Alice writes foo1
+          // 2. Alice tries to write a bar1 referencing the foo1 in parentId, but contextId does not reference the same parent
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = nestedProtocol as ProtocolDefinition;
+
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // 1. Alice writes foo1
+          const fooOptions = {
+            author       : alice,
+            protocol     : nestedProtocol.protocol,
+            protocolPath : 'foo',
+            schema       : nestedProtocol.types.foo.schema,
+            dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+          };
+
+          const foo1 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: foo1.dataStream });
+          expect(foo1WriteResponse.status.code).equals(202);
+
+          // 2. Alice tries to write a bar1 referencing the foo1 in parentId, but contextId does not reference the same parent
+          const barOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar',
+            schema          : nestedProtocol.types.bar.schema,
+            dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+            parentContextId : foo1.message.contextId
+          };
+          const bar1 = await TestDataGenerator.generateRecordsWrite(barOptions);
+
+          // replace the contextId with a different parent
+          const contextIdSegments = bar1.message.contextId!.split(`/`);
+          contextIdSegments[1] = 'differentParent';
+          bar1.message.contextId = contextIdSegments.join(`/`);
+
+          // resign the message
+          const recordId = await RecordsWrite.getEntryId(alice.did, bar1.message.descriptor);
+          const descriptorCid = await Cid.computeCid(bar1.message.descriptor);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : bar1.message.contextId,
+            descriptorCid,
+            encryption  : undefined,
+            attestation : undefined,
+            signer      : Jws.createSigner(alice)
+          });
+          bar1.message.recordId = recordId;
+          bar1.message.authorization = { signature };
+
+          const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message);
+          expect(bar1WriteResponse.status.code).equals(400);
+          expect(bar1WriteResponse.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectContextId);
         });
       });
 

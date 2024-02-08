@@ -298,10 +298,14 @@ export class ProtocolAuthorization {
       };
       const { messages: parentMessages } = await messageStore.query(tenant, [query]);
 
-      // We already check the immediate parent in `verifyProtocolPath`, so if it triggers,
-      // it means a bug that caused an invalid message to be saved to the DWN.
+      // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing, so if this condition is triggered,
+      // it means there is an unexpected bug that caused an invalid message being saved to the DWN.
+      // We add additional defensive check here because returning an unexpected/incorrect ancestor chain could lead to security vulnerabilities.
       if (parentMessages.length === 0) {
-        throw new DwnError(DwnErrorCode.ProtocolAuthorizationParentNotFound, `no parent found with ID ${currentParentId}`);
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingAncestorChain,
+          `Unexpected error that should never trigger: no parent found with ID ${currentParentId} when constructing ancestor message chain.`
+        );
       }
 
       const parent = parentMessages[0] as RecordsWriteMessage;
@@ -356,10 +360,11 @@ export class ProtocolAuthorization {
     // fetch the parent message
     const protocol = inboundMessage.message.descriptor.protocol!;
     const query: Filter = {
-      interface : DwnInterfaceName.Records,
-      method    : DwnMethodName.Write,
+      isLatestBaseState : true, // NOTE: this filter is critical, to ensure are are not returning a deleted parent
+      interface         : DwnInterfaceName.Records,
+      method            : DwnMethodName.Write,
       protocol,
-      recordId  : parentId
+      recordId          : parentId
     };
     const { messages: parentMessages } = await messageStore.query(tenant, [query]);
     const parentMessage = (parentMessages as RecordsWriteMessage[])[0];

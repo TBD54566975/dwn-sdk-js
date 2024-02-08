@@ -1873,7 +1873,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       describe('protocol based queries', () => {
-        it.only('should return message scoped to the given `contextId`', async () => {
+        it('should return message scoped to the given `contextId`', async () => {
           // scenario:
           // 0. Alice installs a nested protocol foo -> bar -> baz
           // 1. Alice writes 2 foos, 2 bars under foo1, and 2 bazes under bar1
