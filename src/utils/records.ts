@@ -147,7 +147,7 @@ export class Records {
       );
     }
 
-    // TODO: Extend key derivcation support to include the full contextId
+    // TODO: issue #683 -Extend key derivation support to include the full contextId (https://github.com/TBD54566975/dwn-sdk-js/issues/683)
     const firstContextSegment = contextId.split('/')[0];
 
     const fullDerivationPath = [

@@ -366,9 +366,8 @@ export class ProtocolAuthorization {
 
     // verifying protocolPath of incoming message is a child of the parent message's protocolPath
     const parentProtocolPath = parentMessage?.descriptor?.protocolPath;
-    const actualProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
-    // TODO: `parentProtocolPath === undefined` appears unnecessary
-    if (parentProtocolPath === undefined || actualProtocolPath !== declaredProtocolPath) {
+    const expectedProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
+    if (expectedProtocolPath !== declaredProtocolPath) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
         `Could not find matching parent record to verify declared protocol path '${declaredProtocolPath}'.`
