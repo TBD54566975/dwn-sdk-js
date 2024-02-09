@@ -119,7 +119,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       if (max !== undefined && max < min) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidSize,
-          `Invalid size range found at protocol path '${protocolPath}'`
+          `Invalid size range found: max limit ${max} less than min limit ${min} at protocol path '${protocolPath}'`
         );
       }
     }

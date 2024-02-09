@@ -3343,6 +3343,62 @@ export function testRecordsWriteHandler(): void {
           expect(recordsReadReply.entries?.length).to.equal(2);
         });
 
+        it('should allow authorization if protocol message size is within min and max size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  min : 1,
+                  max : 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          // test min record size
+          const data = TestDataGenerator.randomBytes(1);
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
+          expect(reply.status.code).to.equal(202);
+
+          // test max record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
+        });
+
         it('should fail authorization if protocol message size is less than specified minimum size', async () => {
           const alice = await TestDataGenerator.generatePersona();
           TestStubGenerator.stubDidResolver(didResolver, [alice]);
@@ -3372,7 +3428,7 @@ export function testRecordsWriteHandler(): void {
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           const data = TestDataGenerator.randomBytes(999);
-          const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : alice.did,
             protocol,
@@ -3380,9 +3436,9 @@ export function testRecordsWriteHandler(): void {
             data
           });
 
-          const reply = await dwn.processMessage(alice.did, credentialApplication.message, { dataStream: credentialApplication.dataStream });
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationSizeInvalid);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid);
         });
 
         it('should fail authorization if protocol message size is more than specified maximum size', async () => {
@@ -3414,7 +3470,7 @@ export function testRecordsWriteHandler(): void {
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           const data = TestDataGenerator.randomBytes(1001);
-          const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : alice.did,
             protocol,
@@ -3422,9 +3478,9 @@ export function testRecordsWriteHandler(): void {
             data
           });
 
-          const reply = await dwn.processMessage(alice.did, credentialApplication.message, { dataStream: credentialApplication.dataStream });
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationSizeInvalid);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
         });
       });
 

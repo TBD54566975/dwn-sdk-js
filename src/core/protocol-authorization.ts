@@ -592,18 +592,18 @@ export class ProtocolAuthorization {
   ): void {
     const { min = 0, max } = inboundMessageRuleSet.$size || {};
 
-    const messageSize = incomingMessage.message.descriptor.dataSize;
+    const dataSize = incomingMessage.message.descriptor.dataSize;
 
-    if (messageSize < min) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeInvalid, `message size ${messageSize} is less than allowed ${min}`);
+    if (dataSize < min) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid, `data size ${dataSize} is less than allowed ${min}`);
     }
 
     if (max === undefined) {
       return;
     }
 
-    if (messageSize > max) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationSizeInvalid, `message size ${messageSize} is more than allowed ${max}`);
+    if (dataSize > max) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid, `data size ${dataSize} is more than allowed ${max}`);
     }
   }
 

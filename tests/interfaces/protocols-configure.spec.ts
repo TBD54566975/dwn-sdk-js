@@ -448,8 +448,7 @@ describe('ProtocolsConfigure', () => {
           definition
         });
 
-        await expect(createProtocolsConfigurePromise)
-          .to.be.rejected;
+        await expect(createProtocolsConfigurePromise).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidSize);
       });
     });
   });

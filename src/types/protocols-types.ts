@@ -125,7 +125,9 @@ export type ProtocolRuleSet = {
    * by setting `protocolRole` property to the protocol path of the $contextRole record.
    */
   $contextRole?: boolean;
-  // If $size is set, the record size in bytes must be within the limits.
+  /**
+   * If $size is set, the record size in bytes must be within the limits.
+   */
   $size?: {
     min?: number,
     max?: number
