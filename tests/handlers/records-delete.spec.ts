@@ -366,11 +366,10 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a 'chat/tag'
             const tagRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/tag',
-              contextId    : chatRecordsWrite.message.contextId,
-              parentId     : chatRecordsWrite.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/tag',
+              parentContextId : chatRecordsWrite.message.contextId,
             });
             const tagRecordsWriteReply = await dwn.processMessage(alice.did, tagRecordsWrite.message, { dataStream: tagRecordsWrite.dataStream });
             expect(tagRecordsWriteReply.status.code).to.eq(202);
@@ -474,11 +473,10 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a 'post/comment'
             const commentRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/comment',
-              contextId    : postRecordsWrite.message.contextId,
-              parentId     : postRecordsWrite.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/comment',
+              parentContextId : postRecordsWrite.message.contextId,
             });
             const commentRecordsWriteReply =
               await dwn.processMessage(alice.did, commentRecordsWrite.message, { dataStream: commentRecordsWrite.dataStream });
@@ -534,12 +532,11 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice adds Bob as a 'thread/admin' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/admin',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/admin',
+              parentContextId : threadRecord.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -547,12 +544,11 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a chat message in that thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
