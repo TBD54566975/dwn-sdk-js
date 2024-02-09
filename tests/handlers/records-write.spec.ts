@@ -14,6 +14,7 @@ import emailProtocolDefinition from '../vectors/protocol-definitions/email.json'
 import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
+import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
 import recipientCanProtocol from '../vectors/protocol-definitions/recipient-can.json' assert { type: 'json' };
 import sinon from 'sinon';
@@ -897,9 +898,7 @@ export function testRecordsWriteHandler(): void {
           recipient    : write2.message.descriptor.recipient,
           recordId     : write2.message.recordId,
           dateCreated  : write2.message.descriptor.dateCreated,
-          contextId    : write2.message.contextId,
           protocolPath : write2.message.descriptor.protocolPath,
-          parentId     : write2.message.descriptor.parentId,
           schema       : write2.message.descriptor.schema,
           dataFormat   : write2.message.descriptor.dataFormat,
           // unauthorized reference to data in write1
@@ -954,9 +953,7 @@ export function testRecordsWriteHandler(): void {
           recipient    : write2.message.descriptor.recipient,
           recordId     : write2.message.recordId,
           dateCreated  : write2.message.descriptor.dateCreated,
-          contextId    : write2.message.contextId,
           protocolPath : write2.message.descriptor.protocolPath,
-          parentId     : write2.message.descriptor.parentId,
           schema       : write2.message.descriptor.schema,
           dataFormat   : write2.message.descriptor.dataFormat,
           // unauthorized reference to data in write1
@@ -1293,7 +1290,6 @@ export function testRecordsWriteHandler(): void {
               dataFormat   : protocolDefinition.types.credentialApplication.dataFormats[0],
               data         : encodedCredentialApplication
             });
-            const credentialApplicationContextId = await credentialApplication.recordsWrite.getEntryId();
 
             const credentialApplicationReply = await dwn.processMessage(
               alice.did,
@@ -1306,15 +1302,14 @@ export function testRecordsWriteHandler(): void {
             const encodedCredentialResponse = new TextEncoder().encode('credential response data');
             const credentialResponse = await TestDataGenerator.generateRecordsWrite(
               {
-                author       : vcIssuer,
-                recipient    : alice.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
-                contextId    : credentialApplicationContextId,
-                parentId     : credentialApplicationContextId,
-                schema       : credentialResponseSchema,
-                dataFormat   : protocolDefinition.types.credentialResponse.dataFormats[0],
-                data         : encodedCredentialResponse
+                author          : vcIssuer,
+                recipient       : alice.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
+                parentContextId : credentialApplication.message.contextId,
+                schema          : credentialResponseSchema,
+                dataFormat      : protocolDefinition.types.credentialResponse.dataFormats[0],
+                data            : encodedCredentialResponse
               }
             );
 
@@ -1362,12 +1357,11 @@ export function testRecordsWriteHandler(): void {
 
             // Alice creates a post/tag
             const tagRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/tag',
-              contextId    : docRecord.message.contextId!,
-              parentId     : docRecord.message.recordId!,
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/tag',
+              parentContextId : docRecord.message.contextId!,
             });
             const tagRecordsReply = await dwn.processMessage(alice.did, tagRecord.message, { dataStream: tagRecord.dataStream });
             expect(tagRecordsReply.status.code).to.equal(202);
@@ -1384,12 +1378,11 @@ export function testRecordsWriteHandler(): void {
 
             // Bob tries and fails to create a new record
             const bobTagRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : bob,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/tag',
-              contextId    : docRecord.message.contextId!,
-              parentId     : docRecord.message.recordId!,
+              author          : bob,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/tag',
+              parentContextId : docRecord.message.contextId!,
             });
             const bobTagRecordsReply = await dwn.processMessage(alice.did, bobTagRecord.message, { dataStream: bobTagRecord.dataStream });
             expect(bobTagRecordsReply.status.code).to.equal(401);
@@ -1479,19 +1472,16 @@ export function testRecordsWriteHandler(): void {
             const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
             expect(imageReply.status.code).to.equal(202);
 
-            const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
-
             // AliceImposter attempts and fails to caption Alice's image
             const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
             const captionImposter = await TestDataGenerator.generateRecordsWrite({
-              author       : aliceImposter,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'image/caption', // this comes from `types` in protocol definition
-              schema       : protocolDefinition.types.caption.schema,
-              dataFormat   : protocolDefinition.types.caption.dataFormats[0],
-              contextId    : imageContextId,
-              parentId     : imageContextId,
-              data         : encodedCaptionImposter
+              author          : aliceImposter,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'image/caption', // this comes from `types` in protocol definition
+              schema          : protocolDefinition.types.caption.schema,
+              dataFormat      : protocolDefinition.types.caption.dataFormats[0],
+              parentContextId : imageRecordsWrite.recordsWrite.message.contextId,
+              data            : encodedCaptionImposter
             });
             const captionReply = await dwn.processMessage(bob.did, captionImposter.message, { dataStream: captionImposter.dataStream });
             expect(captionReply.status.code).to.equal(401);
@@ -1500,14 +1490,13 @@ export function testRecordsWriteHandler(): void {
             // Alice is able to add a caption to her image
             const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
             const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'image/caption',
-              schema       : protocolDefinition.types.caption.schema,
-              dataFormat   : protocolDefinition.types.caption.dataFormats[0],
-              contextId    : imageContextId,
-              parentId     : imageContextId,
-              data         : encodedCaption
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'image/caption',
+              schema          : protocolDefinition.types.caption.schema,
+              dataFormat      : protocolDefinition.types.caption.dataFormats[0],
+              parentContextId : imageRecordsWrite.recordsWrite.message.contextId,
+              data            : encodedCaption
             });
             const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, { dataStream: captionRecordsWrite.dataStream });
             expect(captionResponse.status.code).to.equal(202);
@@ -1552,12 +1541,11 @@ export function testRecordsWriteHandler(): void {
 
             // Alice creates a post/comment
             const commentRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/comment',
-              contextId    : postRecord.message.contextId!,
-              parentId     : postRecord.message.recordId!,
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/comment',
+              parentContextId : postRecord.message.contextId!,
             });
             const commentRecordsReply = await dwn.processMessage(alice.did, commentRecord.message, { dataStream: commentRecord.dataStream });
             expect(commentRecordsReply.status.code).to.equal(202);
@@ -1575,12 +1563,11 @@ export function testRecordsWriteHandler(): void {
 
             // Bob tries and fails to create a new comment
             const bobPostRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : bob,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/comment',
-              contextId    : postRecord.message.contextId!,
-              parentId     : postRecord.message.recordId!,
+              author          : bob,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/comment',
+              parentContextId : postRecord.message.contextId!,
             });
             const bobPostRecordsReply = await dwn.processMessage(alice.did, bobPostRecord.message, { dataStream: bobPostRecord.dataStream });
             expect(bobPostRecordsReply.status.code).to.equal(401);
@@ -1769,12 +1756,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' in that thread
               const participantRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply =
                 await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -1817,12 +1803,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' to the first thread
               const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord1.message.contextId,
-                parentId     : threadRecord1.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord1.message.contextId,
               });
               const participantRecordReply1 =
                 await dwn.processMessage(alice.did, participantRecord1.message, { dataStream: participantRecord1.dataStream });
@@ -1840,12 +1825,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' to the second thread
               const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord2.message.contextId,
-                parentId     : threadRecord2.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord2.message.contextId,
               });
               const participantRecordReply2 =
                 await dwn.processMessage(alice.did, participantRecord2.message, { dataStream: participantRecord2.dataStream });
@@ -1879,12 +1863,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' to the thread
               const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply1 =
                 await dwn.processMessage(alice.did, participantRecord1.message, { dataStream: participantRecord1.dataStream });
@@ -1892,12 +1875,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' again to the same thread
               const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply2 =
                 await dwn.processMessage(alice.did, participantRecord2.message, { dataStream: participantRecord2.dataStream });
@@ -1932,12 +1914,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' to the thread
               const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply1 =
                 await dwn.processMessage(alice.did, participantRecord1.message, { dataStream: participantRecord1.dataStream });
@@ -1953,12 +1934,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice creates a new 'thread/participant' record
               const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply2 =
                 await dwn.processMessage(alice.did, participantRecord2.message, { dataStream: participantRecord2.dataStream });
@@ -2151,12 +2131,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' in that thread
               const participantRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply =
                 await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -2164,12 +2143,11 @@ export function testRecordsWriteHandler(): void {
 
               // Bob invokes the role to write to the thread
               const chatRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : bob,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/chat',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
-                protocolRole : 'thread/participant'
+                author          : bob,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/chat',
+                parentContextId : threadRecord.message.contextId,
+                protocolRole    : 'thread/participant'
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(202);
@@ -2203,12 +2181,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' in that thread
               const participantRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/admin',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/admin',
+                parentContextId : threadRecord.message.contextId,
               });
               const participantRecordReply =
                 await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -2216,11 +2193,10 @@ export function testRecordsWriteHandler(): void {
 
               // Alice writes a chat message in the thread
               const chatRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/chat',
-                contextId    : threadRecord.message.contextId,
-                parentId     : threadRecord.message.recordId,
+                author          : alice,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/chat',
+                parentContextId : threadRecord.message.contextId,
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(202);
@@ -2264,12 +2240,11 @@ export function testRecordsWriteHandler(): void {
 
               // Alice adds Bob as a 'thread/participant' in that thread
               const participantRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/participant',
-                contextId    : threadRecord1.message.contextId,
-                parentId     : threadRecord1.message.recordId,
+                author          : alice,
+                recipient       : bob.did,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/participant',
+                parentContextId : threadRecord1.message.contextId,
               });
               const participantRecordReply =
                 await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -2287,12 +2262,11 @@ export function testRecordsWriteHandler(): void {
 
               // Bob invokes his role to try to write to the second thread
               const chatRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : bob,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'thread/chat',
-                contextId    : threadRecord2.message.contextId,
-                parentId     : threadRecord2.message.recordId,
-                protocolRole : 'thread/participant'
+                author          : bob,
+                protocol        : protocolDefinition.protocol,
+                protocolPath    : 'thread/chat',
+                parentContextId : threadRecord2.message.contextId,
+                protocolRole    : 'thread/participant'
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(401);
@@ -2575,15 +2549,14 @@ export function testRecordsWriteHandler(): void {
           const encodedCredentialResponse = new TextEncoder().encode('credential response data');
           const credentialResponse = await TestDataGenerator.generateRecordsWrite(
             {
-              author       : fakeVcIssuer,
-              recipient    : alice.did,
+              author          : fakeVcIssuer,
+              recipient       : alice.did,
               protocol,
-              protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
-              contextId    : credentialApplicationContextId,
-              parentId     : credentialApplicationContextId,
-              schema       : credentialResponseSchema,
-              dataFormat   : protocolDefinition.types.credentialResponse.dataFormats[0],
-              data         : encodedCredentialResponse
+              protocolPath    : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
+              parentContextId : credentialApplicationContextId,
+              schema          : credentialResponseSchema,
+              dataFormat      : protocolDefinition.types.credentialResponse.dataFormats[0],
+              data            : encodedCredentialResponse
             }
           );
 
@@ -2784,13 +2757,12 @@ export function testRecordsWriteHandler(): void {
 
           // Try and fail to write another 'credentialApplication' below the first 'credentialApplication'
           const failedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : alice.did,
+            author          : alice,
+            recipient       : alice.did,
             protocol,
-            protocolPath : 'credentialApplication/credentialApplication', // credentialApplications may not be nested below another credentialApplication
-            schema       : credentialApplicationSchema,
-            contextId    : await credentialApplication.recordsWrite.getEntryId(),
-            parentId     : credentialApplication.message.recordId,
+            protocolPath    : 'credentialApplication/credentialApplication', // credentialApplications may not be nested below another credentialApplication
+            schema          : credentialApplicationSchema,
+            parentContextId : credentialApplication.message.contextId,
             data
           });
           const failedCredentialApplicationReply2 =
@@ -2800,29 +2772,27 @@ export function testRecordsWriteHandler(): void {
 
           // Successfully write a 'credentialResponse' below the 'credentialApplication'
           const credentialResponse = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : alice.did,
+            author          : alice,
+            recipient       : alice.did,
             protocol,
-            protocolPath : 'credentialApplication/credentialResponse',
-            schema       : credentialResponseSchema,
-            contextId    : await credentialApplication.recordsWrite.getEntryId(),
-            parentId     : credentialApplication.message.recordId,
+            protocolPath    : 'credentialApplication/credentialResponse',
+            schema          : credentialResponseSchema,
+            parentContextId : credentialApplication.message.contextId,
             data
           });
           const credentialResponseReply =
             await dwn.processMessage(alice.did, credentialResponse.message, { dataStream: credentialResponse.dataStream });
           expect(credentialResponseReply.status.code).to.equal(202);
 
-          // Try and fail to write a 'credentialResponse' below 'credentialApplication/credentialResponse'
+          // Try and fail to write a 'credentialApplication' below 'credentialApplication/credentialResponse'
           // Testing case where there is no rule set for any record type at the given level in the hierarchy
           const nestedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : alice.did,
+            author          : alice,
+            recipient       : alice.did,
             protocol,
-            protocolPath : 'credentialApplication/credentialResponse/credentialApplication',
-            schema       : credentialApplicationSchema,
-            contextId    : await credentialApplication.recordsWrite.getEntryId(),
-            parentId     : credentialResponse.message.recordId,
+            protocolPath    : 'credentialApplication/credentialResponse/credentialApplication',
+            schema          : credentialApplicationSchema,
+            parentContextId : credentialResponse.message.contextId,
             data
           });
           const nestedCredentialApplicationReply =
@@ -2878,8 +2848,8 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should look up recipient path with ancestor depth of 2+ (excluding self) in action rule correctly', async () => {
-        // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
-        // make sure recipient of offer can send fulfillment
+          // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
+          // make sure recipient of offer can send fulfillment
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const pfi = await TestDataGenerator.generateDidKeyPersona();
@@ -2907,19 +2877,17 @@ export function testRecordsWriteHandler(): void {
             protocolPath : 'ask',
             data
           });
-          const contextId = await askMessageData.recordsWrite.getEntryId();
 
           let reply = await dwn.processMessage(pfi.did, askMessageData.message, { dataStream: askMessageData.dataStream });
           expect(reply.status.code).to.equal(202);
 
           const offerMessageData = await TestDataGenerator.generateRecordsWrite({
-            author       : pfi,
-            recipient    : alice.did,
-            schema       : protocolDefinition.types.offer.schema,
-            contextId,
-            parentId     : askMessageData.message.recordId,
+            author          : pfi,
+            recipient       : alice.did,
+            schema          : protocolDefinition.types.offer.schema,
+            parentContextId : askMessageData.message.contextId,
             protocol,
-            protocolPath : 'ask/offer',
+            protocolPath    : 'ask/offer',
             data
           });
 
@@ -2928,13 +2896,12 @@ export function testRecordsWriteHandler(): void {
 
           // the actual test: making sure fulfillment message is accepted
           const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : pfi.did,
-            schema       : protocolDefinition.types.fulfillment.schema,
-            contextId,
-            parentId     : offerMessageData.message.recordId,
+            author          : alice,
+            recipient       : pfi.did,
+            schema          : protocolDefinition.types.fulfillment.schema,
+            parentContextId : offerMessageData.message.contextId,
             protocol,
-            protocolPath : 'ask/offer/fulfillment',
+            protocolPath    : 'ask/offer/fulfillment',
             data
           });
           reply = await dwn.processMessage(pfi.did, fulfillmentMessageData.message, { dataStream: fulfillmentMessageData.dataStream });
@@ -2985,19 +2952,17 @@ export function testRecordsWriteHandler(): void {
             protocolPath : 'ask',
             data
           });
-          const contextId = await askMessageData.recordsWrite.getEntryId();
 
           let reply = await dwn.processMessage(pfi.did, askMessageData.message, { dataStream: askMessageData.dataStream });
           expect(reply.status.code).to.equal(202);
 
           // the actual test: making sure fulfillment message fails
           const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : pfi.did,
-            schema       : protocolDefinition.types.fulfillment.schema,
-            contextId,
-            parentId     : 'non-existent-id',
-            protocolPath : 'ask/offer/fulfillment',
+            author          : alice,
+            recipient       : pfi.did,
+            schema          : protocolDefinition.types.fulfillment.schema,
+            parentContextId : 'nonExistentId', // NOTE: this will point to a non-existent parent
+            protocolPath    : 'ask/offer/fulfillment',
             protocol,
             data
           });
@@ -3482,6 +3447,129 @@ export function testRecordsWriteHandler(): void {
           expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
         });
+
+        it('should fail if a write references a parent that has been deleted', async () => {
+          // scenario:
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          // 1. Alice writes foo1
+          // 2. Alice deletes foo1
+          // 3. Alice tries to write a bar1 referencing the deleted foo and should fail
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = nestedProtocol as ProtocolDefinition;
+
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // 1. Alice writes foo1
+          const fooOptions = {
+            author       : alice,
+            protocol     : nestedProtocol.protocol,
+            protocolPath : 'foo',
+            schema       : nestedProtocol.types.foo.schema,
+            dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+          };
+
+          const foo1 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: foo1.dataStream });
+          expect(foo1WriteResponse.status.code).equals(202);
+
+          // 2. Alice deletes foo1
+          const deleteFoo = await TestDataGenerator.generateRecordsDelete({
+            author   : alice,
+            recordId : foo1.message.recordId
+          });
+          const deleteFooReply = await dwn.processMessage(alice.did, deleteFoo.message);
+          expect(deleteFooReply.status.code).equals(202);
+
+          // 3. Alice tries to write a bar1 referencing the deleted foo and should fail
+          const barOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar',
+            schema          : nestedProtocol.types.bar.schema,
+            dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+            parentContextId : foo1.message.contextId
+          };
+          const bar1 = await TestDataGenerator.generateRecordsWrite(barOptions);
+          const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message, { dataStream: bar1.dataStream });
+          expect(bar1WriteResponse.status.code).equals(400);
+          expect(bar1WriteResponse.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
+        });
+
+        it('should fail if a write references a mismatching parent that compared to the parent in the `contextId` ', async () => {
+          // scenario:
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          // 1. Alice writes foo1
+          // 2. Alice tries to write a bar1 referencing the foo1 in parentId, but contextId does not reference the same parent
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = nestedProtocol as ProtocolDefinition;
+
+          // 0. Alice installs a nested protocol foo -> bar -> baz
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // 1. Alice writes foo1
+          const fooOptions = {
+            author       : alice,
+            protocol     : nestedProtocol.protocol,
+            protocolPath : 'foo',
+            schema       : nestedProtocol.types.foo.schema,
+            dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+          };
+
+          const foo1 = await TestDataGenerator.generateRecordsWrite(fooOptions);
+          const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: foo1.dataStream });
+          expect(foo1WriteResponse.status.code).equals(202);
+
+          // 2. Alice tries to write a bar1 referencing the foo1 in parentId, but contextId does not reference the same parent
+          const barOptions = {
+            author          : alice,
+            protocol        : nestedProtocol.protocol,
+            protocolPath    : 'foo/bar',
+            schema          : nestedProtocol.types.bar.schema,
+            dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+            parentContextId : foo1.message.contextId
+          };
+          const bar1 = await TestDataGenerator.generateRecordsWrite(barOptions);
+
+          // replace the contextId with a different parent
+          const contextIdSegments = bar1.message.contextId!.split(`/`);
+          contextIdSegments[1] = 'differentParent';
+          bar1.message.contextId = contextIdSegments.join(`/`);
+
+          // resign the message
+          const recordId = await RecordsWrite.getEntryId(alice.did, bar1.message.descriptor);
+          const descriptorCid = await Cid.computeCid(bar1.message.descriptor);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : bar1.message.contextId,
+            descriptorCid,
+            encryption  : undefined,
+            attestation : undefined,
+            signer      : Jws.createSigner(alice)
+          });
+          bar1.message.recordId = recordId;
+          bar1.message.authorization = { signature };
+
+          const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message);
+          expect(bar1WriteResponse.status.code).equals(400);
+          expect(bar1WriteResponse.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectContextId);
+        });
       });
 
       describe('grant based writes', () => {
@@ -3723,8 +3811,7 @@ export function testRecordsWriteHandler(): void {
               protocolPath       : 'email/email',
               schema             : protocolDefinition.types.email.schema,
               dataFormat         : protocolDefinition.types.email.dataFormats![0],
-              parentId           : alicesRecordsWrite.message.recordId,
-              contextId          : alicesRecordsWrite.message.contextId,
+              parentContextId    : alicesRecordsWrite.message.contextId,
               permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });
@@ -3784,8 +3871,7 @@ export function testRecordsWriteHandler(): void {
               protocolPath       : 'email/email',
               schema             : protocolDefinition.types.email.schema,
               dataFormat         : protocolDefinition.types.email.dataFormats![0],
-              parentId           : alicesRecordsWrite.message.recordId,
-              contextId          : alicesRecordsWrite.message.contextId,
+              parentContextId    : alicesRecordsWrite.message.contextId,
               permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });

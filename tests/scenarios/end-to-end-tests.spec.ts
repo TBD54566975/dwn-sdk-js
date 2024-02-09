@@ -143,8 +143,7 @@ export function testEndToEndScenarios(): void {
         recipient                                        : bob.did,
         protocolDefinition                               : protocolsConfigureOfBobFetched.message.descriptor.definition,
         protocolPath                                     : 'thread/participant',
-        protocolContextId                                : threadRecord.message.contextId,
-        protocolParentId                                 : threadRecord.message.recordId,
+        protocolParentContextId                          : threadRecord.message.contextId,
         encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
         encryptSymmetricKeyWithProtocolContextDerivedKey : false // this could be `true` also, but mostly orthogonal to the scenario
       });
@@ -160,10 +159,9 @@ export function testEndToEndScenarios(): void {
         recipient                                        : alice.did, // this is arguably irrelevant in multi-party communication
         protocolDefinition                               : protocolDefinition,
         protocolPath                                     : 'thread/chat',
-        protocolContextId                                : threadRecord.message.contextId,
+        protocolParentContextId                          : threadRecord.message.contextId,
         protocolContextDerivingRootKeyId                 : aliceRootKey.rootKeyId,
         protocolContextDerivedPublicJwk                  : contextDerivedPublicKey,
-        protocolParentId                                 : threadRecord.message.recordId,
         encryptSymmetricKeyWithProtocolPathDerivedKey    : false,
         encryptSymmetricKeyWithProtocolContextDerivedKey : true
       });

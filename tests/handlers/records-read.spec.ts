@@ -661,12 +661,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/participant',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/participant',
+              parentContextId : threadRecord.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -674,11 +673,10 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
@@ -747,12 +745,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/participant',
-              contextId    : threadRecord1.message.contextId,
-              parentId     : threadRecord1.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/participant',
+              parentContextId : threadRecord1.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -770,11 +767,10 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord2.message.contextId,
-              parentId     : threadRecord2.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord2.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
@@ -1781,7 +1777,7 @@ export function testRecordsReadHandler(): void {
 
           // Bob creates an initiating a chat thread RecordsWrite
           const plaintextMessageToAlice = TestDataGenerator.randomBytes(100);
-          const { message, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
+          const { message: threadMessage, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
           await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
             plaintextBytes                                   : plaintextMessageToAlice,
             author                                           : bob,
@@ -1792,7 +1788,7 @@ export function testRecordsReadHandler(): void {
           });
 
           // Bob writes the encrypted chat thread to Alice's DWN
-          const bobToAliceWriteReply = await dwn.processMessage(alice.did, message, { dataStream });
+          const bobToAliceWriteReply = await dwn.processMessage(alice.did, threadMessage, { dataStream });
           expect(bobToAliceWriteReply.status.code).to.equal(202);
 
           // Bob also needs to write the same encrypted chat thread to his own DWN
@@ -1833,7 +1829,7 @@ export function testRecordsReadHandler(): void {
           // test that anyone with the protocol-context derived private key is able to decrypt the message
           const recordsRead = await RecordsRead.create({
             filter: {
-              recordId: message.recordId,
+              recordId: threadMessage.recordId,
             },
             signer: Jws.createSigner(alice)
           });
@@ -1862,10 +1858,9 @@ export function testRecordsReadHandler(): void {
             author                                           : alice,
             protocolDefinition                               : protocolsConfigureForBob.message.descriptor.definition,
             protocolPath                                     : 'thread/message',
-            protocolContextId                                : fetchedRecordsWrite.contextId,
+            protocolParentContextId                          : fetchedRecordsWrite.contextId,
             protocolContextDerivingRootKeyId                 : protocolContextDerivingRootKeyIdReturned,
             protocolContextDerivedPublicJwk                  : protocolContextDerivedPublicJwkReturned!,
-            protocolParentId                                 : fetchedRecordsWrite.recordId,
             encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
             encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });

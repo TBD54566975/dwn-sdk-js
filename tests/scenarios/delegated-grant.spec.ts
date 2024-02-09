@@ -215,24 +215,22 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : alice.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('Alice is my friend'),
+        author          : bob,
+        recipient       : alice.did,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/participant',
+        parentContextId : threadRecord.message.contextId,
+        data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
+        author          : bob,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/chat',
+        parentContextId : threadRecord.message.contextId,
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
@@ -382,13 +380,12 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : alice.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('Alice is my friend'),
+        author          : bob,
+        recipient       : alice.did,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/participant',
+        parentContextId : threadRecord.message.contextId,
+        data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
@@ -453,11 +450,10 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
+        author          : bob,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/chat',
+        parentContextId : threadRecord.message.contextId,
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
@@ -511,25 +507,23 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob adds Carol as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : carol.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId
+        author          : bob,
+        recipient       : carol.did,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/participant',
+        parentContextId : threadRecord.message.contextId
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Carol writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : carol,
-        protocolRole : 'thread/participant',
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('A rude message'),
+        author          : carol,
+        protocolRole    : 'thread/participant',
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/chat',
+        parentContextId : threadRecord.message.contextId,
+        data            : new TextEncoder().encode('A rude message'),
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
@@ -684,24 +678,22 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : alice.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('Alice is my friend'),
+        author          : bob,
+        recipient       : alice.did,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/participant',
+        parentContextId : threadRecord.message.contextId,
+        data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
+        author          : bob,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/chat',
+        parentContextId : threadRecord.message.contextId,
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
@@ -843,25 +835,23 @@ export function testDelegatedGrantScenarios(): void {
 
       // Bob adds Carol as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : carol.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId
+        author          : bob,
+        recipient       : carol.did,
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/participant',
+        parentContextId : threadRecord.message.contextId
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
       expect(participantRoleReply.status.code).to.equal(202);
 
       // Carol writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : carol,
-        protocolRole : 'thread/participant',
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('A rude message'),
+        author          : carol,
+        protocolRole    : 'thread/participant',
+        protocol        : protocolDefinition.protocol,
+        protocolPath    : 'thread/chat',
+        parentContextId : threadRecord.message.contextId,
+        data            : new TextEncoder().encode('A rude message'),
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
       expect(chatRecordReply.status.code).to.equal(202);
