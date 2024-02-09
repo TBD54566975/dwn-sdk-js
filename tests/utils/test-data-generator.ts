@@ -52,7 +52,6 @@ import { sha256 } from 'multiformats/hashes/sha2';
 import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { HdKey, KeyDerivationScheme } from '../../src/utils/hd-key.js';
-import { sign } from 'crypto';
 
 /**
  * A logical grouping of user data used to generate test messages.
