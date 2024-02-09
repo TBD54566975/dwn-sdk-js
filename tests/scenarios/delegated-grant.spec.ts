@@ -1,5 +1,6 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore, PermissionScope, RecordsDeleteMessage, RecordsWriteMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
+import type { RecordEvent, RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -408,7 +409,8 @@ export function testDelegatedGrantScenarios(): void {
       });
 
       const subscriptionChatRecords:Set<string> = new Set();
-      const captureChatRecords = async (message: RecordsWriteMessage | RecordsDeleteMessage): Promise<void> => {
+      const captureChatRecords = async (event: RecordEvent): Promise<void> => {
+        const { message } = event;
         if (message.descriptor.method === DwnMethodName.Delete) {
           const recordId = message.descriptor.recordId;
           subscriptionChatRecords.delete(recordId);
