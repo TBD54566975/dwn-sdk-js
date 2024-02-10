@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.2.16",
+  "version": "0.2.17",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "repository": {
     "type": "git",
