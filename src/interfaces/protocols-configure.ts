@@ -81,19 +81,31 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       const rootRuleSet = definition.structure[rootRecordPath];
 
       // gather $contextRoles
-      const contextRoles: string[] = [];
-      for (const childRecordType in rootRuleSet) {
-        if (childRecordType.startsWith('$')) {
-          continue;
-        }
-        const childRuleSet: ProtocolRuleSet = rootRuleSet[childRecordType];
-        if (childRuleSet.$contextRole) {
-          contextRoles.push(`${rootRecordPath}/${childRecordType}`);
-        }
-      }
+      const contextRoles = ProtocolsConfigure.fetchAllContextRolePathsRecursively(rootRecordPath, rootRuleSet, []);
 
       ProtocolsConfigure.validateRuleSet(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
     }
+  }
+
+  private static fetchAllContextRolePathsRecursively(recordProtocolPath: string, ruleSet: ProtocolRuleSet, contextRoles: string[]): string[] {
+    for (const recordType in ruleSet) {
+      // ignore non-nested-record properties
+      if (recordType.startsWith('$')) {
+        continue;
+      }
+
+      const childRuleSet = ruleSet[recordType];
+      const childProtocolPath = `${recordProtocolPath}/${recordType}`;
+
+      // if this is a role record, add it to the list, else continue to traverse
+      if (childRuleSet.$contextRole) {
+        contextRoles.push(childProtocolPath);
+      } else {
+        ProtocolsConfigure.fetchAllContextRolePathsRecursively(childProtocolPath, childRuleSet, contextRoles);
+      }
+    }
+
+    return contextRoles;
   }
 
   /**
@@ -105,11 +117,6 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       throw new DwnError(
         DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath,
         `$globalRole is not allowed at protocol path (${protocolPath}). Only root records may set $globalRole true.`
-      );
-    } else if (ruleSet.$contextRole && depth !== 2) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath,
-        `$contextRole is not allowed at protocol path (${protocolPath}). Only second-level records may set $contextRole true.`
       );
     }
 

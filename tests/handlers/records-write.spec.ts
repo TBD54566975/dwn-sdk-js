@@ -2101,7 +2101,7 @@ export function testRecordsWriteHandler(): void {
               });
               const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatReply.status.code).to.equal(401);
-              expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+              expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
             });
 
             it('uses a contextRole to authorize a write', async () => {
@@ -2270,7 +2270,7 @@ export function testRecordsWriteHandler(): void {
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(401);
-              expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+              expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
             });
 
             it('rejects attempts to invoke an invalid path as a protocolRole', async () => {
