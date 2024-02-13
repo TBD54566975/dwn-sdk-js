@@ -17,7 +17,7 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import chai, { expect } from 'chai';
 import { DataStream, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../../src/index.js';
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -33,7 +33,7 @@ export function testEndToEndScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+      didResolver = new DidResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -143,8 +143,7 @@ export function testEndToEndScenarios(): void {
         recipient                                        : bob.did,
         protocolDefinition                               : protocolsConfigureOfBobFetched.message.descriptor.definition,
         protocolPath                                     : 'thread/participant',
-        protocolContextId                                : threadRecord.message.contextId,
-        protocolParentId                                 : threadRecord.message.recordId,
+        protocolParentContextId                          : threadRecord.message.contextId,
         encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
         encryptSymmetricKeyWithProtocolContextDerivedKey : false // this could be `true` also, but mostly orthogonal to the scenario
       });
@@ -160,10 +159,9 @@ export function testEndToEndScenarios(): void {
         recipient                                        : alice.did, // this is arguably irrelevant in multi-party communication
         protocolDefinition                               : protocolDefinition,
         protocolPath                                     : 'thread/chat',
-        protocolContextId                                : threadRecord.message.contextId,
+        protocolParentContextId                          : threadRecord.message.contextId,
         protocolContextDerivingRootKeyId                 : aliceRootKey.rootKeyId,
         protocolContextDerivedPublicJwk                  : contextDerivedPublicKey,
-        protocolParentId                                 : threadRecord.message.recordId,
         encryptSymmetricKeyWithProtocolPathDerivedKey    : false,
         encryptSymmetricKeyWithProtocolContextDerivedKey : true
       });

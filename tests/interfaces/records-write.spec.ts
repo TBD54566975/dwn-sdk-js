@@ -3,6 +3,7 @@ import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/
 import type { PermissionScope, Signer } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
+import Sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -12,7 +13,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsGrant } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -177,26 +178,6 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
     });
 
-    it('#434 - should required `contextId` when `parent` is specified', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-
-      const options: RecordsWriteOptions = {
-        schema       : 'http://any-schema.com',
-        protocol     : 'http://example.com',
-        protocolPath : 'foo/bar',
-        parentId     : await TestDataGenerator.randomCborSha256Cid(),
-        dataCid      : await TestDataGenerator.randomCborSha256Cid(),
-        dataSize     : 123,
-        dataFormat   : 'application/json',
-        recordId     : await TestDataGenerator.randomCborSha256Cid(),
-        signer       : Jws.createSigner(alice)
-      };
-
-      const createPromise = RecordsWrite.create(options);
-
-      await expect(createPromise).to.be.rejectedWith('`contextId` must also be given when `parentId` is specified');
-    });
-
     it('should be able to create a RecordsWrite successfully using a custom signer', async () => {
       // create a custom signer
       const hardCodedSignature = Encoder.stringToBytes('some_hard_coded_signature');
@@ -324,6 +305,22 @@ describe('RecordsWrite', () => {
   });
 
   describe('parse()', () => {
+    xit('should invoke JSON schema validation when parsing a RecordsWrite', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const recordsWrite = await RecordsWrite.create({
+        signer     : Jws.createSigner(alice),
+        dataFormat : 'application/octet-stream',
+        data       : TestDataGenerator.randomBytes(10),
+      });
+
+      const validateJsonSchemaSpy = Sinon.spy(Message, 'validateJsonSchema');
+
+      await RecordsWrite.parse(recordsWrite.message);
+
+      expect(validateJsonSchemaSpy.called).to.be.true;
+    });
+
     it('should throw if a delegate invokes a delegated grant (ID) but the delegated grant is not given', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();

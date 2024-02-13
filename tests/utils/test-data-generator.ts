@@ -26,8 +26,7 @@ import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/typ
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { Did } from '../../src/did/did.js';
-import { DidKeyMethod } from '@web5/dids';
+import { DidKey } from '@web5/dids';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/utils/encryption.js';
@@ -109,10 +108,9 @@ export type GenerateRecordsWriteInput = {
   protocol?: string;
   protocolPath?: string;
   protocolRole?: string;
-  contextId?: string;
   schema?: string;
   recordId?: string;
-  parentId?: string;
+  parentContextId?: string;
   published?: boolean;
   data?: Uint8Array;
   dataCid?: string;
@@ -429,10 +427,9 @@ export class TestDataGenerator {
       protocol           : input?.protocol,
       protocolPath       : input?.protocolPath,
       protocolRole       : input?.protocolRole,
-      contextId          : input?.contextId,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
       recordId           : input?.recordId,
-      parentId           : input?.parentId,
+      parentContextId    : input?.parentContextId,
       published          : input?.published,
       dataFormat         : input?.dataFormat ?? 'application/json',
       dateCreated        : input?.dateCreated,
@@ -480,10 +477,9 @@ export class TestDataGenerator {
     recipient?: string,
     protocolDefinition: ProtocolDefinition,
     protocolPath: string,
-    protocolContextId?: string,
+    protocolParentContextId?: string,
     protocolContextDerivingRootKeyId?: string,
     protocolContextDerivedPublicJwk?: PublicJwk,
-    protocolParentId?: string,
     encryptSymmetricKeyWithProtocolPathDerivedKey: boolean,
     encryptSymmetricKeyWithProtocolContextDerivedKey: boolean,
   }): Promise<{
@@ -499,10 +495,9 @@ export class TestDataGenerator {
       recipient,
       protocolDefinition,
       protocolPath,
-      protocolContextId,
+      protocolParentContextId,
       protocolContextDerivingRootKeyId,
       protocolContextDerivedPublicJwk,
-      protocolParentId,
     } = input;
 
     // encrypt the plaintext data for the target with a randomly generated symmetric key
@@ -521,13 +516,12 @@ export class TestDataGenerator {
       {
         author,
         recipient,
-        protocol   : protocolDefinition.protocol,
+        protocol        : protocolDefinition.protocol,
         protocolPath,
-        contextId  : protocolContextId,
-        parentId   : protocolParentId,
-        schema     : protocolDefinition.types[recordType].schema,
-        dataFormat : protocolDefinition.types[recordType].dataFormats?.[0],
-        data       : encryptedDataBytes
+        parentContextId : protocolParentContextId,
+        schema          : protocolDefinition.types[recordType].schema,
+        dataFormat      : protocolDefinition.types[recordType].dataFormats?.[0],
+        data            : encryptedDataBytes
       }
     );
 
@@ -557,9 +551,9 @@ export class TestDataGenerator {
     }
 
     if (input.encryptSymmetricKeyWithProtocolContextDerivedKey) {
-      // generate key encryption input to that will encrypt the symmetric encryption key using protocol-context derived public key
+      // generate key encryption input that will encrypt the symmetric encryption key using protocol-context derived public key
       let protocolContextDerivedKeyEncryptionInput: KeyEncryptionInput;
-      if (protocolContextId === undefined) {
+      if (protocolParentContextId === undefined) {
       // author generates protocol-context derived public key for encrypting symmetric key
         const authorRootPrivateKey: DerivedPrivateJwk = {
           rootKeyId         : author.keyId,
@@ -1005,16 +999,18 @@ export class TestDataGenerator {
    */
   public static async generateDidKeyPersona(): Promise<Persona> {
 
-    const portableDid = await DidKeyMethod.create();
-    const keyId = TestDataGenerator.getKeyId(portableDid.did);
+    const did = await DidKey.create();
+    const signingMethod = await DidKey.getSigningMethod({ didDocument: did.document });
+    const keyId = signingMethod.id;
+    const portableDid = await did.export();
     const keyPair = {
       // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
-      publicJwk  : portableDid.keySet.verificationMethodKeys![0].publicKeyJwk as PublicJwk,
-      privateJwk : portableDid.keySet.verificationMethodKeys![0].privateKeyJwk as PrivateJwk,
+      publicJwk  : signingMethod.publicKeyJwk as PublicJwk,
+      privateJwk : portableDid.privateKeys![0] as PrivateJwk,
     };
 
     return {
-      did    : portableDid.did,
+      did    : did.uri,
       keyId,
       keyPair,
       signer : new PrivateKeySigner({
@@ -1023,14 +1019,5 @@ export class TestDataGenerator {
         keyId
       })
     };
-  }
-
-  /**
-   * Gets the fully qualified key ID of a `did:key` DID. ie. '<did>#<method-specific-id>'
-   */
-  public static getKeyId(did: string): string {
-    const methodSpecificId = Did.getMethodSpecificId(did);
-    const keyId = `${did}#${methodSpecificId}`;
-    return keyId;
   }
 }

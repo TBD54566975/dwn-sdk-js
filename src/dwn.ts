@@ -6,8 +6,8 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply } from './types/events-types.js';
-import type { GenericMessage, GenericMessageReply, MessageSubscriptionHandler } from './types/message-types.js';
+import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
+import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
@@ -30,7 +30,7 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DidDhtMethod, DidIonMethod, DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidDht, DidIon, DidKey, DidResolver, DidResolverCacheLevel } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {
@@ -134,7 +134,10 @@ export class Dwn {
    * Creates an instance of the DWN.
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
-    config.didResolver ??= new DidResolver({ didResolvers: [DidKeyMethod, DidIonMethod, DidDhtMethod] });
+    config.didResolver ??= new DidResolver({
+      didResolvers : [DidDht, DidIon, DidKey],
+      cache        : new DidResolverCacheLevel({ location: 'RESOLVERCACHE' }),
+    });
     config.tenantGate ??= new AllowAllTenantGate();
 
     const dwn = new Dwn(config);

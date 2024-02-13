@@ -29,7 +29,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { DataStream, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -47,7 +47,7 @@ export function testRecordsDeleteHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+        didResolver = new DidResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -124,9 +124,9 @@ export function testRecordsDeleteHandler(): void {
         expect(aliceWriteReply.status.code).to.equal(202);
 
         // alice writes another record with the same data
-        const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, { dataStream: aliceAssociateData.dataStream });
-        expect(aliceAssociateReply.status.code).to.equal(202);
+        const aliceWrite2Data = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
+        const aliceWrite2Reply = await dwn.processMessage(alice.did, aliceWrite2Data.message, { dataStream: aliceWrite2Data.dataStream });
+        expect(aliceWrite2Reply.status.code).to.equal(202);
 
         // bob writes a records with same data
         const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
@@ -134,9 +134,9 @@ export function testRecordsDeleteHandler(): void {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // bob writes another record with the same data
-        const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, { dataStream: bobAssociateData.dataStream });
-        expect(bobAssociateReply.status.code).to.equal(202);
+        const bobWrite2Data = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
+        const bobWrite2Reply = await dwn.processMessage(bob.did, bobWrite2Data.message, { dataStream: bobWrite2Data.dataStream });
+        expect(bobWrite2Reply.status.code).to.equal(202);
 
         // alice deletes one of the two records
         const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
@@ -149,7 +149,7 @@ export function testRecordsDeleteHandler(): void {
         // verify the other record with the same data is unaffected
         const aliceRead1 = await RecordsRead.create({
           filter: {
-            recordId: aliceAssociateData.message.recordId,
+            recordId: aliceWrite2Data.message.recordId,
           },
           signer: Jws.createSigner(alice)
         });
@@ -161,12 +161,12 @@ export function testRecordsDeleteHandler(): void {
         expect(ArrayUtility.byteArraysEqual(aliceDataFetched, data)).to.be.true;
 
         // alice deletes the other record
-        const aliceDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
+        const aliceDeleteWrite2Data = await TestDataGenerator.generateRecordsDelete({
           author   : alice,
-          recordId : aliceAssociateData.message.recordId
+          recordId : aliceWrite2Data.message.recordId
         });
-        const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
-        expect(aliceDeleteAssociateReply.status.code).to.equal(202);
+        const aliceDeleteWrite2Reply = await dwn.processMessage(alice.did, aliceDeleteWrite2Data.message);
+        expect(aliceDeleteWrite2Reply.status.code).to.equal(202);
 
         // verify that alice can no longer fetch the 2nd record
         const aliceRead2Reply = await dwn.processMessage(alice.did, aliceRead1.message);
@@ -175,7 +175,7 @@ export function testRecordsDeleteHandler(): void {
         // verify that bob can still fetch record with the same data
         const bobRead1 = await RecordsRead.create({
           filter: {
-            recordId: bobAssociateData.message.recordId,
+            recordId: bobWriteData.message.recordId,
           },
           signer: Jws.createSigner(bob)
         });
@@ -366,11 +366,10 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a 'chat/tag'
             const tagRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/tag',
-              contextId    : chatRecordsWrite.message.contextId,
-              parentId     : chatRecordsWrite.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/tag',
+              parentContextId : chatRecordsWrite.message.contextId,
             });
             const tagRecordsWriteReply = await dwn.processMessage(alice.did, tagRecordsWrite.message, { dataStream: tagRecordsWrite.dataStream });
             expect(tagRecordsWriteReply.status.code).to.eq(202);
@@ -474,11 +473,10 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a 'post/comment'
             const commentRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'post/comment',
-              contextId    : postRecordsWrite.message.contextId,
-              parentId     : postRecordsWrite.message.recordId,
+              author          : alice,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'post/comment',
+              parentContextId : postRecordsWrite.message.contextId,
             });
             const commentRecordsWriteReply =
               await dwn.processMessage(alice.did, commentRecordsWrite.message, { dataStream: commentRecordsWrite.dataStream });
@@ -534,12 +532,11 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice adds Bob as a 'thread/admin' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : bob.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/admin',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : bob.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/admin',
+              parentContextId : threadRecord.message.contextId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -547,12 +544,11 @@ export function testRecordsDeleteHandler(): void {
 
             // Alice writes a chat message in that thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              parentContextId : threadRecord.message.contextId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
