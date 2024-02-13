@@ -31,7 +31,8 @@ describe('ProtocolsConfigure', () => {
         currentLevel = currentLevel.foo;
       }
 
-      // we need to manually created an invalid protocol definition SDK `create()` method will not allow us to create an invalid definition
+      // we need to manually created an invalid protocol definition,
+      // because the SDK `create()` method will not allow us to create an invalid definition
       const descriptor: ProtocolsConfigureDescriptor = {
         interface        : DwnInterfaceName.Protocols,
         method           : DwnMethodName.Configure,
