@@ -83,11 +83,21 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       // gather $contextRoles
       const contextRoles = ProtocolsConfigure.fetchAllContextRolePathsRecursively(rootRecordPath, rootRuleSet, []);
 
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
+      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
     }
   }
 
+  /**
+   * Parses the given rule set hierarchy to get all the context role protocol paths.
+   * @throws DwnError if the hierarchy depth goes beyond 10 levels.
+   */
   private static fetchAllContextRolePathsRecursively(recordProtocolPath: string, ruleSet: ProtocolRuleSet, contextRoles: string[]): string[] {
+    // Limit the depth of the record hierarchy to 10 levels
+    // There is opportunity to optimize here to avoid repeated string splitting
+    if (recordProtocolPath.split('/').length > 10) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureRecordNestingDepthExceeded, 'Record nesting depth exceeded 10 levels.');
+    }
+
     for (const recordType in ruleSet) {
       // ignore non-nested-record properties
       if (recordType.startsWith('$')) {
@@ -111,7 +121,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   /**
    * Validates the given rule set structure then recursively validates its nested child rule sets.
    */
-  private static validateRuleSet(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
+  private static validateRuleSetRecursively(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
     const depth = protocolPath.split('/').length;
     if (ruleSet.$globalRole && depth !== 1) {
       throw new DwnError(
@@ -120,7 +130,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       );
     }
 
-    // Validate $actions in the ruleset
+    // Validate $actions in the rule set
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
       // Validate that all `role` properties contain protocol paths $globalRole or $contextRole records
@@ -171,7 +181,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       }
       const rootRuleSet = ruleSet[recordType];
       const nextProtocolPath = `${protocolPath}/${recordType}`;
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, nextProtocolPath, roles);
+      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, nextProtocolPath, roles);
     }
   }
 

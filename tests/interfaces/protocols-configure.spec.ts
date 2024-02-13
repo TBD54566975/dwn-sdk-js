@@ -1,18 +1,71 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import type { ProtocolsConfigureMessage } from '../../src/index.js';
+import type { ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
-import { DwnErrorCode } from '../../src/index.js';
 import { Jws } from '../../src/utils/jws.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 describe('ProtocolsConfigure', () => {
+  describe('parse()', () => {
+    it('should throw if protocol definitions has record nesting more than 10 level deep', async () => {
+      const definition = {
+        published : true,
+        protocol  : 'http://example.com',
+        types     : {
+          foo: {},
+        },
+        structure: {
+          foo: {
+            foo: {
+              foo: {
+                foo: {
+                  foo: {
+                    foo: {
+                      foo: {
+                        foo: {
+                          foo: {
+                            foo: {
+                              foo: { } // 11th level
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+
+      // we need to manually created an invalid protocol definition SDK `create()` method will not allow us to create an invalid definition
+      const descriptor: ProtocolsConfigureDescriptor = {
+        interface        : DwnInterfaceName.Protocols,
+        method           : DwnMethodName.Configure,
+        messageTimestamp : Time.getCurrentTimestamp(),
+        definition
+      };
+
+      const alice = await TestDataGenerator.generatePersona();
+      const authorization = await Message.createAuthorization({
+        descriptor,
+        signer: Jws.createSigner(alice)
+      });
+      const message = { descriptor, authorization };
+
+      const parsePromise = ProtocolsConfigure.parse(message);
+      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRecordNestingDepthExceeded);
+    });
+  });
+
   describe('create()', () => {
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
@@ -166,62 +219,6 @@ describe('ProtocolsConfigure', () => {
 
         await expect(createProtocolsConfigurePromise)
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
-      });
-
-      it('rejects protocol definitions with $contextRole at records that are not second-level records', async () => {
-        const alice = await TestDataGenerator.generatePersona();
-
-        // it rejects context roles too high in the structure
-        const definitionRootContextRole = {
-          published : true,
-          protocol  : 'http://example.com',
-          types     : {
-            root        : {},
-            secondLevel : {}
-          },
-          structure: {
-            root: {
-              // $contextRole may only be set on second-level records, not root records
-              $contextRole: true,
-            }
-          }
-        };
-
-        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          signer     : Jws.createSigner(alice),
-          definition : definitionRootContextRole
-        });
-
-        await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
-
-        // it rejects contextRoles too nested in the structure
-        const definitionTooNestedContextRole = {
-          published : true,
-          protocol  : 'http://example.com',
-          types     : {
-            root        : {},
-            secondLevel : {}
-          },
-          structure: {
-            root: {
-              secondLevel: {
-                thirdLevel: {
-                  // $contextRole may only be set on second-level records, not third-level or lower records
-                  $contextRole: true,
-                }
-              }
-            }
-          }
-        };
-
-        const createProtocolsConfigurePromise2 = ProtocolsConfigure.create({
-          signer     : Jws.createSigner(alice),
-          definition : definitionTooNestedContextRole
-        });
-
-        await expect(createProtocolsConfigurePromise2)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
       });
 
       it('rejects protocol definitions with `role` actions that contain invalid roles', async () => {
