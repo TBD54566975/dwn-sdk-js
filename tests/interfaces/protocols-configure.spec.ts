@@ -21,30 +21,15 @@ describe('ProtocolsConfigure', () => {
         types     : {
           foo: {},
         },
-        structure: {
-          foo: {
-            foo: {
-              foo: {
-                foo: {
-                  foo: {
-                    foo: {
-                      foo: {
-                        foo: {
-                          foo: {
-                            foo: {
-                              foo: { } // 11th level
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        structure: { }
       };
+
+      // create a record hierarchy with 11 levels of nesting
+      let currentLevel: any = definition.structure;
+      for (let i = 0; i < 11; i++) {
+        currentLevel.foo = { };
+        currentLevel = currentLevel.foo;
+      }
 
       // we need to manually created an invalid protocol definition SDK `create()` method will not allow us to create an invalid definition
       const descriptor: ProtocolsConfigureDescriptor = {
