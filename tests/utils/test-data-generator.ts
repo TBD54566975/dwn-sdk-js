@@ -1000,13 +1000,13 @@ export class TestDataGenerator {
   public static async generateDidKeyPersona(): Promise<Persona> {
 
     const did = await DidKey.create();
-    const signingMethod = await DidKey.getSigningMethod({ didDocument: did.document });
-    const keyId = signingMethod.id;
-    const portableDid = await did.export();
+    const signingMethod = await DidKey.getSigningMethod({ didDocument: did.didDocument });
+    const keyId = signingMethod!.id;
+    const portableDid = await DidKey.toKeys({ did });
     const keyPair = {
       // TODO: #672 - port and use type from @web5/crypto - https://github.com/TBD54566975/dwn-sdk-js/issues/672
-      publicJwk  : signingMethod.publicKeyJwk as PublicJwk,
-      privateJwk : portableDid.privateKeys![0] as PrivateJwk,
+      publicJwk  : portableDid.verificationMethods[0].publicKeyJwk as PublicJwk,
+      privateJwk : portableDid.verificationMethods[0].privateKeyJwk as PrivateJwk,
     };
 
     return {
