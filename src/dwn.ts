@@ -1,40 +1,83 @@
-import type { DataStore } from './types/data-store.js';
-import type { EventLog } from './types/event-log.js';
-import type { EventStream } from './types/subscriptions.js';
-import type { MessageStore } from './types/message-store.js';
-import type { MethodHandler } from './types/method-handler.js';
-import type { Readable } from 'readable-stream';
-import type { TenantGate } from './core/tenant-gate.js';
-import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
-import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
-import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
-import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
+import type { DataStore } from "./types/data-store.js";
+import type { EventLog } from "./types/event-log.js";
+import type { EventStream } from "./types/subscriptions.js";
+import type { MessageStore } from "./types/message-store.js";
+import type { MethodHandler } from "./types/method-handler.js";
+import type { Readable } from "readable-stream";
+import type { TenantGate } from "./core/tenant-gate.js";
+import type { UnionMessageReply } from "./core/message-reply.js";
+import type {
+  EventsGetMessage,
+  EventsGetReply,
+  EventsQueryMessage,
+  EventsQueryReply,
+  EventsSubscribeMessage,
+  EventsSubscribeMessageOptions,
+  EventsSubscribeReply,
+} from "./types/events-types.js";
+import type {
+  GenericMessage,
+  GenericMessageReply,
+  MessageSubscriptionHandler,
+} from "./types/message-types.js";
+import type {
+  MessagesGetMessage,
+  MessagesGetReply,
+} from "./types/messages-types.js";
+import type {
+  PermissionsGrantMessage,
+  PermissionsRequestMessage,
+  PermissionsRevokeMessage,
+} from "./types/permissions-types.js";
+import type {
+  ProtocolsConfigureMessage,
+  ProtocolsQueryMessage,
+  ProtocolsQueryReply,
+} from "./types/protocols-types.js";
+import type {
+  RecordsDeleteMessage,
+  RecordsQueryMessage,
+  RecordsQueryReply,
+  RecordsReadMessage,
+  RecordsReadReply,
+  RecordsSubscribeMessage,
+  RecordsSubscribeMessageOptions,
+  RecordsSubscribeReply,
+  RecordSubscriptionHandler,
+  RecordsWriteMessage,
+  RecordsWriteMessageOptions,
+} from "./types/records-types.js";
 
-import { AllowAllTenantGate } from './core/tenant-gate.js';
-import { EventsGetHandler } from './handlers/events-get.js';
-import { EventsQueryHandler } from './handlers/events-query.js';
-import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
-import { Message } from './core/message.js';
-import { messageReplyFromError } from './core/message-reply.js';
-import { MessagesGetHandler } from './handlers/messages-get.js';
-import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
-import { PermissionsRequestHandler } from './handlers/permissions-request.js';
-import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
-import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
-import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
-import { RecordsDeleteHandler } from './handlers/records-delete.js';
-import { RecordsQueryHandler } from './handlers/records-query.js';
-import { RecordsReadHandler } from './handlers/records-read.js';
-import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
-import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DidDht, DidIon, DidKey, DidResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
+import { AllowAllTenantGate } from "./core/tenant-gate.js";
+import { EventsGetHandler } from "./handlers/events-get.js";
+import { EventsQueryHandler } from "./handlers/events-query.js";
+import { EventsSubscribeHandler } from "./handlers/events-subscribe.js";
+import { Message } from "./core/message.js";
+import { messageReplyFromError } from "./core/message-reply.js";
+import { MessagesGetHandler } from "./handlers/messages-get.js";
+import { PermissionsGrantHandler } from "./handlers/permissions-grant.js";
+import { PermissionsRequestHandler } from "./handlers/permissions-request.js";
+import { PermissionsRevokeHandler } from "./handlers/permissions-revoke.js";
+import { ProtocolsConfigureHandler } from "./handlers/protocols-configure.js";
+import { ProtocolsQueryHandler } from "./handlers/protocols-query.js";
+import { RecordsDeleteHandler } from "./handlers/records-delete.js";
+import { RecordsQueryHandler } from "./handlers/records-query.js";
+import { RecordsReadHandler } from "./handlers/records-read.js";
+import { RecordsSubscribeHandler } from "./handlers/records-subscribe.js";
+import { RecordsWriteHandler } from "./handlers/records-write.js";
+import {
+  DidDhtMethod,
+  DidIonMethod,
+  DidKeyMethod,
+  DidResolver,
+} from "@web5/dids";
+import {
+  DwnInterfaceName,
+  DwnMethodName,
+} from "./enums/dwn-interface-method.js";
 
 export class Dwn {
-  private methodHandlers: { [key:string]: MethodHandler };
+  private methodHandlers: { [key: string]: MethodHandler };
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
@@ -54,57 +97,61 @@ export class Dwn {
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]: new EventsGetHandler(
         this.didResolver,
-        this.eventLog,
+        this.eventLog
       ),
       [DwnInterfaceName.Events + DwnMethodName.Query]: new EventsQueryHandler(
         this.didResolver,
-        this.eventLog,
+        this.eventLog
       ),
-      [DwnInterfaceName.Events+ DwnMethodName.Subscribe]: new EventsSubscribeHandler(
-        this.didResolver,
-        this.eventStream,
-      ),
+      [DwnInterfaceName.Events + DwnMethodName.Subscribe]:
+        new EventsSubscribeHandler(this.didResolver, this.eventStream),
       [DwnInterfaceName.Messages + DwnMethodName.Get]: new MessagesGetHandler(
-        this.didResolver,
-        this.messageStore,
-        this.dataStore,
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Grant]: new PermissionsGrantHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Request]: new PermissionsRequestHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Revoke]: new PermissionsRevokeHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Protocols + DwnMethodName.Query]: new ProtocolsQueryHandler(
         this.didResolver,
         this.messageStore,
         this.dataStore
       ),
-      [DwnInterfaceName.Records + DwnMethodName.Delete]: new RecordsDeleteHandler(
-        this.didResolver,
-        this.messageStore,
-        this.dataStore,
-        this.eventLog,
-        this.eventStream
-      ),
+      [DwnInterfaceName.Permissions + DwnMethodName.Grant]:
+        new PermissionsGrantHandler(
+          this.didResolver,
+          this.messageStore,
+          this.eventLog,
+          this.eventStream
+        ),
+      [DwnInterfaceName.Permissions + DwnMethodName.Request]:
+        new PermissionsRequestHandler(
+          this.didResolver,
+          this.messageStore,
+          this.eventLog,
+          this.eventStream
+        ),
+      [DwnInterfaceName.Permissions + DwnMethodName.Revoke]:
+        new PermissionsRevokeHandler(
+          this.didResolver,
+          this.messageStore,
+          this.eventLog,
+          this.eventStream
+        ),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure]:
+        new ProtocolsConfigureHandler(
+          this.didResolver,
+          this.messageStore,
+          this.eventLog,
+          this.eventStream
+        ),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query]:
+        new ProtocolsQueryHandler(
+          this.didResolver,
+          this.messageStore,
+          this.dataStore
+        ),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]:
+        new RecordsDeleteHandler(
+          this.didResolver,
+          this.messageStore,
+          this.dataStore,
+          this.eventLog,
+          this.eventStream
+        ),
       [DwnInterfaceName.Records + DwnMethodName.Query]: new RecordsQueryHandler(
         this.didResolver,
         this.messageStore,
@@ -115,18 +162,19 @@ export class Dwn {
         this.messageStore,
         this.dataStore
       ),
-      [DwnInterfaceName.Records + DwnMethodName.Subscribe]: new RecordsSubscribeHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventStream
-      ),
+      [DwnInterfaceName.Records + DwnMethodName.Subscribe]:
+        new RecordsSubscribeHandler(
+          this.didResolver,
+          this.messageStore,
+          this.eventStream
+        ),
       [DwnInterfaceName.Records + DwnMethodName.Write]: new RecordsWriteHandler(
         this.didResolver,
         this.messageStore,
         this.dataStore,
         this.eventLog,
         this.eventStream
-      )
+      ),
     };
   }
 
@@ -134,7 +182,9 @@ export class Dwn {
    * Creates an instance of the DWN.
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
-    config.didResolver ??= new DidResolver({ didResolvers: [DidKey, DidIon, DidDht] });
+    config.didResolver ??= new DidResolver({
+      didResolvers: [DidKeyMethod, DidIonMethod, DidDhtMethod],
+    });
     config.tenantGate ??= new AllowAllTenantGate();
 
     const dwn = new Dwn(config);
@@ -161,37 +211,91 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
-  public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
   public async processMessage(
-    tenant: string, rawMessage: EventsSubscribeMessage, options?: EventsSubscribeMessageOptions): Promise<EventsSubscribeReply>;
-  public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
-  public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsGrantMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
+    tenant: string,
+    rawMessage: EventsGetMessage
+  ): Promise<EventsGetReply>;
   public async processMessage(
-    tenant: string, rawMessage: RecordsSubscribeMessage, options: RecordsSubscribeMessageOptions): Promise<RecordsSubscribeReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsReadMessage): Promise<RecordsReadReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, options?: RecordsWriteMessageOptions): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: unknown, options?: MessageOptions): Promise<UnionMessageReply>;
-  public async processMessage(tenant: string, rawMessage: GenericMessage, options: MessageOptions = {}): Promise<UnionMessageReply> {
-    const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
+    tenant: string,
+    rawMessage: EventsQueryMessage
+  ): Promise<EventsQueryReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: EventsSubscribeMessage,
+    options?: EventsSubscribeMessageOptions
+  ): Promise<EventsSubscribeReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: MessagesGetMessage
+  ): Promise<MessagesGetReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: ProtocolsConfigureMessage
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: ProtocolsQueryMessage
+  ): Promise<ProtocolsQueryReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: PermissionsRequestMessage
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: PermissionsGrantMessage
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: PermissionsRevokeMessage
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: RecordsDeleteMessage
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: RecordsQueryMessage
+  ): Promise<RecordsQueryReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: RecordsSubscribeMessage,
+    options: RecordsSubscribeMessageOptions
+  ): Promise<RecordsSubscribeReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: RecordsReadMessage
+  ): Promise<RecordsReadReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: RecordsWriteMessage,
+    options?: RecordsWriteMessageOptions
+  ): Promise<GenericMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: unknown,
+    options?: MessageOptions
+  ): Promise<UnionMessageReply>;
+  public async processMessage(
+    tenant: string,
+    rawMessage: GenericMessage,
+    options: MessageOptions = {}
+  ): Promise<UnionMessageReply> {
+    const errorMessageReply =
+      (await this.validateTenant(tenant)) ??
+      (await this.validateMessageIntegrity(rawMessage));
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
 
     const { dataStream, subscriptionHandler } = options;
 
-    const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
+    const handlerKey =
+      rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
       message: rawMessage as GenericMessage,
       dataStream,
-      subscriptionHandler
+      subscriptionHandler,
     });
 
     return methodHandlerReply;
@@ -202,12 +306,14 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
    */
-  public async validateTenant(tenant: string): Promise<GenericMessageReply | undefined> {
+  public async validateTenant(
+    tenant: string
+  ): Promise<GenericMessageReply | undefined> {
     const result = await this.tenantGate.isActiveTenant(tenant);
     if (!result.isActiveTenant) {
       const detail = result.detail ?? `DID ${tenant} is not an active tenant.`;
       return {
-        status: { code: 401, detail }
+        status: { code: 401, detail },
       };
     }
   }
@@ -221,7 +327,7 @@ export class Dwn {
    * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
    */
   public async validateMessageIntegrity(
-    rawMessage: any,
+    rawMessage: any
   ): Promise<GenericMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
@@ -229,7 +335,10 @@ export class Dwn {
 
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return {
-        status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
+        status: {
+          code: 400,
+          detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}`,
+        },
       };
     }
 
@@ -241,7 +350,7 @@ export class Dwn {
       return messageReplyFromError(error, 400);
     }
   }
-};
+}
 
 /**
  *  MessageOptions that are used when processing a message.
@@ -249,7 +358,7 @@ export class Dwn {
 export interface MessageOptions {
   dataStream?: Readable;
   subscriptionHandler?: MessageSubscriptionHandler | RecordSubscriptionHandler;
-};
+}
 
 /**
  * DWN configuration.
