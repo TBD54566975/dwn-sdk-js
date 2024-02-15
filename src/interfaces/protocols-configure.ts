@@ -113,6 +113,17 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       );
     }
 
+    if (ruleSet.$size !== undefined) {
+      const { min = 0, max } = ruleSet.$size;
+
+      if (max !== undefined && max < min) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidSize,
+          `Invalid size range found: max limit ${max} less than min limit ${min} at protocol path '${protocolPath}'`
+        );
+      }
+    }
+
     // Validate $actions in the ruleset
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
