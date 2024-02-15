@@ -3362,6 +3362,20 @@ export function testRecordsWriteHandler(): void {
 
           const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
           expect(reply2.status.code).to.equal(202);
+
+          // test beyond max size
+          const data3 = TestDataGenerator.randomBytes(1001);
+          const testRecord3 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data3
+          });
+
+          const reply3 = await dwn.processMessage(alice.did, testRecord3.message, { dataStream: testRecord3.dataStream });
+          expect(reply3.status.code).to.equal(400);
+          expect(reply3.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
         });
 
         it('should fail authorization if protocol message size is less than specified minimum size', async () => {
@@ -3404,6 +3418,19 @@ export function testRecordsWriteHandler(): void {
           const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
           expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid);
+
+          // test valid min record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
         });
 
         it('should fail authorization if protocol message size is more than specified maximum size', async () => {
@@ -3446,6 +3473,19 @@ export function testRecordsWriteHandler(): void {
           const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
           expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
+
+          // test valid max record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
         });
 
         it('should fail if a write references a parent that has been deleted', async () => {
