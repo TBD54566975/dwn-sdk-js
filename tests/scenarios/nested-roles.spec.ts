@@ -178,7 +178,7 @@ export function testNestedContextRoleScenarios(): void {
       expect(channel2ParticipantDanielRecordReply.status.code).to.equal(202);
 
       // 6. Carol CANNOT add anyone as a participant in the gated-channel 2 since she is not a participant in the channel
-      const carolChatMessage = await TestDataGenerator.generateRecordsWrite({
+      const participantCarolRecord = await TestDataGenerator.generateRecordsWrite({
         author          : carol,
         recipient       : carol.did,
         protocol        : protocolDefinition.protocol,
@@ -186,9 +186,10 @@ export function testNestedContextRoleScenarios(): void {
         protocolPath    : 'community/gatedChannel/participant',
         parentContextId : channel2Record.message.contextId
       });
-      const carolChatMessageReply = await dwn.processMessage(alice.did, carolChatMessage.message, { dataStream: carolChatMessage.dataStream });
-      expect(carolChatMessageReply.status.code).to.equal(401);
-      expect(carolChatMessageReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
+      const participantCarolRecordReply
+        = await dwn.processMessage(alice.did, participantCarolRecord.message, { dataStream: participantCarolRecord.dataStream });
+      expect(participantCarolRecordReply.status.code).to.equal(401);
+      expect(participantCarolRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
 
       // 7. Carol CANNOT add Daniel as another participant in the gated-channel without invoking her role
       const participantDanielRecordAttempt1 = await TestDataGenerator.generateRecordsWrite({
