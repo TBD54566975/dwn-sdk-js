@@ -497,7 +497,7 @@ export class ProtocolAuthorization {
 
     if (matchingMessages.length === 0) {
       throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationMissingRole,
+        DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound,
         `No matching role record found for protocol path ${protocolRole}`
       );
     }
@@ -611,7 +611,10 @@ export class ProtocolAuthorization {
     }
 
     // No action rules were satisfied, author is not authorized
-    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
+    throw new DwnError(
+      DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+      `inbound message action ${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
+    );
   }
 
   /**

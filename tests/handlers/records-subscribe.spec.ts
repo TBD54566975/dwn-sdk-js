@@ -655,7 +655,7 @@ export function testRecordsSubscribeHandler(): void {
           });
           const chatSubscribeReply = await dwn.processMessage(alice.did, chatSubscribe.message);
           expect(chatSubscribeReply.status.code).to.eq(401);
-          expect(chatSubscribeReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          expect(chatSubscribeReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
 
@@ -694,7 +694,7 @@ export function testRecordsSubscribeHandler(): void {
           });
           const chatSubscribeReply = await dwn.processMessage(alice.did, chatSubscribe.message);
           expect(chatSubscribeReply.status.code).to.eq(401);
-          expect(chatSubscribeReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          expect(chatSubscribeReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
       });
