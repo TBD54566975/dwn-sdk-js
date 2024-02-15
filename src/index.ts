@@ -9,7 +9,7 @@ export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, Pag
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
 export type { PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
+export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
@@ -24,6 +24,7 @@ export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
+export { EventsQuery, EventsQueryOptions } from './interfaces/events-query.js';
 export { EventsSubscribe, EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';

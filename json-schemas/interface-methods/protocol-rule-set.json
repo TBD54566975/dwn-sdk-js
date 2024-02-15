@@ -84,6 +84,20 @@
     "$contextRole": {
       "$comment": "When `true`, this turns a record into `role` that may be used within a context",
       "type": "boolean"
+    },
+    "$size": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
     }
   },
   "patternProperties": {

@@ -131,6 +131,18 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
     }
 
     // Validate $actions in the rule set
+    if (ruleSet.$size !== undefined) {
+      const { min = 0, max } = ruleSet.$size;
+
+      if (max !== undefined && max < min) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidSize,
+          `Invalid size range found: max limit ${max} less than min limit ${min} at protocol path '${protocolPath}'`
+        );
+      }
+    }
+
+    // Validate $actions in the rule set
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
       // Validate that all `role` properties contain protocol paths $globalRole or $contextRole records

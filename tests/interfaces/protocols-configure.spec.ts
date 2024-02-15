@@ -353,6 +353,86 @@ describe('ProtocolsConfigure', () => {
         await expect(createProtocolsConfigurePromise)
           .to.be.rejected;
       });
+
+      it('allows $size min and max to be set on a protocol path', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                min : 1,
+                max : 1000
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('allows $size max to be set on a protocol path (min defaults to 0)', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                max: 1000
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('rejects $size when max is less than min', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                min : 1000,
+                max : 1
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidSize);
+      });
     });
   });
 });
