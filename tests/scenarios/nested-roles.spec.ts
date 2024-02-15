@@ -180,9 +180,10 @@ export function testNestedContextRoleScenarios(): void {
       // 6. Carol CANNOT add anyone as a participant in the gated-channel 2 since she is not a participant in the channel
       const carolChatMessage = await TestDataGenerator.generateRecordsWrite({
         author          : carol,
+        recipient       : carol.did,
         protocol        : protocolDefinition.protocol,
         protocolRole    : 'community/gatedChannel/participant',
-        protocolPath    : 'community/gatedChannel/message',
+        protocolPath    : 'community/gatedChannel/participant',
         parentContextId : channel2Record.message.contextId
       });
       const carolChatMessageReply = await dwn.processMessage(alice.did, carolChatMessage.message, { dataStream: carolChatMessage.dataStream });
