@@ -30,7 +30,7 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DidDht, DidIon, DidKey, DidResolver, DidResolverCacheLevel } from '@web5/dids';
+import { DidDht, DidIon, DidKey, DidResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {
@@ -134,10 +134,7 @@ export class Dwn {
    * Creates an instance of the DWN.
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
-    config.didResolver ??= new DidResolver({
-      didResolvers : [DidDht, DidIon, DidKey],
-      cache        : new DidResolverCacheLevel({ location: 'RESOLVERCACHE' }),
-    });
+    config.didResolver ??= new DidResolver({ didResolvers: [DidKey, DidIon, DidDht] });
     config.tenantGate ??= new AllowAllTenantGate();
 
     const dwn = new Dwn(config);

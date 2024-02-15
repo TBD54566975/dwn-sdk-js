@@ -14,7 +14,6 @@ try.js
 MESSAGESTORE
 DATASTORE
 EVENTLOG
-RESOLVERCACHE
 # location for levelDB data storage for non-browser tests
 TEST-DATASTORE
 TEST-MESSAGESTORE
