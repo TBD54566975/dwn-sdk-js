@@ -630,7 +630,7 @@ export function testRecordsReadHandler(): void {
             });
             const chatReadReply = await dwn.processMessage(alice.did, readChatRecord.message);
             expect(chatReadReply.status.code).to.equal(401);
-            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
           });
 
           it('uses a contextRole to authorize a read', async () => {
@@ -789,7 +789,7 @@ export function testRecordsReadHandler(): void {
             });
             const chatReadReply = await dwn.processMessage(alice.did, chatRead.message);
             expect(chatReadReply.status.code).to.equal(401);
-            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
           });
         });
       });

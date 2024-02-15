@@ -2271,7 +2271,7 @@ export function testRecordsQueryHandler(): void {
           });
           const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
           expect(chatQueryReply.status.code).to.eq(401);
-          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
         });
 
         it('rejects $contextRole authorized queries where the query author does not have a matching $contextRole', async () => {
@@ -2327,7 +2327,7 @@ export function testRecordsQueryHandler(): void {
           });
           const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
           expect(chatQueryReply.status.code).to.eq(401);
-          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
         });
       });
     });
