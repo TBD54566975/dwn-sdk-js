@@ -2101,7 +2101,7 @@ export function testRecordsWriteHandler(): void {
               });
               const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatReply.status.code).to.equal(401);
-              expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+              expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
             });
 
             it('uses a contextRole to authorize a write', async () => {
@@ -2270,7 +2270,7 @@ export function testRecordsWriteHandler(): void {
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(401);
-              expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+              expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
             });
 
             it('rejects attempts to invoke an invalid path as a protocolRole', async () => {
@@ -3306,6 +3306,186 @@ export function testRecordsWriteHandler(): void {
           const recordsReadReply = await dwn.processMessage(alice.did, recordsQuery.message);
           expect(recordsReadReply.status.code).to.equal(200);
           expect(recordsReadReply.entries?.length).to.equal(2);
+        });
+
+        it('should allow authorization if protocol message size is within min and max size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  min : 1,
+                  max : 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          // test min record size
+          const data = TestDataGenerator.randomBytes(1);
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
+          expect(reply.status.code).to.equal(202);
+
+          // test max record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
+
+          // test beyond max size
+          const data3 = TestDataGenerator.randomBytes(1001);
+          const testRecord3 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data3
+          });
+
+          const reply3 = await dwn.processMessage(alice.did, testRecord3.message, { dataStream: testRecord3.dataStream });
+          expect(reply3.status.code).to.equal(400);
+          expect(reply3.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
+        });
+
+        it('should fail authorization if protocol message size is less than specified minimum size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  min: 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          const data = TestDataGenerator.randomBytes(999);
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid);
+
+          // test valid min record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
+        });
+
+        it('should fail authorization if protocol message size is more than specified maximum size', async () => {
+          const alice = await TestDataGenerator.generatePersona();
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+          const protocolDefinition = {
+            protocol  : 'http://blob-size.xyz',
+            published : true,
+            types     : {
+              blob: {}
+            },
+            structure: {
+              blob: {
+                $size: {
+                  max: 1000
+                }
+              }
+            }
+          };
+
+          const protocol = protocolDefinition.protocol;
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          const data = TestDataGenerator.randomBytes(1001);
+          const testRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data
+          });
+
+          const reply = await dwn.processMessage(alice.did, testRecord.message, { dataStream: testRecord.dataStream });
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid);
+
+          // test valid max record size
+          const data2 = TestDataGenerator.randomBytes(1000);
+          const testRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol,
+            protocolPath : 'blob',
+            data         : data2
+          });
+
+          const reply2 = await dwn.processMessage(alice.did, testRecord2.message, { dataStream: testRecord2.dataStream });
+          expect(reply2.status.code).to.equal(202);
         });
 
         it('should fail if a write references a parent that has been deleted', async () => {

@@ -1,16 +1,21 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { GeneralJws } from '../types/jws-types.js';
-import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
+import type { DelegatedGrantMessage } from "../types/delegated-grant-message.js";
+import type { GeneralJws } from "../types/jws-types.js";
+import type { Signer } from "../types/signer.js";
+import type {
+  AuthorizationModel,
+  Descriptor,
+  GenericMessage,
+  GenericSignaturePayload,
+} from "../types/message-types.js";
 
-import { Cid } from '../utils/cid.js';
-import { Encoder } from '../utils/encoder.js';
-import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
-import { Jws } from '../utils/jws.js';
-import { lexicographicalCompare } from '../utils/string.js';
-import { removeUndefinedProperties } from '../utils/object.js';
-import { validateJsonSchema } from '../schema-validator.js';
-import { DwnError, DwnErrorCode } from './dwn-error.js';
+import { Cid } from "../utils/cid.js";
+import { Encoder } from "../utils/encoder.js";
+import { GeneralJwsBuilder } from "../jose/jws/general/builder.js";
+import { Jws } from "../utils/jws.js";
+import { lexicographicalCompare } from "../utils/string.js";
+import { removeUndefinedProperties } from "../utils/object.js";
+import { validateJsonSchema } from "../schema-validator.js";
+import { DwnError, DwnErrorCode } from "./dwn-error.js";
 
 /**
  * A class containing utility methods for working with DWN messages.
@@ -27,7 +32,7 @@ export class Message {
 
     // throws an error if message is invalid
     validateJsonSchema(schemaLookupKey, rawMessage);
-  };
+  }
 
   /**
    * Gets the DID of the signer of the given message, returns `undefined` if message is not signed.
@@ -37,7 +42,9 @@ export class Message {
       return undefined;
     }
 
-    const signer = Jws.getSignerDid(message.authorization.signature.signatures[0]);
+    const signer = Jws.getSignerDid(
+      message.authorization.signature.signatures[0]
+    );
     return signer;
   }
 
@@ -64,7 +71,10 @@ export class Message {
    * Compares message CID in lexicographical order according to the spec.
    * @returns 1 if `a` is larger than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same message)
    */
-  public static async compareCid(a: GenericMessage, b: GenericMessage): Promise<number> {
+  public static async compareCid(
+    a: GenericMessage,
+    b: GenericMessage
+  ): Promise<number> {
     // the < and > operators compare strings in lexicographical order
     const cidA = await Message.getCid(a);
     const cidB = await Message.getCid(b);
@@ -77,23 +87,33 @@ export class Message {
    * @returns {AuthorizationModel} used as an `authorization` property.
    */
   public static async createAuthorization(input: {
-    descriptor: Descriptor,
-    signer: Signer,
-    delegatedGrant?: DelegatedGrantMessage,
-    permissionsGrantId?: string,
-    protocolRole?: string
+    descriptor: Descriptor;
+    signer: Signer;
+    delegatedGrant?: DelegatedGrantMessage;
+    permissionsGrantId?: string;
+    protocolRole?: string;
   }): Promise<AuthorizationModel> {
-    const { descriptor, signer, delegatedGrant, permissionsGrantId, protocolRole } = input;
+    const {
+      descriptor,
+      signer,
+      delegatedGrant,
+      permissionsGrantId,
+      protocolRole,
+    } = input;
 
     let delegatedGrantId;
     if (delegatedGrant !== undefined) {
       delegatedGrantId = await Message.getCid(delegatedGrant);
     }
 
-    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, permissionsGrantId, protocolRole });
+    const signature = await Message.createSignature(descriptor, signer, {
+      delegatedGrantId,
+      permissionsGrantId,
+      protocolRole,
+    });
 
     const authorization: AuthorizationModel = {
-      signature
+      signature,
     };
 
     if (delegatedGrant !== undefined) {
@@ -110,17 +130,27 @@ export class Message {
   public static async createSignature(
     descriptor: Descriptor,
     signer: Signer,
-    additionalPayloadProperties?: { delegatedGrantId?: string, permissionsGrantId?: string, protocolRole?: string }
+    additionalPayloadProperties?: {
+      delegatedGrantId?: string;
+      permissionsGrantId?: string;
+      protocolRole?: string;
+    }
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const signaturePayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
+    const signaturePayload: GenericSignaturePayload = {
+      descriptorCid,
+      ...additionalPayloadProperties,
+    };
     removeUndefinedProperties(signaturePayload);
 
     const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
 
-    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
+    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [
+      signer,
+    ]);
     const signature = builder.getJws();
+    console.log("signature", signature);
 
     return signature;
   }
@@ -128,10 +158,15 @@ export class Message {
   /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
-  public static async getNewestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
+  public static async getNewestMessage(
+    messages: GenericMessage[]
+  ): Promise<GenericMessage | undefined> {
     let currentNewestMessage: GenericMessage | undefined = undefined;
     for (const message of messages) {
-      if (currentNewestMessage === undefined || await Message.isNewer(message, currentNewestMessage)) {
+      if (
+        currentNewestMessage === undefined ||
+        (await Message.isNewer(message, currentNewestMessage))
+      ) {
         currentNewestMessage = message;
       }
     }
@@ -142,10 +177,15 @@ export class Message {
   /**
    * @returns oldest message in the array. `undefined` if given array is empty.
    */
-  public static async getOldestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
+  public static async getOldestMessage(
+    messages: GenericMessage[]
+  ): Promise<GenericMessage | undefined> {
     let currentOldestMessage: GenericMessage | undefined = undefined;
     for (const message of messages) {
-      if (currentOldestMessage === undefined || await Message.isOlder(message, currentOldestMessage)) {
+      if (
+        currentOldestMessage === undefined ||
+        (await Message.isOlder(message, currentOldestMessage))
+      ) {
         currentOldestMessage = message;
       }
     }
@@ -157,8 +197,11 @@ export class Message {
    * Checks if first message is newer than second message.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  public static async isNewer(a: GenericMessage, b: GenericMessage): Promise<boolean> {
-    const aIsNewer = (await Message.compareMessageTimestamp(a, b) > 0);
+  public static async isNewer(
+    a: GenericMessage,
+    b: GenericMessage
+  ): Promise<boolean> {
+    const aIsNewer = (await Message.compareMessageTimestamp(a, b)) > 0;
     return aIsNewer;
   }
 
@@ -166,8 +209,11 @@ export class Message {
    * Checks if first message is older than second message.
    * @returns `true` if `a` is older than `b`; `false` otherwise
    */
-  public static async isOlder(a: GenericMessage, b: GenericMessage): Promise<boolean> {
-    const aIsOlder = (await Message.compareMessageTimestamp(a, b) < 0);
+  public static async isOlder(
+    a: GenericMessage,
+    b: GenericMessage
+  ): Promise<boolean> {
+    const aIsOlder = (await Message.compareMessageTimestamp(a, b)) < 0;
     return aIsOlder;
   }
 
@@ -182,7 +228,10 @@ export class Message {
    * Compares the `messageTimestamp` of the given messages with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  public static async compareMessageTimestamp(a: GenericMessage, b: GenericMessage): Promise<number> {
+  public static async compareMessageTimestamp(
+    a: GenericMessage,
+    b: GenericMessage
+  ): Promise<number> {
     if (a.descriptor.messageTimestamp > b.descriptor.messageTimestamp) {
       return 1;
     } else if (a.descriptor.messageTimestamp < b.descriptor.messageTimestamp) {
@@ -193,7 +242,6 @@ export class Message {
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
     return Message.compareCid(a, b);
   }
-
 
   /**
    * Validates the structural integrity of the message signature given:
@@ -207,11 +255,13 @@ export class Message {
   public static async validateSignatureStructure(
     messageSignature: GeneralJws,
     messageDescriptor: Descriptor,
-    payloadJsonSchemaKey: string = 'GenericSignaturePayload',
+    payloadJsonSchemaKey: string = "GenericSignaturePayload"
   ): Promise<GenericSignaturePayload> {
-
     if (messageSignature.signatures.length !== 1) {
-      throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');
+      throw new DwnError(
+        DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported,
+        "expected no more than 1 signature for authorization purpose"
+      );
     }
 
     // validate payload integrity

@@ -58,6 +58,9 @@ export class ProtocolAuthorization {
       inboundMessageRuleSet,
       messageStore,
     );
+
+    // Verify size limit
+    ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
   }
 
   /**
@@ -494,7 +497,7 @@ export class ProtocolAuthorization {
 
     if (matchingMessages.length === 0) {
       throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationMissingRole,
+        DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound,
         `No matching role record found for protocol path ${protocolRole}`
       );
     }
@@ -608,7 +611,35 @@ export class ProtocolAuthorization {
     }
 
     // No action rules were satisfied, author is not authorized
-    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
+    throw new DwnError(
+      DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+      `inbound message action ${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
+    );
+  }
+
+  /**
+   * Verifies that writes adhere to the $size constraints if provided
+   * @throws {Error} if size is exceeded.
+   */
+  private static verifySizeLimit(
+    incomingMessage: RecordsWrite,
+    inboundMessageRuleSet: ProtocolRuleSet
+  ): void {
+    const { min = 0, max } = inboundMessageRuleSet.$size || {};
+
+    const dataSize = incomingMessage.message.descriptor.dataSize;
+
+    if (dataSize < min) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid, `data size ${dataSize} is less than allowed ${min}`);
+    }
+
+    if (max === undefined) {
+      return;
+    }
+
+    if (dataSize > max) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid, `data size ${dataSize} is more than allowed ${max}`);
+    }
   }
 
   /**

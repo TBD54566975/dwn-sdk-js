@@ -81,39 +81,68 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       const rootRuleSet = definition.structure[rootRecordPath];
 
       // gather $contextRoles
-      const contextRoles: string[] = [];
-      for (const childRecordType in rootRuleSet) {
-        if (childRecordType.startsWith('$')) {
-          continue;
-        }
-        const childRuleSet: ProtocolRuleSet = rootRuleSet[childRecordType];
-        if (childRuleSet.$contextRole) {
-          contextRoles.push(`${rootRecordPath}/${childRecordType}`);
-        }
+      const contextRoles = ProtocolsConfigure.fetchAllContextRolePathsRecursively(rootRecordPath, rootRuleSet, []);
+
+      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
+    }
+  }
+
+  /**
+   * Parses the given rule set hierarchy to get all the context role protocol paths.
+   * @throws DwnError if the hierarchy depth goes beyond 10 levels.
+   */
+  private static fetchAllContextRolePathsRecursively(recordProtocolPath: string, ruleSet: ProtocolRuleSet, contextRoles: string[]): string[] {
+    // Limit the depth of the record hierarchy to 10 levels
+    // There is opportunity to optimize here to avoid repeated string splitting
+    if (recordProtocolPath.split('/').length > 10) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureRecordNestingDepthExceeded, 'Record nesting depth exceeded 10 levels.');
+    }
+
+    for (const recordType in ruleSet) {
+      // ignore non-nested-record properties
+      if (recordType.startsWith('$')) {
+        continue;
       }
 
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
+      const childRuleSet = ruleSet[recordType];
+      const childProtocolPath = `${recordProtocolPath}/${recordType}`;
+
+      // if this is a role record, add it to the list, else continue to traverse
+      if (childRuleSet.$contextRole) {
+        contextRoles.push(childProtocolPath);
+      } else {
+        ProtocolsConfigure.fetchAllContextRolePathsRecursively(childProtocolPath, childRuleSet, contextRoles);
+      }
     }
+
+    return contextRoles;
   }
 
   /**
    * Validates the given rule set structure then recursively validates its nested child rule sets.
    */
-  private static validateRuleSet(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
+  private static validateRuleSetRecursively(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
     const depth = protocolPath.split('/').length;
     if (ruleSet.$globalRole && depth !== 1) {
       throw new DwnError(
         DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath,
         `$globalRole is not allowed at protocol path (${protocolPath}). Only root records may set $globalRole true.`
       );
-    } else if (ruleSet.$contextRole && depth !== 2) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath,
-        `$contextRole is not allowed at protocol path (${protocolPath}). Only second-level records may set $contextRole true.`
-      );
     }
 
-    // Validate $actions in the ruleset
+    // Validate $actions in the rule set
+    if (ruleSet.$size !== undefined) {
+      const { min = 0, max } = ruleSet.$size;
+
+      if (max !== undefined && max < min) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidSize,
+          `Invalid size range found: max limit ${max} less than min limit ${min} at protocol path '${protocolPath}'`
+        );
+      }
+    }
+
+    // Validate $actions in the rule set
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
       // Validate that all `role` properties contain protocol paths $globalRole or $contextRole records
@@ -164,7 +193,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       }
       const rootRuleSet = ruleSet[recordType];
       const nextProtocolPath = `${protocolPath}/${recordType}`;
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, nextProtocolPath, roles);
+      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, nextProtocolPath, roles);
     }
   }
 

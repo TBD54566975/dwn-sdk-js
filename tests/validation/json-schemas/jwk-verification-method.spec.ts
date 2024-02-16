@@ -26,6 +26,17 @@ describe('JwkVerificationMethod', async () => {
     ).to.not.throw();
   });
 
+  it('should not throw an exception if verificationMethod uses \'JsonWebKey\' type', () => {
+    expect(
+      () => validateJsonSchema('JwkVerificationMethod', {
+        id           : 'did:jank:alice#key1',
+        type         : 'JsonWebKey',
+        controller   : 'did:jank:alice',
+        publicKeyJwk : publicJwk
+      })
+    ).to.not.throw();
+  });
+
   it('should not throw if `id` does not have the DID as prefix', () => {
     expect(
       () => validateJsonSchema('JwkVerificationMethod', {

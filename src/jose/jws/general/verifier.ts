@@ -1,12 +1,12 @@
-import type { Cache } from '../../../types/cache.js';
-import type { GeneralJws } from '../../../types/jws-types.js';
-import type { PublicJwk } from '../../../types/jose-types.js';
-import type { DidResolver, DidVerificationMethod } from '@web5/dids';
+import type { Cache } from "../../../types/cache.js";
+import type { GeneralJws } from "../../../types/jws-types.js";
+import type { PublicJwk } from "../../../types/jose-types.js";
+import type { DidResolver, DidVerificationMethod } from "@web5/dids";
 
-import { Jws } from '../../../utils/jws.js';
-import { MemoryCache } from '../../../utils/memory-cache.js';
-import { validateJsonSchema } from '../../../schema-validator.js';
-import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
+import { Jws } from "../../../utils/jws.js";
+import { MemoryCache } from "../../../utils/memory-cache.js";
+import { validateJsonSchema } from "../../../schema-validator.js";
+import { DwnError, DwnErrorCode } from "../../../core/dwn-error.js";
 
 type VerificationResult = {
   /** DIDs of all signers */
@@ -17,7 +17,6 @@ type VerificationResult = {
  * Verifies the signature(s) of a General JWS.
  */
 export class GeneralJwsVerifier {
-
   private static _singleton: GeneralJwsVerifier;
 
   cache: Cache;
@@ -38,15 +37,24 @@ export class GeneralJwsVerifier {
    * Verifies the signatures of the given General JWS.
    * @returns the list of signers that have valid signatures.
    */
-  public static async verifySignatures(jws: GeneralJws, didResolver: DidResolver): Promise<VerificationResult> {
-    return await GeneralJwsVerifier.singleton.verifySignatures(jws, didResolver);
+  public static async verifySignatures(
+    jws: GeneralJws,
+    didResolver: DidResolver
+  ): Promise<VerificationResult> {
+    return await GeneralJwsVerifier.singleton.verifySignatures(
+      jws,
+      didResolver
+    );
   }
 
   /**
    * Verifies the signatures of the given General JWS.
    * @returns the list of signers that have valid signatures.
    */
-  public async verifySignatures(jws: GeneralJws, didResolver: DidResolver): Promise<VerificationResult> {
+  public async verifySignatures(
+    jws: GeneralJws,
+    didResolver: DidResolver
+  ): Promise<VerificationResult> {
     const signers: string[] = [];
 
     for (const signatureEntry of jws.signatures) {
@@ -55,11 +63,23 @@ export class GeneralJwsVerifier {
 
       const cacheKey = `${signatureEntry.protected}.${jws.payload}.${signatureEntry.signature}`;
       const cachedValue = await this.cache.get(cacheKey);
+      console.log("cachedValue", cachedValue);
 
       // explicit `undefined` check to differentiate `false`
       if (cachedValue === undefined) {
-        const publicJwk = await GeneralJwsVerifier.getPublicKey(kid, didResolver);
-        isVerified = await Jws.verifySignature(jws.payload, signatureEntry, publicJwk);
+        const publicJwk = await GeneralJwsVerifier.getPublicKey(
+          kid,
+          didResolver
+        );
+        console.log("jws payload: ", jws.payload);
+        console.log("signatureEntry: ", signatureEntry);
+        console.log("publicJwk: ", publicJwk);
+        isVerified = await Jws.verifySignature(
+          jws.payload,
+          signatureEntry,
+          publicJwk
+        );
+        console.log("isVerified", isVerified);
         await this.cache.set(cacheKey, isVerified);
       } else {
         isVerified = cachedValue;
@@ -70,7 +90,10 @@ export class GeneralJwsVerifier {
       if (isVerified) {
         signers.push(did);
       } else {
-        throw new DwnError(DwnErrorCode.GeneralJwsVerifierInvalidSignature, `Signature verification failed for ${did}`);
+        throw new DwnError(
+          DwnErrorCode.GeneralJwsVerifierInvalidSignature,
+          `Signature verification failed for ${did}`
+        );
       }
     }
 
@@ -80,7 +103,10 @@ export class GeneralJwsVerifier {
   /**
    * Gets the public key given a fully qualified key ID (`kid`) by resolving the DID to its DID Document.
    */
-  private static async getPublicKey(kid: string, didResolver: DidResolver): Promise<PublicJwk> {
+  private static async getPublicKey(
+    kid: string,
+    didResolver: DidResolver
+  ): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
     const did = Jws.extractDid(kid);
@@ -100,10 +126,13 @@ export class GeneralJwsVerifier {
     }
 
     if (!verificationMethod) {
-      throw new DwnError(DwnErrorCode.GeneralJwsVerifierGetPublicKeyNotFound, 'public key needed to verify signature not found in DID Document');
+      throw new DwnError(
+        DwnErrorCode.GeneralJwsVerifierGetPublicKeyNotFound,
+        "public key needed to verify signature not found in DID Document"
+      );
     }
 
-    validateJsonSchema('JwkVerificationMethod', verificationMethod);
+    validateJsonSchema("JwkVerificationMethod", verificationMethod);
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
