@@ -174,14 +174,12 @@ export class RecordsGrantAuthorization {
       );
     }
 
-    // If grant specifies a contextId, check that record falls under that contextId
-    if (grantScope.contextId !== undefined) {
-      if (recordsWriteMessage.contextId === undefined || !recordsWriteMessage.contextId.startsWith(grantScope.contextId)) {
-        throw new DwnError(
-          DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch,
-          `Grant scope specifies different contextId than what appears in the record`
-        );
-      }
+    // If grant specifies either contextId, check that record is that context
+    if (grantScope.contextId !== undefined && grantScope.contextId !== recordsWriteMessage.contextId) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch,
+        `Grant scope specifies different contextId than what appears in the record`
+      );
     }
 
     // If grant specifies protocolPath, check that record is at that protocolPath

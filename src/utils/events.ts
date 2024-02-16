@@ -79,7 +79,7 @@ export class Events {
   }
 
   // we deliberately do not check for `dateUpdated` in this filter.
-  // if it were the only property that matched, it could be handled by `EventsFilter`
+  // if it were the only property that matched, it could be handled by `EventMessageFilter`
   private static isRecordsFilter(filter: EventsFilter): filter is EventsRecordsFilter {
     return 'author' in filter ||
       'dateCreated' in filter ||

@@ -1,6 +1,5 @@
 import type { KeyValues } from '../../src/types/query-types.js';
-import type { MessageEvent } from '../../src/types/subscriptions.js';
-import type { MessageStore } from '../../src/index.js';
+import type { GenericMessage, MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -66,8 +65,7 @@ describe('EventEmitterStream', () => {
     const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
 
     const messageCids: string[] = [];
-    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
-      const { message } = event;
+    const handler = async (_tenant: string, message: GenericMessage, _indexes: KeyValues): Promise<void> => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
@@ -77,9 +75,9 @@ describe('EventEmitterStream', () => {
     await eventStream.close();
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', { message: message1.message }, {});
+    eventStream.emit('did:alice', message1.message, {});
     const message2 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', { message: message2.message }, {});
+    eventStream.emit('did:alice', message2.message, {});
 
     expect(eventErrorSpy.callCount).to.equal(2);
     await subscription.close();

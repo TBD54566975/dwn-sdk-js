@@ -1,5 +1,5 @@
 import { Encoder } from './encoder.js';
-import { PassThrough, Readable } from 'readable-stream';
+import { Readable } from 'readable-stream';
 
 /**
  * Utility class for readable data stream, intentionally named to disambiguate from ReadableStream, readable-stream, Readable etc.
@@ -81,19 +81,5 @@ export class DataStream {
   public static fromObject(object: Record<string, any>): Readable {
     const bytes = Encoder.objectToBytes(object);
     return DataStream.fromBytes(bytes);
-  }
-
-  /**
-   * Duplicates the given data stream into the number of streams specified so that multiple handlers can consume the same data stream.
-   */
-  public static duplicateDataStream(dataStream: Readable, count: number): Readable[] {
-    const streams: Readable[] = [];
-    for (let i = 0; i < count; i++) {
-      const passThrough = new PassThrough();
-      dataStream.pipe(passThrough);
-      streams.push(passThrough as unknown as Readable);
-    }
-
-    return streams;
   }
 }

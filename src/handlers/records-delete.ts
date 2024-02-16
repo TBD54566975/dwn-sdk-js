@@ -97,7 +97,7 @@ export class RecordsDeleteHandler implements MethodHandler {
 
     // only emit if the event stream is set
     if (this.eventStream !== undefined) {
-      this.eventStream.emit(tenant, { message, initialWrite }, indexes);
+      this.eventStream.emit(tenant, message, indexes);
     }
 
     // delete all existing messages that are not newest, except for the initial write

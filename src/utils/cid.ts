@@ -2,9 +2,9 @@ import * as cbor from '@ipld/dag-cbor';
 
 import type { Readable } from 'readable-stream';
 
-import { BlockstoreMock } from '../store/blockstore-mock.js';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
+import { MemoryBlockstore } from 'blockstore-core';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -77,7 +77,7 @@ export class Cid {
    * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
    */
   public static async computeDagPbCidFromBytes(content: Uint8Array): Promise<string> {
-    const asyncDataBlocks = importer([{ content }], new BlockstoreMock(), { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content }], new MemoryBlockstore(), { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;
@@ -90,7 +90,7 @@ export class Cid {
    * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
    */
   public static async computeDagPbCidFromStream(dataStream: Readable): Promise<string> {
-    const asyncDataBlocks = importer([{ content: dataStream }], new BlockstoreMock(), { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], new MemoryBlockstore(), { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;

@@ -1,12 +1,19 @@
-import * as Ed25519 from '@noble/ed25519';
-import type { PrivateJwk, PublicJwk, SignatureAlgorithm } from '../../../types/jose-types.js';
+import * as Ed25519 from "@noble/ed25519";
+import type {
+  PrivateJwk,
+  PublicJwk,
+  SignatureAlgorithm,
+} from "../../../types/jose-types.js";
 
-import { Encoder } from '../../../utils/encoder.js';
-import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
+import { Encoder } from "../../../utils/encoder.js";
+import { DwnError, DwnErrorCode } from "../../../core/dwn-error.js";
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
-  if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519') {
-    throw new DwnError(DwnErrorCode.Ed25519InvalidJwk, 'invalid jwk. kty MUST be OKP. crv MUST be Ed25519');
+  if (jwk.kty !== "OKP" || jwk.crv !== "Ed25519") {
+    throw new DwnError(
+      DwnErrorCode.Ed25519InvalidJwk,
+      "invalid jwk. kty MUST be OKP. crv MUST be Ed25519"
+    );
   }
 }
 
@@ -14,25 +21,36 @@ function publicKeyToJwk(publicKeyBytes: Uint8Array): PublicJwk {
   const x = Encoder.bytesToBase64Url(publicKeyBytes);
 
   const publicJwk: PublicJwk = {
-    alg : 'EdDSA',
-    kty : 'OKP',
-    crv : 'Ed25519',
-    x
+    alg: "EdDSA",
+    kty: "OKP",
+    crv: "Ed25519",
+    x,
   };
 
   return publicJwk;
 }
 
 export const ed25519: SignatureAlgorithm = {
-  sign: async (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
+  sign: async (
+    content: Uint8Array,
+    privateJwk: PrivateJwk
+  ): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
-    const privateKeyBytes = Encoder.base64UrlToBytes(privateJwk.d);
+    let privateKeyBytes = Encoder.base64UrlToBytes(privateJwk.d);
+
+    if (privateKeyBytes.length === 64) {
+      privateKeyBytes = privateKeyBytes.slice(0, 32);
+    }
 
     return Ed25519.signAsync(content, privateKeyBytes);
   },
 
-  verify: async (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
+  verify: async (
+    content: Uint8Array,
+    signature: Uint8Array,
+    publicJwk: PublicJwk
+  ): Promise<boolean> => {
     validateKey(publicJwk);
 
     const publicKeyBytes = Encoder.base64UrlToBytes(publicJwk.x);
@@ -40,7 +58,10 @@ export const ed25519: SignatureAlgorithm = {
     return Ed25519.verifyAsync(signature, content, publicKeyBytes);
   },
 
-  generateKeyPair: async (): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> => {
+  generateKeyPair: async (): Promise<{
+    publicJwk: PublicJwk;
+    privateJwk: PrivateJwk;
+  }> => {
     const privateKeyBytes = Ed25519.utils.randomPrivateKey();
     const publicKeyBytes = await Ed25519.getPublicKeyAsync(privateKeyBytes);
 
@@ -54,5 +75,5 @@ export const ed25519: SignatureAlgorithm = {
 
   publicKeyToJwk: async (publicKeyBytes: Uint8Array): Promise<PublicJwk> => {
     return publicKeyToJwk(publicKeyBytes);
-  }
+  },
 };

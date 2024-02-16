@@ -1,5 +1,5 @@
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { EventStream, MessageEvent } from '../../src/types/subscriptions.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
+import type { DataStore, EventLog, GenericMessage, MessageStore } from '../../src/index.js';
 
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -9,7 +9,7 @@ import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -31,7 +31,7 @@ export function testEventsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKey] });
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -85,7 +85,7 @@ export function testEventsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKey] });
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -136,8 +136,7 @@ export function testEventsSubscribeHandler(): void {
         // set up a promise to read later that captures the emitted messageCid
         let handler;
         const messageSubscriptionPromise: Promise<string> = new Promise((resolve) => {
-          handler = async (event: MessageEvent):Promise<void> => {
-            const { message } = event;
+          handler = async (message: GenericMessage):Promise<void> => {
             const messageCid = await Message.getCid(message);
             resolve(messageCid);
           };

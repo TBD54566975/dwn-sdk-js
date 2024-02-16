@@ -146,46 +146,6 @@ describe('RecordsWrite schema definition', () => {
     }).throws('protocolPath: must match pattern "^[a-zA-Z]+(/[a-zA-Z]+)*$');
   });
 
-  it('should throw if `contextId` is malformed', () => {
-    const validMessage = {
-      recordId   : 'anyRecordId',
-      contextId  : 'invalid:path', // `:` is not a valid char in `contextId`
-      descriptor : {
-        interface        : 'Records',
-        method           : 'Write',
-        protocol         : 'http://foo.bar',
-        protocolPath     : 'A/B/C',
-        schema           : 'http://foo.bar/schema',
-        dataCid          : 'anyCid',
-        dataFormat       : 'application/json',
-        dataSize         : 123,
-        dateCreated      : '2022-12-19T10:20:30.123456Z',
-        messageTimestamp : '2022-12-19T10:20:30.123456Z'
-      },
-      authorization: TestDataGenerator.generateAuthorization()
-    };
-
-    const expectedErrorMessage = 'contextId: must match pattern "^[a-zA-Z0-9]+(/[a-zA-Z0-9]+)*$';
-
-    const invalidMessage1 = { ...validMessage };
-    invalidMessage1.contextId = 'invalid:path', // `:` is not a valid char in `contextId`
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage1);
-    }).throws(expectedErrorMessage);
-
-    const invalidMessage2 = { ...validMessage };
-    invalidMessage2.contextId = '/invalid/context'; // not allowed to start with `/`
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage2);
-    }).throws(expectedErrorMessage);
-
-    const invalidMessage3 = { ...validMessage };
-    invalidMessage3.contextId = 'invalid/context/'; // not allowed to end with `/`
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage3);
-    }).throws(expectedErrorMessage);
-  });
-
   it('should pass if none of `protocol` related properties are present', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',

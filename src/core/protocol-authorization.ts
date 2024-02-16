@@ -7,8 +7,6 @@ import type { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
-import { FilterUtility } from '../utils/filter.js';
-import { Records } from '../utils/records.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -39,7 +37,7 @@ export class ProtocolAuthorization {
     );
 
     // validate `protocolPath`
-    await ProtocolAuthorization.verifyProtocolPathAndContextId(
+    await ProtocolAuthorization.verifyProtocolPath(
       tenant,
       incomingMessage,
       messageStore,
@@ -51,13 +49,16 @@ export class ProtocolAuthorization {
       protocolDefinition,
     );
 
-    // Validate as a role record if the incoming message is writing a role record
-    await ProtocolAuthorization.verifyAsRoleRecordIfNeeded(
+    // If the incoming message is writing a $globalRole record, validate that the recipient is unique
+    await ProtocolAuthorization.verifyUniqueRoleRecipient(
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
       messageStore,
     );
+
+    // Verify size limit
+    ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
   }
 
   /**
@@ -285,6 +286,7 @@ export class ProtocolAuthorization {
     }
 
     const protocol = newestRecordsWrite.message.descriptor.protocol!;
+    const contextId = newestRecordsWrite.message.contextId!;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = newestRecordsWrite.message.descriptor.parentId;
@@ -294,18 +296,15 @@ export class ProtocolAuthorization {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
         protocol,
+        contextId,
         recordId  : currentParentId
       };
       const { messages: parentMessages } = await messageStore.query(tenant, [query]);
 
-      // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing, so if this condition is triggered,
-      // it means there is an unexpected bug that caused an invalid message being saved to the DWN.
-      // We add additional defensive check here because returning an unexpected/incorrect ancestor chain could lead to security vulnerabilities.
+      // We already check the immediate parent in `verifyProtocolPath`, so if it triggers,
+      // it means a bug that caused an invalid message to be saved to the DWN.
       if (parentMessages.length === 0) {
-        throw new DwnError(
-          DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingAncestorChain,
-          `Unexpected error that should never trigger: no parent found with ID ${currentParentId} when constructing ancestor message chain.`
-        );
+        throw new DwnError(DwnErrorCode.ProtocolAuthorizationParentNotFound, `no parent found with ID ${currentParentId}`);
       }
 
       const parent = parentMessages[0] as RecordsWriteMessage;
@@ -318,7 +317,7 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Gets the rule set corresponding to the given protocolPath.
+   * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
     protocolPath: string,
@@ -336,7 +335,7 @@ export class ProtocolAuthorization {
    * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual ancestor chain.
    * @throws {DwnError} if fails verification.
    */
-  private static async verifyProtocolPathAndContextId(
+  private static async verifyProtocolPath(
     tenant: string,
     inboundMessage: RecordsWrite,
     messageStore: MessageStore
@@ -352,43 +351,26 @@ export class ProtocolAuthorization {
           `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentId'.`
         );
       }
-      return;
+    } else {
+      const protocol = inboundMessage.message.descriptor.protocol!;
+      const contextId = inboundMessage.message.contextId!;
+      const query: Filter = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol,
+        contextId,
+        recordId  : parentId
+      };
+      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
+      const parentProtocolPath = (parentMessages as RecordsWriteMessage[])[0]?.descriptor?.protocolPath;
+      const actualProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
+      if (parentProtocolPath === undefined || actualProtocolPath !== declaredProtocolPath) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
+          `Could not find matching parent record to verify declared protocol path '${declaredProtocolPath}'.`
+        );
+      }
     }
-
-    // Else `parentId` is defined, so we need to verify both protocolPath and contextId
-
-    // fetch the parent message
-    const protocol = inboundMessage.message.descriptor.protocol!;
-    const query: Filter = {
-      isLatestBaseState : true, // NOTE: this filter is critical, to ensure are are not returning a deleted parent
-      interface         : DwnInterfaceName.Records,
-      method            : DwnMethodName.Write,
-      protocol,
-      recordId          : parentId
-    };
-    const { messages: parentMessages } = await messageStore.query(tenant, [query]);
-    const parentMessage = (parentMessages as RecordsWriteMessage[])[0];
-
-    // verifying protocolPath of incoming message is a child of the parent message's protocolPath
-    const parentProtocolPath = parentMessage?.descriptor?.protocolPath;
-    const expectedProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
-    if (expectedProtocolPath !== declaredProtocolPath) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
-        `Could not find matching parent record to verify declared protocol path '${declaredProtocolPath}'.`
-      );
-    }
-
-    // verifying contextId of incoming message is a child of the parent message's contextId
-    const expectedContextId = `${parentMessage.contextId}/${inboundMessage.message.recordId}`;
-    const actualContextId = inboundMessage.message.contextId;
-    if (actualContextId !== expectedContextId) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationIncorrectContextId,
-        `Declared contextId '${actualContextId}' is not the same as expected: '${expectedContextId}'.`
-      );
-    }
-
   }
 
   /**
@@ -477,24 +459,14 @@ export class ProtocolAuthorization {
           'Could not verify $contextRole because contextId is missing'
         );
       }
-
-      // Compute `contextId` prefix filter for fetching the invoked role record.
-      // e.g. if invoked role path is `Thread/Participant`, and the `contextId` of the message is `threadX/messageY/attachmentZ`,
-      // then we need to add a prefix filter as `threadX` for the `contextId`
-      // because the `contextId` of the Participant record would be in the form of be `threadX/participantA`
-      const ancestorSegmentCountOfRole = protocolRole.split('/').length - 1;
-      const contextIdSegments = contextId.split('/');
-      const contextIdPrefix = contextIdSegments.slice(0, ancestorSegmentCountOfRole).join('/');
-      const contextIdPrefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(contextIdPrefix);
-
-      roleRecordFilter.contextId = contextIdPrefixFilter;
+      roleRecordFilter.contextId = contextId;
     }
 
     const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
 
     if (matchingMessages.length === 0) {
       throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationMissingRole,
+        DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound,
         `No matching role record found for protocol path ${protocolRole}`
       );
     }
@@ -591,7 +563,6 @@ export class ProtocolAuthorization {
           // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
-
         if (recordsWriteMessage.descriptor.recipient === author) {
           return;
         }
@@ -608,26 +579,52 @@ export class ProtocolAuthorization {
     }
 
     // No action rules were satisfied, author is not authorized
-    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
+    throw new DwnError(
+      DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+      `inbound message action ${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
+    );
   }
 
   /**
-   * If the given RecordsWrite is not a role record, this method does nothing and succeeds immediately.
-   *
-   * Else it verifies the validity of the given `RecordsWrite` including:
-   * 1. The same role has not been assigned to the same entity/recipient.
+   * Verifies that writes adhere to the $size constraints if provided
+   * @throws {Error} if size is exceeded.
    */
-  private static async verifyAsRoleRecordIfNeeded(
+  private static verifySizeLimit(
+    incomingMessage: RecordsWrite,
+    inboundMessageRuleSet: ProtocolRuleSet
+  ): void {
+    const { min = 0, max } = inboundMessageRuleSet.$size || {};
+
+    const dataSize = incomingMessage.message.descriptor.dataSize;
+
+    if (dataSize < min) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid, `data size ${dataSize} is less than allowed ${min}`);
+    }
+
+    if (max === undefined) {
+      return;
+    }
+
+    if (dataSize > max) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid, `data size ${dataSize} is more than allowed ${max}`);
+    }
+  }
+
+  /**
+   * Verifies that writes to a $globalRole or $contextRole record do not have the same recipient as an existing RecordsWrite
+   * to the same $globalRole or the same $contextRole in the same context.
+   */
+  private static async verifyUniqueRoleRecipient(
     tenant: string,
     incomingMessage: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
+    const incomingRecordsWrite = incomingMessage;
     if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
       return;
     }
 
-    const incomingRecordsWrite = incomingMessage;
     const recipient = incomingRecordsWrite.message.descriptor.recipient;
     if (recipient === undefined) {
       throw new DwnError(
@@ -635,7 +632,6 @@ export class ProtocolAuthorization {
         'Role records must have a recipient'
       );
     }
-
     const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
     const filter: Filter = {
       interface         : DwnInterfaceName.Records,
@@ -645,13 +641,9 @@ export class ProtocolAuthorization {
       protocolPath,
       recipient,
     };
-
     if (inboundMessageRuleSet.$contextRole) {
-      const parentContextId = Records.getParentContextFromOfContextId(incomingRecordsWrite.message.contextId)!;
-      const prefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(parentContextId);
-      filter.contextId = prefixFilter;
+      filter.contextId = incomingRecordsWrite.message.contextId!;
     }
-
     const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
     const matchingRecords = matchingMessages as RecordsWriteMessage[];
     const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>

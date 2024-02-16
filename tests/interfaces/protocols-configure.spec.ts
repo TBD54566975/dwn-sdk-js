@@ -1,18 +1,57 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import type { ProtocolsConfigureMessage } from '../../src/index.js';
+import type { ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
-import { DwnErrorCode } from '../../src/index.js';
 import { Jws } from '../../src/utils/jws.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 describe('ProtocolsConfigure', () => {
+  describe('parse()', () => {
+    it('should throw if protocol definitions has record nesting more than 10 level deep', async () => {
+      const definition = {
+        published : true,
+        protocol  : 'http://example.com',
+        types     : {
+          foo: {},
+        },
+        structure: { }
+      };
+
+      // create a record hierarchy with 11 levels of nesting
+      let currentLevel: any = definition.structure;
+      for (let i = 0; i < 11; i++) {
+        currentLevel.foo = { };
+        currentLevel = currentLevel.foo;
+      }
+
+      // we need to manually created an invalid protocol definition,
+      // because the SDK `create()` method will not allow us to create an invalid definition
+      const descriptor: ProtocolsConfigureDescriptor = {
+        interface        : DwnInterfaceName.Protocols,
+        method           : DwnMethodName.Configure,
+        messageTimestamp : Time.getCurrentTimestamp(),
+        definition
+      };
+
+      const alice = await TestDataGenerator.generatePersona();
+      const authorization = await Message.createAuthorization({
+        descriptor,
+        signer: Jws.createSigner(alice)
+      });
+      const message = { descriptor, authorization };
+
+      const parsePromise = ProtocolsConfigure.parse(message);
+      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRecordNestingDepthExceeded);
+    });
+  });
+
   describe('create()', () => {
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
@@ -168,62 +207,6 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
       });
 
-      it('rejects protocol definitions with $contextRole at records that are not second-level records', async () => {
-        const alice = await TestDataGenerator.generatePersona();
-
-        // it rejects context roles too high in the structure
-        const definitionRootContextRole = {
-          published : true,
-          protocol  : 'http://example.com',
-          types     : {
-            root        : {},
-            secondLevel : {}
-          },
-          structure: {
-            root: {
-              // $contextRole may only be set on second-level records, not root records
-              $contextRole: true,
-            }
-          }
-        };
-
-        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          signer     : Jws.createSigner(alice),
-          definition : definitionRootContextRole
-        });
-
-        await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
-
-        // it rejects contextRoles too nested in the structure
-        const definitionTooNestedContextRole = {
-          published : true,
-          protocol  : 'http://example.com',
-          types     : {
-            root        : {},
-            secondLevel : {}
-          },
-          structure: {
-            root: {
-              secondLevel: {
-                thirdLevel: {
-                  // $contextRole may only be set on second-level records, not third-level or lower records
-                  $contextRole: true,
-                }
-              }
-            }
-          }
-        };
-
-        const createProtocolsConfigurePromise2 = ProtocolsConfigure.create({
-          signer     : Jws.createSigner(alice),
-          definition : definitionTooNestedContextRole
-        });
-
-        await expect(createProtocolsConfigurePromise2)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
-      });
-
       it('rejects protocol definitions with `role` actions that contain invalid roles', async () => {
         const definition = {
           published : true,
@@ -369,6 +352,86 @@ describe('ProtocolsConfigure', () => {
 
         await expect(createProtocolsConfigurePromise)
           .to.be.rejected;
+      });
+
+      it('allows $size min and max to be set on a protocol path', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                min : 1,
+                max : 1000
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('allows $size max to be set on a protocol path (min defaults to 0)', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                max: 1000
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('rejects $size when max is less than min', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $size: {
+                min : 1000,
+                max : 1
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidSize);
       });
     });
   });
