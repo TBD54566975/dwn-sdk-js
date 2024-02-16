@@ -75,7 +75,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
     const recordTypes = Object.keys(definition.types);
 
     // gather all roles
-    const roles = ProtocolsConfigure.fetchAllContextRolePathsRecursively('', definition.structure, []);
+    const roles = ProtocolsConfigure.fetchAllRolePathsRecursively('', definition.structure, []);
 
     // validate the entire rule set structure recursively
     ProtocolsConfigure.validateRuleSetRecursively({
@@ -87,10 +87,10 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   }
 
   /**
-   * Parses the given rule set hierarchy to get all the context role protocol paths.
+   * Parses the given rule set hierarchy to get all the role protocol paths.
    * @throws DwnError if the hierarchy depth goes beyond 10 levels.
    */
-  private static fetchAllContextRolePathsRecursively(ruleSetProtocolPath: string, ruleSet: ProtocolRuleSet, roles: string[]): string[] {
+  private static fetchAllRolePathsRecursively(ruleSetProtocolPath: string, ruleSet: ProtocolRuleSet, roles: string[]): string[] {
     // Limit the depth of the record hierarchy to 10 levels
     // There is opportunity to optimize here to avoid repeated string splitting
     if (ruleSetProtocolPath.split('/').length > 10) {
@@ -116,7 +116,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       if (childRuleSet.$role) {
         roles.push(childRuleSetProtocolPath);
       } else {
-        ProtocolsConfigure.fetchAllContextRolePathsRecursively(childRuleSetProtocolPath, childRuleSet, roles);
+        ProtocolsConfigure.fetchAllRolePathsRecursively(childRuleSetProtocolPath, childRuleSet, roles);
       }
     }
 

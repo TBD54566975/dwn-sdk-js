@@ -478,7 +478,7 @@ export class ProtocolAuthorization {
     if (contextId === undefined && ancestorSegmentCountOfRolePath > 0) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationMissingContextId,
-        'Could not verify $contextRole because contextId is missing'
+        'Could not verify role because contextId is missing.'
       );
     }
 

@@ -18,8 +18,8 @@ import { TestStores } from '../test-stores.js';
 
 chai.use(chaiAsPromised);
 
-export function testNestedContextRoleScenarios(): void {
-  describe('Nested context role scenarios', () => {
+export function testNestedRoleScenarios(): void {
+  describe('Nested role scenarios', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;

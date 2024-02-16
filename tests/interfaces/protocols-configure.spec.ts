@@ -205,16 +205,16 @@ describe('ProtocolsConfigure', () => {
           published : true,
           protocol  : 'http://example.com',
           types     : {
-            rootRole  : {},
-            otherRoot : {},
+            foo : {},
+            bar : {},
           },
           structure: {
-            rootRole: {
-              // $globalRole: true // deliberated omitted
+            foo: {
+              // $role: true // deliberated omitted
             },
-            otherRoot: {
+            bar: {
               $actions: [{
-                role : 'rootRole', // Not a valid role
+                role : 'foo', // foo is not a role
                 can  : 'read'
               }]
             }
