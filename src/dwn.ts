@@ -14,18 +14,11 @@ import type {
   EventsSubscribeMessage,
   EventsSubscribeMessageOptions,
   EventsSubscribeReply,
-<<<<<<< HEAD
   MessageSubscriptionHandler,
-=======
->>>>>>> 396c98214e54607dd6087a0deccee3b98d830a09
 } from "./types/events-types.js";
 import type {
   GenericMessage,
   GenericMessageReply,
-<<<<<<< HEAD
-=======
-  MessageSubscriptionHandler,
->>>>>>> 396c98214e54607dd6087a0deccee3b98d830a09
 } from "./types/message-types.js";
 import type {
   MessagesGetMessage,
@@ -73,19 +66,12 @@ import { RecordsReadHandler } from "./handlers/records-read.js";
 import { RecordsSubscribeHandler } from "./handlers/records-subscribe.js";
 import { RecordsWriteHandler } from "./handlers/records-write.js";
 import {
-<<<<<<< HEAD
   DidDht,
   DidIon,
   DidKey,
   DidResolver,
   DidWeb,
   DidResolverCacheLevel,
-=======
-  DidDhtMethod,
-  DidIonMethod,
-  DidKeyMethod,
-  DidResolver,
->>>>>>> 396c98214e54607dd6087a0deccee3b98d830a09
 } from "@web5/dids";
 import {
   DwnInterfaceName,
@@ -199,12 +185,8 @@ export class Dwn {
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver({
-<<<<<<< HEAD
       didResolvers: [DidDht, DidIon, DidKey, DidWeb],
       cache: new DidResolverCacheLevel({ location: "RESOLVERCACHE" }),
-=======
-      didResolvers: [DidKeyMethod, DidIonMethod, DidDhtMethod],
->>>>>>> 396c98214e54607dd6087a0deccee3b98d830a09
     });
     config.tenantGate ??= new AllowAllTenantGate();
 

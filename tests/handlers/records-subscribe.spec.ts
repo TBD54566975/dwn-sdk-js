@@ -1,7 +1,6 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { GenericMessage } from '../../src/types/message-types.js';
 import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsDeleteMessage, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
+import type { RecordEvent, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -19,7 +18,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 import { Dwn, Time } from '../../src/index.js';
 import { DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
@@ -37,7 +36,7 @@ export function testRecordsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+        didResolver = new DidResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -93,7 +92,7 @@ export function testRecordsSubscribeHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+        didResolver = new DidResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -270,7 +269,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           const messageCids: string[] = [];
-          const addCid = async (message: RecordsWriteMessage | RecordsDeleteMessage): Promise<void> => {
+          const addCid = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
             const messageCid = await Message.getCid(message);
             messageCids.push(messageCid);
           };
@@ -297,14 +297,13 @@ export function testRecordsSubscribeHandler(): void {
 
           // Alice writes one 'chat' record addressed to Bob
           const chatRecordForBob = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/chat',
-            published    : false,
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/chat',
+            published       : false,
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
           const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
           expect(chatRecordForBobReply.status.code).to.equal(202);
@@ -312,14 +311,13 @@ export function testRecordsSubscribeHandler(): void {
           // Alice writes two 'chat' records NOT addressed to Bob
           for (let i = 0; i < 2; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob cannot read this'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob cannot read this'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
@@ -352,8 +350,9 @@ export function testRecordsSubscribeHandler(): void {
           };
 
           const noRoleRecords: string[] = [];
-          const addNoRole = async (message: GenericMessage): Promise<void> => {
-            if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
+          const addNoRole = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
+            if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               noRoleRecords.push(recordsWriteMessage.recordId);
             }
@@ -382,7 +381,8 @@ export function testRecordsSubscribeHandler(): void {
           expect(friendRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord:RecordSubscriptionHandler = async (message) => {
+          const addRecord:RecordSubscriptionHandler = async (event) => {
+            const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
@@ -457,7 +457,8 @@ export function testRecordsSubscribeHandler(): void {
           };
 
           const noRoleRecords: string[] = [];
-          const addNoRole = async (message: GenericMessage): Promise<void> => {
+          const addNoRole = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
             if (message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               noRoleRecords.push(recordsWriteMessage.recordId);
@@ -476,20 +477,20 @@ export function testRecordsSubscribeHandler(): void {
 
           // Alice writes a 'participant' $contextRole record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/participant',
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/participant',
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob is my friend'),
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
           expect(participantRoleReply.status.code).to.equal(202);
 
           const recordIds: string[] = [];
-          const addRecord:RecordSubscriptionHandler = async (message) => {
+          const addRecord:RecordSubscriptionHandler = async (event) => {
+            const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
               recordIds.push(recordsWriteMessage.recordId);
@@ -512,14 +513,13 @@ export function testRecordsSubscribeHandler(): void {
           const chatRecordIds = [];
           for (let i = 0; i < 3; i++) {
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'thread/chat',
-              published    : false,
-              contextId    : threadRecord.message.contextId,
-              parentId     : threadRecord.message.recordId,
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatReply.status.code).to.equal(202);
@@ -601,13 +601,12 @@ export function testRecordsSubscribeHandler(): void {
 
           // Alice writes a 'friend' $globalRole record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : bob.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/participant',
-            contextId    : threadRecord.message.contextId,
-            parentId     : threadRecord.message.recordId,
-            data         : new TextEncoder().encode('Bob is my friend'),
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/participant',
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob is my friend'),
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });

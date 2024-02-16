@@ -1,9 +1,9 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply } from './types/events-types.js';
-export type { EventStream, SubscriptionReply } from './types/subscriptions.js';
-export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, MessageSubscriptionHandler, Pagination, QueryResultEntry } from './types/message-types.js';
+export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler as EventSubscriptionHandler } from './types/events-types.js';
+export type { EventStream, MessageEvent, SubscriptionReply } from './types/subscriptions.js';
+export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
@@ -14,7 +14,7 @@ export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
-export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';
+export { DataStore, DataStorePutResult, DataStoreGetResult } from './types/data-store.js';
 export { DataStream } from './utils/data-stream.js';
 export { DateSort } from './types/records-types.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';

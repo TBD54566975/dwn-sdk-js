@@ -28,7 +28,7 @@ describe('DataStoreLevel Test Suite', () => {
   describe('put', function () {
     it('should return the correct size of the data stored', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       let dataSizeInBytes = 10;
 
@@ -38,11 +38,11 @@ describe('DataStoreLevel Test Suite', () => {
         const dataStream = DataStream.fromBytes(dataBytes);
         const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
 
-        const { dataSize } = await store.put(tenant, messageCid, dataCid, dataStream);
+        const { dataSize } = await store.put(tenant, recordId, dataCid, dataStream);
 
         expect(dataSize).to.equal(dataSizeInBytes);
 
-        const result = (await store.get(tenant, messageCid, dataCid))!;
+        const result = (await store.get(tenant, recordId, dataCid))!;
         const storedDataBytes = await DataStream.toBytes(result.dataStream);
 
         expect(storedDataBytes).to.eql(dataBytes);
@@ -58,186 +58,121 @@ describe('DataStoreLevel Test Suite', () => {
       const dataBytes = TestDataGenerator.randomBytes(100);
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
 
-      const blockstoreForData = await store.blockstore.partition('data');
-      const blockstoreOfAlice = await blockstoreForData.partition(alice);
-      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
-
-      const blockstoreOfBob = await blockstoreForData.partition(bob);
-      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
-
       // write data to alice's DWN
-      const dataStream1 = DataStream.fromBytes(dataBytes);
-      const messageCid1 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(alice, messageCid1, dataCid, dataStream1);
+      const aliceDataStream = DataStream.fromBytes(dataBytes);
+      const aliceRecordId = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(alice, aliceRecordId, dataCid, aliceDataStream);
 
       // write same data to bob's DWN
-      const dataStream2 = DataStream.fromBytes(dataBytes);
-      const messageCid2 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(bob, messageCid2, dataCid, dataStream2);
+      const bobDataStream = DataStream.fromBytes(dataBytes);
+      const bobRecordId = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(bob, bobRecordId, dataCid, bobDataStream);
 
       // verify that both alice and bob's blockstore have their own reference to data CID
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      const blockstoreOfAliceRecord = await store['getBlockstoreForStoringData'](alice, aliceRecordId, dataCid);
+      const blockstoreOfBobRecord = await store['getBlockstoreForStoringData'](bob, bobRecordId, dataCid);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceRecord.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobRecord.db.keys())).to.eventually.eql([ dataCid ]);
     });
   });
 
   describe('get', function () {
     it('should return `undefined if unable to find the data specified`', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const randomCid = await TestDataGenerator.randomCborSha256Cid();
-      const result = await store.get(tenant, messageCid, randomCid);
+      const result = await store.get(tenant, recordId, randomCid);
 
       expect(result).to.be.undefined;
     });
 
-    it('should return `undefined if the dataCid is different than the dataStream`', async () => {
+    it('should return `undefined` if the dataCid is different than the dataStream`', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const randomCid = await TestDataGenerator.randomCborSha256Cid();
 
       const dataBytes = TestDataGenerator.randomBytes(10_000_000);
       const dataStream = DataStream.fromBytes(dataBytes);
 
-      const { dataCid } = await store.put(tenant, messageCid, randomCid, dataStream);
+      await store.put(tenant, recordId, randomCid, dataStream);
 
-      expect(dataCid).to.not.equal(randomCid);
-
-      const result = await store.get(tenant, messageCid, randomCid);
-
+      const result = await store.get(tenant, recordId, randomCid);
       expect(result).to.be.undefined;
-    });
-  });
-
-  describe('associate', function () {
-    it('should return `false` if tenant missing', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-      const randomCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeAssociate.length).to.equal(0);
-
-      const result = await store.associate(tenant, messageCid, randomCid);
-      expect(result).to.be.undefined;
-
-      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterAssociate.length).to.equal(0);
-    });
-
-    it('should return `false` if data missing', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-      const randomCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const dataBytes = TestDataGenerator.randomBytes(10);
-      const dataStream = DataStream.fromBytes(dataBytes);
-
-      const { dataCid } = await store.put(tenant, messageCid, randomCid, dataStream);
-      expect(dataCid).to.not.equal(randomCid);
-
-      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeAssociate.length).to.equal(2);
-
-      const result = await store.associate(tenant, messageCid, randomCid);
-      expect(result).to.be.undefined;
-
-      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterAssociate.length).to.equal(2);
-    });
-
-    it('should return the root CID', async () => {
-      const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
-
-      const dataBytes = TestDataGenerator.randomBytes(10_000_000);
-      const dataStream = DataStream.fromBytes(dataBytes);
-      const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
-
-      await store.put(tenant, messageCid, dataCid, dataStream);
-
-      const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeDelete.length).to.equal(41);
-
-      const result = (await store.associate(tenant, messageCid, dataCid))!;
-      expect(result.dataCid).to.equal(dataCid);
-      expect(result.dataSize).to.equal(10_000_000);
-
-      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysAfterDelete.length).to.equal(41);
     });
   });
 
   describe('delete', function () {
-    it('should not leave anything behind when deleting a the root CID', async () => {
+    it('should not leave anything behind when deleting the root CID', async () => {
       const tenant = await TestDataGenerator.randomCborSha256Cid();
-      const messageCid = await TestDataGenerator.randomCborSha256Cid();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
 
       const dataBytes = TestDataGenerator.randomBytes(10_000_000);
       const dataStream = DataStream.fromBytes(dataBytes);
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
 
-      await store.put(tenant, messageCid, dataCid, dataStream);
+      await store.put(tenant, recordId, dataCid, dataStream);
 
       const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
-      expect(keysBeforeDelete.length).to.equal(41);
+      expect(keysBeforeDelete.length).to.equal(40);
 
-      await store.delete(tenant, messageCid, dataCid);
+      await store.delete(tenant, recordId, dataCid);
 
       const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterDelete.length).to.equal(0);
     });
 
-    it('should only delete data after all messages referencing it are deleted', async () => {
+    it('should only delete data in the sublevel of the corresponding record', async () => {
       const alice = await TestDataGenerator.randomCborSha256Cid();
       const bob = await TestDataGenerator.randomCborSha256Cid();
 
       const dataBytes = TestDataGenerator.randomBytes(100);
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
 
-      const blockstoreForData = await store.blockstore.partition('data');
-      const blockstoreOfAlice = await blockstoreForData.partition(alice);
-      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
-
-      const blockstoreOfBob = await blockstoreForData.partition(bob);
-      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
-
       // alice writes a records with data
       const dataStream1 = DataStream.fromBytes(dataBytes);
-      const messageCid1 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(alice, messageCid1, dataCid, dataStream1);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      const recordId1 = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(alice, recordId1, dataCid, dataStream1);
 
       // alice writes a different record with same data again
       const dataStream2 = DataStream.fromBytes(dataBytes);
-      const messageCid2 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(alice, messageCid2, dataCid, dataStream2);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      const recordId2 = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(alice, recordId2, dataCid, dataStream2);
 
       // bob writes a records with same data
       const dataStream3 = DataStream.fromBytes(dataBytes);
-      const messageCid3 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(bob, messageCid3, dataCid, dataStream3);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      const recordId3 = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(bob, recordId3, dataCid, dataStream3);
 
       // bob writes a different record with same data again
       const dataStream4 = DataStream.fromBytes(dataBytes);
-      const messageCid4 = await TestDataGenerator.randomCborSha256Cid();
-      await store.put(bob, messageCid4, dataCid, dataStream4);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      const recordId4 = await TestDataGenerator.randomCborSha256Cid();
+      await store.put(bob, recordId4, dataCid, dataStream4);
+
+      // verify that all 4 records have reference to the same data CID
+      const blockstoreOfRecord1 = await store['getBlockstoreForStoringData'](alice, recordId1, dataCid);
+      const blockstoreOfRecord2 = await store['getBlockstoreForStoringData'](alice, recordId2, dataCid);
+      const blockstoreOfRecord3 = await store['getBlockstoreForStoringData'](bob, recordId3, dataCid);
+      const blockstoreOfRecord4 = await store['getBlockstoreForStoringData'](bob, recordId4, dataCid);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord1.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord2.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord3.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord4.db.keys())).to.eventually.eql([ dataCid ]);
 
       // alice deletes one of the two records
-      await store.delete(alice, messageCid1, dataCid);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      await store.delete(alice, recordId1, dataCid);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord1.db.keys())).to.eventually.eql([ ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord2.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord3.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord4.db.keys())).to.eventually.eql([ dataCid ]);
 
       // alice deletes the other record
-      await store.delete(alice, messageCid2, dataCid);
-
-      // verify that data is deleted in alice's blockstore, but remains in bob's blockstore
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ ]);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      await store.delete(alice, recordId2, dataCid);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord1.db.keys())).to.eventually.eql([ ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord2.db.keys())).to.eventually.eql([ ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord3.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfRecord4.db.keys())).to.eventually.eql([ dataCid ]);
     });
   });
 });

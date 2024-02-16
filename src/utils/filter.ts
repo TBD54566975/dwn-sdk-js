@@ -150,6 +150,13 @@ export class FilterUtility {
     return rangeFilter;
   }
 
+  static constructPrefixFilterAsRangeFilter(prefix: string): RangeFilter {
+    return {
+      gte : prefix,
+      lt  : prefix + '\uffff',
+    };
+  }
+
 }
 
 export class FilterSelector {
