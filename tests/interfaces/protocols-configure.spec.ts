@@ -182,7 +182,7 @@ describe('ProtocolsConfigure', () => {
               },
               chat: {
                 $actions: [{
-                  role : 'thread/participant', // valid because 'thread/participant` has $contextRole: true
+                  role : 'thread/participant', // valid because 'thread/participant` has $role: true
                   can  : 'write'
                 }]
               }
