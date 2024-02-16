@@ -88,8 +88,8 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize schema URIs', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      nonnormalizedDexProtocol.types.ask.schema = 'ask';
+      const nonNormalizedDexProtocol = { ...dexProtocolDefinition };
+      nonNormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
         recipient  : alice.did,
@@ -97,7 +97,7 @@ describe('ProtocolsConfigure', () => {
         dataFormat : 'application/json',
         signer     : Jws.createSigner(alice),
         protocol   : 'example.com/',
-        definition : nonnormalizedDexProtocol
+        definition : nonNormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
@@ -106,8 +106,7 @@ describe('ProtocolsConfigure', () => {
     });
 
     describe('protocol definition validations', () => {
-      // TODO: this should be failing
-      it('allows `role` actions that have protocol path to valid $role records', async () => {
+      it('should not allow a record in protocol structure to reference an on-existent record type', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
@@ -115,19 +114,18 @@ describe('ProtocolsConfigure', () => {
             record: {},
           },
           structure: {
-            undeclaredRecord: {
-            }
+            undeclaredRecord: { } // non-existent record type
           }
         };
 
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigure = await ProtocolsConfigure.create({
+        const createPromise = ProtocolsConfigure.create({
           signer: Jws.createSigner(alice),
           definition
         });
 
-        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+        await expect(createPromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRuleSetRecordType);
       });
 
       it('should allow `role` property in an `action` to have protocol path to a role record.', async () => {
