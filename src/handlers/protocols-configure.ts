@@ -67,7 +67,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
       // only emit if the event stream is set
       if (this.eventStream !== undefined) {
-        this.eventStream.emit(tenant, { message }, indexes);
+        this.eventStream.emit(tenant, message, indexes);
       }
 
       messageReply = {

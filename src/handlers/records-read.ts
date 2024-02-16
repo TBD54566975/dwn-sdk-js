@@ -76,7 +76,8 @@ export class RecordsReadHandler implements MethodHandler {
       data = DataStream.fromBytes(dataBytes);
       delete matchedRecordsWrite.encodedData;
     } else {
-      const result = await this.dataStore.get(tenant, matchedRecordsWrite.recordId, matchedRecordsWrite.descriptor.dataCid);
+      const messageCid = await Message.getCid(matchedRecordsWrite);
+      const result = await this.dataStore.get(tenant, messageCid, matchedRecordsWrite.descriptor.dataCid);
       if (result?.dataStream === undefined) {
         return {
           status: { code: 404, detail: 'Not Found' }

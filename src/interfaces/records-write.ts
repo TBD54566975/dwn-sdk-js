@@ -38,15 +38,10 @@ export type RecordsWriteOptions = {
   protocol?: string;
   protocolPath?: string;
   protocolRole?: string;
+  contextId?: string;
   schema?: string;
   recordId?: string;
-
-  /**
-   * Must be given if this message is for a non-root protocol record.
-   * If not given, it either means this write is for a root protocol record or a flat-space record.
-   */
-  parentContextId?: string;
-
+  parentId?: string;
   data?: Uint8Array;
   dataCid?: string;
   dataSize?: number;
@@ -150,8 +145,6 @@ export type CreateFromOptions = {
  * NOTE: Unable to extend `AbstractMessage` directly because the incompatible `_message` type, which is not just a generic `<M>` type.
  */
 export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
-  private parentContextId: string | undefined;
-
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
@@ -208,8 +201,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   readonly attesters: string[];
 
-  private constructor(message: InternalRecordsWriteMessage, parentContextId?: string) {
-    this.parentContextId = parentContextId;
+  private constructor(message: InternalRecordsWriteMessage) {
     this._message = message;
 
     if (message.authorization !== undefined) {
@@ -254,15 +246,13 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   /**
    * Creates a RecordsWrite message.
-   * @param options.recordId If `undefined`, will be auto-filled as the initial message as convenience for developer.
+   * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.data Data used to compute the `dataCid`, must be the encrypted data bytes if `options.encryptionInput` is given.
    *                     Must specify `options.dataCid` if `undefined`.
    * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `options.data` if `undefined`.
    * @param options.dataSize Size of data in number of bytes. Must be defined if `options.dataCid` is defined; must be `undefined` otherwise.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.messageTimestamp If `undefined`, it will be auto-filled with current time.
-   * @param options.parentContextId Must be given if this message is for a non-root protocol record.
-   *                                If not given, it either means this write is for a root protocol record or a flat-space record.
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
@@ -278,6 +268,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     if ((options.dataCid === undefined && options.dataSize !== undefined) ||
       (options.dataCid !== undefined && options.dataSize === undefined)) {
       throw new DwnError(DwnErrorCode.RecordsWriteCreateDataCidAndDataSizeMutuallyInclusive, '`dataCid` and `dataSize` must both be defined or undefined at the same time');
+    }
+
+    if (options.parentId !== undefined && options.contextId === undefined) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateContextIdAndParentIdMutuallyInclusive, '`contextId` must also be given when `parentId` is specified');
     }
 
     if (options.signer === undefined && options.delegatedGrant !== undefined) {
@@ -296,7 +290,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       protocolPath     : options.protocolPath,
       recipient        : options.recipient,
       schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
-      parentId         : RecordsWrite.getRecordIdFromContextId(options.parentContextId),
+      parentId         : options.parentId,
       dataCid,
       dataSize,
       dateCreated      : options.dateCreated ?? currentTime,
@@ -319,6 +313,9 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     // `recordId` computation
     const recordId = options.recordId;
 
+    // `contextId` computation
+    const contextId = options.contextId;
+
     // `attestation` generation
     const descriptorCid = await Cid.computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSigners);
@@ -332,10 +329,11 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     };
 
     // assign optional properties only if they exist
+    if (contextId !== undefined) { message.contextId = contextId; }
     if (attestation !== undefined) { message.attestation = attestation; }
     if (encryption !== undefined) { message.encryption = encryption; }
 
-    const recordsWrite = new RecordsWrite(message, options.parentContextId);
+    const recordsWrite = new RecordsWrite(message);
 
     if (options.signer !== undefined) {
       await recordsWrite.sign({
@@ -347,10 +345,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     return recordsWrite;
-  }
-
-  private static getRecordIdFromContextId(contextId: string | undefined): string | undefined {
-    return contextId?.split('/').filter(segment => segment !== '').pop();
   }
 
   /**
@@ -393,15 +387,16 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const createOptions: RecordsWriteOptions = {
-      // immutable properties below, just derive from the message given
+      // immutable properties below, just inherit from the message given
       recipient          : sourceMessage.descriptor.recipient,
       recordId           : sourceMessage.recordId,
       dateCreated        : sourceMessage.descriptor.dateCreated,
+      contextId          : sourceMessage.contextId,
       protocol           : sourceMessage.descriptor.protocol,
       protocolPath       : sourceMessage.descriptor.protocolPath,
+      parentId           : sourceMessage.descriptor.parentId,
       schema             : sourceMessage.descriptor.schema,
       dataFormat         : sourceMessage.descriptor.dataFormat,
-      parentContextId    : Records.getParentContextFromOfContextId(sourceMessage.contextId),
       // mutable properties below
       messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
@@ -463,19 +458,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    // compute `recordId` if not given at construction time
+    // `recordId` computation if not given at construction time
     this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(authorDid, descriptor);
 
-    // compute `contextId` if this is a protocol-space record
-    if (this._message.descriptor.protocol !== undefined) {
-      // if `parentContextId` is not given, this is a root protocol record
-      if (this.parentContextId === undefined || this.parentContextId === '') {
-        this._message.contextId = this._message.recordId;
-      } else {
-        // else this is a non-root protocol record
-
-        this._message.contextId = this.parentContextId + '/' + this._message.recordId;
-      }
+    // `contextId` computation if not given at construction time and this is a protocol-space record
+    if (this._message.contextId === undefined && this._message.descriptor.protocol !== undefined) {
+      this._message.contextId = await RecordsWrite.getEntryId(authorDid, descriptor);
     }
 
     // `signature` generation
@@ -567,7 +555,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       );
     }
 
-    // if `contextId` is given in message, make sure the same `contextId` is in the payload of the message signature
+    // if `contextId` is given in message, make sure the same `contextId` is in the the payload of the message signature
     if (this.message.contextId !== signaturePayload.contextId) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteValidateIntegrityContextIdNotInSignerSignaturePayload,

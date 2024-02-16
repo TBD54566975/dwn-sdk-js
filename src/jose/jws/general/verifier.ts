@@ -1,7 +1,7 @@
 import type { Cache } from "../../../types/cache.js";
 import type { GeneralJws } from "../../../types/jws-types.js";
 import type { PublicJwk } from "../../../types/jose-types.js";
-import type { DidResolver, DidVerificationMethod } from "@web5/dids";
+import type { DidResolver, VerificationMethod } from "@web5/dids";
 
 import { Jws } from "../../../utils/jws.js";
 import { MemoryCache } from "../../../utils/memory-cache.js";
@@ -113,7 +113,7 @@ export class GeneralJwsVerifier {
     const { didDocument } = await didResolver.resolve(did);
     const { verificationMethod: verificationMethods = [] } = didDocument || {};
 
-    let verificationMethod: DidVerificationMethod | undefined;
+    let verificationMethod: VerificationMethod | undefined;
 
     for (const method of verificationMethods) {
       // consider optimizing using a set for O(1) lookups if needed

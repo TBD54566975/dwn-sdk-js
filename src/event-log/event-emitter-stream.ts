@@ -1,5 +1,6 @@
+import type { GenericMessage } from '../types/message-types.js';
 import type { KeyValues } from '../types/query-types.js';
-import type { EventListener, EventStream, EventSubscription, MessageEvent } from '../types/subscriptions.js';
+import type { EventListener, EventStream, EventSubscription } from '../types/subscriptions.js';
 
 import { EventEmitter } from 'events';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -56,7 +57,7 @@ export class EventEmitterStream implements EventStream {
     this.eventEmitter.removeAllListeners();
   }
 
-  emit(tenant: string, event: MessageEvent, indexes: KeyValues): void {
+  emit(tenant: string, message: GenericMessage, indexes: KeyValues): void {
     if (!this.isOpen) {
       this.errorHandler(new DwnError(
         DwnErrorCode.EventEmitterStreamNotOpenError,
@@ -64,6 +65,6 @@ export class EventEmitterStream implements EventStream {
       ));
       return;
     }
-    this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, event, indexes);
+    this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, message, indexes);
   }
 }

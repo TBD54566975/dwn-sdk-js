@@ -1,5 +1,5 @@
 {
-  "$id": "https://identity.foundation/dwn/json-schemas/jwk-verification-method.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/jwk-verification-method-ion.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
@@ -9,11 +9,9 @@
       "type": "string"
     },
     "type": {
-      "enum": [
-        "JsonWebKey",
-
-        "JsonWebKey2020",
-        "EcdsaSecp256k1VerificationKey2019"
+      "oneOf": [
+        { "const": "EcdsaSecp256k1VerificationKey2019" },
+        { "const": "Ed25519" }
       ]
     },
     "controller": {

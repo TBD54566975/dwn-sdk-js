@@ -1,7 +1,8 @@
 import type { DidResolver } from '@web5/dids';
+import type { MessageSubscriptionHandler } from '../types/message-types.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from '../types/events-types.js';
+import type { EventsSubscribeMessage, EventsSubscribeReply } from '../types/events-types.js';
 
 import { Events } from '../utils/events.js';
 import { EventsSubscribe } from '../interfaces/events-subscribe.js';
@@ -51,9 +52,9 @@ export class EventsSubscribeHandler implements MethodHandler {
     const eventsFilters = Events.convertFilters(filters);
     const messageCid = await Message.getCid(message);
 
-    const listener: EventListener = (eventTenant, event, eventIndexes):void => {
+    const listener: EventListener = (eventTenant, eventMessage, eventIndexes):void => {
       if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
-        subscriptionHandler(event);
+        subscriptionHandler(eventMessage);
       }
     };
 

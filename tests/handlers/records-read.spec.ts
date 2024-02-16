@@ -32,7 +32,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DataStream, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKeyMethod, DidResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -51,7 +51,7 @@ export function testRecordsReadHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKey] });
+        didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;
@@ -661,11 +661,12 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author          : alice,
-              recipient       : bob.did,
-              protocol        : protocolDefinition.protocol,
-              protocolPath    : 'thread/participant',
-              parentContextId : threadRecord.message.contextId,
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -673,10 +674,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author          : alice,
-              protocol        : protocolDefinition.protocol,
-              protocolPath    : 'thread/chat',
-              parentContextId : threadRecord.message.contextId,
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
@@ -745,11 +747,12 @@ export function testRecordsReadHandler(): void {
 
             // Alice adds Bob as a 'thread/participant' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({
-              author          : alice,
-              recipient       : bob.did,
-              protocol        : protocolDefinition.protocol,
-              protocolPath    : 'thread/participant',
-              parentContextId : threadRecord1.message.contextId,
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord1.message.contextId,
+              parentId     : threadRecord1.message.recordId,
             });
             const participantRecordReply =
               await dwn.processMessage(alice.did, participantRecord.message, { dataStream: participantRecord.dataStream });
@@ -767,10 +770,11 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a chat message in the thread
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author          : alice,
-              protocol        : protocolDefinition.protocol,
-              protocolPath    : 'thread/chat',
-              parentContextId : threadRecord2.message.contextId,
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord2.message.contextId,
+              parentId     : threadRecord2.message.recordId,
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
             expect(chatRecordReply.status.code).to.equal(202);
@@ -1777,7 +1781,7 @@ export function testRecordsReadHandler(): void {
 
           // Bob creates an initiating a chat thread RecordsWrite
           const plaintextMessageToAlice = TestDataGenerator.randomBytes(100);
-          const { message: threadMessage, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
+          const { message, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
           await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
             plaintextBytes                                   : plaintextMessageToAlice,
             author                                           : bob,
@@ -1788,7 +1792,7 @@ export function testRecordsReadHandler(): void {
           });
 
           // Bob writes the encrypted chat thread to Alice's DWN
-          const bobToAliceWriteReply = await dwn.processMessage(alice.did, threadMessage, { dataStream });
+          const bobToAliceWriteReply = await dwn.processMessage(alice.did, message, { dataStream });
           expect(bobToAliceWriteReply.status.code).to.equal(202);
 
           // Bob also needs to write the same encrypted chat thread to his own DWN
@@ -1829,7 +1833,7 @@ export function testRecordsReadHandler(): void {
           // test that anyone with the protocol-context derived private key is able to decrypt the message
           const recordsRead = await RecordsRead.create({
             filter: {
-              recordId: threadMessage.recordId,
+              recordId: message.recordId,
             },
             signer: Jws.createSigner(alice)
           });
@@ -1858,9 +1862,10 @@ export function testRecordsReadHandler(): void {
             author                                           : alice,
             protocolDefinition                               : protocolsConfigureForBob.message.descriptor.definition,
             protocolPath                                     : 'thread/message',
-            protocolParentContextId                          : fetchedRecordsWrite.contextId,
+            protocolContextId                                : fetchedRecordsWrite.contextId,
             protocolContextDerivingRootKeyId                 : protocolContextDerivingRootKeyIdReturned,
             protocolContextDerivedPublicJwk                  : protocolContextDerivedPublicJwkReturned!,
+            protocolParentId                                 : fetchedRecordsWrite.recordId,
             encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
             encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });
