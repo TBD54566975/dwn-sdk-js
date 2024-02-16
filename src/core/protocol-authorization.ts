@@ -457,13 +457,14 @@ export class ProtocolAuthorization {
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (roleRuleSet === undefined || (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)) {
+    if (roleRuleSet === undefined || !roleRuleSet.$role) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
-        `Protocol path ${protocolRole} is not a valid protocolRole`
+        `Protocol path ${protocolRole} does not match role record type.`
       );
     }
 
+    // Construct a filter to fetch the invoked role record
     const roleRecordFilter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
@@ -473,25 +474,26 @@ export class ProtocolAuthorization {
       isLatestBaseState : true,
     };
 
-    if (roleRuleSet.$contextRole) {
-      if (contextId === undefined) {
-        throw new DwnError(
-          DwnErrorCode.ProtocolAuthorizationMissingContextId,
-          'Could not verify $contextRole because contextId is missing'
-        );
-      }
+    const ancestorSegmentCountOfRolePath = protocolRole.split('/').length - 1;
+    if (contextId === undefined && ancestorSegmentCountOfRolePath > 0) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationMissingContextId,
+        'Could not verify $contextRole because contextId is missing'
+      );
+    }
 
-      // Compute `contextId` prefix filter for fetching the invoked role record.
-      // e.g. if invoked role path is `Thread/Participant`, and the `contextId` of the message is `threadX/messageY/attachmentZ`,
-      // then we need to add a prefix filter as `threadX` for the `contextId`
-      // because the `contextId` of the Participant record would be in the form of be `threadX/participantA`
-      const ancestorSegmentCountOfRole = protocolRole.split('/').length - 1;
-      const contextIdSegments = contextId.split('/');
-      const contextIdPrefix = contextIdSegments.slice(0, ancestorSegmentCountOfRole).join('/');
+    // Compute `contextId` prefix filter for fetching the invoked role record if the role path is not at the root level.
+    // e.g. if invoked role path is `Thread/Participant`, and the `contextId` of the message is `threadX/messageY/attachmentZ`,
+    // then we need to add a prefix filter as `threadX` for the `contextId`
+    // because the `contextId` of the Participant record would be in the form of be `threadX/participantA`
+    if (ancestorSegmentCountOfRolePath > 0) {
+      const contextIdSegments = contextId!.split('/'); // NOTE: currently contextId segment count is never shorter than the role path count.
+      const contextIdPrefix = contextIdSegments.slice(0, ancestorSegmentCountOfRolePath).join('/');
       const contextIdPrefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(contextIdPrefix);
 
       roleRecordFilter.contextId = contextIdPrefixFilter;
     }
+
 
     const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
 
@@ -645,7 +647,7 @@ export class ProtocolAuthorization {
   /**
    * If the given RecordsWrite is not a role record, this method does nothing and succeeds immediately.
    *
-   * Else it verifies the validity of the given `RecordsWrite` including:
+   * Else it verifies the validity of the given `RecordsWrite` as a role record, including:
    * 1. The same role has not been assigned to the same entity/recipient.
    */
   private static async verifyAsRoleRecordIfNeeded(
@@ -654,9 +656,11 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
+    if (!inboundMessageRuleSet.$role) {
       return;
     }
+
+    // else this is a role record
 
     const incomingRecordsWrite = incomingMessage;
     const recipient = incomingRecordsWrite.message.descriptor.recipient;
@@ -677,8 +681,10 @@ export class ProtocolAuthorization {
       recipient,
     };
 
-    if (inboundMessageRuleSet.$contextRole) {
-      const parentContextId = Records.getParentContextFromOfContextId(incomingRecordsWrite.message.contextId)!;
+    const parentContextId = Records.getParentContextFromOfContextId(incomingRecordsWrite.message.contextId)!;
+
+    // if this is not the root record, add a prefix filter to the query
+    if (parentContextId !== '') {
       const prefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(parentContextId);
       filter.contextId = prefixFilter;
     }
@@ -689,18 +695,10 @@ export class ProtocolAuthorization {
       recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
     );
     if (matchingRecordsExceptIncomingRecordId.length > 0) {
-      if (inboundMessageRuleSet.$globalRole) {
-        throw new DwnError(
-          DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
-          `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
-        );
-      } else {
-        // $contextRole
-        throw new DwnError(
-          DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient,
-          `DID '${recipient}' is already recipient of a $contextRole record at protocol path '${protocolPath} in the same context`
-        );
-      }
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationDuplicateRoleRecipient,
+        `DID '${recipient}' is already recipient of a role record at protocol path '${protocolPath} under the parent context ${parentContextId}.`
+      );
     }
   }
 

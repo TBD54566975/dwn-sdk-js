@@ -18,7 +18,7 @@ export type RecordsReadOptions = {
   permissionsGrantId?: string;
   /**
    * Used when authorizing protocol records.
-   * The protocol path to a $globalRole record whose recipient is the author of this RecordsRead
+   * The protocol path to the role record type whose recipient is the author of this RecordsRead
    */
   protocolRole?: string;
 

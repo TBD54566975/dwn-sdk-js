@@ -54,7 +54,7 @@
   "structure": {
     "community": {
       "admin": {
-        "$contextRole": true,
+        "$role": true,
         "$actions": [
           {
             "who": "author",
@@ -77,7 +77,7 @@
         ]
       },
       "member": {
-        "$contextRole": true,
+        "$role": true,
         "$actions": [
           {
             "role": "community/admin",
@@ -151,7 +151,7 @@
           }
         ],
         "participant": {
-          "$contextRole": true,
+          "$role": true,
           "$actions": [
             {
               "who": "author",

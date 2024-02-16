@@ -67,12 +67,13 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   }
 
   private static validateStructure(definition: ProtocolDefinition): void {
-    // gather $globalRoles
-    const globalRoles: string[] = [];
+    // TODO: remove
+    // gather root $roles
+    const rootLevelRoles: string[] = [];
     for (const rootRecordPath in definition.structure) {
       const rootRuleSet = definition.structure[rootRecordPath];
-      if (rootRuleSet.$globalRole) {
-        globalRoles.push(rootRecordPath);
+      if (rootRuleSet.$role) {
+        rootLevelRoles.push(rootRecordPath);
       }
     }
 
@@ -80,10 +81,10 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
     for (const rootRecordPath in definition.structure) {
       const rootRuleSet = definition.structure[rootRecordPath];
 
-      // gather $contextRoles
+      // gather $roles
       const contextRoles = ProtocolsConfigure.fetchAllContextRolePathsRecursively(rootRecordPath, rootRuleSet, []);
 
-      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
+      ProtocolsConfigure.validateRuleSetRecursively(rootRuleSet, rootRecordPath, [...rootLevelRoles, ...contextRoles]);
     }
   }
 
@@ -91,7 +92,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
    * Parses the given rule set hierarchy to get all the context role protocol paths.
    * @throws DwnError if the hierarchy depth goes beyond 10 levels.
    */
-  private static fetchAllContextRolePathsRecursively(recordProtocolPath: string, ruleSet: ProtocolRuleSet, contextRoles: string[]): string[] {
+  private static fetchAllContextRolePathsRecursively(recordProtocolPath: string, ruleSet: ProtocolRuleSet, roles: string[]): string[] {
     // Limit the depth of the record hierarchy to 10 levels
     // There is opportunity to optimize here to avoid repeated string splitting
     if (recordProtocolPath.split('/').length > 10) {
@@ -108,27 +109,20 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       const childProtocolPath = `${recordProtocolPath}/${recordType}`;
 
       // if this is a role record, add it to the list, else continue to traverse
-      if (childRuleSet.$contextRole) {
-        contextRoles.push(childProtocolPath);
+      if (childRuleSet.$role) {
+        roles.push(childProtocolPath);
       } else {
-        ProtocolsConfigure.fetchAllContextRolePathsRecursively(childProtocolPath, childRuleSet, contextRoles);
+        ProtocolsConfigure.fetchAllContextRolePathsRecursively(childProtocolPath, childRuleSet, roles);
       }
     }
 
-    return contextRoles;
+    return roles;
   }
 
   /**
    * Validates the given rule set structure then recursively validates its nested child rule sets.
    */
   private static validateRuleSetRecursively(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
-    const depth = protocolPath.split('/').length;
-    if (ruleSet.$globalRole && depth !== 1) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath,
-        `$globalRole is not allowed at protocol path (${protocolPath}). Only root records may set $globalRole true.`
-      );
-    }
 
     // Validate $actions in the rule set
     if (ruleSet.$size !== undefined) {
@@ -145,13 +139,23 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
     // Validate $actions in the rule set
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
-      // Validate that all `role` properties contain protocol paths $globalRole or $contextRole records
+      // Validate that the `role` property of an `action` contains a valid protocol paths to a role record type
       if (action.role !== undefined && !roles.includes(action.role)) {
         throw new DwnError(
-          DwnErrorCode.ProtocolsConfigureInvalidRole,
-          `Invalid role '${action.role}' found at protocol path '${protocolPath}'`
+          DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath,
+          `No role is found at the path ${action.role} for action ${action} found at protocol path '${protocolPath}.'`
         );
       }
+
+      // TODO:
+      // if (rolePathSegments.length > contextIdSegments.length) {
+      //   throw new DwnError(
+      //     // TODO:
+      //     DwnErrorCode.ProtocolAuthorizationInvokingDescendantRoleNotSupported,
+      //     `Invoking a role defined in a descendant protocol path is not supported.`
+      //   );
+      // }
+
 
       // Validate that if `who` is set to `anyone` then `of` is not set
       if (action.who === 'anyone' && action.of) {

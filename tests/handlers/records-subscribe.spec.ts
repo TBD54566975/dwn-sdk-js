@@ -628,9 +628,9 @@ export function testRecordsSubscribeHandler(): void {
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
 
-        it('rejects $globalRole authorized subscriptions if the request author does not have a matching $globalRole', async () => {
+        it('rejects role authorized subscriptions if the request author does not have a matching root-level role', async () => {
           // scenario: Alice installs a chat protocol.
-          // Bob invokes a $globalRole within that protocol to subscribe but fails because he does not actually have a role.
+          // Bob invokes a root-level role within that protocol to subscribe but fails because he does not actually have a role.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();

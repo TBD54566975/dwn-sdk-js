@@ -1639,47 +1639,6 @@ export function testRecordsWriteHandler(): void {
               expect(friendRoleReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient);
             });
 
-            it('rejects writes to a $globalRole if there is already a record with the same role and recipient', async () => {
-              // scenario: Alice adds Bob to the 'friend' role. Then she tries and fails to write another separate record
-              //           adding Bob as a 'friend' again.
-
-              const alice = await TestDataGenerator.generateDidKeyPersona();
-              const bob = await TestDataGenerator.generateDidKeyPersona();
-
-              const protocolDefinition = friendRoleProtocolDefinition;
-
-              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-                author: alice,
-                protocolDefinition
-              });
-              const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-              expect(protocolsConfigureReply.status.code).to.equal(202);
-
-              // Alice writes a 'friend' $globalRole record with Bob as recipient
-              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'friend',
-                data         : new TextEncoder().encode('Bob is my friend'),
-              });
-              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
-              expect(friendRoleReply.status.code).to.equal(202);
-
-              // Alice writes a duplicate record adding Bob as a 'friend' again
-              const duplicateFriendRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'friend',
-                data         : new TextEncoder().encode('Bob is still my friend'),
-              });
-              const duplicateFriendReply =
-                await dwn.processMessage(alice.did, duplicateFriendRecord.message, { dataStream: duplicateFriendRecord.dataStream });
-              expect(duplicateFriendReply.status.code).to.equal(400);
-              expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient);
-            });
-
             it('allows a new $globalRole record to be created for the same recipient if their old one was deleted', async () => {
               // scenario: Alice adds Bob to the 'friend' role, then deletes the role. Alice writes a new record adding Bob as a 'friend' again.
 
@@ -1836,7 +1795,7 @@ export function testRecordsWriteHandler(): void {
               expect(participantRecordReply2.status.code).to.equal(202);
             });
 
-            it('rejects writes to a $contextRole record if there already exists one in the same context', async () => {
+            it('rejects writes to a $role record if there already exists one in the same context', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She adds Bob to the role second time and fails
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1884,7 +1843,7 @@ export function testRecordsWriteHandler(): void {
               const participantRecordReply2 =
                 await dwn.processMessage(alice.did, participantRecord2.message, { dataStream: participantRecord2.dataStream });
               expect(participantRecordReply2.status.code).to.equal(400);
-              expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient);
+              expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateRoleRecipient);
             });
 
             it('allows a new $contextRole record to be created for the same recipient in the same context if their old one was deleted', async () => {

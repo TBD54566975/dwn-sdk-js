@@ -58,7 +58,7 @@
             ],
             "properties": {
               "role": {
-                "$comment": "Must be the protocol path of a record with either $globalRole or $contextRole set to true",
+                "$comment": "Must be the protocol path of a role record type",
                 "type": "string"
               },
               "can": {
@@ -77,12 +77,8 @@
         ]
       }
     },
-    "$globalRole": {
-      "$comment": "When `true`, this turns a record into `role` that may be used across contexts",
-      "type": "boolean"
-    },
-    "$contextRole": {
-      "$comment": "When `true`, this turns a record into `role` that may be used within a context",
+    "$role": {
+      "$comment": "When `true`, this turns a record into `role` that may be used within a context/sub-context",
       "type": "boolean"
     },
     "$size": {
