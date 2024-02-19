@@ -14,11 +14,11 @@ import type {
   EventsSubscribeMessage,
   EventsSubscribeMessageOptions,
   EventsSubscribeReply,
+  MessageSubscriptionHandler,
 } from "./types/events-types.js";
 import type {
   GenericMessage,
   GenericMessageReply,
-  MessageSubscriptionHandler,
 } from "./types/message-types.js";
 import type {
   MessagesGetMessage,
@@ -65,7 +65,14 @@ import { RecordsQueryHandler } from "./handlers/records-query.js";
 import { RecordsReadHandler } from "./handlers/records-read.js";
 import { RecordsSubscribeHandler } from "./handlers/records-subscribe.js";
 import { RecordsWriteHandler } from "./handlers/records-write.js";
-import { DidDht, DidIon, DidKey, DidResolver } from "@web5/dids";
+import {
+  DidDht,
+  DidIon,
+  DidKey,
+  DidResolver,
+  DidWeb,
+  DidResolverCacheLevel,
+} from "@web5/dids";
 import {
   DwnInterfaceName,
   DwnMethodName,
@@ -178,7 +185,8 @@ export class Dwn {
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver({
-      didResolvers: [DidKey, DidIon, DidDht],
+      didResolvers: [DidDht, DidIon, DidKey, DidWeb],
+      cache: new DidResolverCacheLevel({ location: "RESOLVERCACHE" }),
     });
     config.tenantGate ??= new AllowAllTenantGate();
 

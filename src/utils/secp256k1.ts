@@ -1,10 +1,10 @@
-import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
+import type { PrivateJwk, PublicJwk } from "../types/jose-types.js";
 
-import * as secp256k1 from '@noble/secp256k1';
+import * as secp256k1 from "@noble/secp256k1";
 
-import { Encoder } from '../utils/encoder.js';
-import { sha256 } from 'multiformats/hashes/sha2';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { Encoder } from "../utils/encoder.js";
+import { sha256 } from "multiformats/hashes/sha2";
+import { DwnError, DwnErrorCode } from "../core/dwn-error.js";
 
 /**
  * Class containing SECP256K1 related utility methods.
@@ -15,16 +15,21 @@ export class Secp256k1 {
    * @throws {Error} if fails validation.
    */
   public static validateKey(jwk: PrivateJwk | PublicJwk): void {
-    if (jwk.kty !== 'EC' || jwk.crv !== 'secp256k1') {
-      throw new DwnError(DwnErrorCode.Secp256k1KeyNotValid, 'Invalid SECP256K1 JWK: `kty` MUST be `EC`. `crv` MUST be `secp256k1`');
+    if (jwk.kty !== "EC" || jwk.crv !== "secp256k1") {
+      throw new DwnError(
+        DwnErrorCode.Secp256k1KeyNotValid,
+        "Invalid SECP256K1 JWK: `kty` MUST be `EC`. `crv` MUST be `secp256k1`"
+      );
     }
   }
 
   /**
    * Converts a public key in bytes into a JWK.
    */
-  public static async publicKeyToJwk(publicKeyBytes: Uint8Array): Promise<PublicJwk> {
-  // ensure public key is in uncompressed format so we can convert it into both x and y value
+  public static async publicKeyToJwk(
+    publicKeyBytes: Uint8Array
+  ): Promise<PublicJwk> {
+    // ensure public key is in uncompressed format so we can convert it into both x and y value
     let uncompressedPublicKeyBytes;
     if (publicKeyBytes.byteLength === 33) {
       // this means given key is compressed
@@ -39,15 +44,19 @@ export class Secp256k1 {
     // bytes 33 - 64 represent Y
 
     // skip the first byte because it's used as a header to indicate whether the key is uncompressed
-    const x = Encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(1, 33));
-    const y = Encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(33, 65));
+    const x = Encoder.bytesToBase64Url(
+      uncompressedPublicKeyBytes.subarray(1, 33)
+    );
+    const y = Encoder.bytesToBase64Url(
+      uncompressedPublicKeyBytes.subarray(33, 65)
+    );
 
     const publicJwk: PublicJwk = {
-      alg : 'ES256K',
-      kty : 'EC',
-      crv : 'secp256k1',
+      alg: "ES256K",
+      kty: "EC",
+      crv: "secp256k1",
       x,
-      y
+      y,
     };
 
     return publicJwk;
@@ -56,7 +65,9 @@ export class Secp256k1 {
   /**
    * Converts a private key in bytes into a JWK.
    */
-  public static async privateKeyToJwk(privateKeyBytes: Uint8Array): Promise<PrivateJwk> {
+  public static async privateKeyToJwk(
+    privateKeyBytes: Uint8Array
+  ): Promise<PrivateJwk> {
     const publicKeyBytes = await Secp256k1.getPublicKey(privateKeyBytes);
 
     const jwk = await Secp256k1.publicKeyToJwk(publicKeyBytes);
@@ -73,8 +84,8 @@ export class Secp256k1 {
     const y = Encoder.base64UrlToBytes(publicJwk.y!);
 
     return secp256k1.ProjectivePoint.fromAffine({
-      x : secp256k1.etc.bytesToNumberBE(x),
-      y : secp256k1.etc.bytesToNumberBE(y)
+      x: secp256k1.etc.bytesToNumberBE(x),
+      y: secp256k1.etc.bytesToNumberBE(y),
     }).toRawBytes(true);
   }
 
@@ -89,7 +100,10 @@ export class Secp256k1 {
   /**
    * Signs the provided content using the provided JWK.
    */
-  public static async sign(content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> {
+  public static async sign(
+    content: Uint8Array,
+    privateJwk: PrivateJwk
+  ): Promise<Uint8Array> {
     Secp256k1.validateKey(privateJwk);
 
     // the underlying lib expects us to hash the content ourselves:
@@ -97,25 +111,36 @@ export class Secp256k1 {
     const hashedContent = await sha256.encode(content);
     const privateKeyBytes = Secp256k1.privateJwkToBytes(privateJwk);
 
-    return (await secp256k1.signAsync(hashedContent, privateKeyBytes)).toCompactRawBytes();
+    return (
+      await secp256k1.signAsync(hashedContent, privateKeyBytes)
+    ).toCompactRawBytes();
   }
 
   /**
    * Verifies a signature against the provided payload hash and public key.
    * @returns a boolean indicating whether the signature is valid.
    */
-  public static async verify(content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> {
+  public static async verify(
+    content: Uint8Array,
+    signature: Uint8Array,
+    publicJwk: PublicJwk
+  ): Promise<boolean> {
     Secp256k1.validateKey(publicJwk);
 
     const publicKeyBytes = Secp256k1.publicJwkToBytes(publicJwk);
     const hashedContent = await sha256.encode(content);
-    return secp256k1.verify(signature, hashedContent, publicKeyBytes);
+    return secp256k1.verify(signature, hashedContent, publicKeyBytes, {
+      lowS: false,
+    });
   }
 
   /**
    * Generates a random key pair in JWK format.
    */
-  public static async generateKeyPair(): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> {
+  public static async generateKeyPair(): Promise<{
+    publicJwk: PublicJwk;
+    privateJwk: PrivateJwk;
+  }> {
     const privateKeyBytes = secp256k1.utils.randomPrivateKey();
     const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, false); // `false` = uncompressed
 
@@ -129,7 +154,10 @@ export class Secp256k1 {
   /**
    * Generates key pair in raw bytes, where the `publicKey` is compressed.
    */
-  public static async generateKeyPairRaw(): Promise<{publicKey: Uint8Array, privateKey: Uint8Array}> {
+  public static async generateKeyPairRaw(): Promise<{
+    publicKey: Uint8Array;
+    privateKey: Uint8Array;
+  }> {
     const privateKey = secp256k1.utils.randomPrivateKey();
     const publicKey = secp256k1.getPublicKey(privateKey, true); // `true` = compressed
 
@@ -139,7 +167,9 @@ export class Secp256k1 {
   /**
    * Gets the compressed public key of the given private key.
    */
-  public static async getPublicKey(privateKey: Uint8Array): Promise<Uint8Array> {
+  public static async getPublicKey(
+    privateKey: Uint8Array
+  ): Promise<Uint8Array> {
     const publicKey = secp256k1.getPublicKey(privateKey, true); // `true` = compressed
     return publicKey;
   }
@@ -147,7 +177,9 @@ export class Secp256k1 {
   /**
    * Gets the public JWK of the given private JWK.
    */
-  public static async getPublicJwk(privateKeyJwk: PrivateJwk): Promise<PublicJwk> {
+  public static async getPublicJwk(
+    privateKeyJwk: PrivateJwk
+  ): Promise<PublicJwk> {
     // strip away `d`
     const { d: _d, ...publicKey } = privateKeyJwk;
     return publicKey;
@@ -157,11 +189,17 @@ export class Secp256k1 {
    * Derives a hardened hierarchical deterministic public key.
    * @returns uncompressed public key
    */
-  public static async derivePublicKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
+  public static async derivePublicKey(
+    privateKey: Uint8Array,
+    relativePath: string[]
+  ): Promise<Uint8Array> {
     Secp256k1.validateKeyDerivationPath(relativePath);
 
     // derive the private key first then compute the derived public key from the derive private key
-    const derivedPrivateKey = await Secp256k1.derivePrivateKey(privateKey, relativePath);
+    const derivedPrivateKey = await Secp256k1.derivePrivateKey(
+      privateKey,
+      relativePath
+    );
     const derivedPublicKey = await Secp256k1.getPublicKey(derivedPrivateKey);
     return derivedPublicKey;
   }
@@ -169,13 +207,19 @@ export class Secp256k1 {
   /**
    * Derives a hardened hierarchical deterministic private key.
    */
-  public static async derivePrivateKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
+  public static async derivePrivateKey(
+    privateKey: Uint8Array,
+    relativePath: string[]
+  ): Promise<Uint8Array> {
     Secp256k1.validateKeyDerivationPath(relativePath);
 
     let currentPrivateKey = privateKey;
     for (const segment of relativePath) {
       const derivationSegment = Encoder.stringToBytes(segment);
-      currentPrivateKey = await Secp256k1.deriveChildPrivateKey(currentPrivateKey, derivationSegment);
+      currentPrivateKey = await Secp256k1.deriveChildPrivateKey(
+        currentPrivateKey,
+        derivationSegment
+      );
     }
 
     return currentPrivateKey;
@@ -184,11 +228,19 @@ export class Secp256k1 {
   /**
    * Derives a child private key using the given derivation path segment.
    */
-  public static async deriveChildPrivateKey(privateKey: Uint8Array, derivationPathSegment: Uint8Array): Promise<Uint8Array> {
+  public static async deriveChildPrivateKey(
+    privateKey: Uint8Array,
+    derivationPathSegment: Uint8Array
+  ): Promise<Uint8Array> {
     // hash the private key & derivation segment
     const privateKeyHash = await sha256.encode(privateKey);
-    const derivationPathSegmentHash = await sha256.encode(derivationPathSegment);
-    const combinedBytes = secp256k1.etc.concatBytes(privateKeyHash, derivationPathSegmentHash);
+    const derivationPathSegmentHash = await sha256.encode(
+      derivationPathSegment
+    );
+    const combinedBytes = secp256k1.etc.concatBytes(
+      privateKeyHash,
+      derivationPathSegmentHash
+    );
     const derivedPrivateKey = secp256k1.etc.hashToPrivateKey(combinedBytes);
     return derivedPrivateKey;
   }
@@ -199,8 +251,11 @@ export class Secp256k1 {
    * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
    */
   private static validateKeyDerivationPath(pathSegments: string[]): void {
-    if (pathSegments.includes('')) {
-      throw new DwnError(DwnErrorCode.HdKeyDerivationPathInvalid, `Invalid key derivation path: ${pathSegments}`);
+    if (pathSegments.includes("")) {
+      throw new DwnError(
+        DwnErrorCode.HdKeyDerivationPathInvalid,
+        `Invalid key derivation path: ${pathSegments}`
+      );
     }
   }
 }

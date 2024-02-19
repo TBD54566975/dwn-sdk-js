@@ -1,8 +1,9 @@
+import type { MessageEvent } from '../../src/types/subscriptions.js';
+import type { RecordEvent } from '../../src/types/records-types.js';
 import type {
   DataStore,
   EventLog,
   EventStream,
-  GenericMessage,
   MessageStore,
 } from '../../src/index.js';
 
@@ -13,7 +14,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKeyMethod, DidResolver } from '@web5/dids';
+import { DidKey, DidResolver } from '@web5/dids';
 import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
@@ -29,7 +30,7 @@ export function testSubscriptionScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKeyMethod] });
+      didResolver = new DidResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -57,7 +58,8 @@ export function testSubscriptionScenarios(): void {
 
         // create a handler that adds the messageCid of each message to an array.
         const messageCids: string[] = [];
-        const handler = async (message: GenericMessage): Promise<void> => {
+        const handler = async (event: MessageEvent): Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           messageCids.push(messageCid);
         };
@@ -119,7 +121,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Records }]
         });
         const recordsMessageCids:string[] = [];
-        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const recordsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           recordsMessageCids.push(messageCid);
         };
@@ -138,7 +141,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Permissions }]
         });
         const permissionsMessageCids:string[] = [];
-        const permissionsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const permissionsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           permissionsMessageCids.push(messageCid);
         };
@@ -157,7 +161,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Protocols }]
         });
         const protocolsMessageCids:string[] = [];
-        const protocolsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const protocolsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           protocolsMessageCids.push(messageCid);
         };
@@ -231,7 +236,8 @@ export function testSubscriptionScenarios(): void {
           filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
         });
         const recordsMessageCids:string[] = [];
-        const recordsSubscribeHandler = async (message: GenericMessage):Promise<void> => {
+        const recordsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           recordsMessageCids.push(messageCid);
         };
@@ -275,7 +281,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const proto1Messages:string[] = [];
-        const proto1Handler = async (message:GenericMessage):Promise<void> => {
+        const proto1Handler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           proto1Messages.push(await Message.getCid(message));
         };
 
@@ -290,7 +297,8 @@ export function testSubscriptionScenarios(): void {
         expect(proto1SubscriptionReply.subscription).to.exist;
 
         const proto2Messages:string[] = [];
-        const proto2Handler = async (message:GenericMessage):Promise<void> => {
+        const proto2Handler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           proto2Messages.push(await Message.getCid(message));
         };
 
@@ -400,7 +408,8 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to this thread's events
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           messages.push(await Message.getCid(message));
         };
 
@@ -420,24 +429,22 @@ export function testSubscriptionScenarios(): void {
 
         // add bob as participant
         const bobParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : bob.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : bob.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
         expect(bobParticipantReply.status.code).to.equal(202);
 
         // add carol as participant
         const carolParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : carol.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : carol.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
         expect(carolParticipantReply.status.code).to.equal(202);
@@ -462,37 +469,34 @@ export function testSubscriptionScenarios(): void {
 
         // add a message to protocol1
         const message1 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
         expect(message1Reply.status.code).to.equal(202);
 
         const message2 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
         expect(message2Reply.status.code).to.equal(202);
 
         const message3 = await TestDataGenerator.generateRecordsWrite({
-          author       : carol,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : carol,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
@@ -530,7 +534,8 @@ export function testSubscriptionScenarios(): void {
         const schema2Messages:string[] = [];
 
         // we add a handler to the subscription and add the messageCid to the appropriate array
-        const schema1Handler = async (message:GenericMessage):Promise<void> => {
+        const schema1Handler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           schema1Messages.push(messageCid);
         };
@@ -542,7 +547,8 @@ export function testSubscriptionScenarios(): void {
         expect(schema1SubscriptionReply.subscription?.id).to.equal(await Message.getCid(schema1Subscription.message));
 
         // we add a handler to the subscription and add the messageCid to the appropriate array
-        const schema2Handler = async (message:GenericMessage):Promise<void> => {
+        const schema2Handler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           schema2Messages.push(messageCid);
         };
@@ -607,7 +613,8 @@ export function testSubscriptionScenarios(): void {
 
         // create a subscription and capture the messages associated with the record
         const messages: string[] = [];
-        const subscriptionHandler = async (message: GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           messages.push(await Message.getCid(message));
         };
 
@@ -664,7 +671,8 @@ export function testSubscriptionScenarios(): void {
 
         const receivedMessages:string[] = [];
 
-        const handler = async (message:GenericMessage): Promise<void> => {
+        const handler = async (event: MessageEvent): Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           receivedMessages.push(messageCid);
         };
@@ -754,7 +762,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const imageMessages: string[] = [];
-        const imageHandler = async (message:GenericMessage):Promise<void> => {
+        const imageHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           imageMessages.push(await Message.getCid(message));
         };
 
@@ -831,7 +840,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const smallMessages: string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           smallMessages.push(await Message.getCid(message));
         };
         const smallMessageSubscription = await TestDataGenerator.generateEventsSubscribe({
@@ -890,7 +900,8 @@ export function testSubscriptionScenarios(): void {
         // messageCids of events
         const messageCids:string[] = [];
 
-        const handler = async (message: GenericMessage): Promise<void> => {
+        const handler = async (event: MessageEvent): Promise<void> => {
+          const { message } = event;
           const messageCid = await Message.getCid(message);
           messageCids.push(messageCid);
         };
@@ -931,7 +942,8 @@ export function testSubscriptionScenarios(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const subscriptionHandler = async (event: RecordEvent):Promise<void> => {
+          const { message } = event;
           messages.push(await Message.getCid(message));
         };
 
@@ -976,7 +988,8 @@ export function testSubscriptionScenarios(): void {
 
         // bob subscribes to any messages he's authorized to see
         const bobMessages:string[] = [];
-        const bobSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+        const bobSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
           bobMessages.push(await Message.getCid(message));
         };
 
@@ -993,7 +1006,8 @@ export function testSubscriptionScenarios(): void {
 
         // carol subscribes to any messages she's the recipient of.
         const carolMessages:string[] = [];
-        const carolSubscribeHandler = async (message:GenericMessage):Promise<void> => {
+        const carolSubscribeHandler = async (event: RecordEvent):Promise<void> => {
+          const { message } = event;
           carolMessages.push(await Message.getCid(message));
         };
 
@@ -1070,7 +1084,12 @@ export function testSubscriptionScenarios(): void {
 
         // subscribe to this thread's events
         const messages:string[] = [];
-        const subscriptionHandler = async (message:GenericMessage):Promise<void> => {
+        const initialWrites: string[] = [];
+        const subscriptionHandler = async (event :MessageEvent):Promise<void> => {
+          const { message, initialWrite } = event;
+          if (initialWrite !== undefined) {
+            initialWrites.push(await Message.getCid(initialWrite));
+          }
           messages.push(await Message.getCid(message));
         };
 
@@ -1106,24 +1125,22 @@ export function testSubscriptionScenarios(): void {
 
         // add bob as participant
         const bobParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : bob.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : bob.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
         expect(bobParticipantReply.status.code).to.equal(202);
 
         // add carol as participant
         const carolParticipant = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : carol.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/participant'
+          author          : alice,
+          recipient       : carol.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/participant'
         });
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
         expect(carolParticipantReply.status.code).to.equal(202);
@@ -1148,37 +1165,34 @@ export function testSubscriptionScenarios(): void {
 
         // add a message to protocol1
         const message1 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
         expect(message1Reply.status.code).to.equal(202);
 
         const message2 = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : bob,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
         expect(message2Reply.status.code).to.equal(202);
 
         const message3 = await TestDataGenerator.generateRecordsWrite({
-          author       : carol,
-          recipient    : alice.did,
-          parentId     : thread.message.recordId,
-          contextId    : thread.message.contextId,
-          protocol     : protocol,
-          protocolPath : 'thread/chat',
-          protocolRole : 'thread/participant',
+          author          : carol,
+          recipient       : alice.did,
+          parentContextId : thread.message.contextId,
+          protocol        : protocol,
+          protocolPath    : 'thread/chat',
+          protocolRole    : 'thread/participant',
         });
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
@@ -1205,6 +1219,11 @@ export function testSubscriptionScenarios(): void {
         expect(messages.length).to.equal(6);
         expect(messages).to.include.members([
           await Message.getCid(deleteCarol.message)
+        ]);
+
+        // check the initial write was included with the delete
+        expect(initialWrites).to.include.members([
+          await Message.getCid(carolParticipant.message)
         ]);
       });
     });

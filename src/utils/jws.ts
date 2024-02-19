@@ -1,15 +1,14 @@
-import type { GeneralJws } from '../types/jws-types.js';
-import type { SignatureEntry } from '../types/jws-types.js';
-import type { Signer } from '../types/signer.js';
-import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
+import type { GeneralJws } from "../types/jws-types.js";
+import type { SignatureEntry } from "../types/jws-types.js";
+import type { Signer } from "../types/signer.js";
+import type { KeyMaterial, PublicJwk } from "../types/jose-types.js";
 
-import isPlainObject from 'lodash/isPlainObject.js';
+import isPlainObject from "lodash/isPlainObject.js";
 
-import { Encoder } from './encoder.js';
-import { PrivateKeySigner } from './private-key-signer.js';
-import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-
+import { Encoder } from "./encoder.js";
+import { PrivateKeySigner } from "./private-key-signer.js";
+import { signatureAlgorithms } from "../jose/algorithms/signing/signature-algorithms.js";
+import { DwnError, DwnErrorCode } from "../core/dwn-error.js";
 
 /**
  * Utility class for JWS related operations.
@@ -36,14 +35,25 @@ export class Jws {
    * Verifies the signature against the given payload.
    * @returns `true` if signature is valid; `false` otherwise
    */
-  public static async verifySignature(base64UrlPayload: string, signatureEntry: SignatureEntry, jwkPublic: PublicJwk): Promise<boolean> {
+  public static async verifySignature(
+    base64UrlPayload: string,
+    signatureEntry: SignatureEntry,
+    jwkPublic: PublicJwk
+  ): Promise<boolean> {
     const signatureAlgorithm = signatureAlgorithms[jwkPublic.crv];
 
     if (!signatureAlgorithm) {
-      throw new DwnError(DwnErrorCode.JwsVerifySignatureUnsupportedCrv, `unsupported crv. crv must be one of ${Object.keys(signatureAlgorithms)}`);
+      throw new DwnError(
+        DwnErrorCode.JwsVerifySignatureUnsupportedCrv,
+        `unsupported crv. crv must be one of ${Object.keys(
+          signatureAlgorithms
+        )}`
+      );
     }
 
-    const payload = Encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
+    const payload = Encoder.stringToBytes(
+      `${signatureEntry.protected}.${base64UrlPayload}`
+    );
     const signatureBytes = Encoder.base64UrlToBytes(signatureEntry.signature);
 
     return await signatureAlgorithm.verify(payload, signatureBytes, jwkPublic);
@@ -57,11 +67,17 @@ export class Jws {
     try {
       payloadJson = Encoder.base64UrlToObject(jws.payload);
     } catch {
-      throw new DwnError(DwnErrorCode.JwsDecodePlainObjectPayloadInvalid, 'payload is not a JSON object');
+      throw new DwnError(
+        DwnErrorCode.JwsDecodePlainObjectPayloadInvalid,
+        "payload is not a JSON object"
+      );
     }
 
     if (!isPlainObject(payloadJson)) {
-      throw new DwnError(DwnErrorCode.JwsDecodePlainObjectPayloadInvalid, 'signed payload must be a plain object');
+      throw new DwnError(
+        DwnErrorCode.JwsDecodePlainObjectPayloadInvalid,
+        "signed payload must be a plain object"
+      );
     }
 
     return payloadJson;
@@ -71,7 +87,7 @@ export class Jws {
    * Extracts the DID from the given `kid` string.
    */
   public static extractDid(kid: string): string {
-    const [ did ] = kid.split('#');
+    const [did] = kid.split("#");
     return did;
   }
 
@@ -79,7 +95,9 @@ export class Jws {
    * Creates a Signer[] from the given Personas.
    */
   public static createSigners(keyMaterials: KeyMaterial[]): Signer[] {
-    const signers = keyMaterials.map((keyMaterial) => Jws.createSigner(keyMaterial));
+    const signers = keyMaterials.map((keyMaterial) =>
+      Jws.createSigner(keyMaterial)
+    );
     return signers;
   }
 

@@ -3,12 +3,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "id",
-    "type",
-    "controller",
-    "publicKeyJwk"
-  ],
+  "required": ["id", "type", "controller", "publicKeyJwk"],
   "properties": {
     "id": {
       "type": "string"
@@ -16,7 +11,8 @@
     "type": {
       "enum": [
         "JsonWebKey",
-        "JsonWebKey2020"
+        "JsonWebKey2020",
+        "EcdsaSecp256k1VerificationKey2019"
       ]
     },
     "controller": {

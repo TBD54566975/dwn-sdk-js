@@ -147,9 +147,12 @@ export class Records {
       );
     }
 
+    // TODO: issue #683 -Extend key derivation support to include the full contextId (https://github.com/TBD54566975/dwn-sdk-js/issues/683)
+    const firstContextSegment = contextId.split('/')[0];
+
     const fullDerivationPath = [
       KeyDerivationScheme.ProtocolContext,
-      contextId
+      firstContextSegment
     ];
 
     return fullDerivationPath;
@@ -218,6 +221,27 @@ export class Records {
   }
 
   /**
+   * Extracts the parent context ID from the given context ID.
+   */
+  public static getParentContextFromOfContextId(contextId: string | undefined): string | undefined {
+    if (contextId === undefined) {
+      return undefined;
+    }
+
+    // NOTE: assumes the given contextId is a valid contextId in the form of `a/b/c/d`.
+    // `/a/b/c/d` or `a/b/c/d/` is not supported.
+
+    const lastIndex = contextId.lastIndexOf('/');
+
+    // If '/' is not found, this means this is a root record, so return an empty string as the parent context ID.
+    if (lastIndex === -1) {
+      return '';
+    } else {
+      return contextId.substring(0, lastIndex);
+    }
+  }
+
+  /**
    * Normalizes the protocol and schema URLs within a provided RecordsFilter and returns a copy of RecordsFilter with the modified values.
    *
    * @param filter incoming RecordsFilter to normalize.
@@ -257,7 +281,9 @@ export class Records {
   public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
     const filterCopy = { ...filter } as Filter;
 
-    const { dateCreated, datePublished, dateUpdated } = filter;
+    // extract properties that needs conversion
+    const { dateCreated, datePublished, dateUpdated, contextId } = filter;
+
     const dateCreatedFilter = dateCreated ? FilterUtility.convertRangeCriterion(dateCreated) : undefined;
     if (dateCreatedFilter) {
       filterCopy.dateCreated = dateCreatedFilter;
@@ -280,6 +306,13 @@ export class Records {
       filterCopy.messageTimestamp = messageTimestampFilter;
       delete filterCopy.dateUpdated;
     }
+
+    // contextId conversion to prefix match
+    const contextIdPrefixFilter = contextId ? FilterUtility.constructPrefixFilterAsRangeFilter(contextId) : undefined;
+    if (contextIdPrefixFilter) {
+      filterCopy.contextId = contextIdPrefixFilter;
+    }
+
     return filterCopy as Filter;
   }
 
