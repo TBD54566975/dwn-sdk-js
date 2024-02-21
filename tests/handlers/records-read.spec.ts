@@ -502,7 +502,7 @@ export function testRecordsReadHandler(): void {
         });
 
         describe('protocolRole based reads', () => {
-          it('uses a globalRole to authorize a read', async () => {
+          it('uses a root-level role to authorize a read', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob invokes his
             //           friend role in order to read the chat message.
 
@@ -518,7 +518,7 @@ export function testRecordsReadHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice writes a 'friend' $globalRole record with Bob as recipient
+            // Alice writes a 'friend' root-level role record with Bob as recipient
             const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               recipient    : bob.did,
@@ -553,7 +553,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.code).to.equal(200);
           });
 
-          it('rejects globalRole-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
+          it('rejects root-level role authorized reads if the protocolRole is not a valid protocol path to an active role record', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke the 'chat' role,
             //           but 'chat' is not a role.
 
@@ -593,7 +593,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
           });
 
-          it('rejects globalRole-authorized reads if there is no active role for the recipient', async () => {
+          it('rejects root-level role authorized reads if there is no active role for the recipient', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke a role,
             //           but he has not been given one.
 
@@ -633,7 +633,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
           });
 
-          it('uses a contextRole to authorize a read', async () => {
+          it('can authorize a read using a context role', async () => {
             // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice writes a chat message.
             //           Bob invokes the record to read in the chat message.
 
@@ -717,9 +717,9 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.code).to.equal(200);
           });
 
-          it('rejects contextRole-authorized read if there is no active role in that context for the recipient', async () => {
-            // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
-            //           contextRole to write a chat in the second thread
+          it('should not allow context role to be invoked against a wrong context', async () => {
+            // scenario: Alice creates a thread and adds Bob as a participant. Alice creates another thread. Bob tries and fails to invoke his
+            //           context role to write a chat in the second thread
 
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();

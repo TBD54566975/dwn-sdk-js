@@ -10,7 +10,7 @@ import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
 import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
-import { testNestedContextRoleScenarios } from './scenarios/nested-roles.spec.js';
+import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
 import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
 import { testProtocolsConfigureHandler } from './handlers/protocols-configure.spec.js';
@@ -61,7 +61,7 @@ export class TestSuite {
     testDelegatedGrantScenarios();
     testEndToEndScenarios();
     testEventsQueryScenarios();
-    testNestedContextRoleScenarios();
+    testNestedRoleScenarios();
     testSubscriptionScenarios();
   }
 }

@@ -88,8 +88,8 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize schema URIs', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      nonnormalizedDexProtocol.types.ask.schema = 'ask';
+      const nonNormalizedDexProtocol = { ...dexProtocolDefinition };
+      nonNormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
         recipient  : alice.did,
@@ -97,7 +97,7 @@ describe('ProtocolsConfigure', () => {
         dataFormat : 'application/json',
         signer     : Jws.createSigner(alice),
         protocol   : 'example.com/',
-        definition : nonnormalizedDexProtocol
+        definition : nonNormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
@@ -106,28 +106,50 @@ describe('ProtocolsConfigure', () => {
     });
 
     describe('protocol definition validations', () => {
-      it('allows `role` actions that have protocol path to valid $globalRole records', async () => {
+      it('should not allow a record in protocol structure to reference a non-existent record type', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            record: {},
+          },
+          structure: {
+            undeclaredRecord: { } // non-existent record type
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createPromise = ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createPromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRuleSetRecordType);
+      });
+
+      it('should allow `role` property in an `action` to have protocol path to a role record.', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
           types     : {
             rootRole    : {},
-            secondLevel : {},
-            otherRoot   : {}
+            firstLevel  : {},
+            secondLevel : {}
           },
           structure: {
             rootRole: {
-              $globalRole : true,
+              $role       : true,
               secondLevel : {
                 $actions: [{
-                  role : 'rootRole', // valid because 'rootRole` has $globalRole: true
+                  role : 'rootRole', // valid because 'rootRole` has $role: true
                   can  : 'write'
                 }]
               }
             },
-            otherRole: {
+            firstLevel: {
               $actions: [{
-                role : 'rootRole', // valid because 'rootRole` has $globalRole: true
+                role : 'rootRole', // valid because 'rootRole` has $role: true
                 can  : 'write'
               }]
             }
@@ -144,23 +166,23 @@ describe('ProtocolsConfigure', () => {
         expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
       });
 
-      it('allows `role` actions that have protocol path to valid $contextRole records', async () => {
+      it('should allow `role` property in an `action` that have protocol path to a role record.', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
           types     : {
-            rootRole    : {},
-            secondLevel : {},
-            otherRoot   : {}
+            thread      : {},
+            participant : {},
+            chat        : {}
           },
           structure: {
             thread: {
               participant: {
-                $contextRole: true,
+                $role: true,
               },
               chat: {
                 $actions: [{
-                  role : 'thread/participant', // valid because 'thread/participant` has $contextRole: true
+                  role : 'thread/participant', // valid because 'thread/participant` has $role: true
                   can  : 'write'
                 }]
               }
@@ -178,50 +200,21 @@ describe('ProtocolsConfigure', () => {
         expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
       });
 
-      it('rejects protocol definitions with $globalRole at records that are not root records', async () => {
-        const definition = {
-          published : true,
-          protocol  : 'http://example.com',
-          types     : {
-            root        : {},
-            secondLevel : {}
-          },
-          structure: {
-            root: {
-              secondLevel: {
-                // $globalRole may only be set on root records, not nested records
-                $globalRole: true
-              }
-            }
-          }
-        };
-
-        const alice = await TestDataGenerator.generatePersona();
-
-        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          signer: Jws.createSigner(alice),
-          definition
-        });
-
-        await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
-      });
-
       it('rejects protocol definitions with `role` actions that contain invalid roles', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
           types     : {
-            rootRole  : {},
-            otherRoot : {},
+            foo : {},
+            bar : {},
           },
           structure: {
-            rootRole: {
-              // $globalRole: true // deliberated omitted
+            foo: {
+              // $role: true // deliberated omitted
             },
-            otherRoot: {
+            bar: {
               $actions: [{
-                role : 'rootRole', // Not a valid role
+                role : 'foo', // foo is not a role
                 can  : 'read'
               }]
             }
@@ -236,7 +229,7 @@ describe('ProtocolsConfigure', () => {
         });
 
         await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRole);
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath);
       });
 
       it('rejects protocol definitions with actions that contain `of` and  `who` is `anyone`', async () => {

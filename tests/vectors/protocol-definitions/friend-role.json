@@ -4,17 +4,18 @@
   "types": {
     "friend": {},
     "admin": {},
-    "chat": {}
+    "chat": {},
+    "fan": {}
   },
   "structure": {
     "admin": {
-      "$globalRole": true
+      "$role": true
     },
     "friend": {
-      "$globalRole": true
+      "$role": true
     },
     "fan": {
-      "$globalRole": true
+      "$role": true
     },
     "chat": {
       "$actions": [

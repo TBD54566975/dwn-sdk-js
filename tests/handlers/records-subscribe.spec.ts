@@ -327,7 +327,7 @@ export function testRecordsSubscribeHandler(): void {
           expect(messageCids[0]).to.equal(await Message.getCid(chatRecordForBob.message));
         });
 
-        it('allows $globalRole authorized subscriptions', async () => {
+        it('should allows role authorized subscriptions', async () => {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
           //           thread member role in order to subscribe to the chat messages.
 
@@ -369,7 +369,7 @@ export function testRecordsSubscribeHandler(): void {
           expect(subscriptionReply.subscription).to.exist;
 
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : bob.did,
@@ -475,7 +475,7 @@ export function testRecordsSubscribeHandler(): void {
           expect(subscriptionReply.status.code).to.equal(200);
           expect(subscriptionReply.subscription).to.exist;
 
-          // Alice writes a 'participant' $contextRole record with Bob as recipient
+          // Alice writes a 'participant' role record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author          : alice,
             recipient       : bob.did,
@@ -534,7 +534,7 @@ export function testRecordsSubscribeHandler(): void {
         });
 
         it('does not execute protocol subscriptions where protocolPath is missing from the filter', async () => {
-          // scenario: Alice writes some chat messages. Bob invokes his $globalRole to subscribe those messages,
+          // scenario: Alice assigns Bob a friend role and writes some chat messages. Bob invokes his role to subscribe those messages,
           //           but his subscription filter does not include protocolPath.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -549,7 +549,7 @@ export function testRecordsSubscribeHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : bob.did,
@@ -575,7 +575,7 @@ export function testRecordsSubscribeHandler(): void {
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
 
-        it('does not execute $contextRole authorized subscriptions where contextId is missing from the filter', async () => {
+        it('does not execute context role authorized subscriptions where contextId is missing from the filter', async () => {
           // scenario: Alice gives Bob a role allowing him to access a particular chat thread.
           //           But Bob's filter does not contain a contextId so the subscription fails.
           const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -599,7 +599,7 @@ export function testRecordsSubscribeHandler(): void {
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author          : alice,
             recipient       : bob.did,
@@ -628,9 +628,9 @@ export function testRecordsSubscribeHandler(): void {
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
 
-        it('rejects $globalRole authorized subscriptions if the request author does not have a matching $globalRole', async () => {
+        it('rejects role authorized subscriptions if the request author does not have a matching root-level role', async () => {
           // scenario: Alice installs a chat protocol.
-          // Bob invokes a $globalRole within that protocol to subscribe but fails because he does not actually have a role.
+          // Bob invokes a root-level role within that protocol to subscribe but fails because he does not actually have a role.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -659,7 +659,7 @@ export function testRecordsSubscribeHandler(): void {
           expect(chatSubscribeReply.subscription).to.not.exist;
         });
 
-        it('rejects protocol authorized subscriptions where the subscription author does not have a matching $contextRole', async () => {
+        it('rejects role authorized subscriptions where the subscription author does not have a matching context role', async () => {
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();

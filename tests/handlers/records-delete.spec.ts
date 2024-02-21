@@ -502,8 +502,8 @@ export function testRecordsDeleteHandler(): void {
         });
 
         describe('role based deletes', () => {
-          it('should allow deletes with $contextRole', async () => {
-            // scenario: Alice adds Bob as a 'thread/admin' $contextRole. She writes a 'thread/chat'.
+          it('should allow deletes by invoking a context role', async () => {
+            // scenario: Alice adds Bob as a 'thread/admin' role. She writes a 'thread/chat'.
             //           Bob invokes his admin role to delete the 'thread/chat'. Carol is unable to delete
             //           the 'thread/chat'.
 
@@ -571,8 +571,8 @@ export function testRecordsDeleteHandler(): void {
             expect(chatDeleteReply.status.code).to.equal(202);
           });
 
-          it('should allow delete with $globalRole', async () => {
-            // scenario: Alice adds Bob as an 'admin' $globalRole. She writes a 'chat'.
+          it('should allow delete invoking a root-level role', async () => {
+            // scenario: Alice adds Bob as a root-level 'admin' role. She writes a 'chat'.
             //           Bob invokes his admin role to delete the 'chat'.
 
             const alice = await TestDataGenerator.generateDidKeyPersona();

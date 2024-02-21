@@ -101,6 +101,13 @@
   - `write` - allows a DID to create and update the record they have created
   - `update` - allows a DID to update a record, regardless of the initial author
 
+- What is the difference between the terms "global role" and "context role"?
+
+  (Last update: 2024/02/16)
+
+  The structure and usage of "global roles" and "context roles" are identical. The distinction lies in their placement within the protocol hierarchy: a "global role" is defined as a root level record without a parent record, whereas a "context role" has a parent record thus making it "contextual". This means that a protocol rule set can have access to all global role records/assignments, hence the "global" designation; conversely, access to context role records/assignment is restricted to the specific context relevant to the message being authorized.
+
+
   ## Subscriptions
 - What happens to a subscription which is listening to events, but is no longer authorized due to revocation of a grant or role?
 

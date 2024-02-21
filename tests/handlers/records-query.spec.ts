@@ -2073,7 +2073,7 @@ export function testRecordsQueryHandler(): void {
 
         });
 
-        it('allows $globalRole authorized queries', async () => {
+        it('allows root-level role authorized queries', async () => {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
           //           thread member role in order to query the chat messages.
 
@@ -2089,7 +2089,7 @@ export function testRecordsQueryHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : bob.did,
@@ -2146,7 +2146,7 @@ export function testRecordsQueryHandler(): void {
           expect(unpublishedChatReply.entries!.map((record) => record.recordId)).to.have.all.members(chatRecordIds);
         });
 
-        it('allows $contextRole authorized queries', async () => {
+        it('can authorize queries using a context role.', async () => {
           // scenario: Alice writes some chat messages. Bob invokes his friend role in order to query the chat messages.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2170,7 +2170,7 @@ export function testRecordsQueryHandler(): void {
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
-          // Alice writes a 'participant' $contextRole record with Bob as recipient
+          // Alice writes a 'participant' role record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author          : alice,
             recipient       : bob.did,
@@ -2217,7 +2217,7 @@ export function testRecordsQueryHandler(): void {
         });
 
         it('does not execute protocol queries where protocolPath is missing from the filter', async () => {
-          // scenario: Alice writes some chat messages. Bob invokes his $globalRole to query those messages,
+          // scenario: Alice gives Bob a root-level role and writes some chat messages. Bob invokes his root-level role to query those messages,
           //           but his query filter does not include protocolPath.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2232,7 +2232,7 @@ export function testRecordsQueryHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : bob.did,
@@ -2273,7 +2273,7 @@ export function testRecordsQueryHandler(): void {
           expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.RecordsQueryFilterMissingRequiredProperties);
         });
 
-        it('does not execute $contextRole authorized queries where contextId is missing from the filter', async () => {
+        it('does not execute context role authorized queries where contextId is missing from the filter', async () => {
           // scenario: Alice writes some chat messages and gives Bob a role allowing him to access them. But Bob's filter
           //           does not contain a contextId so the query fails.
           const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2297,7 +2297,7 @@ export function testRecordsQueryHandler(): void {
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
           expect(threadRoleReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'friend' root-level role record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author          : alice,
             recipient       : bob.did,
@@ -2342,9 +2342,9 @@ export function testRecordsQueryHandler(): void {
           expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingContextId);
         });
 
-        it('rejects $globalRole authorized queries if the query author does not have a matching $globalRole', async () => {
-          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes a
-          //           $globalRole but fails because he does not actually have a role.
+        it('should reject root-level role authorized queries if a matching root-level role record is not found for the message author', async () => {
+          // scenario: Alice creates a thread and writes some chat messages writes a chat message.
+          //           Bob invokes a root-level role but fails because he does not actually have a role.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -2388,7 +2388,7 @@ export function testRecordsQueryHandler(): void {
           expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
         });
 
-        it('rejects $contextRole authorized queries where the query author does not have a matching $contextRole', async () => {
+        it('should reject context role authorized queries if a matching context role record is not found for the message author', async () => {
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();

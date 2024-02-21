@@ -77,7 +77,7 @@ export type ProtocolActionRule = {
   who?: string,
 
   /**
-   * The protocol path of a record marked with $globalRole: true.
+   * The protocol path of a role record type marked with $role: true.
    * Mutually exclusive with `who`
    */
   role?: string;
@@ -111,20 +111,13 @@ export type ProtocolRuleSet = {
    */
   $encryption?: ProtocolPathEncryption;
   $actions?: ProtocolActionRule[];
+
   /**
-   * If true, this marks a record as a `role` that may be used across contexts. Only root records
-   * may set $globalRole: true.
-   * The recipient of a $globalRole record may invoke their role in RecordsRead or RecordsWrites
-   * by setting `protocolRole` property to the protocol path of the $globalRole record.
+   * If true, this marks a record as a `role` that may used within a context.
+   * The recipient of a $role record may invoke their role by setting `protocolRole` property to the protocol path of the $role record.
    */
-  $globalRole?: boolean;
-  /**
-   * If true, this marks a record as a `role` that may used within a single context. Only
-   * second-level records may set $contextRole: true.
-   * The recipient of a $contextRole record may invoke their role in RecordsReads or RecordsWrites
-   * by setting `protocolRole` property to the protocol path of the $contextRole record.
-   */
-  $contextRole?: boolean;
+  $role?: boolean;
+
   /**
    * If $size is set, the record size in bytes must be within the limits.
    */

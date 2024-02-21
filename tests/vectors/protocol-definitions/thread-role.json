@@ -10,7 +10,7 @@
   },
   "structure": {
     "globalAdmin": {
-      "$globalRole": true
+      "$role": true
     },
     "thread": {
       "$actions": [
@@ -20,10 +20,10 @@
         }
       ],
       "admin": {
-        "$contextRole": true
+        "$role": true
       },
       "participant": {
-        "$contextRole": true,
+        "$role": true,
         "$actions": [
           {
             "role": "thread/participant",

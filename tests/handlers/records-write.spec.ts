@@ -1576,8 +1576,8 @@ export function testRecordsWriteHandler(): void {
         });
 
         describe('role rules', () => {
-          describe('write $globalRole records', () => {
-            it('allows a $globalRole record with unique recipient to be created and updated', async () => {
+          describe('write root-level role records', () => {
+            it('allows a root-level role record with unique recipient to be created and updated', async () => {
               // scenario: Alice adds Bob to the 'friend' role. Then she updates the 'friend' record.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1592,7 +1592,7 @@ export function testRecordsWriteHandler(): void {
               const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
               expect(protocolsConfigureReply.status.code).to.equal(202);
 
-              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              // Alice writes a 'friend' root-level role record with Bob as recipient
               const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
                 author       : alice,
                 recipient    : bob.did,
@@ -1613,8 +1613,8 @@ export function testRecordsWriteHandler(): void {
               expect(updateFriendReply.status.code).to.equal(202);
             });
 
-            it('rejects writes to a $globalRole if recipient is undefined', async () => {
-              // scenario: Alice writes a global role record with no recipient and it is rejected
+            it('should reject role RecordsWrite if recipient is undefined', async () => {
+              // scenario: Alice writes a root-level role record with no recipient and it is rejected
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -1627,7 +1627,7 @@ export function testRecordsWriteHandler(): void {
               const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
               expect(protocolsConfigureReply.status.code).to.equal(202);
 
-              // Alice writes a 'friend' $globalRole record with no recipient
+              // Alice writes a 'friend' root-level role record with no recipient
               const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
                 author       : alice,
                 protocol     : protocolDefinition.protocol,
@@ -1639,48 +1639,7 @@ export function testRecordsWriteHandler(): void {
               expect(friendRoleReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient);
             });
 
-            it('rejects writes to a $globalRole if there is already a record with the same role and recipient', async () => {
-              // scenario: Alice adds Bob to the 'friend' role. Then she tries and fails to write another separate record
-              //           adding Bob as a 'friend' again.
-
-              const alice = await TestDataGenerator.generateDidKeyPersona();
-              const bob = await TestDataGenerator.generateDidKeyPersona();
-
-              const protocolDefinition = friendRoleProtocolDefinition;
-
-              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-                author: alice,
-                protocolDefinition
-              });
-              const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-              expect(protocolsConfigureReply.status.code).to.equal(202);
-
-              // Alice writes a 'friend' $globalRole record with Bob as recipient
-              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'friend',
-                data         : new TextEncoder().encode('Bob is my friend'),
-              });
-              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
-              expect(friendRoleReply.status.code).to.equal(202);
-
-              // Alice writes a duplicate record adding Bob as a 'friend' again
-              const duplicateFriendRecord = await TestDataGenerator.generateRecordsWrite({
-                author       : alice,
-                recipient    : bob.did,
-                protocol     : protocolDefinition.protocol,
-                protocolPath : 'friend',
-                data         : new TextEncoder().encode('Bob is still my friend'),
-              });
-              const duplicateFriendReply =
-                await dwn.processMessage(alice.did, duplicateFriendRecord.message, { dataStream: duplicateFriendRecord.dataStream });
-              expect(duplicateFriendReply.status.code).to.equal(400);
-              expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient);
-            });
-
-            it('allows a new $globalRole record to be created for the same recipient if their old one was deleted', async () => {
+            it('should allow a new root-level role record to be created for the same recipient if their old one was deleted', async () => {
               // scenario: Alice adds Bob to the 'friend' role, then deletes the role. Alice writes a new record adding Bob as a 'friend' again.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1695,7 +1654,7 @@ export function testRecordsWriteHandler(): void {
               const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
               expect(protocolsConfigureReply.status.code).to.equal(202);
 
-              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              // Alice writes a 'friend' root-level role record with Bob as recipient
               const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
                 author       : alice,
                 recipient    : bob.did,
@@ -1728,8 +1687,8 @@ export function testRecordsWriteHandler(): void {
             });
           });
 
-          describe('write contextRole records', () => {
-            it('allows a $contextRole record with recipient unique to the context to be created and updated', async () => {
+          describe('write context role records', () => {
+            it('can authorized a create or update RecordsWrite using the invoked a context role', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Then she updates Bob's role record.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1776,7 +1735,7 @@ export function testRecordsWriteHandler(): void {
               expect(participantUpdateRecordReply.status.code).to.equal(202);
             });
 
-            it('allows a $contextRole record to be created even if there is a $contextRole in a different context', async () => {
+            it('can create the same role under different contexts', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice repeats the steps with a new thread.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1836,7 +1795,7 @@ export function testRecordsWriteHandler(): void {
               expect(participantRecordReply2.status.code).to.equal(202);
             });
 
-            it('rejects writes to a $contextRole record if there already exists one in the same context', async () => {
+            it('rejects writes to a $role record if there already exists one in the same context', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She adds Bob to the role second time and fails
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1884,10 +1843,10 @@ export function testRecordsWriteHandler(): void {
               const participantRecordReply2 =
                 await dwn.processMessage(alice.did, participantRecord2.message, { dataStream: participantRecord2.dataStream });
               expect(participantRecordReply2.status.code).to.equal(400);
-              expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient);
+              expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateRoleRecipient);
             });
 
-            it('allows a new $contextRole record to be created for the same recipient in the same context if their old one was deleted', async () => {
+            it('allows a new context role record to be created for the same recipient in the same context if their old one was deleted', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She deletes the role and then adds a new one.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -1946,8 +1905,8 @@ export function testRecordsWriteHandler(): void {
             });
           });
 
-          describe('protocolRole based writes', () => {
-            it('uses a globalRole to authorize a write', async () => {
+          describe('role based writes', () => {
+            it('uses a root-level role to authorize a write', async () => {
               // scenario: Alice gives Bob a friend role. Bob invokes his
               //           friend role in order to write a chat message
 
@@ -1963,7 +1922,7 @@ export function testRecordsWriteHandler(): void {
               const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
               expect(protocolsConfigureReply.status.code).to.equal(202);
 
-              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              // Alice writes a 'friend' $root-level role record with Bob as recipient
               const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
                 author       : alice,
                 recipient    : bob.did,
@@ -1987,7 +1946,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatReply.status.code).to.equal(202);
             });
 
-            it('uses a $globalRole to authorize an update', async () => {
+            it('uses a root-level role to authorize an update', async () => {
               // scenario: Alice gives Bob a admin role. Bob invokes his
               //           admin role in order to update a chat message that Alice wrote
 
@@ -2003,7 +1962,7 @@ export function testRecordsWriteHandler(): void {
               const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
               expect(protocolsConfigureReply.status.code).to.equal(202);
 
-              // Alice writes a 'admin' $globalRole record with Bob as recipient
+              // Alice writes a 'admin' root-level role record with Bob as recipient
               const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
                 author       : alice,
                 recipient    : bob.did,
@@ -2035,7 +1994,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatUpdateReply.status.code).to.equal(202);
             });
 
-            it('rejects role-authorized writes if the protocolRole is not a valid protocol path to a role record', async () => {
+            it('rejects root-level role authorized writes if the protocolRole is not a valid protocol path to an active role record', async () => {
               // scenario: Bob tries to invoke the 'chat' role to write to Alice's DWN, but 'chat' is not a role.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2075,7 +2034,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
             });
 
-            it('rejects global-authorized writes if there is no active role for the recipient', async () => {
+            it('rejects root-level role authorized writes if there is no active role for the recipient', async () => {
               // scenario: Bob tries to invoke a role to write, but he has not been given one.
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2104,7 +2063,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMatchingRoleRecordNotFound);
             });
 
-            it('uses a contextRole to authorize a write', async () => {
+            it('uses a context role to authorize a write', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Bob invokes the record to write in the thread
 
               const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -2153,7 +2112,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatRecordReply.status.code).to.equal(202);
             });
 
-            it('uses a contextRole to authorize an update', async () => {
+            it('uses a context role to authorize an update', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/admin' role.
               //           Bob invokes the record to write in the thread
 
@@ -2212,7 +2171,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatUpdateRecordReply.status.code).to.equal(202);
             });
 
-            it('rejects contextRole-authorized writes if there is no active role in that context for the recipient', async () => {
+            it('rejects context role authorized writes if the protocolRole is not a valid protocol path to an active role record', async () => {
               // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
               //           contextRole to write a chat in the second thread
 
