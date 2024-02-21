@@ -106,7 +106,7 @@ describe('ProtocolsConfigure', () => {
     });
 
     describe('protocol definition validations', () => {
-      it('should not allow a record in protocol structure to reference an on-existent record type', async () => {
+      it('should not allow a record in protocol structure to reference a non-existent record type', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
