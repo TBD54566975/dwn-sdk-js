@@ -54,7 +54,7 @@ export function testNestedRoleScenarios(): void {
       await dwn.close();
     });
 
-    it.only('should support Slack-like protocol with community and gated channels', async () => {
+    it('should support Slack-like protocol with community and gated channels', async () => {
       // scenario:
       // 1. Alice installs the Slack-like protocol
       // 2. Alice creates a community
