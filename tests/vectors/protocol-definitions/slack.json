@@ -1,6 +1,6 @@
 {
   "published": true,
-  "protocol": "https://slick.app",
+  "protocol": "https://slack.app",
   "types": {
     "community": {
       "dataFormats": [
@@ -53,6 +53,12 @@
   },
   "structure": {
     "community": {
+      "$actions": [
+        {
+          "role": "community/admin",
+          "can": "read"
+        }
+      ],
       "admin": {
         "$role": true,
         "$actions": [
@@ -148,6 +154,10 @@
           {
             "role": "community/admin",
             "can": "delete"
+          },
+          {
+            "role": "community/gatedChannel/participant",
+            "can": "read"
           }
         ],
         "participant": {
