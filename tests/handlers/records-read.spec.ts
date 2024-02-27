@@ -652,7 +652,6 @@ export function testRecordsReadHandler(): void {
             // Alice creates a thread
             const threadRecord = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
-              recipient    : bob.did,
               protocol     : protocolDefinition.protocol,
               protocolPath : 'thread'
             });
