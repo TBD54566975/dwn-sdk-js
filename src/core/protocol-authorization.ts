@@ -1,21 +1,30 @@
-import type { Filter } from '../types/query-types.js';
-import type { MessageStore } from '../types/message-store.js';
-import type { RecordsDelete } from '../interfaces/records-delete.js';
-import type { RecordsQuery } from '../interfaces/records-query.js';
-import type { RecordsRead } from '../interfaces/records-read.js';
-import type { RecordsSubscribe } from '../interfaces/records-subscribe.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
+import type { Filter } from "../types/query-types.js";
+import type { MessageStore } from "../types/message-store.js";
+import type { RecordsDelete } from "../interfaces/records-delete.js";
+import type { RecordsQuery } from "../interfaces/records-query.js";
+import type { RecordsRead } from "../interfaces/records-read.js";
+import type { RecordsSubscribe } from "../interfaces/records-subscribe.js";
+import type { RecordsWriteMessage } from "../types/records-types.js";
+import type {
+  ProtocolActionRule,
+  ProtocolDefinition,
+  ProtocolRuleSet,
+  ProtocolsConfigureMessage,
+  ProtocolType,
+  ProtocolTypes,
+} from "../types/protocols-types.js";
 
-import { FilterUtility } from '../utils/filter.js';
-import { Records } from '../utils/records.js';
-import { RecordsWrite } from '../interfaces/records-write.js';
-import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
+import { FilterUtility } from "../utils/filter.js";
+import { Records } from "../utils/records.js";
+import { RecordsWrite } from "../interfaces/records-write.js";
+import { DwnError, DwnErrorCode } from "./dwn-error.js";
+import {
+  DwnInterfaceName,
+  DwnMethodName,
+} from "../enums/dwn-interface-method.js";
+import { ProtocolAction, ProtocolActor } from "../types/protocols-types.js";
 
 export class ProtocolAuthorization {
-
   /**
    * Performs validation on the structure of RecordsWrite messages that use a protocol.
    * @throws {Error} if validation fails.
@@ -23,14 +32,15 @@ export class ProtocolAuthorization {
   public static async validateReferentialIntegrity(
     tenant: string,
     incomingMessage: RecordsWrite,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      incomingMessage.message.descriptor.protocol!,
-      messageStore,
-    );
+    const protocolDefinition =
+      await ProtocolAuthorization.fetchProtocolDefinition(
+        tenant,
+        incomingMessage.message.descriptor.protocol!,
+        messageStore
+      );
 
     // verify declared protocol type exists in protocol and that it conforms to type specification
     ProtocolAuthorization.verifyType(
@@ -42,13 +52,13 @@ export class ProtocolAuthorization {
     await ProtocolAuthorization.verifyProtocolPathAndContextId(
       tenant,
       incomingMessage,
-      messageStore,
+      messageStore
     );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       incomingMessage.message.descriptor.protocolPath!,
-      protocolDefinition,
+      protocolDefinition
     );
 
     // Validate as a role record if the incoming message is writing a role record
@@ -56,11 +66,14 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       inboundMessageRuleSet,
-      messageStore,
+      messageStore
     );
 
     // Verify size limit
-    ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
+    ProtocolAuthorization.verifySizeLimit(
+      incomingMessage,
+      inboundMessageRuleSet
+    );
   }
 
   /**
@@ -70,23 +83,29 @@ export class ProtocolAuthorization {
   public static async authorizeWrite(
     tenant: string,
     incomingMessage: RecordsWrite,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, incomingMessage, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(
+        tenant,
+        incomingMessage,
+        incomingMessage,
+        messageStore
+      );
 
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      incomingMessage.message.descriptor.protocol!,
-      messageStore,
-    );
+    const protocolDefinition =
+      await ProtocolAuthorization.fetchProtocolDefinition(
+        tenant,
+        incomingMessage.message.descriptor.protocol!,
+        messageStore
+      );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       incomingMessage.message.descriptor.protocolPath!,
-      protocolDefinition,
+      protocolDefinition
     );
 
     // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
@@ -96,7 +115,7 @@ export class ProtocolAuthorization {
       incomingMessage.message.descriptor.protocol!,
       incomingMessage.message.contextId!,
       protocolDefinition,
-      messageStore,
+      messageStore
     );
 
     // verify method invoked against the allowed actions
@@ -105,7 +124,7 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       ancestorMessageChain,
-      messageStore,
+      messageStore
     );
   }
 
@@ -119,23 +138,29 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsRead,
     newestRecordsWrite: RecordsWrite,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(
+        tenant,
+        incomingMessage,
+        newestRecordsWrite,
+        messageStore
+      );
 
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      newestRecordsWrite.message.descriptor.protocol!,
-      messageStore,
-    );
+    const protocolDefinition =
+      await ProtocolAuthorization.fetchProtocolDefinition(
+        tenant,
+        newestRecordsWrite.message.descriptor.protocol!,
+        messageStore
+      );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       newestRecordsWrite.message.descriptor.protocolPath!,
-      protocolDefinition,
+      protocolDefinition
     );
 
     // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
@@ -145,7 +170,7 @@ export class ProtocolAuthorization {
       newestRecordsWrite.message.descriptor.protocol!,
       newestRecordsWrite.message.contextId!,
       protocolDefinition,
-      messageStore,
+      messageStore
     );
 
     // verify method invoked against the allowed actions
@@ -154,28 +179,30 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       ancestorMessageChain,
-      messageStore,
+      messageStore
     );
   }
 
   public static async authorizeQueryOrSubscribe(
     tenant: string,
     incomingMessage: RecordsQuery | RecordsSubscribe,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
-    const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
+    const { protocol, protocolPath, contextId } =
+      incomingMessage.message.descriptor.filter;
 
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      protocol!, // `authorizeQueryOrSubscribe` is only called if `protocol` is present
-      messageStore,
-    );
+    const protocolDefinition =
+      await ProtocolAuthorization.fetchProtocolDefinition(
+        tenant,
+        protocol!, // `authorizeQueryOrSubscribe` is only called if `protocol` is present
+        messageStore
+      );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       protocolPath!, // presence of `protocolPath` is verified in `parse()`
-      protocolDefinition,
+      protocolDefinition
     );
 
     // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
@@ -185,7 +212,7 @@ export class ProtocolAuthorization {
       protocol!,
       contextId,
       protocolDefinition,
-      messageStore,
+      messageStore
     );
 
     // verify method invoked against the allowed actions
@@ -194,7 +221,7 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       [], // ancestor chain is not relevant to subscriptions
-      messageStore,
+      messageStore
     );
   }
 
@@ -202,24 +229,29 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsDelete,
     newestRecordsWrite: RecordsWrite,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
-
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(
+        tenant,
+        incomingMessage,
+        newestRecordsWrite,
+        messageStore
+      );
 
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
-      tenant,
-      newestRecordsWrite.message.descriptor.protocol!,
-      messageStore,
-    );
+    const protocolDefinition =
+      await ProtocolAuthorization.fetchProtocolDefinition(
+        tenant,
+        newestRecordsWrite.message.descriptor.protocol!,
+        messageStore
+      );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       newestRecordsWrite.message.descriptor.protocolPath!,
-      protocolDefinition,
+      protocolDefinition
     );
 
     // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
@@ -229,7 +261,7 @@ export class ProtocolAuthorization {
       newestRecordsWrite.message.descriptor.protocol!,
       newestRecordsWrite.message.contextId!,
       protocolDefinition,
-      messageStore,
+      messageStore
     );
 
     // verify method invoked against the allowed actions
@@ -238,9 +270,8 @@ export class ProtocolAuthorization {
       incomingMessage,
       inboundMessageRuleSet,
       ancestorMessageChain,
-      messageStore,
+      messageStore
     );
-
   }
 
   /**
@@ -253,14 +284,17 @@ export class ProtocolAuthorization {
   ): Promise<ProtocolDefinition> {
     // fetch the corresponding protocol definition
     const query: Filter = {
-      interface : DwnInterfaceName.Protocols,
-      method    : DwnMethodName.Configure,
-      protocol  : protocolUri
+      interface: DwnInterfaceName.Protocols,
+      method: DwnMethodName.Configure,
+      protocol: protocolUri,
     };
     const { messages: protocols } = await messageStore.query(tenant, [query]);
 
     if (protocols.length === 0) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationProtocolNotFound, `unable to find protocol definition for ${protocolUri}`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationProtocolNotFound,
+        `unable to find protocol definition for ${protocolUri}`
+      );
     }
 
     const protocolMessage = protocols[0] as ProtocolsConfigureMessage;
@@ -278,8 +312,7 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
     newestRecordsWrite: RecordsWrite,
     messageStore: MessageStore
-  )
-    : Promise<RecordsWriteMessage[]> {
+  ): Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
     if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
@@ -294,12 +327,14 @@ export class ProtocolAuthorization {
     while (currentParentId !== undefined) {
       // fetch parent
       const query: Filter = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
+        interface: DwnInterfaceName.Records,
+        method: DwnMethodName.Write,
         protocol,
-        recordId  : currentParentId
+        recordId: currentParentId,
       };
-      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
+      const { messages: parentMessages } = await messageStore.query(tenant, [
+        query,
+      ]);
 
       // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing, so if this condition is triggered,
       // it means there is an unexpected bug that caused an invalid message being saved to the DWN.
@@ -325,12 +360,17 @@ export class ProtocolAuthorization {
    */
   private static getRuleSet(
     protocolPath: string,
-    protocolDefinition: ProtocolDefinition,
+    protocolDefinition: ProtocolDefinition
   ): ProtocolRuleSet {
-    const ruleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolPath, protocolDefinition);
+    const ruleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(
+      protocolPath,
+      protocolDefinition
+    );
     if (ruleSet === undefined) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
-        `No rule set defined for protocolPath ${protocolPath}`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
+        `No rule set defined for protocolPath ${protocolPath}`
+      );
     }
     return ruleSet;
   }
@@ -344,8 +384,10 @@ export class ProtocolAuthorization {
     inboundMessage: RecordsWrite,
     messageStore: MessageStore
   ): Promise<void> {
-    const declaredProtocolPath = inboundMessage.message.descriptor.protocolPath!;
-    const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
+    const declaredProtocolPath =
+      inboundMessage.message.descriptor.protocolPath!;
+    const declaredTypeName =
+      ProtocolAuthorization.getTypeName(declaredProtocolPath);
 
     const parentId = inboundMessage.message.descriptor.parentId;
     if (parentId === undefined) {
@@ -363,13 +405,15 @@ export class ProtocolAuthorization {
     // fetch the parent message
     const protocol = inboundMessage.message.descriptor.protocol!;
     const query: Filter = {
-      isLatestBaseState : true, // NOTE: this filter is critical, to ensure are are not returning a deleted parent
-      interface         : DwnInterfaceName.Records,
-      method            : DwnMethodName.Write,
+      isLatestBaseState: true, // NOTE: this filter is critical, to ensure are are not returning a deleted parent
+      interface: DwnInterfaceName.Records,
+      method: DwnMethodName.Write,
       protocol,
-      recordId          : parentId
+      recordId: parentId,
     };
-    const { messages: parentMessages } = await messageStore.query(tenant, [query]);
+    const { messages: parentMessages } = await messageStore.query(tenant, [
+      query,
+    ]);
     const parentMessage = (parentMessages as RecordsWriteMessage[])[0];
 
     // verifying protocolPath of incoming message is a child of the parent message's protocolPath
@@ -391,7 +435,6 @@ export class ProtocolAuthorization {
         `Declared contextId '${actualContextId}' is not the same as expected: '${expectedContextId}'.`
       );
     }
-
   }
 
   /**
@@ -401,15 +444,17 @@ export class ProtocolAuthorization {
    */
   private static verifyType(
     inboundMessage: RecordsWriteMessage,
-    protocolTypes: ProtocolTypes,
+    protocolTypes: ProtocolTypes
   ): void {
-
     const typeNames = Object.keys(protocolTypes);
     const declaredProtocolPath = inboundMessage.descriptor.protocolPath!;
-    const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
+    const declaredTypeName =
+      ProtocolAuthorization.getTypeName(declaredProtocolPath);
     if (!typeNames.includes(declaredTypeName)) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
-        `record with type ${declaredTypeName} not allowed in protocol`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationInvalidType,
+        `record with type ${declaredTypeName} not allowed in protocol`
+      );
     }
 
     const protocolPath = inboundMessage.descriptor.protocolPath!;
@@ -429,7 +474,10 @@ export class ProtocolAuthorization {
 
     // no `dataFormats` specified in protocol definition means that all dataFormats are allowed
     const { dataFormat } = inboundMessage.descriptor;
-    if (protocolType.dataFormats !== undefined && !protocolType.dataFormats.includes(dataFormat)) {
+    if (
+      protocolType.dataFormats !== undefined &&
+      !protocolType.dataFormats.includes(dataFormat)
+    ) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat,
         `type '${typeName}' must have data format in (${protocolType.dataFormats}), \
@@ -443,11 +491,16 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
+    incomingMessage:
+      | RecordsDelete
+      | RecordsQuery
+      | RecordsRead
+      | RecordsSubscribe
+      | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
     const protocolRole = incomingMessage.signaturePayload?.protocolRole;
 
@@ -456,8 +509,14 @@ export class ProtocolAuthorization {
       return;
     }
 
-    const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (roleRuleSet === undefined || (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)) {
+    const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(
+      protocolRole,
+      protocolDefinition
+    );
+    if (
+      roleRuleSet === undefined ||
+      (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)
+    ) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
         `Protocol path ${protocolRole} is not a valid protocolRole`
@@ -465,19 +524,19 @@ export class ProtocolAuthorization {
     }
 
     const roleRecordFilter: Filter = {
-      interface         : DwnInterfaceName.Records,
-      method            : DwnMethodName.Write,
-      protocol          : protocolUri,
-      protocolPath      : protocolRole,
-      recipient         : incomingMessage.author!,
-      isLatestBaseState : true,
+      interface: DwnInterfaceName.Records,
+      method: DwnMethodName.Write,
+      protocol: protocolUri,
+      protocolPath: protocolRole,
+      recipient: incomingMessage.author!,
+      isLatestBaseState: true,
     };
 
     if (roleRuleSet.$contextRole) {
       if (contextId === undefined) {
         throw new DwnError(
           DwnErrorCode.ProtocolAuthorizationMissingContextId,
-          'Could not verify $contextRole because contextId is missing'
+          "Could not verify $contextRole because contextId is missing"
         );
       }
 
@@ -485,15 +544,20 @@ export class ProtocolAuthorization {
       // e.g. if invoked role path is `Thread/Participant`, and the `contextId` of the message is `threadX/messageY/attachmentZ`,
       // then we need to add a prefix filter as `threadX` for the `contextId`
       // because the `contextId` of the Participant record would be in the form of be `threadX/participantA`
-      const ancestorSegmentCountOfRole = protocolRole.split('/').length - 1;
-      const contextIdSegments = contextId.split('/');
-      const contextIdPrefix = contextIdSegments.slice(0, ancestorSegmentCountOfRole).join('/');
-      const contextIdPrefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(contextIdPrefix);
+      const ancestorSegmentCountOfRole = protocolRole.split("/").length - 1;
+      const contextIdSegments = contextId.split("/");
+      const contextIdPrefix = contextIdSegments
+        .slice(0, ancestorSegmentCountOfRole)
+        .join("/");
+      const contextIdPrefixFilter =
+        FilterUtility.constructPrefixFilterAsRangeFilter(contextIdPrefix);
 
       roleRecordFilter.contextId = contextIdPrefixFilter;
     }
 
-    const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
+    const { messages: matchingMessages } = await messageStore.query(tenant, [
+      roleRecordFilter,
+    ]);
 
     if (matchingMessages.length === 0) {
       throw new DwnError(
@@ -511,35 +575,44 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
-    messageStore: MessageStore,
+    incomingMessage:
+      | RecordsDelete
+      | RecordsQuery
+      | RecordsRead
+      | RecordsSubscribe
+      | RecordsWrite,
+    messageStore: MessageStore
   ): Promise<ProtocolAction[]> {
-
     switch (incomingMessage.message.descriptor.method) {
-    case DwnMethodName.Delete:
-      return [ProtocolAction.Delete];
+      case DwnMethodName.Delete:
+        return [ProtocolAction.Delete];
 
-    case DwnMethodName.Query:
-      return [ProtocolAction.Query];
+      case DwnMethodName.Query:
+        return [ProtocolAction.Query];
 
-    case DwnMethodName.Read:
-      return [ProtocolAction.Read];
+      case DwnMethodName.Read:
+        return [ProtocolAction.Read];
 
-    case DwnMethodName.Subscribe:
-      return [ProtocolAction.Subscribe];
+      case DwnMethodName.Subscribe:
+        return [ProtocolAction.Subscribe];
 
-    case DwnMethodName.Write:
-      const incomingRecordsWrite = incomingMessage as RecordsWrite;
-      if (await incomingRecordsWrite.isInitialWrite()) {
-        // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
-        return [ProtocolAction.Write];
-      } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
-        // Both 'update' and 'write' authorize the incoming message
-        return [ProtocolAction.Write, ProtocolAction.Update];
-      } else {
-        // Actors other than the initial record author must be authorized to 'update' the message
-        return [ProtocolAction.Update];
-      }
+      case DwnMethodName.Write:
+        const incomingRecordsWrite = incomingMessage as RecordsWrite;
+        if (await incomingRecordsWrite.isInitialWrite()) {
+          // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+          return [ProtocolAction.Write];
+        } else if (
+          await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(
+            tenant,
+            messageStore
+          )
+        ) {
+          // Both 'update' and 'write' authorize the incoming message
+          return [ProtocolAction.Write, ProtocolAction.Update];
+        } else {
+          // Actors other than the initial record author must be authorized to 'update' the message
+          return [ProtocolAction.Update];
+        }
 
       // default:
       // not reachable in typescript
@@ -552,13 +625,23 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
+    incomingMessage:
+      | RecordsDelete
+      | RecordsQuery
+      | RecordsRead
+      | RecordsSubscribe
+      | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
-    const inboundMessageActions = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
+    const inboundMessageActions =
+      await ProtocolAuthorization.getActionsSeekingARuleMatch(
+        tenant,
+        incomingMessage,
+        messageStore
+      );
     const author = incomingMessage.author;
     const actionRules = inboundMessageRuleSet.$actions;
 
@@ -585,14 +668,19 @@ export class ProtocolAuthorization {
         } else {
           continue;
         }
-      } else if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined && author !== undefined) {
+      } else if (
+        actionRule.who === ProtocolActor.Recipient &&
+        actionRule.of === undefined &&
+        author !== undefined
+      ) {
         // Author must be recipient of the record being accessed
         let recordsWriteMessage: RecordsWriteMessage;
         if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
           recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
         } else {
           // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions
-          recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
+          recordsWriteMessage =
+            ancestorMessageChain[ancestorMessageChain.length - 1];
         }
 
         if (recordsWriteMessage.descriptor.recipient === author) {
@@ -604,7 +692,12 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
+      const ancestorRuleSuccess: boolean =
+        await ProtocolAuthorization.checkActor(
+          author,
+          actionRule,
+          ancestorMessageChain
+        );
       if (ancestorRuleSuccess) {
         return;
       }
@@ -630,7 +723,10 @@ export class ProtocolAuthorization {
     const dataSize = incomingMessage.message.descriptor.dataSize;
 
     if (dataSize < min) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMinSizeInvalid, `data size ${dataSize} is less than allowed ${min}`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationMinSizeInvalid,
+        `data size ${dataSize} is less than allowed ${min}`
+      );
     }
 
     if (max === undefined) {
@@ -638,7 +734,10 @@ export class ProtocolAuthorization {
     }
 
     if (dataSize > max) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid, `data size ${dataSize} is more than allowed ${max}`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid,
+        `data size ${dataSize} is more than allowed ${max}`
+      );
     }
   }
 
@@ -652,9 +751,12 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
-    messageStore: MessageStore,
+    messageStore: MessageStore
   ): Promise<void> {
-    if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
+    if (
+      !inboundMessageRuleSet.$globalRole &&
+      !inboundMessageRuleSet.$contextRole
+    ) {
       return;
     }
 
@@ -663,30 +765,36 @@ export class ProtocolAuthorization {
     if (recipient === undefined) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient,
-        'Role records must have a recipient'
+        "Role records must have a recipient"
       );
     }
 
     const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
     const filter: Filter = {
-      interface         : DwnInterfaceName.Records,
-      method            : DwnMethodName.Write,
-      isLatestBaseState : true,
-      protocol          : incomingRecordsWrite.message.descriptor.protocol!,
+      interface: DwnInterfaceName.Records,
+      method: DwnMethodName.Write,
+      isLatestBaseState: true,
+      protocol: incomingRecordsWrite.message.descriptor.protocol!,
       protocolPath,
       recipient,
     };
 
     if (inboundMessageRuleSet.$contextRole) {
-      const parentContextId = Records.getParentContextFromOfContextId(incomingRecordsWrite.message.contextId)!;
-      const prefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter(parentContextId);
+      const parentContextId = Records.getParentContextFromOfContextId(
+        incomingRecordsWrite.message.contextId
+      )!;
+      const prefixFilter =
+        FilterUtility.constructPrefixFilterAsRangeFilter(parentContextId);
       filter.contextId = prefixFilter;
     }
 
-    const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
+    const { messages: matchingMessages } = await messageStore.query(tenant, [
+      filter,
+    ]);
     const matchingRecords = matchingMessages as RecordsWriteMessage[];
-    const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>
-      recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
+    const matchingRecordsExceptIncomingRecordId = matchingRecords.filter(
+      (recordsWriteMessage) =>
+        recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
     );
     if (matchingRecordsExceptIncomingRecordId.length > 0) {
       if (inboundMessageRuleSet.$globalRole) {
@@ -704,13 +812,17 @@ export class ProtocolAuthorization {
     }
   }
 
-  private static getRuleSetAtProtocolPath(protocolPath: string, protocolDefinition: ProtocolDefinition): ProtocolRuleSet | undefined {
-    const protocolPathArray = protocolPath.split('/');
+  private static getRuleSetAtProtocolPath(
+    protocolPath: string,
+    protocolDefinition: ProtocolDefinition
+  ): ProtocolRuleSet | undefined {
+    const protocolPathArray = protocolPath.split("/");
     let currentRuleSet: ProtocolRuleSet = protocolDefinition.structure;
     let i = 0;
     while (i < protocolPathArray.length) {
       const currentTypeName = protocolPathArray[i];
-      const nextRuleSet: ProtocolRuleSet | undefined = currentRuleSet[currentTypeName];
+      const nextRuleSet: ProtocolRuleSet | undefined =
+        currentRuleSet[currentTypeName];
 
       if (nextRuleSet === undefined) {
         return undefined;
@@ -730,11 +842,12 @@ export class ProtocolAuthorization {
   private static async checkActor(
     author: string,
     actionRule: ProtocolActionRule,
-    ancestorMessageChain: RecordsWriteMessage[],
+    ancestorMessageChain: RecordsWriteMessage[]
   ): Promise<boolean> {
     // Iterate up the ancestor chain to find a message with matching protocolPath
-    const ancestorRecordsWrite = ancestorMessageChain.find((recordsWriteMessage) =>
-      recordsWriteMessage.descriptor.protocolPath === actionRule.of!
+    const ancestorRecordsWrite = ancestorMessageChain.find(
+      (recordsWriteMessage) =>
+        recordsWriteMessage.descriptor.protocolPath === actionRule.of!
     );
 
     // If this is reached, there is likely an issue with the protocol definition.
@@ -747,14 +860,16 @@ export class ProtocolAuthorization {
     if (actionRule.who === ProtocolActor.Recipient) {
       // Recipient of ancestor message must be the author of the incoming message
       return author === ancestorRecordsWrite.descriptor.recipient;
-    } else { // actionRule.who === ProtocolActor.Author
+    } else {
+      // actionRule.who === ProtocolActor.Author
       // Author of ancestor message must be the author of the incoming message
-      const ancestorAuthor = (await RecordsWrite.parse(ancestorRecordsWrite)).author;
+      const ancestorAuthor = (await RecordsWrite.parse(ancestorRecordsWrite))
+        .author;
       return author === ancestorAuthor;
     }
   }
 
   private static getTypeName(protocolPath: string): string {
-    return protocolPath.split('/').slice(-1)[0];
+    return protocolPath.split("/").slice(-1)[0];
   }
 }

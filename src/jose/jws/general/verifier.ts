@@ -63,7 +63,6 @@ export class GeneralJwsVerifier {
 
       const cacheKey = `${signatureEntry.protected}.${jws.payload}.${signatureEntry.signature}`;
       const cachedValue = await this.cache.get(cacheKey);
-      console.log("cachedValue", cachedValue);
 
       // explicit `undefined` check to differentiate `false`
       if (cachedValue === undefined) {
@@ -71,15 +70,12 @@ export class GeneralJwsVerifier {
           kid,
           didResolver
         );
-        console.log("jws payload: ", jws.payload);
-        console.log("signatureEntry: ", signatureEntry);
-        console.log("publicJwk: ", publicJwk);
         isVerified = await Jws.verifySignature(
           jws.payload,
           signatureEntry,
           publicJwk
         );
-        console.log("isVerified", isVerified);
+
         await this.cache.set(cacheKey, isVerified);
       } else {
         isVerified = cachedValue;

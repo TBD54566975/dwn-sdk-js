@@ -150,7 +150,6 @@ export class Message {
       signer,
     ]);
     const signature = builder.getJws();
-    console.log("signature", signature);
 
     return signature;
   }

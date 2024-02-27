@@ -1,7 +1,7 @@
-import type { GeneralJws } from '../../../types/jws-types.js';
-import type { Signer } from '../../../types/signer.js';
+import type { GeneralJws } from "../../../types/jws-types.js";
+import type { Signer } from "../../../types/signer.js";
 
-import { Encoder } from '../../../utils/encoder.js';
+import { Encoder } from "../../../utils/encoder.js";
 
 export class GeneralJwsBuilder {
   private jws: GeneralJws;
@@ -10,10 +10,13 @@ export class GeneralJwsBuilder {
     this.jws = jws;
   }
 
-  static async create(payload: Uint8Array, signers: Signer[] = []): Promise<GeneralJwsBuilder> {
+  static async create(
+    payload: Uint8Array,
+    signers: Signer[] = []
+  ): Promise<GeneralJwsBuilder> {
     const jws: GeneralJws = {
-      payload    : Encoder.bytesToBase64Url(payload),
-      signatures : []
+      payload: Encoder.bytesToBase64Url(payload),
+      signatures: [],
     };
 
     const builder = new GeneralJwsBuilder(jws);
@@ -27,11 +30,14 @@ export class GeneralJwsBuilder {
 
   async addSignature(signer: Signer): Promise<void> {
     const protectedHeader = {
-      kid : signer.keyId,
-      alg : signer.algorithm
+      kid: signer.keyId,
+      alg: signer.algorithm,
     };
+
     const protectedHeaderString = JSON.stringify(protectedHeader);
-    const protectedHeaderBase64UrlString = Encoder.stringToBase64Url(protectedHeaderString);
+    const protectedHeaderBase64UrlString = Encoder.stringToBase64Url(
+      protectedHeaderString
+    );
 
     const signingInputString = `${protectedHeaderBase64UrlString}.${this.jws.payload}`;
     const signingInputBytes = Encoder.stringToBytes(signingInputString);
@@ -39,7 +45,10 @@ export class GeneralJwsBuilder {
     const signatureBytes = await signer.sign(signingInputBytes);
     const signature = Encoder.bytesToBase64Url(signatureBytes);
 
-    this.jws.signatures.push({ protected: protectedHeaderBase64UrlString, signature });
+    this.jws.signatures.push({
+      protected: protectedHeaderBase64UrlString,
+      signature,
+    });
   }
 
   getJws(): GeneralJws {
