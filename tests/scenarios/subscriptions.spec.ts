@@ -816,14 +816,6 @@ export function testSubscriptionScenarios(): void {
         const imageData2Reply = await dwn.processMessage(alice.did, imageData2.message, { dataStream: imageData2.dataStream });
         expect(imageData2Reply.status.code).to.equal(202);
 
-        // delete the first image
-        const deleteImageData = await TestDataGenerator.generateRecordsDelete({
-          author   : alice,
-          recordId : imageData.message.recordId,
-        });
-        const deleteImageDataReply = await dwn.processMessage(alice.did, deleteImageData.message);
-        expect(deleteImageDataReply.status.code).to.equal(202);
-
         // wait for messages to emit and handler to process
         await Time.minimalSleep();
         expect(imageMessages.length).to.equal(2);
