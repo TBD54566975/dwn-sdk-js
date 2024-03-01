@@ -79,7 +79,7 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
     const descriptor = { ...message.descriptor };
 
     // we add the immutable properties from the initial RecordsWrite message in order to use them when querying relevant deletes.
-    const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = initialWrite.descriptor;
+    const { protocol, protocolPath, recipient, schema, parentId, dateCreated } = initialWrite.descriptor;
 
     // NOTE: the "trick" not may not be apparent on how a query is able to omit deleted records:
     // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
@@ -87,7 +87,7 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
     // `isLatestBaseState` for the initial delete would have been toggled to `false`
     const indexes: { [key:string]: string | boolean | undefined } = {
       // isLatestBaseState : "true", // intentionally showing that this index is omitted
-      protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
+      protocol, protocolPath, recipient, schema, parentId, dateCreated,
       contextId : initialWrite.contextId,
       author    : this.author!,
       ...descriptor

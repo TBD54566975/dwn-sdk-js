@@ -126,6 +126,12 @@ export type KeyEncryptionInput = {
 export type CreateFromOptions = {
   recordsWriteMessage: RecordsWriteMessage,
   data?: Uint8Array;
+
+  /**
+   * The data format of the new data. If not given, the data format from the existing message will be used.
+   */
+  dataFormat?: string;
+
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
@@ -400,7 +406,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       protocol           : sourceMessage.descriptor.protocol,
       protocolPath       : sourceMessage.descriptor.protocolPath,
       schema             : sourceMessage.descriptor.schema,
-      dataFormat         : sourceMessage.descriptor.dataFormat,
       parentContextId    : Records.getParentContextFromOfContextId(sourceMessage.contextId),
       // mutable properties below
       messageTimestamp   : options.messageTimestamp ?? currentTime,
@@ -409,6 +414,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       data               : options.data,
       dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      dataFormat         : options.dataFormat ?? sourceMessage.descriptor.dataFormat,
       protocolRole       : options.protocolRole,
       delegatedGrant     : options.delegatedGrant,
       // finally still need signers
@@ -910,7 +916,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'messageTimestamp'];
+    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'dataFormat', 'datePublished', 'published', 'messageTimestamp'];
 
     // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames: string[] = [];

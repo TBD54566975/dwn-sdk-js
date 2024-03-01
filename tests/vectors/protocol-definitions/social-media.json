@@ -17,7 +17,9 @@
     "image": {
       "schema": "imageSchema",
       "dataFormats": [
-        "image/jpeg"
+        "image/jpeg",
+        "image/gif",
+        "image/png"
       ]
     },
     "caption": {
