@@ -232,6 +232,38 @@ export function testRecordsWriteHandler(): void {
           .to.equal(newerWrite.message.descriptor.dataCid); // expecting unchanged
       });
 
+      it('#690 - should allow data format of a flat-space record to be updated to any value', async () => {
+        const initialWriteData = await TestDataGenerator.generateRecordsWrite();
+        const tenant = initialWriteData.author.did;
+
+        TestStubGenerator.stubDidResolver(didResolver, [initialWriteData.author]);
+
+        const initialWriteReply = await dwn.processMessage(tenant, initialWriteData.message, { dataStream: initialWriteData.dataStream });
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        const newDataFormat = 'any-new-data-format';
+        const newDataBytes = TestDataGenerator.randomBytes(100);
+        const updateWrite = await RecordsWrite.createFrom({
+          recordsWriteMessage : initialWriteData.message,
+          dataFormat          : newDataFormat,
+          signer              : Jws.createSigner(initialWriteData.author),
+          data                : newDataBytes
+        });
+
+        const newDataStream = DataStream.fromBytes(newDataBytes);
+        const updateReply = await dwn.processMessage(tenant, updateWrite.message, { dataStream: newDataStream });
+        expect(updateReply.status.code).to.equal(202);
+
+        // verify the data format of the record is updated
+        const recordsRead = await RecordsRead.create({
+          filter : { recordId: initialWriteData.message.recordId },
+          signer : Jws.createSigner(initialWriteData.author),
+        });
+        const recordsReadReply = await dwn.processMessage(tenant, recordsRead.message);
+        expect(recordsReadReply.status.code).to.equal(200);
+        expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(newDataFormat);
+      });
+
       it('should not allow changes to immutable properties', async () => {
         const initialWriteData = await TestDataGenerator.generateRecordsWrite();
         const tenant = initialWriteData.author.did;
@@ -272,20 +304,6 @@ export function testRecordsWriteHandler(): void {
 
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('schema is an immutable property');
-
-        // dataFormat test
-        childMessageData = await TestDataGenerator.generateRecordsWrite({
-          author     : initialWriteData.author,
-          recordId,
-          schema,
-          dateCreated,
-          dataFormat : 'should-not-be-allowed-to-change'
-        });
-
-        reply = await dwn.processMessage(tenant, childMessageData.message, { dataStream: childMessageData.dataStream });
-
-        expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('dataFormat is an immutable property');
       });
 
       it('should inherit data from previous RecordsWrite given a matching dataCid and dataSize and no dataStream', async () => {
@@ -894,7 +912,6 @@ export function testRecordsWriteHandler(): void {
         // modify write2 by referencing the `dataCid` in write1 (which should not be allowed)
         const write2Change = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
-          // immutable properties just inherit from the message given
           recipient    : write2.message.descriptor.recipient,
           recordId     : write2.message.recordId,
           dateCreated  : write2.message.descriptor.dateCreated,
@@ -949,7 +966,6 @@ export function testRecordsWriteHandler(): void {
         // modify write2 by referencing the `dataCid` in write1 (which should not be allowed)
         const write2Change = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
-          // immutable properties just inherit from the message given
           recipient    : write2.message.descriptor.recipient,
           recordId     : write2.message.recordId,
           dateCreated  : write2.message.descriptor.dateCreated,
@@ -2626,7 +2642,7 @@ export function testRecordsWriteHandler(): void {
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath);
         });
 
-        it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
+        it('#690 - should only allow data format of a protocol-space record to be updated to any value allowed by the protocol configuration', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           const protocolDefinition = socialMediaProtocolDefinition;
@@ -2640,9 +2656,9 @@ export function testRecordsWriteHandler(): void {
           const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
-          // write record with matching dataFormat
-          const data = Encoder.stringToBytes('any data');
-          const recordsWriteMatch = await TestDataGenerator.generateRecordsWrite({
+          // write image record
+          const data = TestDataGenerator.randomBytes(100);
+          const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : alice.did,
             protocol,
@@ -2651,23 +2667,95 @@ export function testRecordsWriteHandler(): void {
             dataFormat   : protocolDefinition.types.image.dataFormats[0],
             data
           });
-          const replyMatch = await dwn.processMessage(alice.did, recordsWriteMatch.message, { dataStream: recordsWriteMatch.dataStream });
-          expect(replyMatch.status.code).to.equal(202);
+          const writeReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
+          expect(writeReply.status.code).to.equal(202);
 
-          // write record with mismatch dataFormat
-          const recordsWriteMismatch = await TestDataGenerator.generateRecordsWrite({
+          // update the image to a not-allowed data format
+          const newDataBytes = TestDataGenerator.randomBytes(100);
+          const notAllowedUpdateWrite = await RecordsWrite.createFrom({
+            recordsWriteMessage : imageRecordsWrite.message,
+            dataFormat          : `not-allowed-data-format`,
+            signer              : Jws.createSigner(alice),
+            data                : newDataBytes
+          });
+
+          const newDataStream = DataStream.fromBytes(newDataBytes);
+          const notAllowedUpdateWriteReply = await dwn.processMessage(alice.did, notAllowedUpdateWrite.message, { dataStream: newDataStream });
+          expect(notAllowedUpdateWriteReply.status.code).to.equal(400);
+          expect(notAllowedUpdateWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
+
+
+          // update the image to a different allowed dataFormat
+          const updateWrite = await RecordsWrite.createFrom({
+            recordsWriteMessage : imageRecordsWrite.message,
+            dataFormat          : protocolDefinition.types.image.dataFormats[1],
+            signer              : Jws.createSigner(alice),
+            data                : newDataBytes
+          });
+
+          const updateReply = await dwn.processMessage(alice.did, updateWrite.message, { dataStream: newDataStream });
+          expect(updateReply.status.code).to.equal(202);
+
+          // verify the data format of the record is updated
+          const recordsRead = await RecordsRead.create({
+            filter : { recordId: imageRecordsWrite.message.recordId },
+            signer : Jws.createSigner(alice),
+          });
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(200);
+          expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(protocolDefinition.types.image.dataFormats[1]);
+        });
+
+        it('#690 - should allow any data format for a record if protocol definition does not explicitly specify the list of allowed data formats', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = minimalProtocolDefinition;
+          const protocol = protocolDefinition.protocol;
+
+          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : protocolDefinition,
+          });
+
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
+          expect(protocolConfigureReply.status.code).to.equal(202);
+
+          // write image record
+          const data = TestDataGenerator.randomBytes(100);
+          const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : alice.did,
             protocol,
-            protocolPath : 'image',
-            schema       : protocolDefinition.types.image.schema,
-            dataFormat   : 'not/allowed/dataFormat',
+            protocolPath : 'foo',
+            schema       : 'any-schema',
+            dataFormat   : 'any-data-format',
             data
           });
+          const writeReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
+          expect(writeReply.status.code).to.equal(202);
 
-          const replyMismatch = await dwn.processMessage(alice.did, recordsWriteMismatch.message, { dataStream: recordsWriteMismatch.dataStream });
-          expect(replyMismatch.status.code).to.equal(400);
-          expect(replyMismatch.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
+          // update the image to a different data format
+          const newDataFormat = 'any-new-data-format';
+          const newDataBytes = TestDataGenerator.randomBytes(100);
+          const updateWrite = await RecordsWrite.createFrom({
+            recordsWriteMessage : imageRecordsWrite.message,
+            dataFormat          : newDataFormat,
+            signer              : Jws.createSigner(alice),
+            data                : newDataBytes
+          });
+
+          const newDataStream = DataStream.fromBytes(newDataBytes);
+          const updateReply = await dwn.processMessage(alice.did, updateWrite.message, { dataStream: newDataStream });
+          expect(updateReply.status.code).to.equal(202);
+
+          // verify the data format of the record is updated
+          const recordsRead = await RecordsRead.create({
+            filter : { recordId: imageRecordsWrite.message.recordId },
+            signer : Jws.createSigner(alice),
+          });
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(200);
+          expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(newDataFormat);
         });
 
         it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {

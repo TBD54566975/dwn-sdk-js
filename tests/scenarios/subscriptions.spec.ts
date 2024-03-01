@@ -754,10 +754,12 @@ export function testSubscriptionScenarios(): void {
       });
 
       it('filters by dataFormat', async () => {
-        // scenario: alice stores different file types and needs events relating to `image/jpeg`
-        //  alice creates 3 files, one of them `image/jpeg`
-        //  alice queries for `image/jpeg` retrieving the one message
-        //  alice adds another image to query for using the prior image as a cursor
+        // Scenario: Alice subscribes events relating to `image/jpeg` after which a number of record messages of various data formats are processed
+        // 1. Alice subscribes for `image/jpeg` records
+        // 2. Alice creates 3 files, one of them `image/jpeg`
+        // 3. Alice receives the one `image/jpeg` message
+        // 4. Alice adds another image
+        // 5. Alice receives the other `image/jpeg` message
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -767,6 +769,7 @@ export function testSubscriptionScenarios(): void {
           imageMessages.push(await Message.getCid(message));
         };
 
+        // alice subscribes to image/jpeg changes
         const imageSubscription = await TestDataGenerator.generateEventsSubscribe({
           author  : alice,
           filters : [{ dataFormat: 'image/jpeg' }]
@@ -800,7 +803,6 @@ export function testSubscriptionScenarios(): void {
         const imageDataReply = await dwn.processMessage(alice.did, imageData.message, { dataStream: imageData.dataStream });
         expect(imageDataReply.status.code).to.equal(202);
 
-
         // wait for messages to emit and handler to process
         await Time.minimalSleep();
         expect(imageMessages.length).to.equal(1);
@@ -814,21 +816,12 @@ export function testSubscriptionScenarios(): void {
         const imageData2Reply = await dwn.processMessage(alice.did, imageData2.message, { dataStream: imageData2.dataStream });
         expect(imageData2Reply.status.code).to.equal(202);
 
-        // delete the first image
-        const deleteImageData = await TestDataGenerator.generateRecordsDelete({
-          author   : alice,
-          recordId : imageData.message.recordId,
-        });
-        const deleteImageDataReply = await dwn.processMessage(alice.did, deleteImageData.message);
-        expect(deleteImageDataReply.status.code).to.equal(202);
-
         // wait for messages to emit and handler to process
         await Time.minimalSleep();
-        expect(imageMessages.length).to.equal(3);
+        expect(imageMessages.length).to.equal(2);
         // check that the new image and the delete messages were emitted
         expect(imageMessages).to.include.members([
-          await Message.getCid(imageData2.message),
-          await Message.getCid(deleteImageData.message)
+          await Message.getCid(imageData2.message)
         ]);
       });;
 

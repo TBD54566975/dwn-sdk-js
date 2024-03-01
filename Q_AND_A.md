@@ -117,6 +117,15 @@
 
   This will be addressed in a future upgrade and we've created an issue to track it. https://github.com/TBD54566975/dwn-sdk-js/issues/668 - last updated (2024/01/22)
 
+- Why are we not notifying deletes in a subscription that uses mutable property as a filter (e.g. `published`, `dataFormat`).
+
+  (Last update: 2024/02/29)
+
+  We are happy to revisit but the current behavior is due to the following arguments:
+
+  - Philosophical argument: the subscription filter is subscribing to events/messages that matches the filter, not changes to an earlier state.
+  - Practical argument: this requires more thought and coding and is a lower priority until we have real-world usage and feedback.
+
 
   ## Data Store
 - Is it possible to implement the Data Store interface purely using a blob/binary data storage service such as Amazon S3, Azure Blob Storage, or Google Cloud Storage?
