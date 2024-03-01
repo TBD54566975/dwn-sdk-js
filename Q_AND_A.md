@@ -117,7 +117,7 @@
 
   This will be addressed in a future upgrade and we've created an issue to track it. https://github.com/TBD54566975/dwn-sdk-js/issues/668 - last updated (2024/01/22)
 
-- Why are we not notifying deletes in a subscription that uses mutable property as filters (e.g. `published`, `dataFormat`).
+- Why are we not notifying deletes in a subscription that uses mutable property as a filter (e.g. `published`, `dataFormat`).
 
   (Last update: 2024/02/29)
 
