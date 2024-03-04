@@ -10,7 +10,7 @@
       "$actions": [
         {
           "who": "recipient",
-          "can": "update"
+          "can": "co-update"
         },
         {
           "who": "recipient",
@@ -22,7 +22,7 @@
           {
             "who": "recipient",
             "of": "post",
-            "can": "update"
+            "can": "co-update"
           },
           {
             "who": "recipient",

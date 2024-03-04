@@ -41,7 +41,7 @@
         },
         {
           "role": "admin",
-          "can": "update"
+          "can": "co-update"
         },
         {
           "role": "admin",

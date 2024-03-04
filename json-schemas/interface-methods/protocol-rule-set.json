@@ -45,7 +45,7 @@
                 "enum": [
                   "delete",
                   "read",
-                  "update",
+                  "co-update",
                   "write"
                 ]
               }
@@ -68,7 +68,7 @@
                   "query",
                   "subscribe",
                   "read",
-                  "update",
+                  "co-update",
                   "write"
                 ]
               }

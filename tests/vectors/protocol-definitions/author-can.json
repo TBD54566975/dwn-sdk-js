@@ -18,7 +18,7 @@
           {
             "who": "author",
             "of": "post",
-            "can": "update"
+            "can": "co-update"
           },
           {
             "who": "author",

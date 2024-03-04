@@ -55,7 +55,7 @@
           },
           {
             "role": "thread/admin",
-            "can": "update"
+            "can": "co-update"
           },
           {
             "role": "thread/admin",
