@@ -1223,7 +1223,7 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
         });
 
-        it('should allow update with allow-anyone rule', async () => {
+        it('should allow co-update with allow-anyone rule', async () => {
           // scenario: Alice creates a record on her DWN, and Bob (anyone) is able to update it. Bob is not able to
           //           create a record.
 
@@ -1345,7 +1345,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCredentialResponse));
           });
 
-          it('should allow update with ancestor recipient rule', async () => {
+          it('should allow co-update with ancestor recipient rule', async () => {
             // scenario: Alice creates a post with Bob as recipient. Alice adds a tag to the post. Bob is able to update
             //           the tag because he is recipient of the post. Bob is not able to create a new tag.
 
@@ -1405,7 +1405,7 @@ export function testRecordsWriteHandler(): void {
             expect(bobTagRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
 
-          it('should allowed co-update with direct recipient rule', async () => {
+          it('should allow co-update with direct recipient rule', async () => {
             // scenario:
             // Alice creates a 'post' with Bob as recipient.
             // Bob is able to update the 'post' because he was recipient of it.
@@ -1531,7 +1531,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCaption));
           });
 
-          it('should allow update with ancestor author rule', async () => {
+          it('should allow co-update with ancestor author rule', async () => {
             // scenario: Bob authors a post on Alice's DWN. Alice adds a comment to the post. Bob is able to update the comment,
             //           since he authored the post.
 
