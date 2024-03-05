@@ -41,11 +41,11 @@
         },
         {
           "role": "admin",
-          "can": "update"
+          "can": "co-update"
         },
         {
           "role": "admin",
-          "can": "delete"
+          "can": "co-delete"
         }
       ]
     }

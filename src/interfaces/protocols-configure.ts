@@ -3,11 +3,11 @@ import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor,
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
-import { ProtocolActor } from '../types/protocols-types.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
+import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 
 export type ProtocolsConfigureOptions = {
   messageTimestamp?: string;
@@ -166,19 +166,20 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
         );
       }
 
-      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `delete` or `update`
-      // We will not use direct recipient for `read`, `write`, or `query` because:
-      // - Recipients are always allowed to `read`.
-      // - `write` entails ability to create and update, whereas `update` only allows for updates.
-      //    There is no 'recipient' until the record has been created, so it makes no sense to allow recipient to write.
-      // - At this time, `query` is only authorized using roles, so allowing direct recipients to query is outside the scope of this PR.
+      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `co-delete` or `co-update`
+      // We will allow `read`, `write`, or `query` because:
+      // - `read` - Recipients are always allowed to `read`.
+      // - `write` - Entails ability to create and update.
+      //             Since `of` is undefined, it implies the recipient of THIS record,
+      //             there is no 'recipient' until this record has been created, so it makes no sense to allow recipient to write this record.
+      // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
       if (action.who === ProtocolActor.Recipient &&
           action.of === undefined &&
-          !['update', 'delete'].includes(action.can)
+          ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(action.can as ProtocolAction)
       ) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
-          'Rules for `recipient` without `of` property must have `can` === `delete` or `update`'
+          'Rules for `recipient` without `of` property must have `can` === `co-delete` or `co-update`'
         );
       }
 

@@ -18,12 +18,12 @@
           {
             "who": "author",
             "of": "post",
-            "can": "update"
+            "can": "co-update"
           },
           {
             "who": "author",
             "of": "post",
-            "can": "delete"
+            "can": "co-delete"
           }
         ]
       }

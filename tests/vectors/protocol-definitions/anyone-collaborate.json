@@ -9,7 +9,7 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "update"
+          "can": "co-update"
         },
         {
           "who": "anyone",
@@ -17,7 +17,7 @@
         },
         {
           "who": "anyone",
-          "can": "delete"
+          "can": "co-delete"
         }
       ]
     }

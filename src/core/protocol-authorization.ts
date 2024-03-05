@@ -507,9 +507,11 @@ export class ProtocolAuthorization {
 
   /**
    * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
-   * NOTE: the reason why there could be multiple actions is because in case of an "update" RecordsWrite by the original record author,
-   * the RecordsWrite can either be authorized by a `write` or `update` allow rule. It is important to recognize that the `write` access that allowed
-   * the original record author to create the record maybe revoked (e.g. by role revocation) by the time an "update" by the same author is attempted.
+   * NOTE: the reason why there could be multiple actions is because in case of a "non-initial" RecordsWrite by the original record author,
+   * the RecordsWrite can either be authorized by a `write` or `co-update` allow rule.
+   *
+   * It is important to recognize that the `write` access that allowed the original record author to create the record maybe revoked
+   * (e.g. by role revocation) by the time a "non-initial" write by the same author is attempted.
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
@@ -519,7 +521,7 @@ export class ProtocolAuthorization {
 
     switch (incomingMessage.message.descriptor.method) {
     case DwnMethodName.Delete:
-      return [ProtocolAction.Delete];
+      return [ProtocolAction.CoDelete];
 
     case DwnMethodName.Query:
       return [ProtocolAction.Query];
@@ -533,14 +535,14 @@ export class ProtocolAuthorization {
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
       if (await incomingRecordsWrite.isInitialWrite()) {
-        // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+        // only 'write' allows initial RecordsWrites
         return [ProtocolAction.Write];
       } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
-        // Both 'update' and 'write' authorize the incoming message
-        return [ProtocolAction.Write, ProtocolAction.Update];
+        // Both 'co-update' and 'write' authorize the incoming message
+        return [ProtocolAction.Write, ProtocolAction.CoUpdate];
       } else {
-        // Actors other than the initial record author must be authorized to 'update' the message
-        return [ProtocolAction.Update];
+        // Actors other than the initial record author must be authorized to 'co-update' the message
+        return [ProtocolAction.CoUpdate];
       }
 
       // default:
@@ -593,7 +595,7 @@ export class ProtocolAuthorization {
         if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
           recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
         } else {
-          // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions
+          // else the incoming message must be a RecordsDelete because only `co-update` and `co-delete` are allowed recipient actions
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
 

@@ -55,15 +55,15 @@
           },
           {
             "role": "thread/admin",
-            "can": "update"
+            "can": "co-update"
           },
           {
             "role": "thread/admin",
-            "can": "delete"
+            "can": "co-delete"
           },
           {
             "role": "globalAdmin",
-            "can": "delete"
+            "can": "co-delete"
           }
         ]
       }

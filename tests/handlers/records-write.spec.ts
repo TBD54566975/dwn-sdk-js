@@ -1223,7 +1223,7 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
         });
 
-        it('should allow update with allow-anyone rule', async () => {
+        it('should allow co-update with allow-anyone rule', async () => {
           // scenario: Alice creates a record on her DWN, and Bob (anyone) is able to update it. Bob is not able to
           //           create a record.
 
@@ -1345,7 +1345,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCredentialResponse));
           });
 
-          it('should allow update with ancestor recipient rule', async () => {
+          it('should allow co-update with ancestor recipient rule', async () => {
             // scenario: Alice creates a post with Bob as recipient. Alice adds a tag to the post. Bob is able to update
             //           the tag because he is recipient of the post. Bob is not able to create a new tag.
 
@@ -1405,9 +1405,11 @@ export function testRecordsWriteHandler(): void {
             expect(bobTagRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
 
-          it('should allowed update with direct recipient rule', async () => {
-            // scenario: Alice creates a 'post' with Bob as recipient. Bob is able to update
-            //           the 'post' because he was recipient of it. Carol is not able to update it.
+          it('should allow co-update with direct recipient rule', async () => {
+            // scenario:
+            // Alice creates a 'post' with Bob as recipient.
+            // Bob is able to update the 'post' because he was recipient of it.
+            // Carol is not able to update it.
 
             const protocolDefinition = recipientCanProtocol as ProtocolDefinition;
             const alice = await TestDataGenerator.generatePersona();
@@ -1529,7 +1531,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCaption));
           });
 
-          it('should allow update with ancestor author rule', async () => {
+          it('should allow co-update with ancestor author rule', async () => {
             // scenario: Bob authors a post on Alice's DWN. Alice adds a comment to the post. Bob is able to update the comment,
             //           since he authored the post.
 
@@ -1962,7 +1964,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatReply.status.code).to.equal(202);
             });
 
-            it('uses a root-level role to authorize an update', async () => {
+            it('uses a root-level role to authorize a co-update', async () => {
               // scenario: Alice gives Bob a admin role. Bob invokes his
               //           admin role in order to update a chat message that Alice wrote
 
@@ -2128,7 +2130,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatRecordReply.status.code).to.equal(202);
             });
 
-            it('uses a context role to authorize an update', async () => {
+            it('uses a context role to authorize a co-update', async () => {
               // scenario: Alice creates a thread and adds Bob to the 'thread/admin' role.
               //           Bob invokes the record to write in the thread
 
@@ -2176,14 +2178,14 @@ export function testRecordsWriteHandler(): void {
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
               expect(chatRecordReply.status.code).to.equal(202);
 
-              // Bob invokes his admin role to update the chat message
-              const chatUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+              // Bob invokes his admin role to co-update the chat message
+              const chatCoUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
                 author        : bob,
                 existingWrite : chatRecord.recordsWrite,
                 protocolRole  : 'thread/admin',
               });
               const chatUpdateRecordReply =
-                await dwn.processMessage(alice.did, chatUpdateRecord.message, { dataStream: chatUpdateRecord.dataStream });
+                await dwn.processMessage(alice.did, chatCoUpdateRecord.message, { dataStream: chatCoUpdateRecord.dataStream });
               expect(chatUpdateRecordReply.status.code).to.equal(202);
             });
 
@@ -2343,7 +2345,7 @@ export function testRecordsWriteHandler(): void {
           expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
         });
 
-        it('should disallow overwriting existing records by a different author if author is not authorized to `update`', async () => {
+        it('should disallow overwriting existing records by a different author if author is not authorized to `co-update`', async () => {
           // scenario: Bob writes into Alice's DWN given Alice's "message" protocol, Carol then attempts to modify the existing message
 
           // write a protocol definition with an allow-anyone rule
