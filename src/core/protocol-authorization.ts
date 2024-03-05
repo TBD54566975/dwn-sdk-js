@@ -506,9 +506,11 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
-   * NOTE: the reason why there could be multiple actions is because in case of a "non-initial" RecordsWrite by the original record author,
-   * the RecordsWrite can either be authorized by a `write` or `co-update` allow rule.
+   * Returns all the ProtocolActions that would authorized the incoming message
+   * (but we still need to later verify if there is a rule defined that matches one of the actions).
+   * NOTE: the reason why there could be multiple actions is because:
+   * - In case of an initial RecordsWrite, the RecordsWrite can be authorized by an allow `create` or `write` rule.
+   * - In case of a non-initial RecordsWrite by the original record author, the RecordsWrite can be authorized by a `write` or `co-update` rule.
    *
    * It is important to recognize that the `write` access that allowed the original record author to create the record maybe revoked
    * (e.g. by role revocation) by the time a "non-initial" write by the same author is attempted.
@@ -535,8 +537,7 @@ export class ProtocolAuthorization {
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
       if (await incomingRecordsWrite.isInitialWrite()) {
-        // only 'write' allows initial RecordsWrites
-        return [ProtocolAction.Write];
+        return [ProtocolAction.Write, ProtocolAction.Create];
       } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
         // Both 'co-update' and 'write' authorize the incoming message
         return [ProtocolAction.Write, ProtocolAction.CoUpdate];
@@ -562,7 +563,7 @@ export class ProtocolAuthorization {
     messageStore: MessageStore,
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
-    const inboundMessageActions = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
+    const actionsSeekingARuleMatch = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
     const author = incomingMessage.author;
     const actionRules = inboundMessageRuleSet.$actions;
 
@@ -577,7 +578,7 @@ export class ProtocolAuthorization {
     const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
-      if (!inboundMessageActions.includes(actionRule.can as ProtocolAction)) {
+      if (!actionsSeekingARuleMatch.includes(actionRule.can as ProtocolAction)) {
         continue;
       }
 
@@ -608,6 +609,7 @@ export class ProtocolAuthorization {
         continue;
       }
 
+      // else we need to check the actor (e.g. author/recipient) allowed by current action rule in the corresponding ancestor message
       const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
       if (ancestorRuleSuccess) {
         return;
@@ -737,10 +739,10 @@ export class ProtocolAuthorization {
       recordsWriteMessage.descriptor.protocolPath === actionRule.of!
     );
 
-    // If this is reached, there is likely an issue with the protocol definition.
-    // The protocolPath to the actionRule should start with actionRule.of
-    // consider moving this check to ProtocolsConfigure message ingestion
     if (ancestorRecordsWrite === undefined) {
+      // If this is reached, there is likely an issue with the protocol definition.
+      // The protocolPath to the actionRule should start with actionRule.of
+      // consider moving this check to ProtocolsConfigure message ingestion
       return false;
     }
 
