@@ -1,5 +1,6 @@
 import type { Filter } from '../../src/types/query-types.js';
 
+import { TestDataGenerator } from './test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
 
@@ -146,16 +147,6 @@ describe('filters util', () => {
         }, ltFilter)).to.be.false;
       });
 
-      it('should match prefixed RangeFilter', async () => {
-        const filters = [{
-          value: {
-            gte: 'foo'
-          }
-        }];
-
-        expect(FilterUtility.matchAnyFilter({ value: 'foobar' }, filters)).to.be.true;
-      });
-
       it('should match suffixed RangeFilter', async () => {
         const filters = [{
           foo: {
@@ -229,6 +220,28 @@ describe('filters util', () => {
 
       describe('numbers', () => {
       });
+
+      describe('array value types', () => {
+        it('strings', async () => {
+          const taggedItem = {
+            id   : TestDataGenerator.randomString(10),
+            tags : ['tag1', 'tag2', 'tag3']
+          };
+
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 'tag2' }])).to.be.true;
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 'tag4' }])).to.be.false;
+        });
+
+        it('number', async () => {
+          const taggedItem = {
+            id   : TestDataGenerator.randomString(10),
+            tags : [ 1, 2, 3 ]
+          };
+
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 2 }])).to.be.true;
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 4 }])).to.be.false;
+        });
+      });
     });
 
     describe('convertRangeCriterion',() => {
@@ -252,6 +265,23 @@ describe('filters util', () => {
           to   : 'to-value'
         };
         expect(FilterUtility.convertRangeCriterion(inputFilter)).to.deep.equal({ gte: 'from-value', lt: 'to-value' });
+      });
+    });
+
+    describe('constructPrefixFilterAsRangeFilter', () => {
+      it('appends an ending delimiter to the lt value in a RangeFilter object', async () => {
+        // This represents a last possible character when sorting in lexicographic order
+        const delimiter = '\uffff';
+        const prefix = 'someString';
+        const filter = FilterUtility.constructPrefixFilterAsRangeFilter(prefix);
+        const ltString = filter.lt! as string;
+        expect(ltString.startsWith(prefix)).to.be.true;
+        expect(ltString.endsWith(delimiter)).to.be.true;
+      });
+
+      it('should match prefixed RangeFilter', async () => {
+        const prefixFilter = FilterUtility.constructPrefixFilterAsRangeFilter('foo');
+        expect(FilterUtility.matchFilter({ value: 'foobar' }, { value: prefixFilter })).to.be.true;
       });
     });
 
