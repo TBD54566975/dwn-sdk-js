@@ -49,36 +49,39 @@ describe('IndexLevel', () => {
       const id = uuid();
       const successfulIndex = testIndex.put(tenant, id, {
         id,
-        foo: 'foo',
+        foo    : 'foo',
+        digit  : 12,
+        toggle : false,
+        tag    : ['bar', 'baz']
       });
       await expect(successfulIndex).to.eventually.not.be.rejected;
       const results = await testIndex.query(tenant, [{ id: id }], { sortProperty: 'id' });
       expect(results[0].messageCid).to.equal(id);
     });
 
-    it('adds one index key per property, aside from id', async () => {
-      const id = uuid();
+    it('adds one index key per property value, aside from id', async () => {
+      const id = uuid(); // 1 key for reverse lookup
       const dateCreated = new Date().toISOString();
 
       await testIndex.put(tenant, id, {
         'a' : 'b', // 1 key
-        'c' : 'd', // 1 key
+        'c' : ['d', 'e'], // 2 key
         dateCreated, // 1 key
       });
 
       let keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(4);
+      expect(keys.length).to.equal(5);
 
       await testIndex.clear();
 
       await testIndex.put(tenant, id, {
         'a' : 'b', // 1 key
-        'c' : 'd', // 1 ke
-        'e' : 'f', // 1 key
+        'c' : ['d', 'e'], // 2 keys
+        'f' : 'g', // 1 key
         dateCreated, // 1 key
       });
       keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(5);
+      expect(keys.length).to.equal(6);
     });
 
     it('should not put anything if aborted beforehand', async () => {
@@ -260,6 +263,72 @@ describe('IndexLevel', () => {
       });
     });
 
+    describe('array values', () => {
+      it('query items with string array values', async () => {
+        const items = [{
+          id  : uuid(),
+          tag : ['item1', 'item']
+        },{
+          id  : uuid(),
+          tag : ['item2', 'item']
+        },{
+          id  : uuid(),
+          tag : ['item3', 'item']
+        },{
+          id  : uuid(),
+          tag : ['item4', 'item']
+        }];
+        for (const item of items) {
+          await testIndex.put(tenant, item.id, item);
+        }
+
+        const filterForItemTag = [{ tag: 'item' }];
+        const allResults = await testIndex.queryWithIteratorPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+        expect(allResults.length).to.equal(4);
+        expect(allResults.map(item => item.messageCid)).to.have.members(items.map(item => item.id));
+
+        const filterForItem3 = [{ tag: 'item3' }];
+        const item3Results = await testIndex.queryWithIteratorPaging(tenant, filterForItem3, { sortProperty: 'id' });
+        expect(item3Results.length).to.equal(1);
+        expect(item3Results.map(item => item.messageCid)).to.has.members([items[2].id]);
+      });
+
+      it('query items with number array values', async () => {
+        const items = [{
+          id  : uuid(),
+          tag : [ 1 ]
+        },{
+          id  : uuid(),
+          tag : [ 1, 2 ]
+        },{
+          id  : uuid(),
+          tag : [ 1, 3 ]
+        },{
+          id  : uuid(),
+          tag : [ 1, 4 ]
+        }];
+        for (const item of items) {
+          await testIndex.put(tenant, item.id, item);
+        }
+
+        const filterForItemTag = [{ tag: 1 }];
+        const allResults = await testIndex.queryWithIteratorPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+        expect(allResults.length).to.equal(4);
+        expect(allResults.map(item => item.messageCid)).to.have.members(items.map(item => item.id));
+
+        const filterForItem3 = [{ tag: 3 }];
+        const item3Results = await testIndex.queryWithIteratorPaging(tenant, filterForItem3, { sortProperty: 'id' });
+        expect(item3Results.length).to.equal(1);
+        expect(item3Results.map(item => item.messageCid)).to.have.members([items[2].id]);
+
+
+        const filterForRange = [{ tag: { gt: 1, lt: 4 } }];
+        const rangeItems = await testIndex.queryWithIteratorPaging(tenant, filterForRange, { sortProperty: 'id' });
+        expect(rangeItems.length).to.equal(2);
+        expect(rangeItems.map(item => item.messageCid)).to.have.members([ items[1].id, items[2].id ]);
+      });
+    });
+
     describe('queryWithInMemoryPaging()', () => {
       it('paginates using cursor', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
@@ -396,7 +465,72 @@ describe('IndexLevel', () => {
 
         expect(lteReply.length).to.equal(3);
         expect(lteReply.map(({ messageCid }) => messageCid)).to.have.members([id, id2, id3]);
+      });
 
+      describe('array values', () => {
+        it('query items with string array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : ['item1', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item2', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item3', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item4', 'item']
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 'item' }];
+          const allResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults.map(item => item.messageCid)).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 'item3' }];
+          const item3Results = await testIndex.queryWithInMemoryPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results.map(item => item.messageCid)).to.has.members([items[2].id]);
+        });
+
+        it('query items with number array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : [ 1 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 2 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 3 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 4 ]
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 1 }];
+          const allResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults.map(item => item.messageCid)).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 3 }];
+          const item3Results = await testIndex.queryWithInMemoryPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results.map(item => item.messageCid)).to.have.members([items[2].id]);
+
+
+          const filterForRange = [{ tag: { gt: 1, lt: 4 } }];
+          const rangeItems = await testIndex.queryWithInMemoryPaging(tenant, filterForRange, { sortProperty: 'id' });
+          expect(rangeItems.length).to.equal(2);
+          expect(rangeItems.map(item => item.messageCid)).to.have.members([ items[1].id, items[2].id ]);
+        });
       });
     });
 
@@ -1104,27 +1238,27 @@ describe('IndexLevel', () => {
       const doc1 = {
         id  : id1,
         'a' : 'b',
-        'c' : 'd'
+        'c' : ['d', 'e']
       };
 
       const id2 = uuid();
       const doc2 = {
         id  : id2,
         'a' : 'b',
-        'c' : 'd'
+        'c' : ['d', 'e']
       };
 
       await testIndex.put(tenant, id1, doc1);
       await testIndex.put(tenant, id2, doc2);
 
-      let result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
+      let result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'e' }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(2);
       expect(result.map(({ messageCid }) => messageCid)).to.contain(id1);
 
       await testIndex.delete(tenant, id1);
 
-      result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
+      result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'e' }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(1);
 
@@ -1179,15 +1313,18 @@ describe('IndexLevel', () => {
   });
 
   describe('createCursorFromItem', () => {
-    it('throws if cursor value is not a number or boolean', async () => {
+    it('throws if cursor value is a boolean or an array', async () => {
+      // we can only sort by strings or numbers, so arrays or booleans should throw.
       const item: IndexedItem = {
         messageCid : 'message-cid',
         indexes    : {
-          sortProperty: true,
+          sortPropertyBool  : true,
+          sortPropertyArray : [ 1,2,3 ],
         }
       };
 
-      expect(() => IndexLevel.createCursorFromItem(item, 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType);
+      expect(() => IndexLevel.createCursorFromItem(item, 'sortPropertyBool')).to.throw(DwnErrorCode.IndexInvalidCursorValueType);
+      expect(() => IndexLevel.createCursorFromItem(item, 'sortPropertyArray')).to.throw(DwnErrorCode.IndexInvalidCursorValueType);
     });
 
     it('throws if sort property is not defined within the IndexedItem', async () => {

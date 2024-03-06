@@ -76,38 +76,33 @@ export class IndexLevel {
       throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }
 
-    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    const item: IndexedItem = { messageCid, indexes };
+    const indexOpPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
-        // TODO: index individual items from an array
+        for (const indexValueItem of indexValue) {
+          const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValueItem);
+          indexOpPromises.push(partitionOperationPromise);
+        }
         continue;
       }
 
-      // the key is indexValue followed by the messageCid as a tie-breaker.
-      // for example if the property is messageTimestamp the key would look like:
-      // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
-      const item: IndexedItem = { messageCid: messageCid, indexes };
-
-      const partitionOperation = await this.createOperationForIndexPartition(
-        tenant,
-        indexName,
-        { type: 'put', key, value: JSON.stringify(item) }
-      );
-      indexOps.push(partitionOperation);
+      const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValue);
+      indexOpPromises.push(partitionOperationPromise);
     }
 
     // create a reverse lookup for the sortedIndex values. This is used during deletion and cursor starting point lookup.
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(
+    const partitionOperationPromise = this.createOperationForIndexesLookupPartition(
       tenant,
       { type: 'put', key: messageCid, value: JSON.stringify(indexes) }
     );
-    indexOps.push(partitionOperation);
+    indexOpPromises.push(partitionOperationPromise);
 
+    const indexOps = await Promise.all(indexOpPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
@@ -116,7 +111,7 @@ export class IndexLevel {
    *  Deletes all of the index data associated with the item.
    */
   async delete(tenant: string, messageCid: string, options?: IndexLevelOptions): Promise<void> {
-    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    const indexOpPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     const indexes = await this.getIndexes(tenant, messageCid);
     if (indexes === undefined) {
@@ -125,29 +120,63 @@ export class IndexLevel {
     }
 
     // delete the reverse lookup
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: messageCid });
-    indexOps.push(partitionOperation);
+    const partitionOperationPromise = this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: messageCid });
+    indexOpPromises.push(partitionOperationPromise);
 
-    // delete the keys for each sortIndex
+    // delete the keys for each index
     for (const indexName in indexes) {
-      const sortValue = indexes[indexName];
-      if (Array.isArray(sortValue)) {
-        // TODO: delete individual indexes
+      const indexValue = indexes[indexName];
+      if (Array.isArray(indexValue)) {
+        for (const indexValueItem of indexValue) {
+          const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValueItem);
+          indexOpPromises.push(partitionOperationPromise);
+        }
         continue;
       }
-      const partitionOperation = await this.createOperationForIndexPartition(
-        tenant,
-        indexName,
-        {
-          type : 'del',
-          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), messageCid)
-        }
-      );
-      indexOps.push(partitionOperation);
+      const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValue);
+      indexOpPromises.push(partitionOperationPromise);
     }
 
+    const indexOps = await Promise.all(indexOpPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
+  }
+
+  private async createPutIndexedItemOperation(
+    tenant: string,
+    item: IndexedItem,
+    indexName: string,
+    indexValue: string | number | boolean
+  ): Promise<LevelWrapperBatchOperation<string>> {
+    // the key is indexValue followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+    const { messageCid } = item;
+    const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
+
+    return this.createOperationForIndexPartition(
+      tenant,
+      indexName,
+      { type: 'put', key, value: JSON.stringify(item) }
+    );
+  }
+
+  private async generateDeleteIndexedItemOperation(
+    tenant: string,
+    messageCid: string,
+    indexName: string,
+    indexValue: string | number | boolean
+  ): Promise<LevelWrapperBatchOperation<string>> {
+    // the key is indexValue followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+    const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
+
+    return this.createOperationForIndexPartition(
+      tenant,
+      indexName,
+      { type: 'del', key }
+    );
   }
 
   /**
