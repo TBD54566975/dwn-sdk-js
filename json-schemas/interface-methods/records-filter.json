@@ -26,6 +26,38 @@
     "schema": {
       "type": "string"
     },
+    "tags": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to" : {
+                "type": "string"
+              }
+            }
+          }, {
+            "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
+          }
+        ]
+      }
+    },
     "recordId": {
       "type": "string"
     },

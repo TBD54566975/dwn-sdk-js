@@ -760,10 +760,11 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;
-    const descriptor = { ...message.descriptor };
+    // we want to process tags separately from the rest of descriptors as it is an object and not a primitive KeyValue type.
+    const { tags, ...descriptor } = message.descriptor;
     delete descriptor.published; // handle `published` specifically further down
 
-    const indexes: KeyValues = {
+    let indexes: KeyValues = {
       ...descriptor,
       isLatestBaseState,
       published : !!message.descriptor.published,
@@ -771,6 +772,13 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       recordId  : message.recordId,
       entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
     };
+
+    // we don't want the tags properties to occupy the descriptor index namespace
+    // so we augment them with `tag.property_name` for each tag property and add them to the indexes
+    if (tags !== undefined) {
+      const flattenedTags = Records.flattenTags(tags);
+      indexes = { ...indexes, ...flattenedTags };
+    }
 
     // add additional indexes to optional values if given
     // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)

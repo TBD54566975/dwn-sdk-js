@@ -82,6 +82,11 @@ export class IndexLevel {
     // these indexes are all sortable lexicographically.
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
+      if (Array.isArray(indexValue)) {
+        // TODO: index individual items from an array
+        continue;
+      }
+
       // the key is indexValue followed by the messageCid as a tie-breaker.
       // for example if the property is messageTimestamp the key would look like:
       // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
@@ -126,6 +131,10 @@ export class IndexLevel {
     // delete the keys for each sortIndex
     for (const indexName in indexes) {
       const sortValue = indexes[indexName];
+      if (Array.isArray(sortValue)) {
+        // TODO: delete individual indexes
+        continue;
+      }
       const partitionOperation = await this.createOperationForIndexPartition(
         tenant,
         indexName,
@@ -299,8 +308,11 @@ export class IndexLevel {
     }
 
     // we only support cursors for string or number types
-    if (typeof value === 'boolean') {
-      throw new DwnError(DwnErrorCode.IndexInvalidCursorValueType, 'only string or number values are supported for cursors, a boolean was given.');
+    if (typeof value === 'boolean' || Array.isArray(value)) {
+      throw new DwnError(
+        DwnErrorCode.IndexInvalidCursorValueType,
+        `only string or number values are supported for cursors, a(n) ${typeof value} was given.`
+      );
     }
 
     return { messageCid , value };
@@ -506,14 +518,19 @@ export class IndexLevel {
 
   /**
    * Sorts Items lexicographically in ascending or descending order given a specific indexName, using the messageCid as a tie breaker.
-   * We know the indexes include the indexName here because they have already been checked within executeSingleFilterQuery.
+   * We know the indexes include the indexName and they are only of string or number type and not Arrays or booleans.
+   * because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem, itemB: IndexedItem, indexName: string, direction: SortDirection): number {
-    const aValue = IndexLevel.encodeValue(itemA.indexes[indexName]) + itemA.messageCid;
-    const bValue = IndexLevel.encodeValue(itemB.indexes[indexName]) + itemB.messageCid;
+    const itemAValue = itemA.indexes[indexName] as string | number;
+    const itemBValue = itemB.indexes[indexName] as string | number;
+
+    const aCompareValue = IndexLevel.encodeValue(itemAValue) + itemA.messageCid;
+    const bCompareValue = IndexLevel.encodeValue(itemBValue) + itemB.messageCid;
+
     return direction === SortDirection.Ascending ?
-      lexicographicalCompare(aValue, bValue) :
-      lexicographicalCompare(bValue, aValue);
+      lexicographicalCompare(aCompareValue, bCompareValue) :
+      lexicographicalCompare(bCompareValue, aCompareValue);
   }
 
   /**
@@ -524,7 +541,7 @@ export class IndexLevel {
 
     const firstItemAfterCursor = (item: IndexedItem): boolean => {
       const { messageCid, indexes } = item;
-      const sortValue = indexes[sortProperty];
+      const sortValue = indexes[sortProperty] as string | number;
       const itemCompareValue = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), messageCid);
 
       return sortDirection === SortDirection.Ascending ?

@@ -43,6 +43,11 @@ export class FilterUtility {
         return false;
       }
 
+      if (Array.isArray(indexValue)) {
+        //TODO: match filter on array index value
+        continue;
+      }
+
       if (typeof filterValue === 'object') {
         if (Array.isArray(filterValue)) {
           // if `filterValue` is an array, it is a OneOfFilter

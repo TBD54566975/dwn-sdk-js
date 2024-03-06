@@ -1,8 +1,8 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { Filter } from '../types/query-types.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { Filter, KeyValues, RangeCriterion } from '../types/query-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage, RecordsWriteTags, RecordsWriteTagsFilter } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
@@ -271,6 +271,35 @@ export class Records {
 
     removeUndefinedProperties(filterCopy);
     return filterCopy;
+  }
+
+
+  public static tagsFilterIsRangeCriterion(filter: RecordsWriteTagsFilter): filter is RangeCriterion {
+    return typeof filter === 'object' && ('from' in filter || 'to' in filter);
+  }
+
+  /**
+   * This will create individual keys for each of the tags that look like `tag.tag_property`
+   */
+  public static flattenTags(tags: RecordsWriteTags): KeyValues {
+    const tagValues:KeyValues = {};
+    for (const property in tags) {
+      const value = tags[property];
+      tagValues[`tag.${property}`] = value;
+    }
+    return tagValues;
+  }
+
+  /**
+   * This will create individual keys for each of the tag filters that look like `tag.tag_filter_property`
+   */
+  public static flattenTagFilters( tags: { [property: string]: RecordsWriteTagsFilter}): Filter {
+    const tagValues:Filter = {};
+    for (const property in tags) {
+      const value = tags[property];
+      tagValues[`tag.${property}`] = this.tagsFilterIsRangeCriterion(value) ? FilterUtility.convertRangeCriterion(value)! : value;
+    }
+    return tagValues;
   }
 
   /**
