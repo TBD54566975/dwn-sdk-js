@@ -536,14 +536,19 @@ export class ProtocolAuthorization {
 
     case DwnMethodName.Write:
       const incomingRecordsWrite = incomingMessage as RecordsWrite;
+
       if (await incomingRecordsWrite.isInitialWrite()) {
         return [ProtocolAction.Write, ProtocolAction.Create];
-      } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
-        // Both 'co-update' and 'write' authorize the incoming message
-        return [ProtocolAction.Write, ProtocolAction.CoUpdate];
       } else {
-        // Actors other than the initial record author must be authorized to 'co-update' the message
-        return [ProtocolAction.CoUpdate];
+        // else not initial write
+
+        if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
+          // 'write', 'update' or 'co-update' action authorizes the incoming message
+          return [ProtocolAction.Write, ProtocolAction.CoUpdate, ProtocolAction.Update];
+        } else {
+          // Actors other than the initial record author must be authorized to 'co-update' the message
+          return [ProtocolAction.CoUpdate];
+        }
       }
 
       // default:

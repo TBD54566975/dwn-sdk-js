@@ -376,6 +376,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public static async createFrom(options: CreateFromOptions): Promise<RecordsWrite> {
     const sourceMessage = options.recordsWriteMessage;
+    const sourceRecordsWrite = await RecordsWrite.parse(sourceMessage);
     const currentTime = Time.getCurrentTimestamp();
 
     // inherit published value from parent if neither published nor datePublished is specified
@@ -399,7 +400,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const createOptions: RecordsWriteOptions = {
-      // immutable properties below, just derive from the message given
+      // immutable properties below, just copy from the source message
       recipient          : sourceMessage.descriptor.recipient,
       recordId           : sourceMessage.recordId,
       dateCreated        : sourceMessage.descriptor.dateCreated,
@@ -412,10 +413,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       published,
       datePublished,
       data               : options.data,
-      dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
-      dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if new `data` not given, use value from source message
+      dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if new `data` not given, use value from source message
       dataFormat         : options.dataFormat ?? sourceMessage.descriptor.dataFormat,
-      protocolRole       : options.protocolRole,
+      protocolRole       : options.protocolRole ?? sourceRecordsWrite.signaturePayload?.protocolRole, // if not given, use value from source message
       delegatedGrant     : options.delegatedGrant,
       // finally still need signers
       signer             : options.signer,

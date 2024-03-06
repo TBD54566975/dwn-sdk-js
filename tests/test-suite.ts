@@ -13,8 +13,10 @@ import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
 import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
+import { testProtocolCreateAction } from './features/protocol-create-action.spec.js';
 import { testProtocolsConfigureHandler } from './handlers/protocols-configure.spec.js';
 import { testProtocolsQueryHandler } from './handlers/protocols-query.spec.js';
+import { testProtocolUpdateAction } from './features/protocol-update-action.spec.js';
 import { testRecordsDeleteHandler } from './handlers/records-delete.spec.js';
 import { testRecordsQueryHandler } from './handlers/records-query.spec.js';
 import { testRecordsReadHandler } from './handlers/records-read.spec.js';
@@ -56,6 +58,10 @@ export class TestSuite {
     testRecordsReadHandler();
     testRecordsSubscribeHandler();
     testRecordsWriteHandler();
+
+    // feature tests
+    testProtocolCreateAction();
+    testProtocolUpdateAction();
 
     // scenario tests
     testDelegatedGrantScenarios();
