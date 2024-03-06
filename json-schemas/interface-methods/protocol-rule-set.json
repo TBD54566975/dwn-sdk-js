@@ -45,6 +45,7 @@
                 "enum": [
                   "co-delete",
                   "co-update",
+                  "create",
                   "read",
                   "write"
                 ]
@@ -66,6 +67,7 @@
                 "enum": [
                   "co-delete",
                   "co-update",
+                  "create",
                   "query",
                   "subscribe",
                   "read",
