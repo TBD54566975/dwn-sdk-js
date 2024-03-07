@@ -315,6 +315,186 @@ export function testRecordsQueryHandler(): void {
         expect(queryReply.entries![0].recordId).to.equal(bobAuthorWrite.message.recordId);
       });
 
+      it('should be able to query by string tags', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a record with some tags
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            tag1 : [ 'tag1', 'tag2', 'tag3' ],
+            tag2 : [ 1, 2, 3 ],
+            tag3 : true
+          }
+        });
+        const tagsRecord1WriteReply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1WriteReply.status.code).to.equal(202);
+
+        // create a record with the same tags but different values
+        const tagsRecord2 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            tag1 : [ 'tag3', 'tag4'],
+            tag2 : [ 3, 4 ],
+            tag3 : false
+          }
+        });
+        const tagsRecord2WriteReply = await dwn.processMessage(alice.did, tagsRecord2.message, { dataStream: tagsRecord2.dataStream });
+        expect(tagsRecord2WriteReply.status.code).to.equal(202);
+
+        // filter for `tag2` value, returns 1 record
+        const tag2Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag1: 'tag2'
+            }
+          }
+        });
+        const tag2FilterReply = await dwn.processMessage(alice.did, tag2Filter.message);
+        expect(tag2FilterReply.status.code).to.equal(200);
+        expect(tag2FilterReply.entries?.length).to.equal(1, 'tag2');
+        expect(tag2FilterReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId, 'tag2');
+
+        // filter for `tag4` value, returns 1 record
+        const tag4Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag1: 'tag4'
+            }
+          }
+        });
+        const tag4FilterReply = await dwn.processMessage(alice.did, tag4Filter.message);
+        expect(tag4FilterReply.status.code).to.equal(200);
+        expect(tag4FilterReply.entries?.length).to.equal(1, 'tag4');
+        expect(tag4FilterReply.entries![0].recordId).to.equal(tagsRecord2.message.recordId, 'tag4');
+
+        // filter for `tag3` value, returns 2 records
+        const tag3Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag1: 'tag3'
+            }
+          }
+        });
+        const tag3FilterReply = await dwn.processMessage(alice.did, tag3Filter.message);
+        expect(tag3FilterReply.status.code).to.equal(200);
+        expect(tag3FilterReply.entries?.length).to.equal(2, 'tag3');
+        expect(tag3FilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag3');
+      });
+
+      it('should be able to query by number tags', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a record with some tags
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            tag1 : [ 'tag1', 'tag2', 'tag3' ],
+            tag2 : [ 1, 2, 3 ],
+            tag3 : true
+          }
+        });
+        const tagsRecord1WriteReply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1WriteReply.status.code).to.equal(202);
+
+        // create a record with the same tags but different values
+        const tagsRecord2 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            tag1 : [ 'tag3', 'tag4'],
+            tag2 : [ 3, 4 ],
+            tag3 : false
+          }
+        });
+        const tagsRecord2WriteReply = await dwn.processMessage(alice.did, tagsRecord2.message, { dataStream: tagsRecord2.dataStream });
+        expect(tagsRecord2WriteReply.status.code).to.equal(202);
+
+        // filter for `2` value, returns 1 record
+        const value2Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag2: 2,
+            }
+          }
+        });
+        const tag2FilterReply = await dwn.processMessage(alice.did, value2Filter.message);
+        expect(tag2FilterReply.status.code).to.equal(200);
+        expect(tag2FilterReply.entries?.length).to.equal(1, 'tag2: 2');
+        expect(tag2FilterReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId, 'tag2: 2');
+
+        // filter for `4` value, returns 1 record
+        const tag4Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag2: 4
+            }
+          }
+        });
+        const tag4FilterReply = await dwn.processMessage(alice.did, tag4Filter.message);
+        expect(tag4FilterReply.status.code).to.equal(200);
+        expect(tag4FilterReply.entries?.length).to.equal(1, 'tag2: 4');
+        expect(tag4FilterReply.entries![0].recordId).to.equal(tagsRecord2.message.recordId, 'tag2: 4');
+
+        // filter for `tag3` value, returns 2 records
+        const tag3Filter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag2: 3
+            }
+          }
+        });
+        const tag3FilterReply = await dwn.processMessage(alice.did, tag3Filter.message);
+        expect(tag3FilterReply.status.code).to.equal(200);
+        expect(tag3FilterReply.entries?.length).to.equal(2, 'tag2: 3');
+        expect(tag3FilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag2: 3');
+
+        const tagRangeFilter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag2: {
+                gt : 2,
+                lt : 4,
+              }
+            }
+          }
+        });
+        const tagRangeFilterReply = await dwn.processMessage(alice.did, tagRangeFilter.message);
+        expect(tagRangeFilterReply.status.code).to.equal(200);
+        expect(tagRangeFilterReply.entries?.length).to.equal(2, 'tag2: gt 2 lt 4');
+        expect(tagRangeFilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag2: 3');
+
+        const tagRangeTextFilter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag1: {
+                from : 'tag2',
+                to   : 'tag4'
+              }
+            }
+          }
+        });
+        const tagRangeTextFilterReply = await dwn.processMessage(alice.did, tagRangeTextFilter.message);
+        expect(tagRangeTextFilterReply.status.code).to.equal(200);
+        expect(tagRangeTextFilterReply.entries?.length).to.equal(2, 'tag1: from tag1 to tag3');
+        expect(tagRangeTextFilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag2: 3');
+      });
+
       it('should be able to query for published records', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();

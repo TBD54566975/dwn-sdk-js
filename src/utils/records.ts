@@ -309,7 +309,17 @@ export class Records {
    * @returns {Filter} a generic Filter able to be used with MessageStore.
    */
   public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
-    const filterCopy = { ...filter } as Filter;
+    // we process tags separately from the remaining filters.
+    // this is because we prepend each field within the `tags` object with a `tag.` to bring it into the flat-space filter.
+    // so `{ tags: { tag1: 'val1', tag2: [1,2] }}` would translate to `'tag.tag1':'val1'` and `'tag.tag2': [1,2]`
+    const { tags, ...remainingFilter } = filter;
+    let tagsFilter: Filter = {};
+    if (tags !== undefined) {
+      // this will namespace the tags so the properties are filtered as `tag.property_name`
+      tagsFilter = { ...this.flattenTagFilters(tags) };
+    }
+
+    const filterCopy = { ...remainingFilter, ...tagsFilter } as Filter;
 
     // extract properties that needs conversion
     const { dateCreated, datePublished, dateUpdated, contextId } = filter;

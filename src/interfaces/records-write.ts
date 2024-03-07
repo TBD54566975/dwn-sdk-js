@@ -12,7 +12,8 @@ import type {
   RecordsWriteAttestationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
-  RecordsWriteSignaturePayload
+  RecordsWriteSignaturePayload,
+  RecordsWriteTags
 } from '../types/records-types.js';
 import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
@@ -39,6 +40,7 @@ export type RecordsWriteOptions = {
   protocolPath?: string;
   protocolRole?: string;
   schema?: string;
+  tags?: RecordsWriteTags;
   recordId?: string;
 
   /**
@@ -133,6 +135,7 @@ export type CreateFromOptions = {
   dataFormat?: string;
 
   published?: boolean;
+  tags?: RecordsWriteTags;
   messageTimestamp?: string;
   datePublished?: string;
 
@@ -342,6 +345,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       protocolPath     : options.protocolPath,
       recipient        : options.recipient,
       schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
+      tags             : options.tags,
       parentId         : RecordsWrite.getRecordIdFromContextId(options.parentContextId),
       dataCid,
       dataSize,
@@ -452,6 +456,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
+      tags               : options.tags ?? sourceMessage.descriptor.tags, // if tags re not given, use base message tags
       data               : options.data,
       dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if new `data` not given, use value from source message
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if new `data` not given, use value from source message
@@ -776,7 +781,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     // we don't want the tags properties to occupy the descriptor index namespace
     // so we augment them with `tag.property_name` for each tag property and add them to the indexes
     if (tags !== undefined) {
-      const flattenedTags = Records.flattenTags(tags);
+      const flattenedTags = Records.flattenTags({ ...tags });
       indexes = { ...indexes, ...flattenedTags };
     }
 
