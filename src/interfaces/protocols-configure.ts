@@ -146,20 +146,20 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
 
     // Validate $actions in the rule set
     const actions = ruleSet.$actions ?? [];
-    for (const action of actions) {
+    for (const actionRule of actions) {
       // Validate the `role` property of an `action` if exists.
-      if (action.role !== undefined) {
+      if (actionRule.role !== undefined) {
         // make sure the role contains a valid protocol paths to a role record
-        if (!roles.includes(action.role)) {
+        if (!roles.includes(actionRule.role)) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath,
-            `Role in action ${JSON.stringify(action)} for rule set ${ruleSetProtocolPath} does not exist.`
+            `Role in action ${JSON.stringify(actionRule)} for rule set ${ruleSetProtocolPath} does not exist.`
           );
         }
       }
 
       // Validate that if `who` is set to `anyone` then `of` is not set
-      if (action.who === 'anyone' && action.of) {
+      if (actionRule.who === 'anyone' && actionRule.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed,
           `'of' is not allowed at rule set protocol path (${ruleSetProtocolPath})`
@@ -173,10 +173,10 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       //             Since `of` is undefined, it implies the recipient of THIS record,
       //             there is no 'recipient' until this record has been created, so it makes no sense to allow recipient to write this record.
       // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
-      if (action.who === ProtocolActor.Recipient && action.of === undefined) {
+      if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined) {
 
         // throw if `can` contains a value that is not co-update` or `co-delete`
-        if (action.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
+        if (actionRule.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
             'Rules for `recipient` without `of` property must have `can` containing only `co-update` or `co-delete`'
@@ -185,11 +185,21 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       }
 
       // Validate that if `who` is set to `author` then `of` is set
-      if (action.who === ProtocolActor.Author && !action.of) {
+      if (actionRule.who === ProtocolActor.Author && !actionRule.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
           `'of' is required when 'author' is specified as 'who'`
         );
+      }
+
+      // validate that if can contains `update`, it must also contain `create`
+      if (actionRule.can !== undefined) {
+        if (actionRule.can.includes(ProtocolAction.Update) && !actionRule.can.includes(ProtocolAction.Create)) {
+          throw new DwnError(
+            DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate,
+            `Action rule ${JSON.stringify(actionRule)} contains 'update' action but missing the required 'create' action.`
+          );
+        }
       }
     }
 

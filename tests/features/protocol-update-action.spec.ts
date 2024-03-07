@@ -1,5 +1,5 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
+import type { ProtocolDefinition, ProtocolsConfigureDescriptor } from '../../src/types/protocols-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -17,7 +17,7 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DwnErrorCode, ProtocolsConfigure } from '../../src/index.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Message, ProtocolsConfigure, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -547,10 +547,72 @@ export function testProtocolUpdateAction(): void {
       expect(bobUnauthorizedFooUpdateReply.status.code).to.equal(401);
       expect(bobUnauthorizedFooUpdateReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
     });
-  });
 
-  xit('should not allow `update` action without `create` action', async () => {
-    // TODO: pending https://github.com/TBD54566975/dwn-sdk-js/issues/700:
-    // Change the can property type in protocol definition schema to an array #700
+    it('should not allow creation of a protocol definition with action rule containing `update` without `create` ', async () => {
+      const protocolDefinition: ProtocolDefinition = {
+        protocol  : 'foo',
+        published : true,
+        types     : {
+          foo: {},
+        },
+        structure: {
+          foo: {
+            $actions: [
+              {
+                who : 'anyone',
+                can : [ProtocolAction.Update] // intentionally missing `create` action
+              }
+            ]
+          }
+        }
+      };
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const protocolsConfigureCreatePromise = ProtocolsConfigure.create({
+        definition : protocolDefinition,
+        signer     : Jws.createSigner(alice)
+      });
+
+      await expect(protocolsConfigureCreatePromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate);
+    });
+
+    it('should reject ProtocolsConfigure with action rule containing `update` action without `create` during processing', async () => {
+      const protocolDefinition: ProtocolDefinition = {
+        protocol  : 'http://foo',
+        published : true,
+        types     : {
+          foo: {},
+        },
+        structure: {
+          foo: {
+            $actions: [
+              {
+                who : 'anyone',
+                can : [ProtocolAction.Update] // intentionally missing `create` action
+              }
+            ]
+          }
+        }
+      };
+
+      // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+      const descriptor: ProtocolsConfigureDescriptor = {
+        interface        : DwnInterfaceName.Protocols,
+        method           : DwnMethodName.Configure,
+        messageTimestamp : Time.getCurrentTimestamp(),
+        definition       : protocolDefinition
+      };
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const authorization = await Message.createAuthorization({
+        descriptor,
+        signer: Jws.createSigner(alice)
+      });
+      const protocolsConfigureMessage = { descriptor, authorization };
+
+      const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+      expect(protocolsConfigureReply.status.code).to.equal(400);
+      expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate);
+    });
   });
 }

@@ -79,6 +79,7 @@ export enum DwnErrorCode {
   ProtocolsConfigureInvalidSize = 'ProtocolsConfigureInvalidSize',
   ProtocolsConfigureInvalidActionMissingOf = 'ProtocolsConfigureInvalidActionMissingOf',
   ProtocolsConfigureInvalidActionOfNotAllowed = 'ProtocolsConfigureInvalidActionOfNotAllowed',
+  ProtocolsConfigureInvalidActionUpdateWithoutCreate = 'ProtocolsConfigureInvalidActionUpdateWithoutCreate',
   ProtocolsConfigureInvalidRecipientOfAction = 'ProtocolsConfigureInvalidRecipientOfAction',
   ProtocolsConfigureInvalidRuleSetRecordType = 'ProtocolsConfigureInvalidRuleSetRecordType',
   ProtocolsConfigureQueryNotAllowed = 'ProtocolsConfigureQueryNotAllowed',
