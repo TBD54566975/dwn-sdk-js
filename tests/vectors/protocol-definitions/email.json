@@ -14,34 +14,46 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
+          "can": [
+            "write"
+          ]
         },
         {
           "who": "author",
           "of": "email",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         },
         {
           "who": "recipient",
           "of": "email",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ],
       "email": {
         "$actions": [
           {
             "who": "anyone",
-            "can": "write"
+            "can": [
+              "write"
+            ]
           },
           {
             "who": "author",
             "of": "email/email",
-            "can": "read"
+            "can": [
+              "read"
+            ]
           },
           {
             "who": "recipient",
             "of": "email/email",
-            "can": "read"
+            "can": [
+              "read"
+            ]
           }
         ]
       }

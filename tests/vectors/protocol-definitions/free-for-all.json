@@ -14,15 +14,11 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
-        },
-        {
-          "who": "anyone",
-          "can": "co-delete"
-        },
-        {
-          "who": "anyone",
-          "can": "read"
+          "can": [
+            "write",
+            "read",
+            "co-delete"
+          ]
         }
       ]
     }

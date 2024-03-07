@@ -166,21 +166,22 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
         );
       }
 
-      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `co-delete` or `co-update`
-      // We will allow `read`, `write`, or `query` because:
+      // Validate that if `who === recipient` and `of === undefined`, then `can` can only contain `co-delete` and `co-update`
+      // We do not allow `read`, `write`, or `query` in the `can` array because:
       // - `read` - Recipients are always allowed to `read`.
       // - `write` - Entails ability to create and update.
       //             Since `of` is undefined, it implies the recipient of THIS record,
       //             there is no 'recipient' until this record has been created, so it makes no sense to allow recipient to write this record.
       // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
-      if (action.who === ProtocolActor.Recipient &&
-          action.of === undefined &&
-          ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(action.can as ProtocolAction)
-      ) {
-        throw new DwnError(
-          DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
-          'Rules for `recipient` without `of` property must have `can` === `co-delete` or `co-update`'
-        );
+      if (action.who === ProtocolActor.Recipient && action.of === undefined) {
+
+        // throw if `can` contains a value that is not co-update` or `co-delete`
+        if (action.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
+          throw new DwnError(
+            DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
+            'Rules for `recipient` without `of` property must have `can` containing only `co-update` or `co-delete`'
+          );
+        }
       }
 
       // Validate that if `who` is set to `author` then `of` is set

@@ -10,11 +10,10 @@
       "$actions": [
         {
           "who": "recipient",
-          "can": "co-update"
-        },
-        {
-          "who": "recipient",
-          "can": "co-delete"
+          "can": [
+            "co-update",
+            "co-delete"
+          ]
         }
       ],
       "tag": {
@@ -22,12 +21,10 @@
           {
             "who": "recipient",
             "of": "post",
-            "can": "co-update"
-          },
-          {
-            "who": "recipient",
-            "of": "post",
-            "can": "co-delete"
+            "can": [
+              "co-update",
+              "co-delete"
+            ]
           }
         ]
       }

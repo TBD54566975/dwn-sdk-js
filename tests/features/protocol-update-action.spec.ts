@@ -88,11 +88,7 @@ export function testProtocolUpdateAction(): void {
             $actions: [
               {
                 role : 'user',
-                can  : ProtocolAction.Create
-              },
-              {
-                role : 'user',
-                can  : ProtocolAction.Update
+                can  : [ProtocolAction.Create, ProtocolAction.Update]
               }
             ]
           }
@@ -250,12 +246,7 @@ export function testProtocolUpdateAction(): void {
                 {
                   who : 'recipient',
                   of  : 'foo',
-                  can : ProtocolAction.Create
-                },
-                {
-                  who : 'recipient',
-                  of  : 'foo',
-                  can : ProtocolAction.Update
+                  can : [ProtocolAction.Create, ProtocolAction.Update]
                 }
               ],
               baz: {
@@ -263,12 +254,7 @@ export function testProtocolUpdateAction(): void {
                   {
                     who : 'author',
                     of  : 'foo/bar',
-                    can : ProtocolAction.Create
-                  },
-                  {
-                    who : 'author',
-                    of  : 'foo/bar',
-                    can : ProtocolAction.Update
+                    can : [ProtocolAction.Create, ProtocolAction.Update]
                   }
                 ]
               }
@@ -476,11 +462,7 @@ export function testProtocolUpdateAction(): void {
             $actions: [
               {
                 who : 'anyone',
-                can : ProtocolAction.Create
-              },
-              {
-                who : 'anyone',
-                can : ProtocolAction.Update
+                can : [ProtocolAction.Create, ProtocolAction.Update]
               }
             ]
           }

@@ -355,6 +355,7 @@ export class ProtocolAuthorization {
           `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentId'.`
         );
       }
+
       return;
     }
 
@@ -583,7 +584,9 @@ export class ProtocolAuthorization {
     const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
-      if (!actionsSeekingARuleMatch.includes(actionRule.can as ProtocolAction)) {
+      // If the action rule does not have an allowed action that matches an action that can authorize the message, skip to evaluate next action rule.
+      const ruleHasAMatchingAllowedAction = actionRule.can.some(allowedAction => actionsSeekingARuleMatch.includes(allowedAction as ProtocolAction));
+      if (!ruleHasAMatchingAllowedAction) {
         continue;
       }
 

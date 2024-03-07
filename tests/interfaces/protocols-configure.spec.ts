@@ -143,14 +143,14 @@ describe('ProtocolsConfigure', () => {
               secondLevel : {
                 $actions: [{
                   role : 'rootRole', // valid because 'rootRole` has $role: true
-                  can  : 'write'
+                  can  : ['write']
                 }]
               }
             },
             firstLevel: {
               $actions: [{
                 role : 'rootRole', // valid because 'rootRole` has $role: true
-                can  : 'write'
+                can  : ['write']
               }]
             }
           }
@@ -183,7 +183,7 @@ describe('ProtocolsConfigure', () => {
               chat: {
                 $actions: [{
                   role : 'thread/participant', // valid because 'thread/participant` has $role: true
-                  can  : 'write'
+                  can  : ['write']
                 }]
               }
             }
@@ -215,7 +215,7 @@ describe('ProtocolsConfigure', () => {
             bar: {
               $actions: [{
                 role : 'foo', // foo is not a role
-                can  : 'read'
+                can  : ['read']
               }]
             }
           }
@@ -244,7 +244,7 @@ describe('ProtocolsConfigure', () => {
               $actions: [{
                 who : 'anyone',
                 of  : 'message', // Not allowed
-                can : 'read'
+                can : ['read']
               }]
             }
           }
@@ -272,7 +272,7 @@ describe('ProtocolsConfigure', () => {
             message: {
               $actions: [{
                 who : 'recipient',
-                can : 'read' // not allowed, should be either delete or update
+                can : ['read'] // not allowed, should be either delete or update
               }]
             }
           }
@@ -301,7 +301,7 @@ describe('ProtocolsConfigure', () => {
               $actions: [{
                 who : 'author',
                 // of : 'message', // Intentionally missing
-                can : 'read'
+                can : ['read']
               }]
             }
           }
@@ -318,7 +318,7 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf);
       });
 
-      it('rejects protocol definitions with `can: query` in non-role rules', async () => {
+      it('rejects protocol definitions with `can query` in non-role rules', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
@@ -330,7 +330,7 @@ describe('ProtocolsConfigure', () => {
               $actions: [{
                 who : 'author',
                 of  : 'message',
-                can : 'query'
+                can : ['query']
               }]
             }
           }
