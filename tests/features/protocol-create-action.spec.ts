@@ -130,6 +130,7 @@ export function testProtocolCreateAction(): void {
       const bobUnauthorizedWrite = await RecordsWrite.create(
         {
           signer       : Jws.createSigner(bob),
+          recipient    : carol.did,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'foo',
           schema       : 'any-schema',
