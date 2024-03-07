@@ -456,7 +456,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
-      tags               : options.tags ?? sourceMessage.descriptor.tags, // if tags re not given, use base message tags
+      tags               : options.tags,
       data               : options.data,
       dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if new `data` not given, use value from source message
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if new `data` not given, use value from source message
