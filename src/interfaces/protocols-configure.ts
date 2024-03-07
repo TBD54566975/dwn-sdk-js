@@ -144,9 +144,11 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       }
     }
 
-    // Validate $actions in the rule set
-    const actions = ruleSet.$actions ?? [];
-    for (const actionRule of actions) {
+    // validate each action rule
+    const actionRules = ruleSet.$actions ?? [];
+    for (let i = 0; i < actionRules.length; i++) {
+      const actionRule = actionRules[i];
+
       // Validate the `role` property of an `action` if exists.
       if (actionRule.role !== undefined) {
         // make sure the role contains a valid protocol paths to a role record
@@ -199,6 +201,31 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
             DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate,
             `Action rule ${JSON.stringify(actionRule)} contains 'update' action but missing the required 'create' action.`
           );
+        }
+      }
+
+      // Validate that there are no duplicate actors or roles in the remaining action rules:
+      // ie. no two action rules can have the same combination of `who` + `of` or `role`.
+      // NOTE: we only need to check the remaining action rules that have yet to go through action rule validation loop, as a perf shortcut.
+      for (let j = i + 1; j < actionRules.length; j++) {
+        const otherActionRule = actionRules[j];
+
+        if (actionRule.who !== undefined) {
+          if (actionRule.who === otherActionRule.who && actionRule.of === otherActionRule.of) {
+            throw new DwnError(
+              DwnErrorCode.ProtocolsConfigureDuplicateActorInRuleSet,
+              `More than one action rule per actor ${actionRule.who} of ${actionRule.of} not allowed within a rule set: ${JSON.stringify(actionRule)}`
+            );
+          }
+        } else {
+          // else implicitly a role-based action rule
+
+          if (actionRule.role === otherActionRule.role) {
+            throw new DwnError(
+              DwnErrorCode.ProtocolsConfigureDuplicateRoleInRuleSet,
+              `More than one action rule per role ${actionRule.role} not allowed within a rule set: ${JSON.stringify(actionRule)}`
+            );
+          }
         }
       }
     }

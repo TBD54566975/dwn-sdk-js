@@ -1,6 +1,6 @@
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { ProtocolDefinition, ProtocolsConfigureDescriptor } from '../../src/types/protocols-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { ProtocolDefinition, ProtocolsConfigureDescriptor } from '../../src/types/protocols-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -548,7 +548,7 @@ export function testProtocolUpdateAction(): void {
       expect(bobUnauthorizedFooUpdateReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
     });
 
-    it('should not allow creation of a protocol definition with action rule containing `update` without `create` ', async () => {
+    it('should not allow creation of a protocol definition with action rule containing `update` without `create`', async () => {
       const protocolDefinition: ProtocolDefinition = {
         protocol  : 'foo',
         published : true,
