@@ -47,6 +47,7 @@
                   "co-update",
                   "create",
                   "read",
+                  "update",
                   "write"
                 ]
               }
@@ -71,6 +72,7 @@
                   "query",
                   "subscribe",
                   "read",
+                  "update",
                   "write"
                 ]
               }
