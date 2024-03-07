@@ -416,7 +416,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if new `data` not given, use value from source message
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if new `data` not given, use value from source message
       dataFormat         : options.dataFormat ?? sourceMessage.descriptor.dataFormat,
-      protocolRole       : options.protocolRole ?? sourceRecordsWrite.signaturePayload?.protocolRole, // if not given, use value from source message
+      protocolRole       : options.protocolRole ?? sourceRecordsWrite.signaturePayload!.protocolRole, // if not given, use value from source message
       delegatedGrant     : options.delegatedGrant,
       // finally still need signers
       signer             : options.signer,

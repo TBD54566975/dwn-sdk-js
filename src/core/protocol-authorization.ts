@@ -546,7 +546,7 @@ export class ProtocolAuthorization {
           // 'write', 'update' or 'co-update' action authorizes the incoming message
           return [ProtocolAction.Write, ProtocolAction.CoUpdate, ProtocolAction.Update];
         } else {
-          // Actors other than the initial record author must be authorized to 'co-update' the message
+          // An update by someone who is not the record author can only be authorized by a 'co-update' rule.
           return [ProtocolAction.CoUpdate];
         }
       }
