@@ -56,7 +56,9 @@
       "$actions": [
         {
           "role": "community/admin",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ],
       "admin": {
@@ -65,20 +67,17 @@
           {
             "who": "author",
             "of": "community",
-            "can": "write"
-          },
-          {
-            "who": "author",
-            "of": "community",
-            "can": "co-delete"
-          },
-          {
-            "role": "community/admin",
-            "can": "write"
+            "can": [
+              "write",
+              "co-delete"
+            ]
           },
           {
             "role": "community/admin",
-            "can": "co-delete"
+            "can": [
+              "write",
+              "co-delete"
+            ]
           }
         ]
       },
@@ -87,11 +86,10 @@
         "$actions": [
           {
             "role": "community/admin",
-            "can": "write"
-          },
-          {
-            "role": "community/admin",
-            "can": "co-delete"
+            "can": [
+              "write",
+              "co-delete"
+            ]
           }
         ]
       },
@@ -99,11 +97,10 @@
         "$actions": [
           {
             "role": "community/admin",
-            "can": "write"
-          },
-          {
-            "role": "community/admin",
-            "can": "co-delete"
+            "can": [
+              "write",
+              "co-delete"
+            ]
           }
         ],
         "message": {
@@ -111,15 +108,16 @@
             {
               "who": "recipient",
               "of": "community/openChannel/message",
-              "can": "write"
+              "can": [
+                "write"
+              ]
             },
             {
               "role": "community/member",
-              "can": "write"
-            },
-            {
-              "role": "community/member",
-              "can": "co-delete"
+              "can": [
+                "write",
+                "co-delete"
+              ]
             }
           ],
           "media": {
@@ -127,7 +125,9 @@
               {
                 "who": "author",
                 "of": "community/openChannel/message",
-                "can": "write"
+                "can": [
+                  "write"
+                ]
               }
             ]
           },
@@ -135,11 +135,10 @@
             "$actions": [
               {
                 "role": "community/member",
-                "can": "write"
-              },
-              {
-                "role": "community/member",
-                "can": "co-delete"
+                "can": [
+                  "write",
+                  "co-delete"
+                ]
               }
             ]
           }
@@ -149,15 +148,16 @@
         "$actions": [
           {
             "role": "community/admin",
-            "can": "write"
-          },
-          {
-            "role": "community/admin",
-            "can": "co-delete"
+            "can": [
+              "write",
+              "co-delete"
+            ]
           },
           {
             "role": "community/gatedChannel/participant",
-            "can": "read"
+            "can": [
+              "read"
+            ]
           }
         ],
         "participant": {
@@ -166,20 +166,17 @@
             {
               "who": "author",
               "of": "community/gatedChannel",
-              "can": "write"
-            },
-            {
-              "who": "author",
-              "of": "community/gatedChannel",
-              "can": "co-delete"
-            },
-            {
-              "role": "community/gatedChannel/participant",
-              "can": "write"
+              "can": [
+                "write",
+                "co-delete"
+              ]
             },
             {
               "role": "community/gatedChannel/participant",
-              "can": "co-delete"
+              "can": [
+                "write",
+                "co-delete"
+              ]
             }
           ]
         },
@@ -188,19 +185,17 @@
             {
               "who": "recipient",
               "of": "community/gatedChannel/message",
-              "can": "write"
+              "can": [
+                "write"
+              ]
             },
             {
               "role": "community/gatedChannel/participant",
-              "can": "write"
-            },
-            {
-              "role": "community/gatedChannel/participant",
-              "can": "query"
-            },
-            {
-              "role": "community/gatedChannel/participant",
-              "can": "co-delete"
+              "can": [
+                "write",
+                "query",
+                "co-delete"
+              ]
             }
           ],
           "media": {
@@ -208,7 +203,9 @@
               {
                 "who": "author",
                 "of": "community/gatedChannel/message",
-                "can": "write"
+                "can": [
+                  "write"
+                ]
               }
             ]
           },
@@ -216,11 +213,10 @@
             "$actions": [
               {
                 "role": "community/gatedChannel/participant",
-                "can": "write"
-              },
-              {
-                "role": "community/gatedChannel/participant",
-                "can": "co-delete"
+                "can": [
+                  "write",
+                  "co-delete"
+                ]
               }
             ]
           }

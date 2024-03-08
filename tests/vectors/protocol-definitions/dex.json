@@ -26,7 +26,9 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
+          "can": [
+            "write"
+          ]
         }
       ],
       "offer": {
@@ -34,7 +36,9 @@
           {
             "who": "recipient",
             "of": "ask",
-            "can": "write"
+            "can": [
+              "write"
+            ]
           }
         ],
         "fulfillment": {
@@ -42,7 +46,9 @@
             {
               "who": "recipient",
               "of": "ask/offer",
-              "can": "write"
+              "can": [
+                "write"
+              ]
             }
           ]
         }

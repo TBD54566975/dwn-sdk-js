@@ -16,7 +16,9 @@
       "$actions": [
         {
           "role": "thread/participant",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ],
       "admin": {
@@ -27,11 +29,10 @@
         "$actions": [
           {
             "role": "thread/participant",
-            "can": "read"
-          },
-          {
-            "role": "thread/participant",
-            "can": "write"
+            "can": [
+              "read",
+              "write"
+            ]
           }
         ]
       },
@@ -39,31 +40,25 @@
         "$actions": [
           {
             "role": "thread/participant",
-            "can": "read"
-          },
-          {
-            "role": "thread/participant",
-            "can": "write"
-          },
-          {
-            "role": "thread/participant",
-            "can": "query"
-          },
-          {
-            "role": "thread/participant",
-            "can": "subscribe"
+            "can": [
+              "read",
+              "write",
+              "query",
+              "subscribe"
+            ]
           },
           {
             "role": "thread/admin",
-            "can": "co-update"
-          },
-          {
-            "role": "thread/admin",
-            "can": "co-delete"
+            "can": [
+              "co-update",
+              "co-delete"
+            ]
           },
           {
             "role": "globalAdmin",
-            "can": "co-delete"
+            "can": [
+              "co-delete"
+            ]
           }
         ]
       }

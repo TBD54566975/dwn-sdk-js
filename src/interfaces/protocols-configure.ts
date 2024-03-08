@@ -144,51 +144,89 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       }
     }
 
-    // Validate $actions in the rule set
-    const actions = ruleSet.$actions ?? [];
-    for (const action of actions) {
+    // validate each action rule
+    const actionRules = ruleSet.$actions ?? [];
+    for (let i = 0; i < actionRules.length; i++) {
+      const actionRule = actionRules[i];
+
       // Validate the `role` property of an `action` if exists.
-      if (action.role !== undefined) {
+      if (actionRule.role !== undefined) {
         // make sure the role contains a valid protocol paths to a role record
-        if (!roles.includes(action.role)) {
+        if (!roles.includes(actionRule.role)) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath,
-            `Role in action ${JSON.stringify(action)} for rule set ${ruleSetProtocolPath} does not exist.`
+            `Role in action ${JSON.stringify(actionRule)} for rule set ${ruleSetProtocolPath} does not exist.`
           );
         }
       }
 
       // Validate that if `who` is set to `anyone` then `of` is not set
-      if (action.who === 'anyone' && action.of) {
+      if (actionRule.who === 'anyone' && actionRule.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed,
           `'of' is not allowed at rule set protocol path (${ruleSetProtocolPath})`
         );
       }
 
-      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `co-delete` or `co-update`
-      // We will allow `read`, `write`, or `query` because:
+      // Validate that if `who === recipient` and `of === undefined`, then `can` can only contain `co-delete` and `co-update`
+      // We do not allow `read`, `write`, or `query` in the `can` array because:
       // - `read` - Recipients are always allowed to `read`.
       // - `write` - Entails ability to create and update.
       //             Since `of` is undefined, it implies the recipient of THIS record,
       //             there is no 'recipient' until this record has been created, so it makes no sense to allow recipient to write this record.
       // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
-      if (action.who === ProtocolActor.Recipient &&
-          action.of === undefined &&
-          ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(action.can as ProtocolAction)
-      ) {
-        throw new DwnError(
-          DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
-          'Rules for `recipient` without `of` property must have `can` === `co-delete` or `co-update`'
-        );
+      if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined) {
+
+        // throw if `can` contains a value that is not `co-update` or `co-delete`
+        if (actionRule.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
+          throw new DwnError(
+            DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
+            'Rules for `recipient` without `of` property must have `can` containing only `co-update` or `co-delete`'
+          );
+        }
       }
 
       // Validate that if `who` is set to `author` then `of` is set
-      if (action.who === ProtocolActor.Author && !action.of) {
+      if (actionRule.who === ProtocolActor.Author && !actionRule.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
           `'of' is required when 'author' is specified as 'who'`
         );
+      }
+
+      // validate that if can contains `update`, it must also contain `create`
+      if (actionRule.can !== undefined) {
+        if (actionRule.can.includes(ProtocolAction.Update) && !actionRule.can.includes(ProtocolAction.Create)) {
+          throw new DwnError(
+            DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate,
+            `Action rule ${JSON.stringify(actionRule)} contains 'update' action but missing the required 'create' action.`
+          );
+        }
+      }
+
+      // Validate that there are no duplicate actors or roles in the remaining action rules:
+      // ie. no two action rules can have the same combination of `who` + `of` or `role`.
+      // NOTE: we only need to check the remaining action rules that have yet to go through action rule validation loop, as a perf shortcut.
+      for (let j = i + 1; j < actionRules.length; j++) {
+        const otherActionRule = actionRules[j];
+
+        if (actionRule.who !== undefined) {
+          if (actionRule.who === otherActionRule.who && actionRule.of === otherActionRule.of) {
+            throw new DwnError(
+              DwnErrorCode.ProtocolsConfigureDuplicateActorInRuleSet,
+              `More than one action rule per actor ${actionRule.who} of ${actionRule.of} not allowed within a rule set: ${JSON.stringify(actionRule)}`
+            );
+          }
+        } else {
+          // else implicitly a role-based action rule
+
+          if (actionRule.role === otherActionRule.role) {
+            throw new DwnError(
+              DwnErrorCode.ProtocolsConfigureDuplicateRoleInRuleSet,
+              `More than one action rule per role ${actionRule.role} not allowed within a rule set: ${JSON.stringify(actionRule)}`
+            );
+          }
+        }
       }
     }
 

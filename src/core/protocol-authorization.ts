@@ -46,7 +46,7 @@ export class ProtocolAuthorization {
     );
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+    const ruleSet = ProtocolAuthorization.getRuleSet(
       incomingMessage.message.descriptor.protocolPath!,
       protocolDefinition,
     );
@@ -55,12 +55,12 @@ export class ProtocolAuthorization {
     await ProtocolAuthorization.verifyAsRoleRecordIfNeeded(
       tenant,
       incomingMessage,
-      inboundMessageRuleSet,
+      ruleSet,
       messageStore,
     );
 
     // Verify size limit
-    ProtocolAuthorization.verifySizeLimit(incomingMessage, inboundMessageRuleSet);
+    ProtocolAuthorization.verifySizeLimit(incomingMessage, ruleSet);
   }
 
   /**
@@ -84,7 +84,7 @@ export class ProtocolAuthorization {
     );
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+    const ruleSet = ProtocolAuthorization.getRuleSet(
       incomingMessage.message.descriptor.protocolPath!,
       protocolDefinition,
     );
@@ -99,11 +99,11 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
+    // verify method invoked against the allowed actions in the rule set
+    await ProtocolAuthorization.authorizeAgainstAllowedActions(
       tenant,
       incomingMessage,
-      inboundMessageRuleSet,
+      ruleSet,
       ancestorMessageChain,
       messageStore,
     );
@@ -133,7 +133,7 @@ export class ProtocolAuthorization {
     );
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+    const ruleSet = ProtocolAuthorization.getRuleSet(
       newestRecordsWrite.message.descriptor.protocolPath!,
       protocolDefinition,
     );
@@ -148,11 +148,11 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
+    // verify method invoked against the allowed actions in the rule set
+    await ProtocolAuthorization.authorizeAgainstAllowedActions(
       tenant,
       incomingMessage,
-      inboundMessageRuleSet,
+      ruleSet,
       ancestorMessageChain,
       messageStore,
     );
@@ -173,7 +173,7 @@ export class ProtocolAuthorization {
     );
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+    const ruleSet = ProtocolAuthorization.getRuleSet(
       protocolPath!, // presence of `protocolPath` is verified in `parse()`
       protocolDefinition,
     );
@@ -188,11 +188,11 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
+    // verify method invoked against the allowed actions in the rule set
+    await ProtocolAuthorization.authorizeAgainstAllowedActions(
       tenant,
       incomingMessage,
-      inboundMessageRuleSet,
+      ruleSet,
       [], // ancestor chain is not relevant to subscriptions
       messageStore,
     );
@@ -217,7 +217,7 @@ export class ProtocolAuthorization {
     );
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+    const ruleSet = ProtocolAuthorization.getRuleSet(
       newestRecordsWrite.message.descriptor.protocolPath!,
       protocolDefinition,
     );
@@ -232,11 +232,11 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
+    // verify method invoked against the allowed actions in the rule set
+    await ProtocolAuthorization.authorizeAgainstAllowedActions(
       tenant,
       incomingMessage,
-      inboundMessageRuleSet,
+      ruleSet,
       ancestorMessageChain,
       messageStore,
     );
@@ -355,6 +355,7 @@ export class ProtocolAuthorization {
           `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentId'.`
         );
       }
+
       return;
     }
 
@@ -557,20 +558,20 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies the action (e.g. read/write) specified in the given message matches the allowed actions in the rule set.
+   * Verifies the given message is authorized by one of the action rules in the given protocol rule set.
    * @throws {Error} if action not allowed.
    */
-  private static async verifyAllowedActions(
+  private static async authorizeAgainstAllowedActions(
     tenant: string,
     incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
-    inboundMessageRuleSet: ProtocolRuleSet,
+    ruleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
     const actionsSeekingARuleMatch = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
     const author = incomingMessage.author;
-    const actionRules = inboundMessageRuleSet.$actions;
+    const actionRules = ruleSet.$actions;
 
     // We have already checked that the message is not from tenant, owner, or permissionsGrant
     if (actionRules === undefined) {
@@ -583,7 +584,9 @@ export class ProtocolAuthorization {
     const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
-      if (!actionsSeekingARuleMatch.includes(actionRule.can as ProtocolAction)) {
+      // If the action rule does not have an allowed action that matches an action that can authorize the message, skip to evaluate next action rule.
+      const ruleHasAMatchingAllowedAction = actionRule.can.some(allowedAction => actionsSeekingARuleMatch.includes(allowedAction as ProtocolAction));
+      if (!ruleHasAMatchingAllowedAction) {
         continue;
       }
 
@@ -634,9 +637,9 @@ export class ProtocolAuthorization {
    */
   private static verifySizeLimit(
     incomingMessage: RecordsWrite,
-    inboundMessageRuleSet: ProtocolRuleSet
+    ruleSet: ProtocolRuleSet
   ): void {
-    const { min = 0, max } = inboundMessageRuleSet.$size || {};
+    const { min = 0, max } = ruleSet.$size || {};
 
     const dataSize = incomingMessage.message.descriptor.dataSize;
 
@@ -662,10 +665,10 @@ export class ProtocolAuthorization {
   private static async verifyAsRoleRecordIfNeeded(
     tenant: string,
     incomingMessage: RecordsWrite,
-    inboundMessageRuleSet: ProtocolRuleSet,
+    ruleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    if (!inboundMessageRuleSet.$role) {
+    if (!ruleSet.$role) {
       return;
     }
 

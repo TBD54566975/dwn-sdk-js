@@ -22,7 +22,7 @@ describe('ProtocolsConfigure schema definition', () => {
           $actions: [
             {
               who : 'unknown',
-              can : 'write'
+              can : ['write']
             }
           ]
         }
@@ -50,7 +50,7 @@ describe('ProtocolsConfigure schema definition', () => {
         $actions: [{
           who : 'author',
           of  : 'thread',
-          // can: 'read'  // intentionally missing
+          // can: ['read']  // intentionally missing
         }]
       };
 
@@ -58,7 +58,7 @@ describe('ProtocolsConfigure schema definition', () => {
         $actions: [{
           who : 'recipient',
           of  : 'thread',
-          // can: 'read'  // intentionally missing
+          // can: ['read']  // intentionally missing
         }]
       };
 

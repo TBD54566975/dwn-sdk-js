@@ -21,31 +21,25 @@
       "$actions": [
         {
           "role": "fan",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         },
         {
           "role": "friend",
-          "can": "write"
-        },
-        {
-          "role": "friend",
-          "can": "read"
-        },
-        {
-          "role": "friend",
-          "can": "query"
-        },
-        {
-          "role": "friend",
-          "can": "subscribe"
+          "can": [
+            "write",
+            "read",
+            "query",
+            "subscribe"
+          ]
         },
         {
           "role": "admin",
-          "can": "co-update"
-        },
-        {
-          "role": "admin",
-          "can": "co-delete"
+          "can": [
+            "co-update",
+            "co-delete"
+          ]
         }
       ]
     }

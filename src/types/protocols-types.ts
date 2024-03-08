@@ -53,7 +53,7 @@ export enum ProtocolAction {
  * 1. Anyone can write.
  *   {
  *     who: 'anyone',
- *     can: 'write
+ *     can: ['write']
  *   }
  *
  * 2. Author of protocolPath can write; OR
@@ -61,13 +61,13 @@ export enum ProtocolAction {
  *   {
  *     who: 'recipient'
  *     of: 'requestForQuote',
- *     can: 'write'
+ *     can: ['write']
  *   }
  *
  * 3. Role can write.
  *   {
  *     role: 'friend',
- *     can: 'write'
+ *     can: ['write']
  *   }
  */
 export type ProtocolActionRule = {
@@ -91,11 +91,11 @@ export type ProtocolActionRule = {
   of?: string;
 
   /**
-   * Action that the actor can perform.
+   * Array of actions that the actor/role can perform.
    * See {ProtocolAction} for possible values.
    * 'query' and 'subscribe' are only supported for `role` rules.
    */
-  can: string;
+  can: string[];
 };
 /**
  * Config for protocol-path encryption scheme.

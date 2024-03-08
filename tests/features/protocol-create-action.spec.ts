@@ -89,7 +89,7 @@ export function testProtocolCreateAction(): void {
             $actions: [
               {
                 role : 'admin',
-                can  : ProtocolAction.Create
+                can  : [ProtocolAction.Create]
               },
             ],
             bar: {
@@ -97,19 +97,19 @@ export function testProtocolCreateAction(): void {
                 {
                   who : 'author',
                   of  : 'foo',
-                  can : ProtocolAction.Create
+                  can : [ProtocolAction.Create]
                 },
                 {
                   who : 'recipient',
                   of  : 'foo',
-                  can : ProtocolAction.Create
+                  can : [ProtocolAction.Create]
                 }
               ],
               baz: {
                 $actions: [
                   {
                     who : 'anyone',
-                    can : ProtocolAction.Create
+                    can : [ProtocolAction.Create]
                   }
                 ],
               }

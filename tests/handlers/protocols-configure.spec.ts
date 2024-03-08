@@ -4,7 +4,9 @@ import type { GenerateProtocolsConfigureOutput } from '../utils/test-data-genera
 import type {
   DataStore,
   EventLog,
-  MessageStore
+  MessageStore,
+  ProtocolDefinition,
+  ProtocolsConfigureDescriptor
 } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -17,6 +19,7 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { ProtocolAction } from '../../src/types/protocols-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -24,7 +27,7 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, DidResolver } from '@web5/dids';
-import { Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
+import { Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -287,6 +290,147 @@ export function testProtocolsConfigureHandler(): void {
         const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
         expect(protocolsConfigureReply.status.code).to.equal(401);
         expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.AuthorizationAuthorNotOwner);
+      });
+
+      it('should reject ProtocolsConfigure with action rule containing duplicated actor (`who` or `who` + `of` combination) within a rule set', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const protocolDefinition: ProtocolDefinition = {
+          protocol  : 'http://foo-bar',
+          published : true,
+          types     : {
+            foo: {},
+          },
+          structure: {
+            foo: {
+              $actions: [
+                {
+                  who : 'anyone',
+                  can : [ProtocolAction.Create]
+                },
+                // duplicated `who` value
+                {
+                  who : 'anyone',
+                  can : [ProtocolAction.Update]
+                }
+              ]
+            }
+          }
+        };
+
+        // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+        const descriptor: ProtocolsConfigureDescriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinition
+        };
+
+        const authorization = await Message.createAuthorization({
+          descriptor,
+          signer: Jws.createSigner(alice)
+        });
+        const protocolsConfigureMessage = { descriptor, authorization };
+
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+        expect(protocolsConfigureReply.status.code).to.equal(400);
+        expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureDuplicateActorInRuleSet);
+
+
+        // similar test as above but with `of` property
+        const protocolDefinition2: ProtocolDefinition = {
+          protocol  : 'http://foo-bar',
+          published : true,
+          types     : {
+            foo : {},
+            bar : {},
+          },
+          structure: {
+            foo: {
+              bar: {
+                $actions: [
+                  {
+                    who : 'recipient',
+                    of  : 'foo',
+                    can : [ProtocolAction.Create]
+                  },
+                  // duplicated `who` value
+                  {
+                    who : 'recipient',
+                    of  : 'foo',
+                    can : [ProtocolAction.Update]
+                  }
+                ]
+              }
+            }
+          }
+        };
+
+        const descriptor2: ProtocolsConfigureDescriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinition2
+        };
+
+        const authorization2 = await Message.createAuthorization({
+          descriptor : descriptor2,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureMessage2 = { descriptor: descriptor2, authorization: authorization2 };
+
+        const protocolsConfigure2Reply = await dwn.processMessage(alice.did, protocolsConfigureMessage2);
+        expect(protocolsConfigure2Reply.status.code).to.equal(400);
+        expect(protocolsConfigure2Reply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureDuplicateActorInRuleSet);
+      });
+
+      it('should reject ProtocolsConfigure with action rule containing duplicated role within a rule set', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const protocolDefinition: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            user : {},
+            foo  : {},
+          },
+          structure: {
+            user: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'user',
+                  can  : [ProtocolAction.Create]
+                },
+                // duplicated `role` value
+                {
+                  role : 'user',
+                  can  : [ProtocolAction.Update]
+                }
+              ]
+            }
+          }
+        };
+
+        // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+        const descriptor: ProtocolsConfigureDescriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinition
+        };
+
+        const authorization = await Message.createAuthorization({
+          descriptor,
+          signer: Jws.createSigner(alice)
+        });
+        const protocolsConfigureMessage = { descriptor, authorization };
+
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+        expect(protocolsConfigureReply.status.code).to.equal(400);
+        expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureDuplicateRoleInRuleSet);
       });
 
       describe('event log', () => {

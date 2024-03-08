@@ -20,34 +20,46 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
+          "can": [
+            "write"
+          ]
         },
         {
           "who": "author",
           "of": "thread",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         },
         {
           "who": "recipient",
           "of": "thread",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ],
       "message": {
         "$actions": [
           {
             "who": "anyone",
-            "can": "write"
+            "can": [
+              "write"
+            ]
           },
           {
             "who": "author",
             "of": "thread/message",
-            "can": "read"
+            "can": [
+              "read"
+            ]
           },
           {
             "who": "recipient",
             "of": "thread/message",
-            "can": "read"
+            "can": [
+              "read"
+            ]
           }
         ]
       }

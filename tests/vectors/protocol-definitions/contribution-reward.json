@@ -20,7 +20,9 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
+          "can": [
+            "write"
+          ]
         }
       ]
     },
@@ -29,7 +31,9 @@
         {
           "who": "author",
           "of": "contribution",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ]
     }

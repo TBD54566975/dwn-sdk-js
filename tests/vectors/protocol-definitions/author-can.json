@@ -10,7 +10,9 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "write"
+          "can": [
+            "write"
+          ]
         }
       ],
       "comment": {
@@ -18,12 +20,10 @@
           {
             "who": "author",
             "of": "post",
-            "can": "co-update"
-          },
-          {
-            "who": "author",
-            "of": "post",
-            "can": "co-delete"
+            "can": [
+              "co-update",
+              "co-delete"
+            ]
           }
         ]
       }

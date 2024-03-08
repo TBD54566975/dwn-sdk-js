@@ -20,23 +20,26 @@
       "$actions": [
         {
           "who": "anyone",
-          "can": "read"
+          "can": [
+            "read"
+          ]
         }
       ],
       "comment": {
         "$actions": [
           {
             "who": "anyone",
-            "can": "read"
-          },
-          {
-            "who": "anyone",
-            "can": "write"
+            "can": [
+              "read",
+              "write"
+            ]
           },
           {
             "who": "author",
             "of": "post",
-            "can": "co-delete"
+            "can": [
+              "co-delete"
+            ]
           }
         ]
       }
