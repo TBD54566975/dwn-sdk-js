@@ -549,6 +549,69 @@ export function testProtocolUpdateAction(): void {
       expect(bobUnauthorizedFooUpdateReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
     });
 
+    it('should fail an update to an non-existent record', async () => {
+      // Scenario:
+      // 1. Alice installs a protocol with "author of an anyone-authorized create can update" rules.
+      // 2. Bob constructs an anyone-authorized `foo` but never sent it to the DWN.
+      // 3. Verify that Bob cannot update a `foo` that does not exist in the DWN.
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+
+      // 1. Alice installs a protocol with "author of an anyone-authorized create can update" rule.
+      const protocolDefinition: ProtocolDefinition = {
+        protocol  : 'foo',
+        published : true,
+        types     : {
+          foo: {},
+        },
+        structure: {
+          foo: {
+            $actions: [
+              {
+                who : 'anyone',
+                can : [ProtocolAction.Create, ProtocolAction.CoUpdate]
+              }
+            ]
+          }
+        }
+      };
+      const protocolsConfig = await ProtocolsConfigure.create({
+        definition : protocolDefinition,
+        signer     : Jws.createSigner(alice)
+      });
+
+      const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(protocolsConfigureReply.status.code).to.equal(202);
+
+      // 2. Bob constructs an anyone-authorized `foo` but never sent it to the DWN.
+      const bobFooBytes = TestDataGenerator.randomBytes(100);
+      const bobAnyoneAuthorizedFoo = await RecordsWrite.create(
+        {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'foo',
+          schema       : 'any-schema',
+          dataFormat   : 'any-format',
+          data         : bobFooBytes
+        }
+      );
+
+      // 3. Verify that Bob cannot update a `foo` that does not exist in the DWN.
+      const bobFooNewBytes = TestDataGenerator.randomBytes(100);
+      const bobAuthorizedFooUpdate = await RecordsWrite.createFrom(
+        {
+          recordsWriteMessage : bobAnyoneAuthorizedFoo.message,
+          data                : bobFooNewBytes,
+          signer              : Jws.createSigner(bob)
+        }
+      );
+      const bobAuthorizedFooUpdateReply
+        = await dwn.processMessage(alice.did, bobAuthorizedFooUpdate.message, { dataStream: DataStream.fromBytes(bobFooNewBytes) });
+      expect(bobAuthorizedFooUpdateReply.status.code).to.equal(401);
+      expect(bobAuthorizedFooUpdateReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+    });
+
     it('should not allow creation of a protocol definition with action rule containing `update` without `create`', async () => {
       const protocolDefinition: ProtocolDefinition = {
         protocol  : 'foo',

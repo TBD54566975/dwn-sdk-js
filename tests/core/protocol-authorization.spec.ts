@@ -25,4 +25,21 @@ describe('ProtocolAuthorization', () => {
       );
     });
   });
+
+  describe('getActionsSeekingARuleMatch()', () => {
+    it('should return empty array if unknown message method type is given', async () => {
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      const deliberatelyCraftedInvalidMessage = {
+        message: {
+          descriptor: {
+            method: 'invalid-method'
+          },
+        }
+      } as any;
+
+      const messageStoreStub = stubInterface<MessageStore>();
+      expect(ProtocolAuthorization['getActionsSeekingARuleMatch'](alice.did, deliberatelyCraftedInvalidMessage, messageStoreStub)).to.be.empty;
+    });
+  });
 });

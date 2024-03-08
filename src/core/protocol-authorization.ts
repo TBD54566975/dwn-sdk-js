@@ -526,11 +526,18 @@ export class ProtocolAuthorization {
       const recordId = (incomingMessage as RecordsDelete).message.descriptor.recordId;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
 
-      if (incomingMessage.author === initialWrite?.author) {
+      // if there is no initial write to delete, then no action rule can authorize the incoming message
+      // NOTE: purely defensive programming: currently not reachable
+      // because RecordsDelete handler already have an existence check prior to this method being called.
+      if (initialWrite === undefined) {
+        return [];
+      }
+
+      if (incomingMessage.author === initialWrite.author) {
         // A delete by the original record author can be authorized by either a 'delete' or 'co-delete' rule.
         return [ProtocolAction.Delete, ProtocolAction.CoDelete];
       } else {
-        // A delete by someone who is not the record author can only be authorized by a 'co-delete' rule.
+        // A delete by someone who is not the original record author can only be authorized by a 'co-delete' rule.
         return [ProtocolAction.CoDelete];
       }
 
@@ -554,7 +561,12 @@ export class ProtocolAuthorization {
         const recordId = (incomingMessage as RecordsWrite).message.recordId;
         const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
 
-        if (incomingMessage.author === initialWrite?.author) {
+        // if there is no initial write to update from, then no action rule can authorize the incoming message
+        if (initialWrite === undefined) {
+          return [];
+        }
+
+        if (incomingMessage.author === initialWrite.author) {
         // 'write', 'update' or 'co-update' action authorizes the incoming message
           return [ProtocolAction.Write, ProtocolAction.CoUpdate, ProtocolAction.Update];
         } else {
@@ -562,10 +574,10 @@ export class ProtocolAuthorization {
           return [ProtocolAction.CoUpdate];
         }
       }
-
-      // default:
-      // not reachable in typescript
     }
+
+    // purely defensive programming: should not be reachable
+    return [];
   }
 
   /**
