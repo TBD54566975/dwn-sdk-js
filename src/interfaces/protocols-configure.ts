@@ -177,7 +177,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
       if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined) {
 
-        // throw if `can` contains a value that is not co-update` or `co-delete`
+        // throw if `can` contains a value that is not `co-update` or `co-delete`
         if (actionRule.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,

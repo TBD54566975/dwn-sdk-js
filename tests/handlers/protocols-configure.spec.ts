@@ -292,7 +292,7 @@ export function testProtocolsConfigureHandler(): void {
         expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.AuthorizationAuthorNotOwner);
       });
 
-      it('should reject ProtocolsConfigure with action rule containing duplicated actor (`who`) within a rule set', async () => {
+      it('should reject ProtocolsConfigure with action rule containing duplicated actor (`who` or `who` + `of` combination) within a rule set', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         const protocolDefinition: ProtocolDefinition = {
