@@ -194,12 +194,19 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
         );
       }
 
-      // validate that if can contains `update`, it must also contain `create`
+      // validate that if `can` contains `update` or `delete`, it must also contain `create`
       if (actionRule.can !== undefined) {
         if (actionRule.can.includes(ProtocolAction.Update) && !actionRule.can.includes(ProtocolAction.Create)) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureInvalidActionUpdateWithoutCreate,
             `Action rule ${JSON.stringify(actionRule)} contains 'update' action but missing the required 'create' action.`
+          );
+        }
+
+        if (actionRule.can.includes(ProtocolAction.Delete) && !actionRule.can.includes(ProtocolAction.Create)) {
+          throw new DwnError(
+            DwnErrorCode.ProtocolsConfigureInvalidActionDeleteWithoutCreate,
+            `Action rule ${JSON.stringify(actionRule)} contains 'delete' action but missing the required 'create' action.`
           );
         }
       }
