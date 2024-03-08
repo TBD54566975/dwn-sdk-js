@@ -556,7 +556,7 @@ export class ProtocolAuthorization {
       if (await incomingRecordsWrite.isInitialWrite()) {
         return [ProtocolAction.Write, ProtocolAction.Create];
       } else {
-        // else incoming RecordsWrite not initial write
+        // else incoming RecordsWrite not an initial write
 
         const recordId = (incomingMessage as RecordsWrite).message.recordId;
         const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
@@ -577,6 +577,7 @@ export class ProtocolAuthorization {
     }
 
     // purely defensive programming: should not be reachable
+    // setting to empty array will prevent any message from being authorized
     return [];
   }
 

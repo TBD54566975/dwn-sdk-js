@@ -939,6 +939,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   /**
    * Fetches the initial RecordsWrite of a record.
+   * @returns The initial RecordsWrite if found; `undefined` if the record is not found.
    */
   public static async fetchInitialRecordsWrite(
     messageStore: MessageStore,
