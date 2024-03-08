@@ -570,7 +570,7 @@ export function testProtocolUpdateAction(): void {
             $actions: [
               {
                 who : 'anyone',
-                can : [ProtocolAction.Create, ProtocolAction.CoUpdate]
+                can : [ProtocolAction.Create, ProtocolAction.Update]
               }
             ]
           }
