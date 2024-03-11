@@ -35,7 +35,8 @@
         {
           "who": "anyone",
           "can": [
-            "write"
+            "create",
+            "update"
           ]
         }
       ],
@@ -45,7 +46,8 @@
             "who": "recipient",
             "of": "message",
             "can": [
-              "write"
+              "create",
+              "update"
             ]
           }
         ]
@@ -57,7 +59,8 @@
           "who": "anyone",
           "can": [
             "read",
-            "write"
+            "create",
+            "update"
           ]
         }
       ],
@@ -73,7 +76,8 @@
             "who": "author",
             "of": "image",
             "can": [
-              "write"
+              "create",
+              "update"
             ]
           }
         ]
@@ -91,7 +95,8 @@
             "who": "recipient",
             "of": "image",
             "can": [
-              "write"
+              "create",
+              "update"
             ]
           }
         ]

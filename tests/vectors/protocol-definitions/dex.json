@@ -27,7 +27,7 @@
         {
           "who": "anyone",
           "can": [
-            "write"
+            "create"
           ]
         }
       ],
@@ -37,7 +37,7 @@
             "who": "recipient",
             "of": "ask",
             "can": [
-              "write"
+              "create"
             ]
           }
         ],
@@ -47,7 +47,7 @@
               "who": "recipient",
               "of": "ask/offer",
               "can": [
-                "write"
+                "create"
               ]
             }
           ]

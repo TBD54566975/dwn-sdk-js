@@ -68,14 +68,14 @@
             "who": "author",
             "of": "community",
             "can": [
-              "write",
+              "create",
               "co-delete"
             ]
           },
           {
             "role": "community/admin",
             "can": [
-              "write",
+              "create",
               "co-delete"
             ]
           }
@@ -87,7 +87,7 @@
           {
             "role": "community/admin",
             "can": [
-              "write",
+              "create",
               "co-delete"
             ]
           }
@@ -98,7 +98,8 @@
           {
             "role": "community/admin",
             "can": [
-              "write",
+              "create",
+              "update",
               "co-delete"
             ]
           }
@@ -109,13 +110,15 @@
               "who": "recipient",
               "of": "community/openChannel/message",
               "can": [
-                "write"
+                "create",
+                "update"
               ]
             },
             {
               "role": "community/member",
               "can": [
-                "write",
+                "create",
+                "update",
                 "co-delete"
               ]
             }
@@ -126,7 +129,8 @@
                 "who": "author",
                 "of": "community/openChannel/message",
                 "can": [
-                  "write"
+                  "create",
+                  "update"
                 ]
               }
             ]
@@ -136,7 +140,8 @@
               {
                 "role": "community/member",
                 "can": [
-                  "write",
+                  "create",
+                  "update",
                   "co-delete"
                 ]
               }
@@ -149,7 +154,8 @@
           {
             "role": "community/admin",
             "can": [
-              "write",
+              "create",
+              "update",
               "co-delete"
             ]
           },
@@ -167,14 +173,14 @@
               "who": "author",
               "of": "community/gatedChannel",
               "can": [
-                "write",
+                "create",
                 "co-delete"
               ]
             },
             {
               "role": "community/gatedChannel/participant",
               "can": [
-                "write",
+                "create",
                 "co-delete"
               ]
             }
@@ -186,13 +192,15 @@
               "who": "recipient",
               "of": "community/gatedChannel/message",
               "can": [
-                "write"
+                "create",
+                "update"
               ]
             },
             {
               "role": "community/gatedChannel/participant",
               "can": [
-                "write",
+                "create",
+                "update",
                 "query",
                 "co-delete"
               ]
@@ -204,7 +212,8 @@
                 "who": "author",
                 "of": "community/gatedChannel/message",
                 "can": [
-                  "write"
+                  "create",
+                  "update"
                 ]
               }
             ]
@@ -214,7 +223,8 @@
               {
                 "role": "community/gatedChannel/participant",
                 "can": [
-                  "write",
+                  "create",
+                  "update",
                   "co-delete"
                 ]
               }

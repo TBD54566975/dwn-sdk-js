@@ -31,7 +31,8 @@
             "who": "anyone",
             "can": [
               "read",
-              "write"
+              "create",
+              "update"
             ]
           },
           {
