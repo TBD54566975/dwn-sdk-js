@@ -40,6 +40,7 @@ export enum ProtocolAction {
   CoDelete = 'co-delete',
   CoUpdate = 'co-update',
   Create = 'create',
+  Delete = 'delete',
   Query = 'query',
   Read = 'read',
   Subscribe = 'subscribe',

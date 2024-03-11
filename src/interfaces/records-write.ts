@@ -692,22 +692,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     return (entryId === this.message.recordId);
   }
 
-  /**
-   * Checks if the author of the RecordsWrite is the same as the author of the initial RecordsWrite for the record.
-   * Returns true if `this` is the initial RecordsWrite.
-   */
-  public async isAuthoredByInitialRecordAuthor(tenant: string, messageStore: MessageStore): Promise<boolean> {
-    // fetch the initialWrite
-    const query = {
-      entryId: this.message.recordId
-    };
-    const { messages: result } = await messageStore.query(tenant, [query]);
-
-    const initialRecordsWrite = await RecordsWrite.parse(result[0] as RecordsWriteMessage);
-    return initialRecordsWrite.author === this.author;
-  }
-
-
   public async constructIndexes(
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
@@ -950,5 +934,27 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     const attestationSignatures = message.attestation?.signatures ?? [];
     const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;
+  }
+
+
+  /**
+   * Fetches the initial RecordsWrite of a record.
+   * @returns The initial RecordsWrite if found; `undefined` if the record is not found.
+   */
+  public static async fetchInitialRecordsWrite(
+    messageStore: MessageStore,
+    tenant: string,
+    recordId: string
+  ): Promise<RecordsWrite | undefined> {
+
+    const query = { entryId: recordId };
+    const { messages } = await messageStore.query(tenant, [query]);
+
+    if (messages.length === 0) {
+      return undefined;
+    }
+
+    const initialRecordsWrite = await RecordsWrite.parse(messages[0] as RecordsWriteMessage);
+    return initialRecordsWrite;
   }
 }

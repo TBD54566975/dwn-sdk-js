@@ -49,6 +49,7 @@
                     "co-delete",
                     "co-update",
                     "create",
+                    "delete",
                     "read",
                     "update",
                     "write"
@@ -76,6 +77,7 @@
                     "co-delete",
                     "co-update",
                     "create",
+                    "delete",
                     "query",
                     "subscribe",
                     "read",

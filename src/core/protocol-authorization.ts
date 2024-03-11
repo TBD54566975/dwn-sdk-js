@@ -240,7 +240,6 @@ export class ProtocolAuthorization {
       ancestorMessageChain,
       messageStore,
     );
-
   }
 
   /**
@@ -524,7 +523,23 @@ export class ProtocolAuthorization {
 
     switch (incomingMessage.message.descriptor.method) {
     case DwnMethodName.Delete:
-      return [ProtocolAction.CoDelete];
+      const recordId = (incomingMessage as RecordsDelete).message.descriptor.recordId;
+      const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
+
+      // if there is no initial write to delete, then no action rule can authorize the incoming message
+      // NOTE: purely defensive programming: currently not reachable
+      // because RecordsDelete handler already have an existence check prior to this method being called.
+      if (initialWrite === undefined) {
+        return [];
+      }
+
+      if (incomingMessage.author === initialWrite.author) {
+        // A delete by the original record author can be authorized by either a 'delete' or 'co-delete' rule.
+        return [ProtocolAction.Delete, ProtocolAction.CoDelete];
+      } else {
+        // A delete by someone who is not the original record author can only be authorized by a 'co-delete' rule.
+        return [ProtocolAction.CoDelete];
+      }
 
     case DwnMethodName.Query:
       return [ProtocolAction.Query];
@@ -541,20 +556,29 @@ export class ProtocolAuthorization {
       if (await incomingRecordsWrite.isInitialWrite()) {
         return [ProtocolAction.Write, ProtocolAction.Create];
       } else {
-        // else not initial write
+        // else incoming RecordsWrite not an initial write
 
-        if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
-          // 'write', 'update' or 'co-update' action authorizes the incoming message
+        const recordId = (incomingMessage as RecordsWrite).message.recordId;
+        const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
+
+        // if there is no initial write to update from, then no action rule can authorize the incoming message
+        if (initialWrite === undefined) {
+          return [];
+        }
+
+        if (incomingMessage.author === initialWrite.author) {
+        // 'write', 'update' or 'co-update' action authorizes the incoming message
           return [ProtocolAction.Write, ProtocolAction.CoUpdate, ProtocolAction.Update];
         } else {
           // An update by someone who is not the record author can only be authorized by a 'co-update' rule.
           return [ProtocolAction.CoUpdate];
         }
       }
-
-      // default:
-      // not reachable in typescript
     }
+
+    // purely defensive programming: should not be reachable
+    // setting to empty array will prevent any message from being authorized
+    return [];
   }
 
   /**
@@ -583,6 +607,7 @@ export class ProtocolAuthorization {
 
     const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
+    // Iterate through the action rules to find a rule that authorizes the incoming message.
     for (const actionRule of actionRules) {
       // If the action rule does not have an allowed action that matches an action that can authorize the message, skip to evaluate next action rule.
       const ruleHasAMatchingAllowedAction = actionRule.can.some(allowedAction => actionsSeekingARuleMatch.includes(allowedAction as ProtocolAction));
