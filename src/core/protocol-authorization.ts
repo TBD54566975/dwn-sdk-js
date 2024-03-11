@@ -567,7 +567,7 @@ export class ProtocolAuthorization {
         }
 
         if (incomingMessage.author === initialWrite.author) {
-        // 'write', 'update' or 'co-update' action authorizes the incoming message
+        // 'update' or 'co-update' action authorizes the incoming message
           return [ProtocolAction.CoUpdate, ProtocolAction.Update];
         } else {
           // An update by someone who is not the record author can only be authorized by a 'co-update' rule.

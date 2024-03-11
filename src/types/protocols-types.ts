@@ -49,25 +49,25 @@ export enum ProtocolAction {
 
 /**
  * Rules defining which actors may access a record at the given protocol path.
- * Rules take three forms:
- * 1. Anyone can write.
+ * Rules take three forms, e.g.:
+ * 1. Anyone can create.
  *   {
  *     who: 'anyone',
- *     can: ['write']
+ *     can: ['create']
  *   }
  *
- * 2. Author of protocolPath can write; OR
+ * 2. Author of protocolPath can create; OR
  *    Recipient of protocolPath can write.
  *   {
  *     who: 'recipient'
  *     of: 'requestForQuote',
- *     can: ['write']
+ *     can: ['create']
  *   }
  *
- * 3. Role can write.
+ * 3. Role can create.
  *   {
  *     role: 'friend',
- *     can: ['write']
+ *     can: ['create']
  *   }
  */
 export type ProtocolActionRule = {
