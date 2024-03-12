@@ -28,7 +28,8 @@
         {
           "role": "friend",
           "can": [
-            "write",
+            "create",
+            "update",
             "read",
             "query",
             "subscribe"

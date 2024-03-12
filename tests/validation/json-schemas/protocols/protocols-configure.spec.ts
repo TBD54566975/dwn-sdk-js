@@ -1,4 +1,4 @@
-import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
+import { ProtocolAction, type ProtocolDefinition, type ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
 
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
@@ -22,7 +22,7 @@ describe('ProtocolsConfigure schema definition', () => {
           $actions: [
             {
               who : 'unknown',
-              can : ['write']
+              can : [ProtocolAction.Create]
             }
           ]
         }

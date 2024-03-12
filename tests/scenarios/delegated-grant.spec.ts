@@ -4,6 +4,7 @@ import type { RecordEvent, RecordsWriteMessage } from '../../src/types/records-t
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import sinon from 'sinon';
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
@@ -73,8 +74,8 @@ export function testDelegatedGrantScenarios(): void {
       const bob = await TestDataGenerator.generateDidKeyPersona();
       const carol = await TestDataGenerator.generateDidKeyPersona();
 
-      // Bob has the email protocol installed
-      const protocolDefinition = emailProtocolDefinition;
+      // Bob has the message protocol installed
+      const protocolDefinition = messageProtocolDefinition;
       const protocol = protocolDefinition.protocol;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
         author: bob,
@@ -117,9 +118,9 @@ export function testDelegatedGrantScenarios(): void {
         signer         : Jws.createSigner(deviceX),
         delegatedGrant : deviceXGrant.asDelegatedGrant(),
         protocol,
-        protocolPath   : 'email', // this comes from `types` in protocol definition
-        schema         : protocolDefinition.types.email.schema,
-        dataFormat     : protocolDefinition.types.email.dataFormats[0],
+        protocolPath   : 'message', // this comes from `types` in protocol definition
+        schema         : protocolDefinition.types.message.schema,
+        dataFormat     : protocolDefinition.types.message.dataFormats[0],
         data           : deviceXData
       });
 
@@ -171,9 +172,9 @@ export function testDelegatedGrantScenarios(): void {
         signer         : Jws.createSigner(carol),
         delegatedGrant : deviceXGrant.asDelegatedGrant(),
         protocol,
-        protocolPath   : 'email', // this comes from `types` in protocol definition
-        schema         : protocolDefinition.types.email.schema,
-        dataFormat     : protocolDefinition.types.email.dataFormats[0],
+        protocolPath   : 'message', // this comes from `types` in protocol definition
+        schema         : protocolDefinition.types.message.schema,
+        dataFormat     : protocolDefinition.types.message.dataFormats[0],
         data           : messageByCarolAsAlice
       });
 

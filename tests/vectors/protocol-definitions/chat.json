@@ -21,7 +21,8 @@
         {
           "who": "anyone",
           "can": [
-            "write"
+            "create",
+            "update"
           ]
         },
         {
@@ -44,7 +45,8 @@
           {
             "who": "anyone",
             "can": [
-              "write"
+              "create",
+              "update"
             ]
           },
           {

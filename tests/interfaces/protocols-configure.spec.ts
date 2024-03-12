@@ -5,6 +5,7 @@ import type { ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '..
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { Jws } from '../../src/utils/jws.js';
+import { ProtocolAction } from '../../src/types/protocols-types.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
@@ -143,14 +144,14 @@ describe('ProtocolsConfigure', () => {
               secondLevel : {
                 $actions: [{
                   role : 'rootRole', // valid because 'rootRole` has $role: true
-                  can  : ['write']
+                  can  : [ProtocolAction.Create]
                 }]
               }
             },
             firstLevel: {
               $actions: [{
                 role : 'rootRole', // valid because 'rootRole` has $role: true
-                can  : ['write']
+                can  : [ProtocolAction.Create]
               }]
             }
           }
@@ -183,7 +184,7 @@ describe('ProtocolsConfigure', () => {
               chat: {
                 $actions: [{
                   role : 'thread/participant', // valid because 'thread/participant` has $role: true
-                  can  : ['write']
+                  can  : [ProtocolAction.Create]
                 }]
               }
             }

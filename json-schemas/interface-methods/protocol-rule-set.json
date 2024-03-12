@@ -51,8 +51,7 @@
                     "create",
                     "delete",
                     "read",
-                    "update",
-                    "write"
+                    "update"
                   ]
                 }
               }
@@ -81,8 +80,7 @@
                     "query",
                     "subscribe",
                     "read",
-                    "update",
-                    "write"
+                    "update"
                   ]
                 }
               }
