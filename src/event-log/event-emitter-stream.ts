@@ -39,11 +39,11 @@ export class EventEmitterStream implements EventStream {
    */
   private errorHandler: (error:any) => void = (error) => { console.error('event emitter error', error); };
 
-  async subscribe(id: string, listener: EventListener): Promise<EventSubscription> {
-    this.eventEmitter.on(EVENTS_LISTENER_CHANNEL, listener);
+  async subscribe(tenant: string, id: string, listener: EventListener): Promise<EventSubscription> {
+    this.eventEmitter.on(`${tenant}_${EVENTS_LISTENER_CHANNEL}`, listener);
     return {
       id,
-      close: async (): Promise<void> => { this.eventEmitter.off(EVENTS_LISTENER_CHANNEL, listener); }
+      close: async (): Promise<void> => { this.eventEmitter.off(`${tenant}_${EVENTS_LISTENER_CHANNEL}`, listener); }
     };
   }
 
@@ -64,6 +64,6 @@ export class EventEmitterStream implements EventStream {
       ));
       return;
     }
-    this.eventEmitter.emit(EVENTS_LISTENER_CHANNEL, tenant, event, indexes);
+    this.eventEmitter.emit(`${tenant}_${EVENTS_LISTENER_CHANNEL}`, tenant, event, indexes);
   }
 }

@@ -35,14 +35,14 @@ describe('EventEmitterStream', () => {
     const emitter = eventStream['eventEmitter'];
 
     // count the `events` listeners, which represents all listeners
-    expect(emitter.listenerCount('events')).to.equal(0);
+    expect(emitter.listenerCount('did:alice_events')).to.equal(0);
 
-    const sub = await eventStream.subscribe('id', () => {});
-    expect(emitter.listenerCount('events')).to.equal(1);
+    const sub = await eventStream.subscribe('did:alice', 'id', () => {});
+    expect(emitter.listenerCount('did:alice_events')).to.equal(1);
 
     // close the subscription, which should remove the listener
     await sub.close();
-    expect(emitter.listenerCount('events')).to.equal(0);
+    expect(emitter.listenerCount('did:alice_events')).to.equal(0);
   });
 
   it('logs message when the emitter experiences an error', async () => {
@@ -71,7 +71,7 @@ describe('EventEmitterStream', () => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
-    const subscription = await eventStream.subscribe('sub-1', handler);
+    const subscription = await eventStream.subscribe('did:alice', 'sub-1', handler);
 
     // close eventStream
     await eventStream.close();

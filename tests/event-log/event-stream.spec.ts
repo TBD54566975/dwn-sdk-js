@@ -44,8 +44,8 @@ describe('EventStream', () => {
       messageCids2.push(messageCid);
     };
 
-    const subscription1 = await eventStream.subscribe('sub-1', handler1);
-    const subscription2 = await eventStream.subscribe('sub-2', handler2);
+    const subscription1 = await eventStream.subscribe('did:alice', 'sub-1', handler1);
+    const subscription2 = await eventStream.subscribe('did:alice', 'sub-2', handler2);
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
@@ -73,7 +73,7 @@ describe('EventStream', () => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
-    const subscription = await eventStream.subscribe('sub-1', handler);
+    const subscription = await eventStream.subscribe('did:alice', 'sub-1', handler);
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
@@ -95,7 +95,7 @@ describe('EventStream', () => {
       const messageCid = await Message.getCid(message);
       messageCids.push(messageCid);
     };
-    const subscription = await eventStream.subscribe('sub-1', handler);
+    const subscription = await eventStream.subscribe('did:alice', 'sub-1', handler);
 
     // close eventStream
     await eventStream.close();
