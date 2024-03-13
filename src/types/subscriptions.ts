@@ -18,7 +18,7 @@ export type MessageEvent = {
  * The EventStream interface implements a pub/sub system based on Message filters.
  */
 export interface EventStream {
-  subscribe(id: string, listener: EventListener): Promise<EventSubscription>;
+  subscribe(tenant: string, id: string, listener: EventListener): Promise<EventSubscription>;
   emit(tenant: string, event: MessageEvent, indexes: KeyValues): void;
   open(): Promise<void>;
   close(): Promise<void>;

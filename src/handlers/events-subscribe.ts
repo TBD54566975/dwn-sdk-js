@@ -57,7 +57,7 @@ export class EventsSubscribeHandler implements MethodHandler {
       }
     };
 
-    const subscription = await this.eventStream.subscribe(messageCid, listener);
+    const subscription = await this.eventStream.subscribe(tenant, messageCid, listener);
 
     return {
       status: { code: 200, detail: 'OK' },
