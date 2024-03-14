@@ -33,6 +33,10 @@ export type LT = ({ lt: RangeValue } & { lte?: never }) | ({ lt?: never } & { lt
  */
 export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 
+export type PrefixFilter = {
+  prefix: string;
+};
+
 export type FilterValue = EqualFilter | OneOfFilter | RangeFilter;
 
 export type Filter = {

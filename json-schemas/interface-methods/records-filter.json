@@ -45,6 +45,16 @@
             "minProperties": 1,
             "additionalProperties": false,
             "properties": {
+              "prefix": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
               "from": {
                 "type": "string"
               },

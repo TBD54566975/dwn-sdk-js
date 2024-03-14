@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, KeyValues, RangeCriterion } from '../types/query-types.js';
+import type { Filter, KeyValues, PrefixFilter, RangeCriterion } from '../types/query-types.js';
 import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage, RecordsWriteTags, RecordsWriteTagsFilter } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
@@ -278,6 +278,10 @@ export class Records {
     return typeof filter === 'object' && ('from' in filter || 'to' in filter);
   }
 
+  public static tagsFilterIsPrefix(filter: RecordsWriteTagsFilter): filter is PrefixFilter {
+    return typeof filter === 'object' && ('prefix' in filter && typeof filter.prefix === 'string');
+  }
+
   /**
    * This will create individual keys for each of the tags that look like `tag.tag_property`
    */
@@ -297,7 +301,12 @@ export class Records {
     const tagValues:Filter = {};
     for (const property in tags) {
       const value = tags[property];
-      tagValues[`tag.${property}`] = this.tagsFilterIsRangeCriterion(value) ? FilterUtility.convertRangeCriterion(value)! : value;
+
+      // if it is a range criterion filter, convert it using the range filter utility
+      // if it is a prefix filter, convert it using the prefix as range filter utility
+      // otherwise just use the filter as is
+      tagValues[`tag.${property}`] = this.tagsFilterIsRangeCriterion(value) ? FilterUtility.convertRangeCriterion(value)! :
+        this.tagsFilterIsPrefix(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.prefix) : value;
     }
     return tagValues;
   }
