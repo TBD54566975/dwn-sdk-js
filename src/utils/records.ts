@@ -298,7 +298,6 @@ export class Records {
     const tagValues:Filter = {};
     for (const property in tags) {
       const value = tags[property];
-
       tagValues[`tag.${property}`] = this.isStartsWithFilter(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.startsWith) : value;
     }
     return tagValues;
