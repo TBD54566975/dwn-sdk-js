@@ -81,6 +81,9 @@ export class IndexLevel {
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
+    // the key is the index property's value followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
