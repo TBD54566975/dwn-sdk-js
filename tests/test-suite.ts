@@ -12,6 +12,7 @@ import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
 import { testOwnerDelegatedGrant } from './features/owner-delegated-grant.spec.js';
+import { testOwnerSignature } from './features/owner-signature.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
 import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
 import { testProtocolCreateAction } from './features/protocol-create-action.spec.js';
@@ -64,6 +65,7 @@ export class TestSuite {
     // feature tests
     testAuthorDelegatedGrant();
     testOwnerDelegatedGrant();
+    testOwnerSignature();
     testProtocolCreateAction();
     testProtocolDeleteAction();
     testProtocolUpdateAction();
