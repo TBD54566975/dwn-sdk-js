@@ -1,6 +1,6 @@
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 
-import { testDelegatedGrantScenarios } from './scenarios/delegated-grant.spec.js';
+import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec.js';
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventLog } from './event-log/event-log.spec.js';
@@ -11,6 +11,7 @@ import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js'
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
+import { testOwnerDelegatedGrant } from './features/owner-delegated-grant.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
 import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
 import { testProtocolCreateAction } from './features/protocol-create-action.spec.js';
@@ -61,12 +62,13 @@ export class TestSuite {
     testRecordsWriteHandler();
 
     // feature tests
+    testAuthorDelegatedGrant();
+    testOwnerDelegatedGrant();
     testProtocolCreateAction();
     testProtocolDeleteAction();
     testProtocolUpdateAction();
 
     // scenario tests
-    testDelegatedGrantScenarios();
     testEndToEndScenarios();
     testEventsQueryScenarios();
     testNestedRoleScenarios();

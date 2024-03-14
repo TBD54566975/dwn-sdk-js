@@ -117,7 +117,7 @@ export class RecordsReadHandler implements MethodHandler {
     matchedRecordsWrite: RecordsWrite,
     messageStore: MessageStore
   ): Promise<void> {
-    if (Message.isSignedByDelegate(recordsRead.message)) {
+    if (Message.isSignedByAuthorDelegate(recordsRead.message)) {
       await recordsRead.authorizeDelegate(matchedRecordsWrite.message, messageStore);
     }
 

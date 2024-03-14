@@ -198,10 +198,17 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * If this message is signed by a delegate.
+   * If this message is signed by an author-delegate.
    */
-  public get isSignedByDelegate(): boolean {
-    return Message.isSignedByDelegate(this._message);
+  public get isSignedByAuthorDelegate(): boolean {
+    return Message.isSignedByAuthorDelegate(this._message);
+  }
+
+  /**
+   * If this message is signed by an owner-delegate.
+   */
+  public get isSignedByOwnerDelegate(): boolean {
+    return Message.isSignedByOwnerDelegate(this._message);
   }
 
   /**
@@ -210,6 +217,19 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public get signer(): string | undefined {
     return Message.getSigner(this._message);
+  }
+
+  /**
+   * Gets the signer of owner signature.
+   * This is not to be confused with the logical owner of the message.
+   */
+  public get ownerSignatureSigner(): string | undefined {
+    if (this._message.authorization?.ownerSignature === undefined) {
+      return undefined;
+    }
+
+    const signer = Jws.getSignerDid(this._message.authorization?.ownerSignature.signatures[0]);
+    return signer;
   }
 
   readonly attesters: string[];
@@ -230,7 +250,14 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
 
       if (message.authorization.ownerSignature !== undefined) {
-        this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
+        // if the message authorization contains owner delegated grant, the owner would be the grantor of the grant
+        // else the owner would be the signer of the owner signature
+        if (message.authorization.ownerDelegatedGrant !== undefined) {
+          this._owner = Message.getSigner(message.authorization.ownerDelegatedGrant);
+        } else {
+          this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
+        }
+
         this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.ownerSignature);
       }
     }
@@ -240,7 +267,13 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     // consider converting isInitialWrite() & getEntryId() into properties for performance and convenience
   }
 
-  public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
+  /**
+   * Parses a RecordsWrite message and returns a {RecordsWrite} instance.
+   */
+  public static async parse(recordsWriteMessage: RecordsWriteMessage): Promise<RecordsWrite> {
+    // Make a copy so that the stored copy is not subject to external, unexpected modification.
+    const message = JSON.parse(JSON.stringify(recordsWriteMessage)) as RecordsWriteMessage;
+
     // asynchronous checks that are required by the constructor to initialize members properly
 
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
@@ -512,9 +545,9 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   /**
    * Signs the `RecordsWrite` as the DWN owner.
    * This is used when the DWN owner wants to retain a copy of a message that the owner did not author.
-   * NOTE: requires the `RecordsWrite` to already have the author's signature already.
+   * NOTE: requires the `RecordsWrite` to already have the author's signature.
    */
-  public async signAsOwner(signer: Signer, permissionsGrantId?: string): Promise<void> {
+  public async signAsOwner(signer: Signer): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
@@ -522,12 +555,37 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const descriptor = this._message.descriptor;
-    const ownerSignature = await Message.createSignature(descriptor, signer, { permissionsGrantId });
+    const ownerSignature = await Message.createSignature(descriptor, signer);
 
     this._message.authorization!.ownerSignature = ownerSignature;
 
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
     this._owner = Jws.extractDid(signer.keyId);
+    ;
+  }
+
+  /**
+   * Signs the `RecordsWrite` as the DWN owner-delegate.
+   * This is used when a DWN owner-delegate wants to retain a copy of a message that the owner did not author.
+   * NOTE: requires the `RecordsWrite` to already have the author's signature.
+   */
+  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: DelegatedGrantMessage): Promise<void> {
+    if (this._author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
+        'Unable to sign as owner if without message signature because owner needs to sign over `recordId` which depends on author DID.');
+    }
+
+    const delegatedGrantId = await Message.getCid(delegatedGrant);
+
+    const descriptor = this._message.descriptor;
+    const ownerSignature = await Message.createSignature(descriptor, signer, { delegatedGrantId });
+
+    this._message.authorization!.ownerSignature = ownerSignature;
+    this._message.authorization!.ownerDelegatedGrant = delegatedGrant;
+
+    this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
+    this._owner = Jws.getSignerDid(delegatedGrant.authorization.signature.signatures[0]);
     ;
   }
 
@@ -582,7 +640,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       );
     }
 
-    Records.validateDelegatedGrantReferentialIntegrity(this.message, signaturePayload);
+    await Records.validateDelegatedGrantReferentialIntegrity(this.message, signaturePayload, this.ownerSignaturePayload);
 
     // if `attestation` is given in message, make sure the correct `attestationCid` is in the payload of the message signature
     if (signaturePayload.attestationCid !== undefined) {
@@ -717,15 +775,30 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Authorizes the delegate who signed this message.
+   * Authorizes the author-delegate who signed this message.
    * @param messageStore Used to check if the grant has been revoked.
    */
-  public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
+  public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite({
       recordsWriteMessage       : this.message,
       expectedGrantedToInGrant  : this.signer!,
       expectedGrantedForInGrant : this.author!,
+      permissionsGrantMessage   : delegatedGrant,
+      messageStore
+    });
+  }
+
+  /**
+   * Authorizes the owner-delegate who signed this message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
+    const delegatedGrant = this.message.authorization.ownerDelegatedGrant!;
+    await RecordsGrantAuthorization.authorizeWrite({
+      recordsWriteMessage       : this.message,
+      expectedGrantedToInGrant  : this.ownerSignatureSigner!,
+      expectedGrantedForInGrant : this.owner!,
       permissionsGrantMessage   : delegatedGrant,
       messageStore
     });

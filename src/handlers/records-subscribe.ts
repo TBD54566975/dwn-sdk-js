@@ -203,7 +203,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
     messageStore: MessageStore
   ): Promise<void> {
 
-    if (Message.isSignedByDelegate(recordsSubscribe.message)) {
+    if (Message.isSignedByAuthorDelegate(recordsSubscribe.message)) {
       await recordsSubscribe.authorizeDelegate(messageStore);
     }
 

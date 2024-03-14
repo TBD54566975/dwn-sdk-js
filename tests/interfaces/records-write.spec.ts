@@ -265,7 +265,8 @@ describe('RecordsWrite', () => {
 
       const scope: PermissionScope = {
         interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
+        method    : DwnMethodName.Write,
+        protocol  : 'chat'
       };
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
@@ -320,41 +321,9 @@ describe('RecordsWrite', () => {
 
       expect(validateJsonSchemaSpy.called).to.be.true;
     });
-
-    it('should throw if a delegate invokes a delegated grant (ID) but the delegated grant is not given', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-      const bob = await TestDataGenerator.generatePersona();
-
-      const scope: PermissionScope = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      };
-      const grantToBob = await PermissionsGrant.create({
-        delegated   : true, // this is a delegated grant
-        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow Bob to write as me in chat protocol',
-        grantedBy   : alice.did,
-        grantedTo   : bob.did,
-        grantedFor  : alice.did,
-        scope,
-        signer      : Jws.createSigner(alice)
-      });
-
-      const recordsWrite = await RecordsWrite.create({
-        signer         : Jws.createSigner(alice),
-        delegatedGrant : grantToBob.asDelegatedGrant(),
-        dataFormat     : 'application/octet-stream',
-        data           : TestDataGenerator.randomBytes(10),
-      });
-
-      delete recordsWrite.message.authorization!.authorDelegatedGrant; // intentionally remove `authorDelegatedGrant`
-      const parsePromise = RecordsWrite.parse(recordsWrite.message);
-
-      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
-    });
   });
 
-  describe('isSignedByDelegate()', () => {
+  describe('isSignedByAuthorDelegate()', () => {
     it('should return false if the given RecordsWrite is not signed at all', async () => {
       const data = new TextEncoder().encode('any data');
       const recordsWrite = await RecordsWrite.create({
@@ -365,8 +334,8 @@ describe('RecordsWrite', () => {
         data
       });
 
-      const isSignedByDelegate = recordsWrite.isSignedByDelegate;
-      expect(isSignedByDelegate).to.be.false;
+      const isSignedByAuthorDelegate = recordsWrite.isSignedByAuthorDelegate;
+      expect(isSignedByAuthorDelegate).to.be.false;
     });
   });
 

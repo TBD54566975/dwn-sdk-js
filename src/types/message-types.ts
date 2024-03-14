@@ -21,14 +21,19 @@ export type AuthorizationModel = {
   signature: GeneralJws;
 
   /**
-   * The optional signature of a DWN owner wishing store a message authored by another entity.
+   * The delegated grant required when the message is signed by an author-delegate.
+   */
+  authorDelegatedGrant?: DelegatedGrantMessage;
+
+  /**
+   * An "overriding" signature for a DWN owner or owner-delegate to store a message authored by another entity.
    */
   ownerSignature?: GeneralJws;
 
   /**
-   * The delegated grant invoked by a delegate, if the message is signed by a delegate.
+   * The delegated grant required when the message is signed by an owner-delegate.
    */
-  authorDelegatedGrant?: DelegatedGrantMessage;
+  ownerDelegatedGrant?: DelegatedGrantMessage;
 };
 
 /**

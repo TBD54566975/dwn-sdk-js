@@ -24,9 +24,15 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
   }
 
   if (authorizationModel.authorDelegatedGrant !== undefined) {
-    // verify the signature of the grantor of the delegated grant
+    // verify the signature of the grantor of the author-delegated grant
     const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
     await GeneralJwsVerifier.verifySignatures(authorDelegatedGrant.message.authorization.signature, didResolver);
+  }
+
+  if (authorizationModel.ownerDelegatedGrant !== undefined) {
+    // verify the signature of the grantor of the owner-delegated grant
+    const ownerDelegatedGrant = await PermissionsGrant.parse(authorizationModel.ownerDelegatedGrant);
+    await GeneralJwsVerifier.verifySignatures(ownerDelegatedGrant.message.authorization.signature, didResolver);
   }
 }
 
