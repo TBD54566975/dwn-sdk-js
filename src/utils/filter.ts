@@ -101,6 +101,12 @@ export class FilterUtility {
     return false;
   }
 
+  /**
+   * Returns true if any of the index values match the filter.
+   *
+   * @param filterValue the filter for a particular property.
+   * @param indexValues an array of values to match the filter against.
+   */
   private static matchArrayFilterIndex(filterValue: FilterValue, indexValues: string[] | number[] | boolean[]): boolean {
     for (const indexValue of indexValues) {
       if (this.matchFilterIndex(filterValue, indexValue)) {
@@ -111,6 +117,12 @@ export class FilterUtility {
     return false;
   }
 
+  /**
+   * Returns true if the filter matches the given index value.
+   *
+   * @param filterValue the filter for a particular property.
+   * @param indexValue a single value to match the filter against.
+   */
   private static matchFilterIndex(filterValue: FilterValue, indexValue: string | number | boolean) : boolean {
     if (typeof filterValue === 'object') {
       if (Array.isArray(filterValue)) {
