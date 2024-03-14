@@ -81,6 +81,9 @@ export class IndexLevel {
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
+    // the key is the index property's value followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
@@ -142,15 +145,22 @@ export class IndexLevel {
     await tenantPartition.batch(indexOps, options);
   }
 
+  /**
+   * Creates an IndexLevel `put` operation for indexing an item, creating a partition by `tenant` and by `indexName`
+   *
+   * The key is indexValue followed by the messageCid as a tie-breaker.
+   * for example if the property is messageTimestamp the key would look like:
+   * '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+   *
+   * The value is the JSON string of the `item`
+   */
   private async createPutIndexedItemOperation(
     tenant: string,
     item: IndexedItem,
     indexName: string,
     indexValue: string | number | boolean
   ): Promise<LevelWrapperBatchOperation<string>> {
-    // the key is indexValue followed by the messageCid as a tie-breaker.
-    // for example if the property is messageTimestamp the key would look like:
-    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+
     const { messageCid } = item;
     const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
 
@@ -161,15 +171,20 @@ export class IndexLevel {
     );
   }
 
+  /**
+   * Creates an IndexLevel `del` operation for deleting an item, creating a partition by `tenant` and by `indexName`
+   *
+   * The key is indexValue followed by the messageCid as a tie-breaker.
+   * for example if the property is messageTimestamp the key would look like:
+   * '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+   */
   private async generateDeleteIndexedItemOperation(
     tenant: string,
     messageCid: string,
     indexName: string,
     indexValue: string | number | boolean
   ): Promise<LevelWrapperBatchOperation<string>> {
-    // the key is indexValue followed by the messageCid as a tie-breaker.
-    // for example if the property is messageTimestamp the key would look like:
-    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+
     const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
 
     return this.createOperationForIndexPartition(
