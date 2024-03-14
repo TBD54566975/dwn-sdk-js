@@ -19,7 +19,7 @@ export type RecordsWriteTags = {
   [property: string]: RecordsWriteTagValue;
 };
 
-export type RecordsWriteTagsFilter = PrefixFilter | RangeFilter | RangeCriterion | string | number | boolean;
+export type RecordsWriteTagsFilter = PrefixFilter | RangeFilter | string | number | boolean;
 
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;

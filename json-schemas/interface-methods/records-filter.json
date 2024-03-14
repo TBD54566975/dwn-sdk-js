@@ -51,17 +51,7 @@
             }
           },
           {
-            "type": "object",
-            "minProperties": 1,
-            "additionalProperties": false,
-            "properties": {
-              "from": {
-                "type": "string"
-              },
-              "to" : {
-                "type": "string"
-              }
-            }
+            "$ref": "https://identity.foundation/dwn/json-schemas/string-range-filter.json"
           }, {
             "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
           }

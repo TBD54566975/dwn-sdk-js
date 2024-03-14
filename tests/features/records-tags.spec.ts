@@ -52,48 +52,50 @@ export function testRecordsTags(): void {
       await dwn.close();
     });
 
-    it('should be able to write tags', async () => {
-      const alice = await TestDataGenerator.generateDidKeyPersona();
+    describe('RecordsWrite with tags', () => {
+      it('should be able to write a Record tags', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
 
-      // create tags that represent `string[]`, `number[]`, `string`, `number`, or `boolean` values.
-      const stringTag = 'string-value';
-      const stringArrayTag = [ 'string-value', 'string-value2' ];
-      const numberTag = 54566975;
-      const numberArrayTag = [ 0, 1 ,2 ];
-      const booleanTag = false;
+        // create tags that represent `string[]`, `number[]`, `string`, `number`, or `boolean` values.
+        const stringTag = 'string-value';
+        const stringArrayTag = [ 'string-value', 'string-value2' ];
+        const numberTag = 54566975;
+        const numberArrayTag = [ 0, 1 ,2 ];
+        const booleanTag = false;
 
-      const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
-        author    : alice,
-        published : true,
-        schema    : 'post',
-        tags      : {
-          stringTag,
-          numberTag,
-          booleanTag,
-          stringArrayTag,
-          numberArrayTag,
-        }
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag,
+            numberTag,
+            booleanTag,
+            stringArrayTag,
+            numberArrayTag,
+          }
+        });
+
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        // verify the record was written
+        const tagsRecord1Read = await RecordsRead.create({
+          filter: {
+            recordId: tagsRecord1.message.recordId,
+          },
+          signer: Jws.createSigner(alice)
+        });
+
+        const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
+        expect(tagsRecord1ReadReply.status.code).to.equal(200);
+        expect(tagsRecord1ReadReply.record).to.not.be.undefined;
+        expect(tagsRecord1ReadReply.record!.descriptor.tags).to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
       });
-
-      const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
-      expect(tagsRecord1Reply.status.code).to.equal(202);
-
-      // verify the record was written
-      const tagsRecord1Read = await RecordsRead.create({
-        filter: {
-          recordId: tagsRecord1.message.recordId,
-        },
-        signer: Jws.createSigner(alice)
-      });
-
-      const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
-      expect(tagsRecord1ReadReply.status.code).to.equal(200);
-      expect(tagsRecord1ReadReply.record).to.not.be.undefined;
-      expect(tagsRecord1ReadReply.record!.descriptor.tags).to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
     });
 
-    describe('query', async () => {
-      it('should be able to query by string match', async () => {
+    describe('RecordsQuery filter for tags', async () => {
+      it('should be able to filter by string match', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const stringTag = 'string-value';
 
@@ -150,7 +152,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryNegativeReply.entries?.length).to.equal(0);
       });
 
-      it('should be able to query by number match', async () => {
+      it('should be able to filter by number match', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const numberTag = 54566975;
 
@@ -209,7 +211,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryNegativeReply.entries?.length).to.equal(0);
       });
 
-      it('should be able to query by boolean match', async () => {
+      it('should be able to filter by boolean match', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // write a record with a true boolean value tag
@@ -282,7 +284,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryNegativeReply.entries?.length).to.equal(0);
       });
 
-      it('should be able to range query by string', async () => {
+      it('should be able to range filter by string value', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create four records with different first names
@@ -349,7 +351,7 @@ export function testRecordsTags(): void {
           filter : {
             schema : 'post',
             tags   : {
-              firstName: { from: 'a', to: 'b' + '\uffff' } //TODO: Temporary example, leaving TODO here to fail lint
+              firstName: { gte: 'a', lt: 'c' }
             }
           }
         });
@@ -359,13 +361,13 @@ export function testRecordsTags(): void {
         const atobRecordIds = queryForAtoBReply.entries!.map(entry => entry.recordId);
         expect(atobRecordIds).to.have.members([ aliceRecord.message.recordId, bobRecord.message.recordId ]);
 
-        // query for first names that begin with 'c' onward.
+        // query for first names greater than 'bob'(exclusive of), and less than but inclusive of 'daniel'
         const queryForBtoD = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
             schema : 'post',
             tags   : {
-              firstName: { from: 'c' } // from 'b' to 'd' inclusive
+              firstName: { gt: 'bob', lte: 'daniel' }
             }
           }
         });
@@ -374,9 +376,25 @@ export function testRecordsTags(): void {
         expect(queryForBtoDReply.entries?.length).to.equal(2);
         const btodRecordIds = queryForBtoDReply.entries!.map(entry => entry.recordId);
         expect(btodRecordIds).to.have.members([ carolRecord.message.recordId, danielRecord.message.recordId ]);
+
+        // query for first names that begin with 'carol' onward (inclusive).
+        const queryForCarolOnward = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            schema : 'post',
+            tags   : {
+              firstName: { gte: 'carol' }
+            }
+          }
+        });
+        const queryForCarolOnwardReply = await dwn.processMessage(alice.did, queryForCarolOnward.message);
+        expect(queryForCarolOnwardReply.status.code).to.equal(200);
+        expect(queryForCarolOnwardReply.entries?.length).to.equal(2);
+        const onwardResults = queryForCarolOnwardReply.entries!.map(entry => entry.recordId);
+        expect(onwardResults).to.have.members([ carolRecord.message.recordId, danielRecord.message.recordId ]);
       });
 
-      it('should be able to query by string prefix', async () => {
+      it('should be able to filter by string prefix', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create two records that match the prefix 'string-'
@@ -415,21 +433,6 @@ export function testRecordsTags(): void {
         const tagsRecord3Reply = await dwn.processMessage(alice.did, tagsRecord3.message, { dataStream: tagsRecord3.dataStream });
         expect(tagsRecord3Reply.status.code).to.equal(202);
 
-
-        //sanity: a regular range query will return all
-        const tagsQueryRange = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : {
-            tags: {
-              stringTag: { from: 'string-' } // range query instead of prefix
-            }
-          }
-        });
-
-        const tagsQueryRangeReply = await dwn.processMessage(alice.did, tagsQueryRange.message);
-        expect(tagsQueryRangeReply.status.code).to.equal(200);
-        expect(tagsQueryRangeReply.entries?.length).to.equal(3); // returned all 3 records
-
         // a prefix search will return only the records matching the prefix
         const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
           author : alice,
@@ -445,9 +448,24 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchReply.entries?.length).to.equal(2);
         const matchedRecords = tagsQueryMatchReply.entries!.map(entry => entry.recordId);
         expect(matchedRecords).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ]);
+
+        // sanity/control: a regular range query will return all
+        // since `zaz-string` comes lexicographically after `string-` it will appear in the result set
+        const tagsQueryRange = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: { gte: 'string-' } // range query instead of prefix
+            }
+          }
+        });
+
+        const tagsQueryRangeReply = await dwn.processMessage(alice.did, tagsQueryRange.message);
+        expect(tagsQueryRangeReply.status.code).to.equal(200);
+        expect(tagsQueryRangeReply.entries?.length).to.equal(3); // returned all 3 records
       });
 
-      it('should be able to range query by number', async () => {
+      it('should be able to range filter by number value', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create four records with different test scores
