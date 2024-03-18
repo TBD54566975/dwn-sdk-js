@@ -369,10 +369,63 @@ describe('RecordsWrite', () => {
       expect(recordsWrite.signaturePayload).to.not.exist;
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
-      await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
+      await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.be.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
 
       expect(recordsWrite.owner).to.be.undefined;
       expect(recordsWrite.ownerSignaturePayload).to.be.undefined;
+    });
+  });
+
+  describe('signAsOwnerDelegate()', () => {
+    it('should throw if the RecordsWrite is not signed by an author yet', async () => {
+      const options = {
+        data        : TestDataGenerator.randomBytes(10),
+        dataFormat  : 'application/json',
+        dateCreated : '2023-07-27T10:20:30.405060Z',
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.author).to.not.exist;
+      expect(recordsWrite.signaturePayload).to.not.exist;
+
+      // create a delegated grant
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+      const scope: PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol  : 'chat'
+      };
+      const ownerDelegatedGrant = await PermissionsGrant.create({
+        delegated   : true, // this is a delegated grant
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        grantedBy   : alice.did,
+        grantedTo   : bob.did,
+        grantedFor  : alice.did,
+        scope,
+        signer      : Jws.createSigner(alice)
+      });
+
+      await expect(recordsWrite.signAsOwnerDelegate(Jws.createSigner(bob), ownerDelegatedGrant.asDelegatedGrant()))
+        .to.be.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor);
+
+      expect(recordsWrite.owner).to.be.undefined;
+      expect(recordsWrite.ownerSignaturePayload).to.be.undefined;
+    });
+  });
+
+  describe('ownerSignatureSigner()', () => {
+    it('should return `undefined` if owner signature is not present in the message', async () => {
+      const options = {
+        data        : TestDataGenerator.randomBytes(10),
+        dataFormat  : 'application/json',
+        dateCreated : '2023-07-27T10:20:30.405060Z',
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.ownerSignatureSigner).to.be.undefined;
     });
   });
 

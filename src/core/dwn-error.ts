@@ -141,6 +141,7 @@ export enum DwnErrorCode {
   RecordsWriteMissingProtocol = 'RecordsWriteMissingProtocol',
   RecordsWriteMissingSchema = 'RecordsWriteMissingSchema',
   RecordsWriteOwnerAndTenantMismatch = 'RecordsWriteOwnerAndTenantMismatch',
+  RecordsWriteSignAsOwnerDelegateUnknownAuthor = 'RecordsWriteSignAsOwnerDelegateUnknownAuthor',
   RecordsWriteSignAsOwnerUnknownAuthor = 'RecordsWriteSignAsOwnerUnknownAuthor',
   RecordsWriteValidateIntegrityAttestationMismatch = 'RecordsWriteValidateIntegrityAttestationMismatch',
   RecordsWriteValidateIntegrityContextIdMismatch = 'RecordsWriteValidateIntegrityContextIdMismatch',

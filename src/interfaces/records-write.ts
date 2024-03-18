@@ -185,6 +185,11 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   private _owner: string | undefined;
+  /**
+   * The owner DID of the message if owner signature is present in the message; `undefined` otherwise.
+   * This is the logical owner of the message, not to be confused with the actual signer of the owner signature,
+   * this is because the signer of the owner signature may not be the actual DWN owner, but a delegate authorized by the owner.
+   */
   public get owner(): string | undefined {
     return this._owner;
   }
@@ -220,15 +225,17 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the signer of owner signature.
-   * This is not to be confused with the logical owner of the message.
+   * Gets the signer of owner signature; `undefined` if owner signature is not present in the message.
+   * This is not to be confused with the logical owner {@link #owner} of the message,
+   * this is because the signer of the owner signature may not be the actual DWN owner, but a delegate authorized by the owner.
+   * In the case that the owner signature is signed by the actual DWN owner, this value will be the same as {@link #owner}.
    */
   public get ownerSignatureSigner(): string | undefined {
     if (this._message.authorization?.ownerSignature === undefined) {
       return undefined;
     }
 
-    const signer = Jws.getSignerDid(this._message.authorization?.ownerSignature.signatures[0]);
+    const signer = Jws.getSignerDid(this._message.authorization.ownerSignature.signatures[0]);
     return signer;
   }
 
@@ -551,7 +558,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
-        'Unable to sign as owner if without message signature because owner needs to sign over `recordId` which depends on author DID.');
+        'Unable to sign as owner without message signature because owner needs to sign over `recordId` which depends on author DID.');
     }
 
     const descriptor = this._message.descriptor;
@@ -572,8 +579,8 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async signAsOwnerDelegate(signer: Signer, delegatedGrant: DelegatedGrantMessage): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
-        'Unable to sign as owner if without message signature because owner needs to sign over `recordId` which depends on author DID.');
+        DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor,
+        'Unable to sign as owner delegate without message signature because owner delegate needs to sign over `recordId` which depends on author DID.');
     }
 
     const delegatedGrantId = await Message.getCid(delegatedGrant);
@@ -586,7 +593,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
     this._owner = Jws.getSignerDid(delegatedGrant.authorization.signature.signatures[0]);
-    ;
   }
 
   /**

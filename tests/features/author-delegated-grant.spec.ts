@@ -87,7 +87,7 @@ export function testAuthorDelegatedGrant(): void {
 
         // Bob creates a chat message invoking the delegated grant (ID) but does not include the author-delegated grant (we remove it below)
         const recordsWrite = await RecordsWrite.create({
-          signer         : Jws.createSigner(alice),
+          signer         : Jws.createSigner(bob),
           delegatedGrant : grantToBob.asDelegatedGrant(),
           dataFormat     : 'application/octet-stream',
           data           : TestDataGenerator.randomBytes(10),
@@ -123,7 +123,7 @@ export function testAuthorDelegatedGrant(): void {
         // Bob attempts to sign as Alice by including an author-delegated grant
         // but does not reference the grant ID in author signature (we remove it below)
         const recordsWrite = await RecordsWrite.create({
-          signer         : Jws.createSigner(alice),
+          signer         : Jws.createSigner(bob),
           delegatedGrant : grantToBob.asDelegatedGrant(),
           dataFormat     : 'application/octet-stream',
           data           : TestDataGenerator.randomBytes(10),
@@ -658,9 +658,9 @@ export function testAuthorDelegatedGrant(): void {
     it('should not allow entity using a non-delegated grant as an author-delegated grant to invoke write', async () => {
       // scenario:
       // 1. Bob has the message protocol installed
-      // 2. Alice creates a delegated grant for device X
+      // 2. Alice creates a non-delegated grant for device X
       // 3. Verify that device X cannot write a `RecordsWrite` message to Bob's DWN as Alice using the non-delegated grant
-      // 4. Verify the message by device X got written to Bob's DWN, AND Alice is the logical author
+      // 4. Sanity verify the message by device X did not get written to Bob's DWN
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
       const deviceX = await TestDataGenerator.generateDidKeyPersona();
@@ -675,7 +675,7 @@ export function testAuthorDelegatedGrant(): void {
       const protocolConfigureReply = await dwn.processMessage(bob.did, protocolsConfig.message);
       expect(protocolConfigureReply.status.code).to.equal(202);
 
-      // 2. Alice creates a delegated grant for device X
+      // 2. Alice creates a non-delegated grant for device X
       const scope: PermissionScope = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
