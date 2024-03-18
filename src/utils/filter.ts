@@ -102,53 +102,6 @@ export class FilterUtility {
   }
 
   /**
-   * Returns true if any of the index values match the filter.
-   *
-   * @param filterValue the filter for a particular property.
-   * @param indexValues an array of values to match the filter against.
-   */
-  private static matchArrayFilterIndex(filterValue: FilterValue, indexValues: string[] | number[] | boolean[]): boolean {
-    for (const indexValue of indexValues) {
-      if (this.matchFilterIndex(filterValue, indexValue)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Returns true if the filter matches the given index value.
-   *
-   * @param filterValue the filter for a particular property.
-   * @param indexValue a single value to match the filter against.
-   */
-  private static matchFilterIndex(filterValue: FilterValue, indexValue: string | number | boolean) : boolean {
-    if (typeof filterValue === 'object') {
-      if (Array.isArray(filterValue)) {
-        // if `filterValue` is an array, it is a OneOfFilter
-        // Support OR matches by querying for each values separately,
-        if (this.matchOneOf(filterValue, indexValue)) {
-          return true;
-        }
-      } else {
-        // `filterValue` is a `RangeFilter`
-        // range filters cannot range over booleans
-        if (this.matchRange(filterValue, indexValue as RangeValue)) {
-          return true;
-        }
-      }
-    } else {
-      // filterValue is an EqualFilter, meaning it is a non-object primitive type
-      if (indexValue === filterValue) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
    * Evaluates a OneOfFilter given an indexedValue extracted from the index.
    *
    * @param filter An array of EqualFilters. Treated as an OR.
