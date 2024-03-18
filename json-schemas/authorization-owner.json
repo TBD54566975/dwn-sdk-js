@@ -12,6 +12,9 @@
     },
     "ownerSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "ownerDelegatedGrant": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions-grant.json"
     }
   },
   "description": "`signature` can exist by itself. But if `ownerSignature` is present, then `signature` must also exist",

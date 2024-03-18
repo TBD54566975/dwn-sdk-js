@@ -32,7 +32,7 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
       signaturePayload = await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
-    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+    await Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
 
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 

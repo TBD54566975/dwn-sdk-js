@@ -14,6 +14,10 @@ import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
   messageTimestamp?: string;
+
+  /**
+   * Expire time in UTC ISO-8601 format with microsecond precision.
+   */
   dateExpires: string;
   description?: string;
   grantedTo: string;

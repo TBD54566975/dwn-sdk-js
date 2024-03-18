@@ -50,7 +50,7 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
       signaturePayload = await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
-    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+    await Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
 
     if (signaturePayload?.protocolRole !== undefined) {
       if (message.descriptor.filter.protocolPath === undefined) {

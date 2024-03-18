@@ -43,7 +43,7 @@ export class RecordsWriteHandler implements MethodHandler {
     try {
       recordsWrite = await RecordsWrite.parse(message);
 
-      // Protocol record specific validation
+      // Protocol-authorized record specific validation
       if (message.descriptor.protocol !== undefined) {
         await ProtocolAuthorization.validateReferentialIntegrity(tenant, recordsWrite, this.messageStore);
       }
@@ -280,7 +280,7 @@ export class RecordsWriteHandler implements MethodHandler {
   }
 
   private static async authorizeRecordsWrite(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    // if owner DID is specified, it must be the same as the tenant DID
+    // if owner signature is given (`owner` is not `undefined`), it must be the same as the tenant DID
     if (recordsWrite.owner !== undefined && recordsWrite.owner !== tenant) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
@@ -288,8 +288,12 @@ export class RecordsWriteHandler implements MethodHandler {
       );
     }
 
-    if (recordsWrite.isSignedByDelegate) {
-      await recordsWrite.authorizeDelegate(messageStore);
+    if (recordsWrite.isSignedByAuthorDelegate) {
+      await recordsWrite.authorizeAuthorDelegate(messageStore);
+    }
+
+    if (recordsWrite.isSignedByOwnerDelegate) {
+      await recordsWrite.authorizeOwnerDelegate(messageStore);
     }
 
     if (recordsWrite.owner !== undefined) {

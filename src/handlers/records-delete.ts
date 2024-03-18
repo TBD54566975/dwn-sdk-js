@@ -118,7 +118,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     messageStore: MessageStore
   ): Promise<void> {
 
-    if (Message.isSignedByDelegate(recordsDelete.message)) {
+    if (Message.isSignedByAuthorDelegate(recordsDelete.message)) {
       await recordsDelete.authorizeDelegate(recordsWriteToDelete.message, messageStore);
     }
 

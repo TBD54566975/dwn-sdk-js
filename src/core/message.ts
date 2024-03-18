@@ -172,10 +172,17 @@ export class Message {
   }
 
   /**
-   * See if the given message is signed by a delegate
+   * See if the given message is signed by an author-delegate.
    */
-  public static isSignedByDelegate(message: GenericMessage): boolean {
+  public static isSignedByAuthorDelegate(message: GenericMessage): boolean {
     return message.authorization?.authorDelegatedGrant !== undefined;
+  }
+
+  /**
+   * See if the given message is signed by an owner-delegate.
+   */
+  public static isSignedByOwnerDelegate(message: GenericMessage): boolean {
+    return message.authorization?.ownerDelegatedGrant !== undefined;
   }
 
   /**
@@ -193,7 +200,6 @@ export class Message {
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
     return Message.compareCid(a, b);
   }
-
 
   /**
    * Validates the structural integrity of the message signature given:

@@ -36,7 +36,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
       signaturePayload = await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
-    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+    await Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
 
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 

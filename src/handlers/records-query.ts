@@ -247,7 +247,7 @@ export class RecordsQueryHandler implements MethodHandler {
     messageStore: MessageStore
   ): Promise<void> {
 
-    if (Message.isSignedByDelegate(recordsQuery.message)) {
+    if (Message.isSignedByAuthorDelegate(recordsQuery.message)) {
       await recordsQuery.authorizeDelegate(messageStore);
     }
 
