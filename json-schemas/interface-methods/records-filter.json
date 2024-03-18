@@ -45,7 +45,7 @@
             "minProperties": 1,
             "additionalProperties": false,
             "properties": {
-              "prefix": {
+              "startsWith": {
                 "type": "string"
               }
             }

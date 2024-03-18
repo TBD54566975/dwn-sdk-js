@@ -92,6 +92,60 @@ export function testRecordsTags(): void {
         expect(tagsRecord1ReadReply.record).to.not.be.undefined;
         expect(tagsRecord1ReadReply.record!.descriptor.tags).to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
       });
+
+      it('should overwrite tags when updating a Record', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag      : 'string-value',
+            numberTag      : 54566975,
+            booleanTag     : false,
+            stringArrayTag : [ 'string-value', 'string-value2' ],
+            numberArrayTag : [ 0, 1 ,2 ],
+          }
+        });
+
+        // write the record
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        // verify the record was written
+        const tagsRecord1Read = await RecordsRead.create({
+          filter: {
+            recordId: tagsRecord1.message.recordId,
+          },
+          signer: Jws.createSigner(alice)
+        });
+
+        const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
+        expect(tagsRecord1ReadReply.status.code).to.equal(200);
+        expect(tagsRecord1ReadReply.record).to.not.be.undefined;
+        expect(tagsRecord1ReadReply.record!.descriptor.tags).to.deep.equal({
+          stringTag      : 'string-value',
+          numberTag      : 54566975,
+          booleanTag     : false,
+          stringArrayTag : [ 'string-value', 'string-value2' ],
+          numberArrayTag : [ 0, 1 ,2 ],
+        });
+
+        // update the record with new tags
+        const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : tagsRecord1.recordsWrite,
+          tags          : { newTag: 'new-value' }
+        });
+        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message, { dataStream: updatedRecord.dataStream });
+        expect(updatedRecordReply.status.code).to.equal(202, updatedRecordReply.status.detail);
+
+        const updatedRecordReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
+        expect(updatedRecordReadReply.status.code).to.equal(200);
+        expect(updatedRecordReadReply.record).to.not.be.undefined;
+        expect(updatedRecordReadReply.record!.descriptor.tags).to.deep.equal({ newTag: 'new-value' });
+      });
     });
 
     describe('RecordsQuery filter for tags', async () => {
@@ -240,7 +294,7 @@ export function testRecordsTags(): void {
         const tagsRecordFalseReply = await dwn.processMessage(alice.did, tagsRecordFalse.message, { dataStream: tagsRecordFalse.dataStream });
         expect(tagsRecordFalseReply.status.code).to.equal(202);
 
-        // do an exact match for the true tag value
+        // negative result - same tag different value
         const tagsQueryMatchTrue = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -255,7 +309,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchTrueReply.entries?.length).to.equal(1);
         expect(tagsQueryMatchTrueReply.entries![0].recordId).to.equal(tagsRecordTrue.message.recordId);
 
-        // do an exact match for the true tag value
+        // negative result - different tag same value
         const tagsQueryMatchFalse = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -438,7 +492,7 @@ export function testRecordsTags(): void {
           author : alice,
           filter : {
             tags: {
-              stringTag: { prefix: 'string-' }
+              stringTag: { startsWith: 'string-' }
             }
           }
         });
@@ -593,6 +647,95 @@ export function testRecordsTags(): void {
         expect(queryForRangeReply.entries?.length).to.equal(2);
         const rangeRecords = queryForRangeReply.entries!.map(entry => entry.recordId);
         expect(rangeRecords).to.have.members([ bobRecord.message.recordId, aliceRecord.message.recordId ]);
+      });
+
+      it('should return results based on the latest tag values', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag: 'string-value',
+          }
+        });
+
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: 'string-value'
+            }
+          }
+        });
+
+        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply.status.code).to.equal(200);
+        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
+        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
+
+
+        // update the record with new tags
+        const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : tagsRecord1.recordsWrite,
+          tags          : { otherTag: 'other-value' } // new tags
+        });
+        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message, { dataStream: updatedRecord.dataStream });
+        expect(updatedRecordReply.status.code).to.equal(202);
+
+        // issuing the same query should return no results
+        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply2.status.code).to.equal(200);
+        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
+      });
+
+      it('should not return results if the record was updated with empty tags', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag: 'string-value',
+          }
+        });
+
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: 'string-value'
+            }
+          }
+        });
+
+        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply.status.code).to.equal(200);
+        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
+        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
+
+
+        // update the record without any tags
+        const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : tagsRecord1.recordsWrite,
+        });
+        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message, { dataStream: updatedRecord.dataStream });
+        expect(updatedRecordReply.status.code).to.equal(202);
+
+        // issuing the same query should return no results
+        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply2.status.code).to.equal(200);
+        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
       });
     });
   });

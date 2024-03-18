@@ -129,6 +129,7 @@ export type GenerateFromRecordsWriteInput = {
   existingWrite: RecordsWrite,
   data?: Uint8Array;
   published?: boolean;
+  tags?: RecordsWriteTags;
   messageTimestamp?: string;
   datePublished?: string;
   protocolRole?: string;
@@ -616,6 +617,7 @@ export class TestDataGenerator {
       datePublished,
       messageTimestamp    : input.messageTimestamp,
       protocolRole        : input.protocolRole,
+      tags                : input.tags,
       signer              : Jws.createSigner(input.author)
     };
 

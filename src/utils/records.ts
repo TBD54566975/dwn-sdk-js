@@ -274,14 +274,14 @@ export class Records {
   }
 
 
-  public static tagsFilterIsPrefix(filter: RecordsWriteTagsFilter): filter is PrefixFilter {
-    return typeof filter === 'object' && ('prefix' in filter && typeof filter.prefix === 'string');
+  public static isPrefixFilter(filter: RecordsWriteTagsFilter): filter is PrefixFilter {
+    return typeof filter === 'object' && ('startsWith' in filter && typeof filter.startsWith === 'string');
   }
 
   /**
    * This will create individual keys for each of the tags that look like `tag.tag_property`
    */
-  public static flattenTags(tags: RecordsWriteTags): KeyValues {
+  public static buildTagIndexes(tags: RecordsWriteTags): KeyValues {
     const tagValues:KeyValues = {};
     for (const property in tags) {
       const value = tags[property];
@@ -293,12 +293,12 @@ export class Records {
   /**
    * This will create individual keys for each of the tag filters that look like `tag.tag_filter_property`
    */
-  public static flattenTagFilters( tags: { [property: string]: RecordsWriteTagsFilter}): Filter {
+  private static convertTagsFilter( tags: { [property: string]: RecordsWriteTagsFilter}): Filter {
     const tagValues:Filter = {};
     for (const property in tags) {
       const value = tags[property];
 
-      tagValues[`tag.${property}`] = this.tagsFilterIsPrefix(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.prefix) : value;
+      tagValues[`tag.${property}`] = this.isPrefixFilter(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.startsWith) : value;
     }
     return tagValues;
   }
@@ -311,13 +311,13 @@ export class Records {
    */
   public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
     // we process tags separately from the remaining filters.
-    // this is because we prepend each field within the `tags` object with a `tag.` to bring it into the flat-space filter.
+    // this is because we prepend each field within the `tags` object with a `tag.` to avoid name clashing with first-class index keys.
     // so `{ tags: { tag1: 'val1', tag2: [1,2] }}` would translate to `'tag.tag1':'val1'` and `'tag.tag2': [1,2]`
     const { tags, ...remainingFilter } = filter;
     let tagsFilter: Filter = {};
     if (tags !== undefined) {
       // this will namespace the tags so the properties are filtered as `tag.property_name`
-      tagsFilter = { ...this.flattenTagFilters(tags) };
+      tagsFilter = { ...this.convertTagsFilter(tags) };
     }
 
     const filterCopy = { ...remainingFilter, ...tagsFilter } as Filter;

@@ -77,25 +77,21 @@ export class IndexLevel {
     }
 
     const item: IndexedItem = { messageCid, indexes };
-    const indexOpPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
+    const putOperationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
-    // the key is the index property's value followed by the messageCid as a tie-breaker.
-    // for example if the property is messageTimestamp the key would look like:
-    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
         for (const indexValueItem of indexValue) {
           const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValueItem);
-          indexOpPromises.push(partitionOperationPromise);
+          putOperationPromises.push(partitionOperationPromise);
         }
-        continue;
+      } else {
+        const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValue);
+        putOperationPromises.push(partitionOperationPromise);
       }
-
-      const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValue);
-      indexOpPromises.push(partitionOperationPromise);
     }
 
     // create a reverse lookup for the sortedIndex values. This is used during deletion and cursor starting point lookup.
@@ -103,9 +99,9 @@ export class IndexLevel {
       tenant,
       { type: 'put', key: messageCid, value: JSON.stringify(indexes) }
     );
-    indexOpPromises.push(partitionOperationPromise);
+    putOperationPromises.push(partitionOperationPromise);
 
-    const indexOps = await Promise.all(indexOpPromises);
+    const indexOps = await Promise.all(putOperationPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
@@ -114,7 +110,7 @@ export class IndexLevel {
    *  Deletes all of the index data associated with the item.
    */
   async delete(tenant: string, messageCid: string, options?: IndexLevelOptions): Promise<void> {
-    const indexOpPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
+    const deleteOperationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     const indexes = await this.getIndexes(tenant, messageCid);
     if (indexes === undefined) {
@@ -124,7 +120,7 @@ export class IndexLevel {
 
     // delete the reverse lookup
     const partitionOperationPromise = this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: messageCid });
-    indexOpPromises.push(partitionOperationPromise);
+    deleteOperationPromises.push(partitionOperationPromise);
 
     // delete the keys for each index
     for (const indexName in indexes) {
@@ -132,27 +128,21 @@ export class IndexLevel {
       if (Array.isArray(indexValue)) {
         for (const indexValueItem of indexValue) {
           const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValueItem);
-          indexOpPromises.push(partitionOperationPromise);
+          deleteOperationPromises.push(partitionOperationPromise);
         }
-        continue;
+      } else {
+        const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValue);
+        deleteOperationPromises.push(partitionOperationPromise);
       }
-      const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValue);
-      indexOpPromises.push(partitionOperationPromise);
     }
 
-    const indexOps = await Promise.all(indexOpPromises);
+    const indexOps = await Promise.all(deleteOperationPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
 
   /**
    * Creates an IndexLevel `put` operation for indexing an item, creating a partition by `tenant` and by `indexName`
-   *
-   * The key is indexValue followed by the messageCid as a tie-breaker.
-   * for example if the property is messageTimestamp the key would look like:
-   * '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-   *
-   * The value is the JSON string of the `item`
    */
   private async createPutIndexedItemOperation(
     tenant: string,
@@ -160,8 +150,11 @@ export class IndexLevel {
     indexName: string,
     indexValue: string | number | boolean
   ): Promise<LevelWrapperBatchOperation<string>> {
-
     const { messageCid } = item;
+
+    // The key is the indexValue followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
     const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
 
     return this.createOperationForIndexPartition(
@@ -173,10 +166,6 @@ export class IndexLevel {
 
   /**
    * Creates an IndexLevel `del` operation for deleting an item, creating a partition by `tenant` and by `indexName`
-   *
-   * The key is indexValue followed by the messageCid as a tie-breaker.
-   * for example if the property is messageTimestamp the key would look like:
-   * '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
    */
   private async generateDeleteIndexedItemOperation(
     tenant: string,
@@ -185,6 +174,9 @@ export class IndexLevel {
     indexValue: string | number | boolean
   ): Promise<LevelWrapperBatchOperation<string>> {
 
+    // The key is the indexValue followed by the messageCid as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
     const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), messageCid);
 
     return this.createOperationForIndexPartition(

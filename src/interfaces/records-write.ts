@@ -778,10 +778,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
     };
 
-    // we don't want the tags properties to occupy the descriptor index namespace
-    // so we augment them with `tag.property_name` for each tag property and add them to the indexes
+    // in order to avoid name clashes with first-class index keys
+    // we build the indexes with `tag.property_name` for each tag property.
     if (tags !== undefined) {
-      const flattenedTags = Records.flattenTags({ ...tags });
+      const flattenedTags = Records.buildTagIndexes({ ...tags });
       indexes = { ...indexes, ...flattenedTags };
     }
 
@@ -993,7 +993,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'dataFormat', 'datePublished', 'published', 'messageTimestamp'];
+    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'dataFormat', 'datePublished', 'published', 'messageTimestamp', 'tags'];
 
     // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames: string[] = [];

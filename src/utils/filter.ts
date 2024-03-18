@@ -32,10 +32,9 @@ export class FilterUtility {
    * @returns true if all of the filter properties match.
    */
   public static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
-    // set of unique query properties.
-    // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
 
+    // we loop through each of the filter properties to check against the indexed values.
+    // if any of them do not match we return false.
     for (const filterProperty in filter) {
       const filterValue = filter[filterProperty];
       const indexValue = indexedValues[filterProperty];
@@ -44,17 +43,15 @@ export class FilterUtility {
       }
 
       const matched = Array.isArray(indexValue) ?
-        this.matchArrayFilterIndex(filterValue, indexValue) :
-        this.matchFilterIndex(filterValue, indexValue);
+        this.matchAnyIndexValue(filterValue, indexValue) :
+        this.matchIndexValue(filterValue, indexValue);
 
       if (!matched) {
         return false;
       }
-
-      missingPropertyMatches.delete(filterProperty);
     }
 
-    return missingPropertyMatches.size === 0;
+    return true;
   }
 
   /**
@@ -63,9 +60,9 @@ export class FilterUtility {
    * @param filterValue the filter for a particular property.
    * @param indexValues an array of values to match the filter against.
    */
-  private static matchArrayFilterIndex(filterValue: FilterValue, indexValues: string[] | number[] | boolean[]): boolean {
+  private static matchAnyIndexValue(filterValue: FilterValue, indexValues: string[] | number[] | boolean[]): boolean {
     for (const indexValue of indexValues) {
-      if (this.matchFilterIndex(filterValue, indexValue)) {
+      if (this.matchIndexValue(filterValue, indexValue)) {
         return true;
       }
     }
@@ -79,7 +76,7 @@ export class FilterUtility {
    * @param filterValue the filter for a particular property.
    * @param indexValue a single value to match the filter against.
    */
-  private static matchFilterIndex(filterValue: FilterValue, indexValue: string | number | boolean) : boolean {
+  private static matchIndexValue(filterValue: FilterValue, indexValue: string | number | boolean) : boolean {
     if (typeof filterValue === 'object') {
       if (Array.isArray(filterValue)) {
         // if `filterValue` is an array, it is a OneOfFilter
