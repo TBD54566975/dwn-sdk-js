@@ -266,6 +266,12 @@ export function testRecordsTags(): void {
       });
 
       it('should be able to filter by boolean match', async () => {
+        // 1. Write a record with a boolean tag `booleanTag` set to true
+        // 2. Write a record with a boolean tag `booleanTag` set to false.
+        // 3. Query for records with a `booleanTag` set to true, and validate the result.
+        // 4. Query for records with a `booleanTag` set to false, and validate the result.
+        // 5. Query for records with a non existent boolean tag, should not return a result.
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // write a record with a true boolean value tag
@@ -294,7 +300,7 @@ export function testRecordsTags(): void {
         const tagsRecordFalseReply = await dwn.processMessage(alice.did, tagsRecordFalse.message, { dataStream: tagsRecordFalse.dataStream });
         expect(tagsRecordFalseReply.status.code).to.equal(202);
 
-        // negative result - same tag different value
+        // query for records with a `booleanTag` set to true, should return the record with the true tag
         const tagsQueryMatchTrue = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -309,7 +315,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchTrueReply.entries?.length).to.equal(1);
         expect(tagsQueryMatchTrueReply.entries![0].recordId).to.equal(tagsRecordTrue.message.recordId);
 
-        // negative result - different tag same value
+        // query for records with a `booleanTag` set to false, should return the record with the false tag
         const tagsQueryMatchFalse = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -324,7 +330,7 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchFalseReply.entries?.length).to.equal(1);
         expect(tagsQueryMatchFalseReply.entries![0].recordId).to.equal(tagsRecordFalse.message.recordId);
 
-        // negative result
+        // negative result for a non existent boolean tag.
         const tagsQueryNegative = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -730,6 +736,51 @@ export function testRecordsTags(): void {
           existingWrite : tagsRecord1.recordsWrite,
         });
         const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message, { dataStream: updatedRecord.dataStream });
+        expect(updatedRecordReply.status.code).to.equal(202);
+
+        // issuing the same query should return no results
+        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply2.status.code).to.equal(200);
+        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
+      });
+
+      it('should not return results if the record was deleted', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag: 'string-value',
+          }
+        });
+
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        // confirm creation of record
+        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: 'string-value'
+            }
+          }
+        });
+
+        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply.status.code).to.equal(200);
+        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
+        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
+
+
+        // update the record without any tags
+        const updatedRecord = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : tagsRecord1.message.recordId,
+        });
+        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message);
         expect(updatedRecordReply.status.code).to.equal(202);
 
         // issuing the same query should return no results

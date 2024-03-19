@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, KeyValues, PrefixFilter } from '../types/query-types.js';
+import type { Filter, KeyValues, StartsWithFilter } from '../types/query-types.js';
 import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage, RecordsWriteTags, RecordsWriteTagsFilter } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
@@ -274,7 +274,7 @@ export class Records {
   }
 
 
-  public static isPrefixFilter(filter: RecordsWriteTagsFilter): filter is PrefixFilter {
+  public static isStartsWithFilter(filter: RecordsWriteTagsFilter): filter is StartsWithFilter {
     return typeof filter === 'object' && ('startsWith' in filter && typeof filter.startsWith === 'string');
   }
 
@@ -298,7 +298,7 @@ export class Records {
     for (const property in tags) {
       const value = tags[property];
 
-      tagValues[`tag.${property}`] = this.isPrefixFilter(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.startsWith) : value;
+      tagValues[`tag.${property}`] = this.isStartsWithFilter(value) ? FilterUtility.constructPrefixFilterAsRangeFilter(value.startsWith) : value;
     }
     return tagValues;
   }

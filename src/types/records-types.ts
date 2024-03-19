@@ -5,7 +5,7 @@ import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericSignaturePayload, MessageSubscription, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import type { PaginationCursor, PrefixFilter, RangeCriterion, RangeFilter } from './query-types.js';
+import type { PaginationCursor, RangeCriterion, RangeFilter, StartsWithFilter } from './query-types.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -19,7 +19,7 @@ export type RecordsWriteTags = {
   [property: string]: RecordsWriteTagValue;
 };
 
-export type RecordsWriteTagsFilter = PrefixFilter | RangeFilter | string | number | boolean;
+export type RecordsWriteTagsFilter = StartsWithFilter | RangeFilter | string | number | boolean;
 
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;

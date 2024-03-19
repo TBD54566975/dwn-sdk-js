@@ -77,7 +77,7 @@ export class IndexLevel {
     }
 
     const item: IndexedItem = { messageCid, indexes };
-    const putOperationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
+    const opCreationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
@@ -86,11 +86,11 @@ export class IndexLevel {
       if (Array.isArray(indexValue)) {
         for (const indexValueItem of indexValue) {
           const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValueItem);
-          putOperationPromises.push(partitionOperationPromise);
+          opCreationPromises.push(partitionOperationPromise);
         }
       } else {
         const partitionOperationPromise = this.createPutIndexedItemOperation(tenant, item, indexName, indexValue);
-        putOperationPromises.push(partitionOperationPromise);
+        opCreationPromises.push(partitionOperationPromise);
       }
     }
 
@@ -99,9 +99,9 @@ export class IndexLevel {
       tenant,
       { type: 'put', key: messageCid, value: JSON.stringify(indexes) }
     );
-    putOperationPromises.push(partitionOperationPromise);
+    opCreationPromises.push(partitionOperationPromise);
 
-    const indexOps = await Promise.all(putOperationPromises);
+    const indexOps = await Promise.all(opCreationPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
@@ -110,7 +110,7 @@ export class IndexLevel {
    *  Deletes all of the index data associated with the item.
    */
   async delete(tenant: string, messageCid: string, options?: IndexLevelOptions): Promise<void> {
-    const deleteOperationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
+    const opCreationPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     const indexes = await this.getIndexes(tenant, messageCid);
     if (indexes === undefined) {
@@ -120,23 +120,23 @@ export class IndexLevel {
 
     // delete the reverse lookup
     const partitionOperationPromise = this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: messageCid });
-    deleteOperationPromises.push(partitionOperationPromise);
+    opCreationPromises.push(partitionOperationPromise);
 
     // delete the keys for each index
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
         for (const indexValueItem of indexValue) {
-          const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValueItem);
-          deleteOperationPromises.push(partitionOperationPromise);
+          const partitionOperationPromise = this.createDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValueItem);
+          opCreationPromises.push(partitionOperationPromise);
         }
       } else {
-        const partitionOperationPromise = this.generateDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValue);
-        deleteOperationPromises.push(partitionOperationPromise);
+        const partitionOperationPromise = this.createDeleteIndexedItemOperation(tenant, messageCid, indexName, indexValue);
+        opCreationPromises.push(partitionOperationPromise);
       }
     }
 
-    const indexOps = await Promise.all(deleteOperationPromises);
+    const indexOps = await Promise.all(opCreationPromises);
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
@@ -167,7 +167,7 @@ export class IndexLevel {
   /**
    * Creates an IndexLevel `del` operation for deleting an item, creating a partition by `tenant` and by `indexName`
    */
-  private async generateDeleteIndexedItemOperation(
+  private async createDeleteIndexedItemOperation(
     tenant: string,
     messageCid: string,
     indexName: string,
