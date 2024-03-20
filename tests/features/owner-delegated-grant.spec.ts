@@ -528,6 +528,8 @@ export function testOwnerDelegatedGrant(): void {
         signer      : Jws.createSigner(alice)
       });
 
+      await Time.minimalSleep();
+
       const appXGrant2 = await PermissionsGrant.create({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
