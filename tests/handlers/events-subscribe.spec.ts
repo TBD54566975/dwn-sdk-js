@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import type { EventStream, MessageEvent } from '../../src/types/subscriptions.js';
 
@@ -9,7 +10,7 @@ import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 import sinon from 'sinon';
 import chai, { expect } from 'chai';

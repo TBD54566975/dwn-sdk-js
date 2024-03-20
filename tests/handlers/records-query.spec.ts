@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition } from '../../src/index.js';
 import type { GenericMessage, RecordsWriteMessage } from '../../src/index.js';
@@ -27,7 +28,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, RecordsWrite, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);

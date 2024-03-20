@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type {
   DataStore,
@@ -13,7 +14,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnConstant } from '../../src/index.js';
 
 import sinon from 'sinon';

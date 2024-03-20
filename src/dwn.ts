@@ -1,4 +1,6 @@
+
 import type { DataStore } from './types/data-store.js';
+import type { DidResolver } from '@web5/dids';
 import type { EventLog } from './types/event-log.js';
 import type { EventStream } from './types/subscriptions.js';
 import type { MessageStore } from './types/message-store.js';
@@ -30,7 +32,7 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DidDht, DidIon, DidKey, DidResolver, DidResolverCacheLevel, UniversalResolver } from '@web5/dids';
+import { DidDht, DidIon, DidKey, DidResolverCacheLevel, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {

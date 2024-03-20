@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type {
   DataStore,
   EventLog,
@@ -12,7 +13,7 @@ import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
 
 export function testEventsQueryScenarios(): void {

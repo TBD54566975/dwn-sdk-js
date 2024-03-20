@@ -1,4 +1,5 @@
 import type { DelegatedGrantMessage } from '../../src/types/delegated-grant-message.js';
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
 
@@ -18,7 +19,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, PermissionsRevoke, ProtocolsConfigure } from '../../src/index.js';
 
 chai.use(chaiAsPromised);

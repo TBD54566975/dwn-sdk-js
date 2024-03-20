@@ -1,13 +1,13 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { DidResolver, UniversalResolver } from '@web5/dids';
 import { GeneralJwsBuilder } from '../../../src/jose/jws/general/builder.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
 import { PrivateKeySigner } from '../../../src/index.js';
 import { signatureAlgorithms } from '../../../src/jose/algorithms/signing/signature-algorithms.js';
 import sinon from 'sinon';
+import { UniversalResolver } from '@web5/dids';
 
 const { Ed25519, secp256k1 } = signatureAlgorithms;
 

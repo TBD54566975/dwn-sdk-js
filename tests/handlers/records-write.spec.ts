@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
@@ -26,8 +27,6 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { DidKey, UniversalResolver } from '@web5/dids';
-import { DidResolver } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
@@ -45,6 +44,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 

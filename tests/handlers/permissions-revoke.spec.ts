@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import { expect } from 'chai';
 import sinon from 'sinon';
 
@@ -11,7 +12,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;

@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { MessageEvent } from '../../src/types/subscriptions.js';
 import type { RecordEvent } from '../../src/types/records-types.js';
 import type {
@@ -14,7 +15,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
