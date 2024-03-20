@@ -148,7 +148,7 @@ export function testRecordsTags(): void {
       });
     });
 
-    describe('RecordsQuery filter for tags', async () => {
+    describe('RecordsQuery filter for tags', () => {
       it('should be able to filter by string match', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const stringTag = 'string-value';
@@ -743,10 +743,13 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchReply2.status.code).to.equal(200);
         expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
       });
+    });
 
-      it('should not return results if the record was deleted', async () => {
+    describe('RecordsDelete with tags', () => {
+      it('should delete record with tags', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
+        // create a record with a tag
         const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
           author    : alice,
           published : true,
@@ -759,7 +762,7 @@ export function testRecordsTags(): void {
         const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
         expect(tagsRecord1Reply.status.code).to.equal(202);
 
-        // confirm creation of record
+        //sanity: query for the record
         const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -775,15 +778,15 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
 
 
-        // update the record without any tags
-        const updatedRecord = await TestDataGenerator.generateRecordsDelete({
+        // delete the record
+        const recordDelete = await TestDataGenerator.generateRecordsDelete({
           author   : alice,
           recordId : tagsRecord1.message.recordId,
         });
-        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message);
-        expect(updatedRecordReply.status.code).to.equal(202);
+        const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
+        expect(recordDeleteReply.status.code).to.equal(202);
 
-        // issuing the same query should return no results
+        // issue the the same query should return no results
         const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
         expect(tagsQueryMatchReply2.status.code).to.equal(200);
         expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
