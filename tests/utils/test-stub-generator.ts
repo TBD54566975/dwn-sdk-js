@@ -3,7 +3,7 @@ import type { Persona } from './test-data-generator.js';
 
 import sinon from 'sinon';
 
-import { DidResolver } from '@web5/dids';
+import { DidResolver, UniversalResolver } from '@web5/dids';
 import { TestDataGenerator } from './test-data-generator.js';
 
 /**
@@ -19,7 +19,7 @@ export class TestStubGenerator {
     const didResolutionResult = TestDataGenerator.createDidResolutionResult(persona);
     const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
     resolveStub.withArgs(persona.did).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
+    const didResolverStub = sinon.createStubInstance(UniversalResolver, { resolve: resolveStub });
 
     return didResolverStub;
   }

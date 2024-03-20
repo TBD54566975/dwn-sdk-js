@@ -6,8 +6,7 @@ import sinon from 'sinon';
 import slackProtocolDefinition from '../vectors/protocol-definitions/slack.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
 
-import { DidKey } from '@web5/dids';
-import { DidResolver } from '@web5/dids';
+import { DidKey, DidResolver, UniversalResolver } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
@@ -30,7 +29,7 @@ export function testNestedRoleScenarios(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKey] });
+      didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
