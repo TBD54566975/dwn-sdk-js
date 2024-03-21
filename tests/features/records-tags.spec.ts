@@ -485,6 +485,128 @@ export function testRecordsTags(): void {
           const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
           expect(validFooRecordReply.status.code).to.equal(202);
         });
+
+        it('should reject tag values that are not within the `minLength` and `maxLength` values', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+
+          // write a foo record with a `stringWithLimit` value less than the minimum length
+          const minLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              stringWithLimit: 'a', // less than 5
+            }
+          });
+
+          // should fail
+          const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
+          expect(minLengthReply.status.code).to.equal(400);
+          expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with a `stringWithLimit` value greater than the maximum length
+          const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              stringWithLimit: 'abcdefghijklmnopqrstuvwxyz', //more than 10
+            }
+          });
+
+          // should fail
+          const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
+          expect(maxLengthReply.status.code).to.equal(400);
+          expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with a `stringWithLimit` value within the range
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              stringWithLimit: 'abcdef', // more than 5 less than 10
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
+
+        it('should reject tag values that are do not contain the number of items within the `minItems` and `maxItems` values', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+
+          // write a foo record with a `numberArray` value with only 1 item, less than the `minItems` specified of 2
+          const minLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [1] // less than 2
+            }
+          });
+
+          // should fail
+          const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
+          expect(minLengthReply.status.code).to.equal(400);
+          expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with a `numberArray` value with 4 items, more than the `maxItems` specified of 3
+          const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [2,4,6,8] // more than 3
+            }
+          });
+
+          // should fail
+          const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
+          expect(maxLengthReply.status.code).to.equal(400);
+          expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with a `numberArray` value with 3 items, within the range
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [2,3,4] // within the range
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
       });
 
       it('should be able to write a Record tags', async () => {
