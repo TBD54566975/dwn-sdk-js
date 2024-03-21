@@ -114,25 +114,15 @@
         ".*": {
           "type": "object",
           "patternProperties": {
-            ".*": {
-              "oneOf": [{
-                "type": "boolean"
-              }, {
-                "type": "string"
-              }, {
-                "type": "number"
-              }, {
-                "type": "array",
-                "items": {
-                  "oneOf": [{
-                    "type": "boolean"
-                  }, {
-                    "type": "string"
-                  }, {
-                    "type": "number"
-                  }]
+            "type": {
+              "enum": ["string", "number", "boolean", "array"]
+            },
+            "items": {
+              "patternProperties": {
+                "type": {
+                  "enum": ["string", "number"]
                 }
-              }] 
+              }
             }
           }
         }

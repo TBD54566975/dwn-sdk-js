@@ -1,6 +1,7 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureDescriptor } from '../../src/index.js';
+
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -17,12 +18,13 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { UniversalResolver } from '@web5/dids';
+import { DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
 
 export function testRecordsTags(): void {
-  describe('Records Tags', () => {
+  describe.only('Records Tags', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -59,6 +61,179 @@ export function testRecordsTags(): void {
 
     describe('RecordsWrite with tags', () => {
       describe('protocol rules', () => {
+        describe('ProtocolsConfigure', () => {
+          it('should support protocol tag types of string, number, boolean and array types of numbers and strings', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // configure a protocol with tags of string, number, boolean and array types of numbers and strings
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    stringTag: {
+                      type: 'string',
+                    },
+                    numberType: {
+                      type: 'number',
+                    },
+                    booleanType: {
+                      type: 'boolean',
+                    },
+                    stringArray: {
+                      type  : 'array',
+                      items : {
+                        type: 'string',
+                      }
+                    },
+                    numberArray: {
+                      type  : 'array',
+                      items : {
+                        type: 'number',
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+          });
+
+          describe('should not support tag types', () => {
+            it('object', async () => {
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+
+              // protocol definition with unsupported tag type of object
+              const objectTagsType: ProtocolDefinition = {
+                protocol  : 'http://example.com/protocol/withTags',
+                published : true,
+                types     : {
+                  foo: {}
+                },
+                structure: {
+                  foo: {
+                    $tags: {
+                      objectTag: {
+                        type: 'object',
+                      },
+                    }
+                  }
+                },
+              }
+              ;
+              // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+              const descriptor: ProtocolsConfigureDescriptor = {
+                interface        : DwnInterfaceName.Protocols,
+                method           : DwnMethodName.Configure,
+                messageTimestamp : Time.getCurrentTimestamp(),
+                definition       : objectTagsType
+              };
+
+              const authorization = await Message.createAuthorization({
+                descriptor,
+                signer: Jws.createSigner(alice)
+              });
+
+              const protocolsConfigureMessage = { descriptor, authorization };
+              const objectTagsTypeConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+              expect(objectTagsTypeConfigureReply.status.code).to.equal(400);
+            });
+
+            it('array of objects', async () => {
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+
+              // protocol definition with unsupported tag type array of objects
+              const objectArrayTagsType: ProtocolDefinition = {
+                protocol  : 'http://example.com/protocol/withTags',
+                published : true,
+                types     : {
+                  foo: {}
+                },
+                structure: {
+                  foo: {
+                    $tags: {
+                      objectArrayTag: {
+                        type  : 'array',
+                        items : {
+                          type: 'object',
+                        }
+                      },
+                    }
+                  }
+                },
+              };
+
+              // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+              const descriptor = {
+                interface        : DwnInterfaceName.Protocols,
+                method           : DwnMethodName.Configure,
+                messageTimestamp : Time.getCurrentTimestamp(),
+                definition       : objectArrayTagsType
+              };
+              const authorization = await Message.createAuthorization({
+                descriptor,
+                signer: Jws.createSigner(alice)
+              });
+              const protocolsConfigureMessage = { descriptor, authorization };
+
+              const objectArrayTagsTypeConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+              expect(objectArrayTagsTypeConfigureReply.status.code).to.equal(400);
+            });
+
+            it('array of booleans', async () => {
+              const alice = await TestDataGenerator.generateDidKeyPersona();
+
+              // protocol definition with unsupported tag type array of booleans
+              const booleanArrayTagsType: ProtocolDefinition = {
+                protocol  : 'http://example.com/protocol/withTags',
+                published : true,
+                types     : {
+                  foo: {}
+                },
+                structure: {
+                  foo: {
+                    $tags: {
+                      booleanArrayTag: {
+                        type  : 'array',
+                        items : {
+                          type: 'boolean',
+                        }
+                      },
+                    }
+                  }
+                },
+              };
+
+              const descriptor = {
+                interface        : DwnInterfaceName.Protocols,
+                method           : DwnMethodName.Configure,
+                messageTimestamp : Time.getCurrentTimestamp(),
+                definition       : booleanArrayTagsType
+              };
+
+              const authorization = await Message.createAuthorization({
+                descriptor,
+                signer: Jws.createSigner(alice)
+              });
+              const protocolsConfigureMessage = { descriptor, authorization };
+
+              const booleanArrayTagsTypeConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+              expect(booleanArrayTagsTypeConfigureReply.status.code).to.equal(400);
+            });
+          });
+        });
+
         it('should reject a record with a tag property that does not match the protocol definition tags', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -85,9 +260,12 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // ensure the correct tag descriptor is in the error message
+          expect(fooRecordReply.status.detail).to.contain(`${tagsProtocol.protocol}/foo/$tags must NOT have additional properties`);
         });
 
-        it('should reject a record with a tag value that does not match a given enum in the definition', async () => {
+        it('should reject a record with a tag value that does not match the type in the protocol definition', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // configure tags protocol
@@ -99,7 +277,49 @@ export function testRecordsTags(): void {
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
           expect(configureReply.status.code).to.equal(202);
 
-          // write a foo record with an `unknownTag` tag.
+          // `draft` should be a boolean type, but we are passing a string
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              draft: 'true'
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // positive test with a boolean
+          const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              draft: true
+            }
+          });
+
+          const fooRecord2Reply = await dwn.processMessage(alice.did, fooRecord2.message, { dataStream: fooRecord2.dataStream });
+          expect(fooRecord2Reply.status.code).to.equal(202);
+        });
+
+        it('should reject a record with a tag value that does not match a given enum in the protocol definition', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with an `unknown_status` tag value.
           const fooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
@@ -113,6 +333,157 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // ensure the correct tag descriptor path is in the error message
+          expect(fooRecordReply.status.detail).to.contain(`${tagsProtocol.protocol}/foo/$tags/status`);
+        });
+
+        it('should reject a record with a tag value that is not within the `minimum` and `maximum` range', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with an `score` value less than 0.
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              score: -1,
+            }
+          });
+
+          // should fail
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with an `score` value greater than 100.
+          const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              score: 101,
+            }
+          });
+
+          // should fail
+          const fooRecord2Reply = await dwn.processMessage(alice.did, fooRecord2.message, { dataStream: fooRecord2.dataStream });
+          expect(fooRecord2Reply.status.code).to.equal(400);
+          expect(fooRecord2Reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with a maximum `score` of 100.
+          const validFooMaxRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              score: 100,
+            }
+          });
+
+          // should pass
+          const validFooMaxRecordReply = await dwn.processMessage(alice.did, validFooMaxRecord.message, { dataStream: validFooMaxRecord.dataStream });
+          expect(validFooMaxRecordReply.status.code).to.equal(202);
+
+          // write a foo record with a maximum `score` of 0.
+          const validFooMinRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              score: 0,
+            }
+          });
+          // should pass
+          const validFooMinRecordReply = await dwn.processMessage(alice.did, validFooMinRecord.message, { dataStream: validFooMinRecord.dataStream });
+          expect(validFooMinRecordReply.status.code).to.equal(202);
+
+          // write a foo record within the range
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              score: 50,
+            }
+          });
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
+
+        it('should reject a record with a tag value that is not within the `exclusiveMinimum` and `exclusiveMaximum` range', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with an hour at the exclusiveMaximum
+          const exclusiveMaxRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              hours: 24,
+            }
+          });
+
+          // should fail
+          const exclusiveMaxReply = await dwn.processMessage(alice.did, exclusiveMaxRecord.message, { dataStream: exclusiveMaxRecord.dataStream });
+          expect(exclusiveMaxReply.status.code).to.equal(400);
+          expect(exclusiveMaxReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with an hour at the exclusiveMinimum
+          const exclusiveMinRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              hours: 0,
+            }
+          });
+
+          // should fail
+          const exclusiveMinReply = await dwn.processMessage(alice.did, exclusiveMinRecord.message, { dataStream: exclusiveMinRecord.dataStream });
+          expect(exclusiveMinReply.status.code).to.equal(400);
+          expect(exclusiveMinReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+
+          // write a foo record with an `hour` value within the range.
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              hours: 12,
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
         });
       });
 
