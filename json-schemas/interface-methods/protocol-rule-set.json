@@ -106,6 +106,37 @@
           "minimum": 0
         }
       }
+    },
+    "$tags": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        ".*": {
+          "type": "object",
+          "patternProperties": {
+            ".*": {
+              "oneOf": [{
+                "type": "boolean"
+              }, {
+                "type": "string"
+              }, {
+                "type": "number"
+              }, {
+                "type": "array",
+                "items": {
+                  "oneOf": [{
+                    "type": "boolean"
+                  }, {
+                    "type": "string"
+                  }, {
+                    "type": "number"
+                  }]
+                }
+              }] 
+            }
+          }
+        }
+      }
     }
   },
   "patternProperties": {
