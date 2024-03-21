@@ -6,14 +6,18 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import tagsProtocol from '../vectors/protocol-definitions/tags.json' assert { type: 'json' };
+
 import { DidKey } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
+import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { UniversalResolver } from '@web5/dids';
+
 
 chai.use(chaiAsPromised);
 
@@ -54,6 +58,64 @@ export function testRecordsTags(): void {
     });
 
     describe('RecordsWrite with tags', () => {
+      describe('protocol rules', () => {
+        it('should reject a record with a tag property that does not match the protocol definition tags', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with an `unknownTag` tag.
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              unknownTag: 'some-value'
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+        });
+
+        it('should reject a record with a tag value that does not match a given enum in the definition', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : tagsProtocol,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with an `unknownTag` tag.
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : tagsProtocol.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              status: 'unknown_status'
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+        });
+      });
+
       it('should be able to write a Record tags', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 

@@ -1,0 +1,30 @@
+{
+  "protocol": "http://tags.xyz",
+  "published": false,
+  "types": {
+    "foo": {}
+  },
+  "structure": {
+    "foo": {
+      "$tags": {
+        "draft": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["draft", "published"]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "hours": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 24
+        }
+      }
+    }
+  }
+}
