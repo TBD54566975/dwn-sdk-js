@@ -113,6 +113,7 @@
       "patternProperties": {
         ".*": {
           "type": "object",
+          "additionalProperties": false,
           "patternProperties": {
             "type": {
               "enum": ["string", "number", "boolean", "array"]
@@ -123,6 +124,8 @@
                   "enum": ["string", "number"]
                 }
               }
+            },
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems)$": {
             }
           }
         }
