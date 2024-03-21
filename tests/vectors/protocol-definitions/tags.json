@@ -23,6 +23,18 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "exclusiveMaximum": 24
+        },
+        "stringArray": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "numberArray": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
         }
       }
     }
