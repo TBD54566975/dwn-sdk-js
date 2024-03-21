@@ -706,7 +706,7 @@ export class ProtocolAuthorization {
       const compiledTags = ajv.compile({
         type                 : 'object',
         properties           : ruleSet.$tags,
-        additionalProperties : false,
+        additionalProperties : false, // this will cause validation to fail if unknown tags are present
       });
 
       const validSchema = compiledTags(tags);
