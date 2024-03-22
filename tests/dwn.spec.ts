@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../src/types/subscriptions.js';
 import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
@@ -12,11 +13,13 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestEventStream } from './test-event-stream.js';
 import { TestStores } from './test-stores.js';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
 export function testDwnClass(): void {
   describe('DWN', () => {
+    let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
@@ -26,6 +29,8 @@ export function testDwnClass(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
+      didResolver = new UniversalResolver({ didResolvers: [DidKey] });
+
       const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
@@ -33,7 +38,7 @@ export function testDwnClass(): void {
 
       eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ messageStore, dataStore, eventLog, eventStream });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {
