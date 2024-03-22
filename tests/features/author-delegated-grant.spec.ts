@@ -1,4 +1,5 @@
 import type { DelegatedGrantMessage } from '../../src/types/delegated-grant-message.js';
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
 import type { RecordEvent, RecordsWriteMessage } from '../../src/types/records-types.js';
@@ -22,7 +23,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, PermissionsRevoke, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -39,7 +40,7 @@ export function testAuthorDelegatedGrant(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKey] });
+      didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;
@@ -1133,6 +1134,8 @@ export function testAuthorDelegatedGrant(): void {
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
+
+      await Time.minimalSleep();
 
       const deviceXGrant2 = await PermissionsGrant.create({
         delegated   : true,

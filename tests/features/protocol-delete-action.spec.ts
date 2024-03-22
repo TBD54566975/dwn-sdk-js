@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor } from '../../src/types/protocols-types.js';
@@ -7,8 +8,6 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DataStream } from '../../src/utils/data-stream.js';
-import { DidKey } from '@web5/dids';
-import { DidResolver } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { Jws } from '../../src/utils/jws.js';
 import { ProtocolAction } from '../../src/types/protocols-types.js';
@@ -18,6 +17,7 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Message, ProtocolsConfigure, RecordsDelete, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -34,7 +34,7 @@ export function testProtocolDeleteAction(): void {
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKey] });
+      didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
       messageStore = stores.messageStore;

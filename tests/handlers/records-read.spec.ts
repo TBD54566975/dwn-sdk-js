@@ -1,4 +1,5 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
+import type { DidResolver } from '@web5/dids';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
@@ -32,7 +33,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DataStream, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
@@ -51,7 +52,7 @@ export function testRecordsReadHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKey] });
+        didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;

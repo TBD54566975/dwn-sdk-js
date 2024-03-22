@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type {
   DataStore,
@@ -15,7 +16,7 @@ import { PermissionsRequestHandler } from '../../src/handlers/permissions-reques
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 export function testPermissionsRequestHandler(): void {
@@ -32,7 +33,7 @@ export function testPermissionsRequestHandler(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        didResolver = new DidResolver({ didResolvers: [DidKey] });
+        didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
         const stores = TestStores.get();
         messageStore = stores.messageStore;

@@ -1,3 +1,4 @@
+import type { DidResolver } from '@web5/dids';
 import { expect } from 'chai';
 import sinon from 'sinon';
 
@@ -11,7 +12,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKey, DidResolver } from '@web5/dids';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -23,7 +24,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
   describe('functional tests', () => {
     before(async () => {
-      didResolver = new DidResolver({ didResolvers: [DidKey] });
+      didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
       // important to follow this pattern to initialize and clean the message and data store in tests
       // so that different suites can reuse the same block store and index location for testing
