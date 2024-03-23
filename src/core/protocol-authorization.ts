@@ -8,6 +8,7 @@ import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -250,6 +251,11 @@ export class ProtocolAuthorization {
     protocolUri: string,
     messageStore: MessageStore
   ): Promise<ProtocolDefinition> {
+    // if first-class protocol, return the definition from const object directly without doing to data store
+    if (protocolUri === PermissionsProtocol.uri) {
+      return PermissionsProtocol.definition;
+    }
+
     // fetch the corresponding protocol definition
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
