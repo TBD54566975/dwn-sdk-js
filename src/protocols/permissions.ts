@@ -149,7 +149,7 @@ export class PermissionsProtocol {
   }
 
   /**
-   * Convenience method to creates a permission request.
+   * Convenience method to create a permission request.
    */
   public static async createRequest(options: PermissionRequestCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
