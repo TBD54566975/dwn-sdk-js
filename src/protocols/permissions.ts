@@ -1,19 +1,26 @@
 import type { ProtocolDefinition } from '../types/protocols-types.js';
+import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 
 import { Encoder } from '../utils/encoder.js';
-import { Time } from '../utils/time.js';
+import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 /**
  * Options for creating a permission request.
  */
 export type PermissionRequestCreateOptions = {
+  /**
+   * The signer of the request.
+   */
+  signer?: Signer;
+
   dateRequested?: string;
+
+  // remaining properties are contained within the data payload of the record
+
   description?: string;
-  grantedBy: string;
-  grantedTo: string;
-  delegated?: boolean;
+  delegated: boolean;
   scope: PermissionScope;
   conditions?: PermissionConditions;
 };
@@ -22,18 +29,22 @@ export type PermissionRequestCreateOptions = {
  * Options for creating a permission grant.
  */
 export type PermissionGrantCreateOptions = {
-  description?: string;
+  /**
+   * The signer of the grant.
+   */
+  signer?: Signer;
+  grantedTo: string;
   dateGranted?: string;
+
+  // remaining properties are contained within the data payload of the record
 
   /**
    * Expire time in UTC ISO-8601 format with microsecond precision.
    */
   dateExpires: string;
-
-  grantedBy: string;
-  grantedTo: string;
+  requestId?: string;
+  description?: string;
   delegated?: boolean;
-  permissionRequestId?: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
 };
@@ -42,8 +53,16 @@ export type PermissionGrantCreateOptions = {
  * Options for creating a permission revocation.
  */
 export type PermissionRevocationCreateOptions = {
+  /**
+   * The signer of the grant.
+   */
+  signer?: Signer;
+  grantId: string;
   dateRevoked?: string;
-  permissionGrantId: string;
+
+  // remaining properties are contained within the data payload of the record
+
+  description?: string;
 };
 
 /**
@@ -129,54 +148,109 @@ export class PermissionsProtocol {
     return Encoder.base64UrlToObject(base64UrlEncodedRequest);
   }
 
-  public static createRequest(options: PermissionRequestCreateOptions): PermissionRequestModel {
+  /**
+   * Convenience method to creates a permission request.
+   */
+  public static async createRequest(options: PermissionRequestCreateOptions): Promise<{
+    recordsWrite: RecordsWrite,
+    permissionRequestModel: PermissionRequestModel,
+    permissionRequestBytes: Uint8Array
+  }> {
     const permissionRequestModel: PermissionRequestModel = {
-      dateRequested : options.dateRequested ?? Time.getCurrentTimestamp(),
-      description   : options.description,
-      grantedBy     : options.grantedBy,
-      grantedTo     : options.grantedTo,
-      delegated     : options.delegated ?? false,
-      scope         : options.scope,
-      conditions    : options.conditions,
+      description : options.description,
+      delegated   : options.delegated,
+      scope       : options.scope,
+      conditions  : options.conditions,
     };
 
-    return permissionRequestModel;
+    const permissionRequestBytes = Encoder.objectToBytes(permissionRequestModel);
+    const recordsWrite = await RecordsWrite.create({
+      signer           : options.signer,
+      messageTimestamp : options.dateRequested,
+      protocol         : PermissionsProtocol.uri,
+      protocolPath     : PermissionsProtocol.requestPath,
+      dataFormat       : 'application/json',
+      data             : permissionRequestBytes,
+    });
+
+    return {
+      recordsWrite,
+      permissionRequestModel,
+      permissionRequestBytes
+    };
   }
 
   /**
-   * Create a permission grant.
+   * Convenience method to create a permission grant.
    */
-  public static createGrant(options: PermissionGrantCreateOptions): PermissionGrantModel {
-
+  public static async createGrant(options: PermissionGrantCreateOptions): Promise<{
+    recordsWrite: RecordsWrite,
+    permissionGrantModel: PermissionGrantModel,
+    permissionGrantBytes: Uint8Array
+  }> {
     const scope = { ...options.scope } as RecordsPermissionScope;
-    scope.protocol = scope.protocol !== undefined ? normalizeProtocolUrl(scope.protocol) : undefined;
-    scope.schema = scope.schema !== undefined ? normalizeSchemaUrl(scope.schema) : undefined;
+
+    // normalize protocol and schema URLs if they are present
+    if (scope.protocol !== undefined) {
+      scope.protocol = normalizeProtocolUrl(scope.protocol);
+    }
+    if (scope.schema !== undefined) {
+      scope.schema = normalizeSchemaUrl(scope.schema);
+    }
 
     const permissionGrantModel: PermissionGrantModel = {
-      dateGranted         : options.dateGranted ?? Time.getCurrentTimestamp(),
-      dateExpires         : options.dateExpires,
-      description         : options.description,
-      grantedBy           : options.grantedBy,
-      grantedTo           : options.grantedTo,
-      delegated           : options.delegated,
-      permissionRequestId : options.permissionRequestId,
-      scope               : scope,
-      conditions          : options.conditions,
+      dateExpires : options.dateExpires,
+      requestId   : options.requestId,
+      description : options.description,
+      delegated   : options.delegated,
+      scope       : scope,
+      conditions  : options.conditions,
     };
 
-    return permissionGrantModel;
+    const permissionGrantBytes = Encoder.objectToBytes(permissionGrantModel);
+    const recordsWrite = await RecordsWrite.create({
+      signer           : options.signer,
+      messageTimestamp : options.dateGranted,
+      recipient        : options.grantedTo,
+      protocol         : PermissionsProtocol.uri,
+      protocolPath     : PermissionsProtocol.grantPath,
+      dataFormat       : 'application/json',
+      data             : permissionGrantBytes,
+    });
+
+    return {
+      recordsWrite,
+      permissionGrantModel,
+      permissionGrantBytes
+    };
   }
 
   /**
-   * Create a permission revocation.
+   * Convenience method to create a permission revocation.
    */
-  public static createRevocation(options: PermissionRevocationCreateOptions): PermissionRevocationModel {
-
+  public static async createRevocation(options: PermissionRevocationCreateOptions): Promise<{
+    recordsWrite: RecordsWrite,
+    permissionRevocationModel: PermissionRevocationModel,
+    permissionRevocationBytes: Uint8Array
+  }> {
     const permissionRevocationModel: PermissionRevocationModel = {
-      dateRevoked       : options.dateRevoked ?? Time.getCurrentTimestamp(),
-      permissionGrantId : options.permissionGrantId,
+      description: options.description,
     };
 
-    return permissionRevocationModel;
+    const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationModel);
+    const recordsWrite = await RecordsWrite.create({
+      signer          : options.signer,
+      parentContextId : options.grantId,
+      protocol        : PermissionsProtocol.uri,
+      protocolPath    : PermissionsProtocol.revocationPath,
+      dataFormat      : 'application/json',
+      data            : permissionRevocationBytes,
+    });
+
+    return {
+      recordsWrite,
+      permissionRevocationModel,
+      permissionRevocationBytes
+    };
   }
 };

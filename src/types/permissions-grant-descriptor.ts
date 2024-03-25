@@ -48,17 +48,6 @@ export type PermissionsGrantDescriptor = {
  * The data model of a permission request.
  */
 export type PermissionRequestModel = {
-  dateRequested: string;
-
-  /**
-   * The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
-   */
-  grantedBy: string;
-
-  /**
-   * The recipient of the grant. Usually this is the author of the PermissionsRequest message/
-   */
-  grantedTo: string;
 
   /**
    * If the grant is a delegated grant or not. If `true`, the `grantedTo` will be able to act as the `grantedBy` within the scope of this grant.
@@ -90,27 +79,12 @@ export type PermissionGrantModel = {
   /**
    * Optional CID of a permission request. This is optional because grants may be given without being officially requested
    * */
-  permissionRequestId?: string;
-
-  /**
-   * Timestamp at which this grant was granted.
-   */
-  dateGranted: string;
+  requestId?: string;
 
   /**
    * Timestamp at which this grant will no longer be active.
    */
   dateExpires: string;
-
-  /**
-   * The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
-   */
-  grantedBy: string;
-
-  /**
-   * The recipient of the grant. Usually this is the author of the PermissionsRequest message
-   */
-  grantedTo: string;
 
   /**
    * Whether this grant is delegated or not. If `true`, the `grantedTo` will be able to act as the `grantedTo` within the scope of this grant.
@@ -130,14 +104,9 @@ export type PermissionGrantModel = {
  */
 export type PermissionRevocationModel = {
   /**
-   * CID of a permission grant.
-   * */
-  permissionGrantId: string;
-
-  /**
-   * Timestamp at which permission was revoked.
+   * Optional string that communicates the details of the revocation.
    */
-  dateRevoked: string;
+  description?: string;
 };
 
 /**
