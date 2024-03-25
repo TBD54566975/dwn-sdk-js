@@ -4,13 +4,10 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "messageTimestamp",
-    "dateExpires"
+    "dateExpires",
+    "scope"
   ],
   "properties": {
-    "messageTimestamp": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
-    },
     "dateExpires": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
     },
@@ -20,20 +17,8 @@
     "delegated": {
       "type": "boolean"
     },
-    "grantedTo": {
-      "description": "DID of the grantee",
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedTo"
-    },
-    "grantedBy": {
-      "description": "DID of the grantor",
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
-    },
-    "grantedFor": {
-      "description": "DID of the DWN to which the grantee is given access",
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedFor"
-    },
-    "permissionsRequestId": {
-      "description": "CID of an associated PermissionsRequest message",
+    "requestId": {
+      "description": "CID of an associated permission request DWN message",
       "type": "string"
     },
     "scope": {
