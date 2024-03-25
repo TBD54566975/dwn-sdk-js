@@ -251,7 +251,7 @@ export class ProtocolAuthorization {
     protocolUri: string,
     messageStore: MessageStore
   ): Promise<ProtocolDefinition> {
-    // if first-class protocol, return the definition from const object directly without doing to data store
+    // if first-class protocol, return the definition from const object directly without going to data store
     if (protocolUri === PermissionsProtocol.uri) {
       return PermissionsProtocol.definition;
     }

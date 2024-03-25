@@ -17,12 +17,12 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName, Encoder, RecordsQuery, Time } from '../../src/index.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, RecordsQuery, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 export function testPermissions(): void {
-  describe('permission tests', async () => {
+  describe('permissions', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -57,14 +57,17 @@ export function testPermissions(): void {
       await dwn.close();
     });
 
-    it('', async () => {
+    it.only('should support permission management through use of Request, Grants, and Revocations', async () => {
       // scenario:
       // 1. Verify anyone (Bob) can send a permission request to Alice
-      // 2. Alice creates a permission grant for Bob in her DWN
-      // 3. Verify that Bob can read the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
-      // 4. Verify that any third-party can fetch revocation of the grant and find it is still active (not revoked)
-      // 5. Alice revokes the permission grant for Bob
-      // 6. Verify that any third-party can fetch the revocation status of the permission grant
+      // 2. Alice queries her DWN for new permission requests
+      // 3. Verify a non-owner cannot create a grant for Bob in Alice's DWN
+      // 4. Alice creates a permission grant for Bob in her DWN
+      // 5. Verify that Bob can read the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
+      // 6. Verify that any third-party can fetch revocation of the grant and find it is still active (not revoked)
+      // 7. Verify that non-owner cannot revoke the grant
+      // 8. Alice revokes the permission grant for Bob
+      // 9. Verify that any third-party can fetch the revocation status of the permission grant
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -109,7 +112,7 @@ export function testPermissions(): void {
       expect(requestQueryReply.entries?.length).to.equal(1);
       expect(requestFromBob.recordId).to.equal(requestWrite.message.recordId);
 
-      // 2. Alice creates a permission grant for Bob in her DWN
+      // 3. Verify a non-owner cannot create a grant for Bob in Alice's DWN
       const decodedRequest = PermissionsProtocol.parseRequest(requestFromBob.encodedData!);
       const grantForBob = PermissionsProtocol.createGrant({
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
@@ -120,6 +123,21 @@ export function testPermissions(): void {
       });
 
       const grantBytes = Encoder.objectToBytes(grantForBob);
+      const unauthorizedGrantWrite = await RecordsWrite.create({
+        signer       : Jws.createSigner(bob),
+        recipient    : bob.did,
+        protocol     : PermissionsProtocol.uri,
+        protocolPath : PermissionsProtocol.grantPath,
+        dataFormat   : 'application/json',
+        data         : grantBytes,
+      });
+
+      const unauthorizedGrantWriteReply
+        = await dwn.processMessage(alice.did, unauthorizedGrantWrite.message, { dataStream: DataStream.fromBytes(grantBytes) });
+      expect(unauthorizedGrantWriteReply.status.code).to.equal(401);
+      expect(unauthorizedGrantWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+      // 4. Alice creates a permission grant for Bob in her DWN
       const grantWrite = await RecordsWrite.create({
         signer       : Jws.createSigner(alice),
         recipient    : bob.did,
@@ -132,7 +150,23 @@ export function testPermissions(): void {
       const grantWriteReply = await dwn.processMessage(alice.did, grantWrite.message, { dataStream: DataStream.fromBytes(grantBytes) });
       expect(grantWriteReply.status.code).to.equal(202);
 
-      // 4. Verify that any third-party can fetch revocation of the grant and find it is still active (not revoked)
+      // 5. Verify that Bob can read the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
+      const grantQuery = await RecordsQuery.create({
+        signer : Jws.createSigner(bob),
+        filter : {
+          protocolPath : PermissionsProtocol.grantPath,
+          protocol     : PermissionsProtocol.uri,
+          dateUpdated  : { from: Time.createOffsetTimestamp({ seconds: -1 * 60 * 60 * 24 }) }// last 24 hours
+        }
+      });
+
+      const grantQueryReply = await dwn.processMessage(alice.did, grantQuery.message);
+      const grantFromBob = grantQueryReply.entries?.[0]!;
+      expect(grantQueryReply.status.code).to.equal(200);
+      expect(grantQueryReply.entries?.length).to.equal(1);
+      expect(grantFromBob.recordId).to.equal(grantWrite.message.recordId);
+
+      // 6. Verify that any third-party can fetch revocation of the grant and find it is still active (not revoked)
       const revocationRead = await RecordsRead.create({
         signer : Jws.createSigner(bob),
         filter : {
@@ -144,7 +178,7 @@ export function testPermissions(): void {
       const revocationReadReply = await dwn.processMessage(alice.did, revocationRead.message);
       expect(revocationReadReply.status.code).to.equal(404);
 
-      // Verify that non-owner cannot revoke the grant
+      // 7. Verify that non-owner cannot revoke the grant
       const revocation = PermissionsProtocol.createRevocation({
         permissionGrantId : grantWrite.message.recordId,
         dateRevoked       : Time.getCurrentTimestamp()
@@ -166,8 +200,9 @@ export function testPermissions(): void {
         { dataStream: DataStream.fromBytes(revokeBytes) }
       );
       expect(unauthorizedRevokeWriteReply.status.code).to.equal(401);
+      expect(unauthorizedGrantWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
 
-      // 5. Alice revokes the permission grant for Bob
+      // 8. Alice revokes the permission grant for Bob
       const revokeWrite = await RecordsWrite.create({
         parentContextId : grantWrite.message.contextId,
         signer          : Jws.createSigner(alice),
@@ -180,7 +215,7 @@ export function testPermissions(): void {
       const revokeWriteReply = await dwn.processMessage(alice.did, revokeWrite.message, { dataStream: DataStream.fromBytes(revokeBytes) });
       expect(revokeWriteReply.status.code).to.equal(202);
 
-      // 6. Verify that any third-party can fetch the revocation status of the permission grant
+      // 9. Verify that any third-party can fetch the revocation status of the permission grant
       const revocationReadReply2 = await dwn.processMessage(alice.did, revocationRead.message);
       expect(revocationReadReply2.status.code).to.equal(200);
       expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.message.recordId);
