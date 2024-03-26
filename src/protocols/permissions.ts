@@ -156,10 +156,12 @@ export class PermissionsProtocol {
     permissionRequestModel: PermissionRequestModel,
     permissionRequestBytes: Uint8Array
   }> {
+    const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
+
     const permissionRequestModel: PermissionRequestModel = {
       description : options.description,
       delegated   : options.delegated,
-      scope       : options.scope,
+      scope,
       conditions  : options.conditions,
     };
 
@@ -188,22 +190,14 @@ export class PermissionsProtocol {
     permissionGrantModel: PermissionGrantModel,
     permissionGrantBytes: Uint8Array
   }> {
-    const scope = { ...options.scope } as RecordsPermissionScope;
-
-    // normalize protocol and schema URLs if they are present
-    if (scope.protocol !== undefined) {
-      scope.protocol = normalizeProtocolUrl(scope.protocol);
-    }
-    if (scope.schema !== undefined) {
-      scope.schema = normalizeSchemaUrl(scope.schema);
-    }
+    const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
     const permissionGrantModel: PermissionGrantModel = {
       dateExpires : options.dateExpires,
       requestId   : options.requestId,
       description : options.description,
       delegated   : options.delegated,
-      scope       : scope,
+      scope,
       conditions  : options.conditions,
     };
 
@@ -252,5 +246,32 @@ export class PermissionsProtocol {
       permissionRevocationModel,
       permissionRevocationBytes
     };
+  }
+
+  /**
+   * Normalizes the given permission scope if needed.
+   * @returns The normalized permission scope.
+   */
+  private static normalizePermissionScope(permissionScope: PermissionScope): PermissionScope {
+    const scope = { ...permissionScope };
+
+    if (PermissionsProtocol.isRecordPermissionScope(scope)) {
+      // normalize protocol and schema URLs if they are present
+      if (scope.protocol !== undefined) {
+        scope.protocol = normalizeProtocolUrl(scope.protocol);
+      }
+      if (scope.schema !== undefined) {
+        scope.schema = normalizeSchemaUrl(scope.schema);
+      }
+    }
+
+    return scope;
+  }
+
+  /**
+   * Type guard to determine if the scope is a record permission scope.
+   */
+  private static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
+    return scope.interface === 'Records';
   }
 };

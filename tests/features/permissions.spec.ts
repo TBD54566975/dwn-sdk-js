@@ -62,7 +62,7 @@ export function testPermissions(): void {
       // 2. Alice queries her DWN for new permission requests
       // 3. Verify a non-owner cannot create a grant for Bob in Alice's DWN
       // 4. Alice creates a permission grant for Bob in her DWN
-      // 5. Verify that Bob can read the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
+      // 5. Verify that Bob can query the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
       // 6. Verify that any third-party can fetch revocation of the grant and find it is still active (not revoked)
       // 7. Verify that non-owner cannot revoke the grant
       // 8. Alice revokes the permission grant for Bob
@@ -142,7 +142,7 @@ export function testPermissions(): void {
       );
       expect(grantWriteReply.status.code).to.equal(202);
 
-      // 5. Verify that Bob can read the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
+      // 5. Verify that Bob can query the permission grant from Alice's DWN (even though Alice can also send it directly to Bob)
       const grantQuery = await RecordsQuery.create({
         signer : Jws.createSigner(bob),
         filter : {
