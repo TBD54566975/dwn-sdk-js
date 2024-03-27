@@ -44,13 +44,82 @@ export type PermissionsGrantDescriptor = {
   conditions?: PermissionConditions
 };
 
+/**
+ * The data model of a permission request.
+ */
+export type PermissionRequestModel = {
 
+  /**
+   * If the grant is a delegated grant or not. If `true`, the `grantedTo` will be able to act as the `grantedBy` within the scope of this grant.
+   */
+  delegated: boolean;
+
+  /**
+   * Optional string that communicates what the grant would be used for.
+   */
+  description?: string;
+
+  /**
+   * The scope of the allowed access.
+   */
+  scope: PermissionScope;
+
+  conditions?: PermissionConditions
+};
+
+/**
+ * The data model of a permission grant.
+ */
+export type PermissionGrantModel = {
+  /**
+   * Optional string that communicates what the grant would be used for
+   */
+  description?: string;
+
+  /**
+   * Optional CID of a permission request. This is optional because grants may be given without being officially requested
+   * */
+  requestId?: string;
+
+  /**
+   * Timestamp at which this grant will no longer be active.
+   */
+  dateExpires: string;
+
+  /**
+   * Whether this grant is delegated or not. If `true`, the `grantedTo` will be able to act as the `grantedTo` within the scope of this grant.
+   */
+  delegated?: boolean;
+
+  /**
+   * The scope of the allowed access.
+   */
+  scope: PermissionScope;
+
+  conditions?: PermissionConditions
+};
+
+/**
+ * The data model of a permission revocation.
+ */
+export type PermissionRevocationModel = {
+  /**
+   * Optional string that communicates the details of the revocation.
+   */
+  description?: string;
+};
+
+/**
+ * The data model for a permission scope.
+ */
 export type PermissionScope = {
   interface: DwnInterfaceName;
   method: DwnMethodName;
 } | RecordsPermissionScope;
 
-// Method-specific scopes
+/**
+ * The data model for a permission scope that is specific to the Records interface.
+ */
 export type RecordsPermissionScope = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read | DwnMethodName.Write | DwnMethodName.Query | DwnMethodName.Subscribe | DwnMethodName.Delete;

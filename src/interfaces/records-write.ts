@@ -57,12 +57,12 @@ export type RecordsWriteOptions = {
   dataFormat: string;
 
   /**
-   * Signer of the message.
+   * The signer of the message, which is commonly the author, but can also be a delegate.
    */
   signer?: Signer;
 
   /**
-   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   * The delegated grant invoked to sign on behalf of the logical author, which is the grantor of the delegated grant.
    */
   delegatedGrant?: DelegatedGrantMessage;
 
@@ -136,8 +136,9 @@ export type CreateFromOptions = {
   messageTimestamp?: string;
   datePublished?: string;
 
+
   /**
-   * Signer of the message.
+   * The signer of the message, which is commonly the author, but can also be a delegate.
    */
   signer?: Signer;
 
@@ -487,7 +488,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Signs the RecordsWrite, commonly as author, but can also be a delegate.
+   * Signs the RecordsWrite, the signer is commonly the author, but can also be a delegate.
    */
   public async sign(options: {
     signer: Signer,

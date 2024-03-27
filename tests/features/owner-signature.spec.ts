@@ -22,7 +22,7 @@ import { DidKey, UniversalResolver } from '@web5/dids';
 chai.use(chaiAsPromised);
 
 export function testOwnerSignature(): void {
-  describe('owner signature tests', async () => {
+  describe('owner signature', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;

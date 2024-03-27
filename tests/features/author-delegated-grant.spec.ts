@@ -29,7 +29,7 @@ import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, Pe
 chai.use(chaiAsPromised);
 
 export function testAuthorDelegatedGrant(): void {
-  describe('author delegated grant tests', async () => {
+  describe('author delegated grant', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
