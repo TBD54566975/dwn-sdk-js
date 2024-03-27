@@ -15,7 +15,7 @@ import type { RecordsSubscribeOptions } from '../../src/interfaces/records-subsc
 import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
-import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
+import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsWriteTags } from '../../src/types/records-types.js';
 import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
@@ -109,6 +109,7 @@ export type GenerateRecordsWriteInput = {
   protocolPath?: string;
   protocolRole?: string;
   schema?: string;
+  tags?: RecordsWriteTags;
   recordId?: string;
   parentContextId?: string;
   published?: boolean;
@@ -128,6 +129,7 @@ export type GenerateFromRecordsWriteInput = {
   existingWrite: RecordsWrite,
   data?: Uint8Array;
   published?: boolean;
+  tags?: RecordsWriteTags;
   messageTimestamp?: string;
   datePublished?: string;
   protocolRole?: string;
@@ -428,6 +430,7 @@ export class TestDataGenerator {
       protocolPath       : input?.protocolPath,
       protocolRole       : input?.protocolRole,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
+      tags               : input?.tags,
       recordId           : input?.recordId,
       parentContextId    : input?.parentContextId,
       published          : input?.published,
@@ -614,6 +617,7 @@ export class TestDataGenerator {
       datePublished,
       messageTimestamp    : input.messageTimestamp,
       protocolRole        : input.protocolRole,
+      tags                : input.tags,
       signer              : Jws.createSigner(input.author)
     };
 

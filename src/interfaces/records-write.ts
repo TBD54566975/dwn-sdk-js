@@ -12,7 +12,8 @@ import type {
   RecordsWriteAttestationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
-  RecordsWriteSignaturePayload
+  RecordsWriteSignaturePayload,
+  RecordsWriteTags
 } from '../types/records-types.js';
 import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
@@ -39,6 +40,7 @@ export type RecordsWriteOptions = {
   protocolPath?: string;
   protocolRole?: string;
   schema?: string;
+  tags?: RecordsWriteTags;
   recordId?: string;
 
   /**
@@ -133,6 +135,7 @@ export type CreateFromOptions = {
   dataFormat?: string;
 
   published?: boolean;
+  tags?: RecordsWriteTags;
   messageTimestamp?: string;
   datePublished?: string;
 
@@ -343,6 +346,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       protocolPath     : options.protocolPath,
       recipient        : options.recipient,
       schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
+      tags             : options.tags,
       parentId         : RecordsWrite.getRecordIdFromContextId(options.parentContextId),
       dataCid,
       dataSize,
@@ -453,6 +457,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
+      tags               : options.tags,
       data               : options.data,
       dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if new `data` not given, use value from source message
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if new `data` not given, use value from source message
@@ -761,10 +766,11 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;
-    const descriptor = { ...message.descriptor };
+    // we want to process tags separately from the rest of descriptors as it is an object and not a primitive KeyValue type.
+    const { tags, ...descriptor } = message.descriptor;
     delete descriptor.published; // handle `published` specifically further down
 
-    const indexes: KeyValues = {
+    let indexes: KeyValues = {
       ...descriptor,
       isLatestBaseState,
       published : !!message.descriptor.published,
@@ -772,6 +778,13 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       recordId  : message.recordId,
       entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
     };
+
+    // in order to avoid name clashes with first-class index keys
+    // we build the indexes with `tag.property_name` for each tag property.
+    if (tags !== undefined) {
+      const flattenedTags = Records.buildTagIndexes({ ...tags });
+      indexes = { ...indexes, ...flattenedTags };
+    }
 
     // add additional indexes to optional values if given
     // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
@@ -981,7 +994,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'dataFormat', 'datePublished', 'published', 'messageTimestamp'];
+    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'dataFormat', 'datePublished', 'published', 'messageTimestamp', 'tags'];
 
     // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames: string[] = [];
