@@ -205,6 +205,7 @@ export class PermissionsProtocol {
     const recordsWrite = await RecordsWrite.create({
       signer           : options.signer,
       messageTimestamp : options.dateGranted,
+      dateCreated      : options.dateGranted,
       recipient        : options.grantedTo,
       protocol         : PermissionsProtocol.uri,
       protocolPath     : PermissionsProtocol.grantPath,
@@ -234,7 +235,7 @@ export class PermissionsProtocol {
     const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationModel);
     const recordsWrite = await RecordsWrite.create({
       signer          : options.signer,
-      parentContextId : options.grantId,
+      parentContextId : options.grantId, // NOTE: since the grant is the root record, its record ID is also the context ID
       protocol        : PermissionsProtocol.uri,
       protocolPath    : PermissionsProtocol.revocationPath,
       dataFormat      : 'application/json',

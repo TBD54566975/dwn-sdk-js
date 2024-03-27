@@ -5,6 +5,11 @@ import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import { Message } from './message.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
+import { Encoder } from '../utils/encoder.js';
+import type { PermissionGrantModel } from '../types/permissions-grant-descriptor.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 
 export class GrantAuthorization {
 
@@ -52,6 +57,40 @@ export class GrantAuthorization {
     );
   }
 
+  public static async performBaseValidationV2(input: {
+    incomingMessage: GenericMessage,
+    expectedGrantor: string,
+    expectedGrantee: string,
+    permissionsGrantMessage: RecordsWriteMessage,
+    messageStore: MessageStore,
+    }): Promise<void> {
+    const { incomingMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore } = input;
+
+    const incomingMessageDescriptor = incomingMessage.descriptor;
+    const permissionsGrantId = permissionsGrantMessage.recordId;
+    const permissionGrantRecordsWrite = await RecordsWrite.parse(permissionsGrantMessage); // TODO: FIX! inefficient?
+
+    GrantAuthorization.verifyExpectedGrantedToAndGrantedForV2(expectedGrantor, expectedGrantee, permissionGrantRecordsWrite);
+
+    // verify that grant is active during incomingMessage's timestamp
+    const grantedFor = expectedGrantor; // renaming for better readability now that we have verified the grantor above
+    await GrantAuthorization.verifyGrantActiveV2(
+      grantedFor,
+      incomingMessageDescriptor.messageTimestamp,
+      permissionsGrantMessage,
+      permissionsGrantId,
+      messageStore
+    );
+
+    // Check grant scope for interface and method
+    await GrantAuthorization.verifyGrantScopeInterfaceAndMethodV2(
+      incomingMessageDescriptor.interface,
+      incomingMessageDescriptor.method,
+      permissionsGrantMessage,
+      permissionsGrantId
+    );
+  }
+
   /**
    * Fetches PermissionsGrantMessage with CID `permissionsGrantId`.
    * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
@@ -76,6 +115,36 @@ export class GrantAuthorization {
     const permissionsGrantMessage = possibleGrantMessage as PermissionsGrantMessage;
     return permissionsGrantMessage;
   }
+
+  public static async fetchGrantV2(
+    tenant: string,
+    messageStore: MessageStore,
+    permissionsGrantId: string,
+  ): Promise<RecordsWriteMessage> {
+
+    const grantQuery = {
+      recordId          : permissionsGrantId,
+      isLatestBaseState : true
+    };
+    const { messages } = await messageStore.query(tenant, [grantQuery]);
+    const possibleGrantMessage: GenericMessage | undefined = messages[0];
+
+    const dwnInterface = possibleGrantMessage?.descriptor.interface;
+    const dwnMethod = possibleGrantMessage?.descriptor.method;
+
+    if (dwnInterface !== DwnInterfaceName.Records ||
+        dwnMethod !== DwnMethodName.Write ||
+        (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantMissing,
+        `Could not find permission grant with record ID ${permissionsGrantId}.`
+      );
+    }
+
+    const permissionsGrantMessage = possibleGrantMessage as RecordsWriteMessage;
+    return permissionsGrantMessage;
+  }
+
 
   /**
    * Verifies the given `expectedGrantedToInGrant` and `expectedGrantedForInGrant` values against
@@ -103,6 +172,34 @@ export class GrantAuthorization {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
         `PermissionsGrant has grantedFor ${actualGrantedFor}, but need to be granted for ${expectedGrantedForInGrant}`
+      );
+    }
+  }
+
+  /**
+   * Verifies the given `expectedGrantor` and `expectedGrantee` values against
+   * the actual signer and recipient in given permissions grant.
+   * @throws {DwnError} if `expectedGrantedToInGrant` or `expectedGrantedForInGrant` do not match the actual values in the grant.
+   */
+  private static verifyExpectedGrantedToAndGrantedForV2(
+    expectedGrantor: string,
+    expectedGrantee: string,
+    permissionGrantRecordsWrite: RecordsWrite
+  ): void {
+
+    const actualGrantee = permissionGrantRecordsWrite.message.descriptor.recipient;
+    if (expectedGrantee !== actualGrantee) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
+        `Permissions grant is granted to ${actualGrantee}, but need to be granted to ${expectedGrantee}`
+      );
+    }
+
+    const actualGrantor = permissionGrantRecordsWrite.author;
+    if (expectedGrantor !== actualGrantor) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
+        `Permissions grant is granted by ${actualGrantor}, but need to be granted by ${expectedGrantor}`
       );
     }
   }
@@ -153,6 +250,50 @@ export class GrantAuthorization {
     }
   }
 
+  private static async verifyGrantActiveV2(
+    grantedFor: string,
+    incomingMessageTimestamp: string,
+    permissionsGrantMessage: RecordsWriteMessage,
+    permissionsGrantId: string,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // Check that incomingMessage is within the grant's time frame
+    if (incomingMessageTimestamp < permissionsGrantMessage.descriptor.messageTimestamp) {
+      // grant is not yet active
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantNotYetActive,
+        `The message has a timestamp before the associated PermissionsGrant becomes active`,
+      );
+    }
+
+    // // TODO: DO SOMETHING. Super inefficient
+    const permissionsGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
+
+    if (incomingMessageTimestamp >= permissionsGrant.dateExpires) {
+      // grant has expired
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantExpired,
+        `The message has timestamp after the expiry of the associated PermissionsGrant`,
+      );
+    }
+
+    // Check if grant has been revoked
+    const query = {
+      parentId          : permissionsGrantId,
+      isLatestBaseState : true
+    };
+    const { messages: revokes } = await messageStore.query(grantedFor, [query]);
+    const oldestExistingRevoke = await Message.getOldestMessage(revokes);
+
+    if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantRevoked,
+        `PermissionsGrant with CID ${permissionsGrantId} has been revoked`,
+      );
+    }
+  }
+
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
    * @param permissionsGrantId Purely being passed for logging purposes.
@@ -173,6 +314,30 @@ export class GrantAuthorization {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationMethodMismatch,
         `DWN Method of incoming message is outside the scope of PermissionsGrant with CID ${permissionsGrantId}`
+      );
+    }
+  }
+
+  private static async verifyGrantScopeInterfaceAndMethodV2(
+    dwnInterface: string,
+    dwnMethod: string,
+    permissionsGrantMessage: RecordsWriteMessage,
+    permissionsGrantId: string
+  ): Promise<void> {
+
+    // // TODO: DO SOMETHING. Super inefficient
+    const permissionsGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
+
+    if (dwnInterface !== permissionsGrant.scope.interface) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationInterfaceMismatch,
+        `DWN Interface of incoming message is outside the scope of permission grant with ID ${permissionsGrantId}`
+      );
+    } else if (dwnMethod !== permissionsGrant.scope.method) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationMethodMismatch,
+        `DWN Method of incoming message is outside the scope of permission grant with ID ${permissionsGrantId}`
       );
     }
   }

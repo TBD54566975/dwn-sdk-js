@@ -77,11 +77,6 @@ export function testSubscriptionScenarios(): void {
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
         expect(write1Reply.status.code).to.equal(202);
 
-        const grant1 = await TestDataGenerator.generatePermissionsGrant({ author: alice });
-        const grant1MessageCid = await Message.getCid(grant1.message);
-        const grant1Reply = await dwn.processMessage(alice.did, grant1.message);
-        expect(grant1Reply.status.code).to.equal(202);
-
         const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
         const protocol1MessageCid = await Message.getCid(protocol1.message);
         const protocol1Reply = await dwn.processMessage(alice.did, protocol1.message);
@@ -103,17 +98,17 @@ export function testSubscriptionScenarios(): void {
         await Time.minimalSleep();
 
         // test the messageCids array for the appropriate messages
-        expect(messageCids.length).to.equal(4);
-        expect(messageCids).to.eql([ write1MessageCid, grant1MessageCid, protocol1MessageCid, delete1MessageCid ]);
+        expect(messageCids.length).to.equal(3);
+        expect(messageCids).to.eql([ write1MessageCid, protocol1MessageCid, delete1MessageCid ]);
       });
 
       it('filters by interface type', async () => {
         // scenario:
-        // alice subscribes to 3 different message interfaces (Permissions, Records, Grants)
-        // alice creates (3) messages, (RecordsWrite, PermissionsGrant and ProtocolsConfigure
+        // alice subscribes to 2 different message interfaces (Records, Grants)
+        // alice creates (2) messages, (RecordsWrite and ProtocolsConfigure)
         // alice checks that each handler emitted the appropriate message
         // alice deletes the record, and revokes the grant
-        // alice checks that the Records and Permissions handlers emitted the appropriate message
+        // alice checks that the Records and Protocols handlers emitted the appropriate message
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe to records
@@ -135,26 +130,6 @@ export function testSubscriptionScenarios(): void {
         );
         expect(recordsInterfaceSubscriptionReply.status.code).to.equal(200);
         expect(recordsInterfaceSubscriptionReply.subscription).to.exist;
-
-        // subscribe to permissions
-        const permissionsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
-          author  : alice,
-          filters : [{ interface: DwnInterfaceName.Permissions }]
-        });
-        const permissionsMessageCids:string[] = [];
-        const permissionsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
-          const { message } = event;
-          const messageCid = await Message.getCid(message);
-          permissionsMessageCids.push(messageCid);
-        };
-
-        const permissionsInterfaceSubscriptionReply = await dwn.processMessage(
-          alice.did,
-          permissionsInterfaceSubscription.message,
-          { subscriptionHandler: permissionsSubscribeHandler }
-        );
-        expect(permissionsInterfaceSubscriptionReply.status.code).to.equal(200);
-        expect(permissionsInterfaceSubscriptionReply.subscription).to.exist;
 
         // subscribe to protocols
         const protocolsInterfaceSubscription = await TestDataGenerator.generateEventsSubscribe({
@@ -178,24 +153,17 @@ export function testSubscriptionScenarios(): void {
 
         // create one of each message types
         const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
         const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
         // insert data
         const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-        const grantReply = await dwn.processMessage(alice.did, grant.message);
         const protocolReply = await dwn.processMessage(alice.did, protocol.message);
         expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
-        expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
         expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
         // check record message
         expect(recordsMessageCids.length).to.equal(1);
         expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
-
-        // check permissions message
-        expect(permissionsMessageCids.length).to.equal(1);
-        expect(permissionsMessageCids).to.have.members([ await Message.getCid(grant.message) ]);
 
         // check protocols message
         expect(protocolsMessageCids.length).to.equal(1);
@@ -203,21 +171,12 @@ export function testSubscriptionScenarios(): void {
 
         // insert additional data to query beyond a cursor
         const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
-        const revokeGrant = await TestDataGenerator.generatePermissionsRevoke({
-          author: alice, permissionsGrantId: await Message.getCid(grant.message)
-        });
         const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
-        const revokeGrantReply = await dwn.processMessage(alice.did, revokeGrant.message);
         expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
-        expect(revokeGrantReply.status.code).to.equal(202, 'PermissionsRevoke');
 
         // check record messages to include the delete message
         expect(recordsMessageCids.length).to.equal(2);
         expect(recordsMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
-
-        // check permissions messages to include the revoke message
-        expect(permissionsMessageCids.length).to.equal(2);
-        expect(permissionsMessageCids).to.include.members([ await Message.getCid(revokeGrant.message) ]);
 
         // protocols remains unchanged
         expect(protocolsMessageCids.length).to.equal(1);
@@ -225,7 +184,7 @@ export function testSubscriptionScenarios(): void {
 
       it('filters by method type', async () => {
         // scenario:
-        // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure, PermissionsGrant)
+        // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure)
         // alice queries for only RecordsWrite messages
         // alice creates more messages to query beyond a cursor
 

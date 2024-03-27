@@ -107,32 +107,6 @@ export class PermissionsGrant extends AbstractMessage<PermissionsGrantMessage> {
     return message as DelegatedGrantMessage;
   }
 
-
-  /**
-   * generates a PermissionsGrant using the provided PermissionsRequest
-   * @param permissionsRequest
-   * @param signer - the private key and additional signature material of the grantor
-   * @param overrides - overrides that will be used instead of the properties in `permissionsRequest`
-   */
-  public static async createFromPermissionsRequest(
-    permissionsRequest: PermissionsRequest,
-    signer: Signer,
-    overrides: CreateFromPermissionsRequestOverrides,
-  ): Promise<PermissionsGrant> {
-    const descriptor = permissionsRequest.message.descriptor;
-    return PermissionsGrant.create({
-      dateExpires          : overrides.dateExpires,
-      description          : overrides.description ?? descriptor.description,
-      grantedBy            : overrides.grantedBy ?? descriptor.grantedBy,
-      grantedTo            : overrides.grantedTo ?? descriptor.grantedTo,
-      grantedFor           : overrides.grantedFor ?? descriptor.grantedFor,
-      permissionsRequestId : await Message.getCid(permissionsRequest.message),
-      scope                : overrides.scope ?? descriptor.scope,
-      conditions           : overrides.conditions ?? descriptor.conditions,
-      signer,
-    });
-  }
-
   /**
    * Current implementation only allows the DWN owner to store grants they created.
    */

@@ -53,53 +53,45 @@ export function testEventsQueryScenarios(): void {
     it('supports multiple filter types', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
       // insert data
       const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-      const grantReply = await dwn.processMessage(alice.did, grant.message);
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
       expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
-      expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       const eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [
-          { interface: DwnInterfaceName.Permissions }, // PermissionsGrant
           { recordId: record.message.recordId }, // RecordsWrite
           { protocol: protocol.message.descriptor.definition.protocol } // ProtocolConfigure
         ],
       });
       const recordEventsReply = await dwn.processMessage(alice.did, eventsQueryRecords.message);
       expect(recordEventsReply.status.code).to.equal(200);
-      expect(recordEventsReply.entries?.length).to.equal(3);
+      expect(recordEventsReply.entries?.length).to.equal(2);
       expect(recordEventsReply.entries).to.have.members([
         await Message.getCid(record.message),
-        await Message.getCid(grant.message),
         await Message.getCid(protocol.message),
       ]);
     });
 
     it('filters by interface type', async () => {
       // scenario:
-      // alice creates 3 different types of messages (RecordsWrite, PermissionsGrant, ProtocolsConfigure)
-      // alice queries for messages from each interface respectively (Records, Permissions, Protocols)
+      // alice creates 2 different types of messages (RecordsWrite, ProtocolsConfigure)
+      // alice queries for messages from each interface respectively (Records, Protocols)
       // alice creates 2 additional messages (RecordsDelete, ProtocolsRevoke)
       // alice queries for messages for each interface respectively providing a cursor.
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
       // insert data
       const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-      const grantReply = await dwn.processMessage(alice.did, grant.message);
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
       expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
-      expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       let eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
@@ -110,15 +102,6 @@ export function testEventsQueryScenarios(): void {
       expect(recordEventsReply.status.code).to.equal(200);
       expect(recordEventsReply.entries?.length).to.equal(1);
       expect(recordEventsReply.entries![0]).to.equal(await Message.getCid(record.message!));
-
-      let eventsQueryGrants = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ interface: DwnInterfaceName.Permissions }],
-      });
-      const grantEventsReply = await dwn.processMessage(alice.did, eventsQueryGrants.message);
-      expect(grantEventsReply.status.code).to.equal(200);
-      expect(grantEventsReply.entries?.length).to.equal(1);
-      expect(grantEventsReply.entries![0]).to.equal(await Message.getCid(grant.message!));
 
       let eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -132,13 +115,8 @@ export function testEventsQueryScenarios(): void {
 
       // insert additional data to query beyond a cursor
       const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
-      const revokeGrant = await TestDataGenerator.generatePermissionsRevoke({
-        author: alice, permissionsGrantId: await Message.getCid(grant.message)
-      });
       const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
-      const revokeGrantReply = await dwn.processMessage(alice.did, revokeGrant.message);
       expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
-      expect(revokeGrantReply.status.code).to.equal(202, 'PermissionsRevoke');
 
       // query after cursor
       eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
@@ -150,16 +128,6 @@ export function testEventsQueryScenarios(): void {
       expect(recordEventsReplyAfterCursor.status.code).to.equal(200);
       expect(recordEventsReplyAfterCursor.entries?.length).to.equal(1);
       expect(recordEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(recordDelete.message!));
-
-      eventsQueryGrants = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ interface: DwnInterfaceName.Permissions }],
-        cursor  : grantEventsReply.cursor, // the cursor from the prior query
-      });
-      const grantEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryGrants.message);
-      expect(grantEventsReplyAfterCursor.status.code).to.equal(200);
-      expect(grantEventsReplyAfterCursor.entries?.length).to.equal(1);
-      expect(grantEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(revokeGrant.message!));
 
       eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -173,7 +141,7 @@ export function testEventsQueryScenarios(): void {
 
     it('filters by method type', async () => {
       // scenario:
-      // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure, PermissionsGrant)
+      // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure)
       // alice queries for only RecordsWrite messages
       // alice creates more messages to query beyond a cursor
 
@@ -185,9 +153,6 @@ export function testEventsQueryScenarios(): void {
       expect(record1Reply.status.code).to.equal(202, 'RecordsWrite');
 
       // other messages
-      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
-      const grantReply = await dwn.processMessage(alice.did, grant.message);
-      expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
@@ -216,13 +181,8 @@ export function testEventsQueryScenarios(): void {
 
       // additional messages
       const record2Update = await TestDataGenerator.generateFromRecordsWrite({ author: alice, existingWrite: record2.recordsWrite });
-      const revokeGrant = await TestDataGenerator.generatePermissionsRevoke({
-        author: alice, permissionsGrantId: await Message.getCid(grant.message)
-      });
       const record2UpdateReply = await dwn.processMessage(alice.did, record2Update.message, { dataStream: record2Update.dataStream });
-      const revokeGrantReply = await dwn.processMessage(alice.did, revokeGrant.message);
       expect(record2UpdateReply.status.code).to.equal(202, 'RecordsDelete');
-      expect(revokeGrantReply.status.code).to.equal(202, 'PermissionsRevoke');
 
       recordsWriteEvents = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -238,26 +198,22 @@ export function testEventsQueryScenarios(): void {
 
     it('filters by a dateUpdated (messageTimestamp) range across different message types', async () => {
       // scenario:
-      // alice creates (3) messages, (RecordsWrite, PermissionsGrant and ProtocolsConfigure
+      // alice creates (2) messages, (RecordsWrite and ProtocolsConfigure)
       // each message on the first date of the year (2021, 2022 and 2023 respectively.
-      // alice queries for all records beyond the last day of 2021 and should return 2 of the 3 messages (Grant and ProtocolConfigure)
+      // alice queries for all records beyond the last day of 2021 and should return 1 of the 2 messages (ProtocolConfigure)
       // alice then creates a RecordsDelete message for the original RecordsWrite
       // alice queries once again however supplying a cursor of the last message from the prior query, returning the RecordsDelete message.
       const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
-      const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
       const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const write = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
-      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice, messageTimestamp: firstDayOf2022 });
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice, messageTimestamp: firstDayOf2023 });
 
       // insert data
       const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
-      const grantReply = await dwn.processMessage(alice.did, grant.message);
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
       expect(writeReply.status.code).to.equal(202, 'RecordsWrite');
-      expect(grantReply.status.code).to.equal(202, 'PermissionsGrant');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       // query from last day of 2021
@@ -268,10 +224,8 @@ export function testEventsQueryScenarios(): void {
       });
       let reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
-      expect(reply1.entries?.length).to.equal(2);
-      expect(reply1.entries![0]).to.equal(await Message.getCid(grant.message!));
-      expect(reply1.entries![1]).to.equal(await Message.getCid(protocol.message!));
-
+      expect(reply1.entries?.length).to.equal(1);
+      expect(reply1.entries![0]).to.equal(await Message.getCid(protocol.message!));
 
       // delete the RecordsWrite
       const delete1 = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write.message.recordId });

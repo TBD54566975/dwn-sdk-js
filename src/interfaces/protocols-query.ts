@@ -78,11 +78,11 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     if (this.author === tenant) {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
-      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
-      await GrantAuthorization.performBaseValidation({
-        incomingMessage           : this.message,
-        expectedGrantedToInGrant  : this.author,
-        expectedGrantedForInGrant : tenant,
+      const permissionsGrantMessage = await GrantAuthorization.fetchGrantV2(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
+      await GrantAuthorization.performBaseValidationV2({
+        incomingMessage : this.message,
+        expectedGrantor : tenant,
+        expectedGrantee : this.author,
         permissionsGrantMessage,
         messageStore
       });
