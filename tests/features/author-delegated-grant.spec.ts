@@ -29,7 +29,7 @@ import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, Pe
 chai.use(chaiAsPromised);
 
 export function testAuthorDelegatedGrant(): void {
-  describe('author delegated grant', async () => {
+  describe.only('author delegated grant', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -87,7 +87,7 @@ export function testAuthorDelegatedGrant(): void {
         // Bob creates a chat message invoking the delegated grant (ID) but does not include the author-delegated grant (we remove it below)
         const recordsWrite = await RecordsWrite.create({
           signer         : Jws.createSigner(bob),
-          delegatedGrant : grantToBob.recordsWrite.message,
+          delegatedGrant : grantToBob.dataEncodedMessage,
           dataFormat     : 'application/octet-stream',
           data           : TestDataGenerator.randomBytes(10),
         });
@@ -121,7 +121,7 @@ export function testAuthorDelegatedGrant(): void {
         // but does not reference the grant ID in author signature (we remove it below)
         const recordsWrite = await RecordsWrite.create({
           signer         : Jws.createSigner(bob),
-          delegatedGrant : grantToBob.recordsWrite.message,
+          delegatedGrant : grantToBob.dataEncodedMessage,
           dataFormat     : 'application/octet-stream',
           data           : TestDataGenerator.randomBytes(10),
         });
@@ -185,7 +185,7 @@ export function testAuthorDelegatedGrant(): void {
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,
@@ -218,7 +218,7 @@ export function testAuthorDelegatedGrant(): void {
         recordsWriteMessage : fetchedDeviceXWrite.message,
         data                : deviceYData,
         signer              : Jws.createSigner(deviceY),
-        delegatedGrant      : deviceYGrant.recordsWrite.message,
+        delegatedGrant      : deviceYGrant.dataEncodedMessage,
       });
 
       const deviceYWriteReply = await dwn.processMessage(bob.did, messageByDeviceY.message, { dataStream: deviceYDataStream });
@@ -239,7 +239,7 @@ export function testAuthorDelegatedGrant(): void {
       const messageByCarolAsAlice = new TextEncoder().encode('Message from Carol pretending to be Alice');
       const writeByCarolAsAlice = await RecordsWrite.create({
         signer         : Jws.createSigner(carol),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,
@@ -357,7 +357,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X is able to query for the chat message from Bob's DWN
       const recordsQueryByDeviceX = await RecordsQuery.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : queryGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : queryGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           protocol,
@@ -372,7 +372,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X is able to read the chat message from Bob's DWN
       const recordsReadByDeviceX = await RecordsRead.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : readGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : readGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           recordId: chatRecord.message.recordId
@@ -385,7 +385,7 @@ export function testAuthorDelegatedGrant(): void {
       // Verify that Carol cannot query as Alice by invoking the delegated grant granted to Device X
       const recordsQueryByCarol = await RecordsQuery.create({
         signer         : Jws.createSigner(carol),
-        delegatedGrant : readGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : readGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           protocol,
@@ -400,7 +400,7 @@ export function testAuthorDelegatedGrant(): void {
       // Verify that Carol cannot read as Alice by invoking the delegated grant granted to Device X
       const recordsReadByCarol = await RecordsRead.create({
         signer         : Jws.createSigner(carol),
-        delegatedGrant : readGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : readGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           recordId: chatRecord.message.recordId
@@ -484,7 +484,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X is able to subscribe the chat message from Bob's DWN
       const recordsSubscribeByDeviceX = await RecordsSubscribe.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : subscribeGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : subscribeGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           contextId    : threadRecord.message.contextId,
@@ -500,7 +500,7 @@ export function testAuthorDelegatedGrant(): void {
       // Verify that Carol cannot subscribe as Alice by invoking the delegated grant granted to Device X
       const recordsSubscribeByCarol = await RecordsSubscribe.create({
         signer         : Jws.createSigner(carol),
-        delegatedGrant : subscribeGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : subscribeGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           contextId    : threadRecord.message.contextId,
@@ -608,7 +608,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify Carol is not able to delete Carol's chat message from Bob's DWN
       const recordsDeleteByCarol = await RecordsDelete.create({
         signer         : Jws.createSigner(carol),
-        delegatedGrant : deleteGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : deleteGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         recordId       : chatRecord.message.recordId
       });
@@ -627,7 +627,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X is able to delete Carol's chat message from Bob's DWN
       const recordsDeleteByDeviceX = await RecordsDelete.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deleteGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : deleteGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'globalAdmin',
         recordId       : chatRecord.message.recordId
       });
@@ -680,7 +680,7 @@ export function testAuthorDelegatedGrant(): void {
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,
@@ -751,7 +751,7 @@ export function testAuthorDelegatedGrant(): void {
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'email', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.email.schema,
@@ -865,7 +865,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X querying for the chat message from Bob's DWN fails
       const recordsQueryByDeviceX = await RecordsQuery.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : queryGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : queryGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           protocol,
@@ -880,7 +880,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X reading for the chat message from Bob's DWN fails
       const recordsReadByDeviceX = await RecordsRead.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : readGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : readGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           recordId: chatRecord.message.recordId
@@ -893,7 +893,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X subscribing to the chat message from Bob's DWN fails
       const recordsSubscribeByDeviceX = await RecordsSubscribe.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : subscribeGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : subscribeGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'thread/participant',
         filter         : {
           protocol,
@@ -985,7 +985,7 @@ export function testAuthorDelegatedGrant(): void {
       // verify device X is NOT able to delete Carol's chat message from Bob's DWN
       const recordsDeleteByDeviceX = await RecordsDelete.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : delegatedGrantForDeviceX.recordsWrite.message,
+        delegatedGrant : delegatedGrantForDeviceX.dataEncodedMessage,
         protocolRole   : 'globalAdmin',
         recordId       : chatRecord.message.recordId
       });
@@ -1038,7 +1038,7 @@ export function testAuthorDelegatedGrant(): void {
         signer      : Jws.createSigner(alice)
       });
 
-      const deviceXGrantMessage = deviceXGrant.recordsWrite.message;
+      const deviceXGrantMessage = deviceXGrant.dataEncodedMessage;
       deviceXGrantMessage.authorization.signature.signatures[0].signature = await TestDataGenerator.randomSignatureString();
 
       // 3. Verify that device X cannot write a `RecordsWrite` message to Bob's DWN as Alice using the delegated grant with invalid grantor signature
@@ -1118,7 +1118,7 @@ export function testAuthorDelegatedGrant(): void {
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,
@@ -1126,7 +1126,7 @@ export function testAuthorDelegatedGrant(): void {
         data           : deviceXData
       });
 
-      messageByDeviceX.message.authorization.authorDelegatedGrant = deviceXGrant2.recordsWrite.message; // intentionally have a mismatching grant
+      messageByDeviceX.message.authorization.authorDelegatedGrant = deviceXGrant2.dataEncodedMessage; // intentionally have a mismatching grant
 
       const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, { dataStream: deviceXDataStream });
       expect(deviceXWriteReply.status.code).to.equal(400);
@@ -1177,24 +1177,25 @@ export function testAuthorDelegatedGrant(): void {
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
-
-      const permissionsGrantReply = await dwn.processMessage(alice.did, deviceXGrant.recordsWrite.message);
+      const deviceXGrantDataStream = DataStream.fromBytes(deviceXGrant.permissionGrantBytes);
+      const permissionsGrantReply = await dwn.processMessage(alice.did, deviceXGrant.recordsWrite.message, { dataStream: deviceXGrantDataStream });
       expect(permissionsGrantReply.status.code).to.equal(202);
 
       // 3. Alice revokes the grant
-      const permissionsRevoke = await PermissionsRevoke.create({
-        signer             : Jws.createSigner(alice),
-        permissionsGrantId : await Message.getCid(deviceXGrant.recordsWrite.message)
+      const permissionRevoke = await PermissionsProtocol.createRevocation({
+        signer  : Jws.createSigner(alice),
+        grantId : deviceXGrant.recordsWrite.message.recordId
       });
-      const permissionsRevokeReply = await dwn.processMessage(alice.did, permissionsRevoke.message);
-      expect(permissionsRevokeReply.status.code).to.equal(202);
+      const revocationDataStream = DataStream.fromBytes(permissionRevoke.permissionRevocationBytes);
+      const permissionRevokeReply = await dwn.processMessage(alice.did, permissionRevoke.recordsWrite.message, { dataStream: revocationDataStream });
+      expect(permissionRevokeReply.status.code).to.equal(202);
 
       // 3. Verify that device X cannot write a `RecordsWrite` message to Bob's DWN as Alice using a mismatching delegated grant ID
       const deviceXData = new TextEncoder().encode('message from device X');
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,
@@ -1256,7 +1257,7 @@ export function testAuthorDelegatedGrant(): void {
       const deviceXDataStream = DataStream.fromBytes(deviceXData);
       const messageByDeviceX = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
-        delegatedGrant : deviceXGrant.recordsWrite.message,
+        delegatedGrant : deviceXGrant.dataEncodedMessage,
         protocol,
         protocolPath   : 'message', // this comes from `types` in protocol definition
         schema         : protocolDefinition.types.message.schema,

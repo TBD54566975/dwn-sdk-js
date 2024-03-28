@@ -24,7 +24,7 @@ import { DwnInterfaceName, DwnMethodName, Encoder, PermissionsProtocol, Protocol
 chai.use(chaiAsPromised);
 
 export function testOwnerDelegatedGrant(): void {
-  describe.only('owner delegated grant', async () => {
+  describe('owner delegated grant', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
