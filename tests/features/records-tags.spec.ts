@@ -7,8 +7,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import tagsProtocol from '../vectors/protocol-definitions/tags.json' assert { type: 'json' };
-
 import { DidKey } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
@@ -24,7 +22,7 @@ import { DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.
 chai.use(chaiAsPromised);
 
 export function testRecordsTags(): void {
-  describe.only('Records Tags', () => {
+  describe('Records Tags', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -237,10 +235,28 @@ export function testRecordsTags(): void {
         it('should reject a record with a tag property that does not match the protocol definition tags', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
+          // has a `knownTag` tag in the protocol definition
+          const protocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  knownTag: {
+                    type: 'string',
+                  },
+                }
+              }
+            },
+          };
+
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -250,7 +266,7 @@ export function testRecordsTags(): void {
           const fooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               unknownTag: 'some-value'
@@ -262,16 +278,49 @@ export function testRecordsTags(): void {
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
 
           // ensure the correct tag descriptor is in the error message
-          expect(fooRecordReply.status.detail).to.contain(`${tagsProtocol.protocol}/foo/$tags must NOT have additional properties`);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags must NOT have additional properties`);
+
+          // write a foo record with a `knownTag` tag.
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              knownTag: 'some-value'
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
         });
 
-        it('should reject a record with a tag value that does not match the type in the protocol definition', async () => {
+        it('should reject a tag value that does not match the boolean type', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with a boolean type for a tag
+          const protocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  draft: {
+                    type: 'boolean'
+                  }
+                }
+              }
+            },
+          };
 
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -281,7 +330,7 @@ export function testRecordsTags(): void {
           const fooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               draft: 'true'
@@ -296,7 +345,7 @@ export function testRecordsTags(): void {
           const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               draft: true
@@ -310,10 +359,29 @@ export function testRecordsTags(): void {
         it('should reject a record with a tag value that does not match a given enum in the protocol definition', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
+          // protocol with an enum for a tag
+          const protocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  status: {
+                    type : 'string',
+                    enum : [ 'draft', 'published', 'archived' ]
+                  },
+                }
+              }
+            },
+          };
+
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -323,7 +391,7 @@ export function testRecordsTags(): void {
           const fooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               status: 'unknown_status'
@@ -335,16 +403,51 @@ export function testRecordsTags(): void {
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
 
           // ensure the correct tag descriptor path is in the error message
-          expect(fooRecordReply.status.detail).to.contain(`${tagsProtocol.protocol}/foo/$tags/status`);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/status`);
+
+          // write a foo record with a valid `status` tag value.
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              status: 'draft'
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
         });
 
         it('should reject a record with a tag value that is not within the `minimum` and `maximum` range', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
+          // protocol with minimum and maximum for a number
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  score: {
+                    type    : 'number',
+                    minimum : 0,
+                    maximum : 100
+                  },
+                }
+              }
+            },
+          };
+
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -354,7 +457,7 @@ export function testRecordsTags(): void {
           const fooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               score: -1,
@@ -370,7 +473,7 @@ export function testRecordsTags(): void {
           const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               score: 101,
@@ -386,7 +489,7 @@ export function testRecordsTags(): void {
           const validFooMaxRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               score: 100,
@@ -401,7 +504,7 @@ export function testRecordsTags(): void {
           const validFooMinRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               score: 0,
@@ -415,7 +518,7 @@ export function testRecordsTags(): void {
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               score: 50,
@@ -429,10 +532,30 @@ export function testRecordsTags(): void {
         it('should reject a record with a tag value that is not within the `exclusiveMinimum` and `exclusiveMaximum` range', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
+          // protocol with exclusiveMinimum and exclusiveMaximum for a number
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  hours: {
+                    type             : 'number',
+                    exclusiveMinimum : 0,
+                    exclusiveMaximum : 24
+                  },
+                }
+              }
+            },
+          };
+
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -442,7 +565,7 @@ export function testRecordsTags(): void {
           const exclusiveMaxRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               hours: 24,
@@ -458,7 +581,7 @@ export function testRecordsTags(): void {
           const exclusiveMinRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               hours: 0,
@@ -474,7 +597,7 @@ export function testRecordsTags(): void {
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               hours: 12,
@@ -489,10 +612,30 @@ export function testRecordsTags(): void {
         it('should reject tag values that are not within the `minLength` and `maxLength` values', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
+          // protocol with minLength and maxLength for a string
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  stringWithLimit: {
+                    type      : 'string',
+                    maxLength : 10,
+                    minLength : 5
+                  },
+                }
+              }
+            },
+          };
+
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -503,7 +646,7 @@ export function testRecordsTags(): void {
           const minLengthRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               stringWithLimit: 'a', // less than 5
@@ -519,7 +662,7 @@ export function testRecordsTags(): void {
           const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               stringWithLimit: 'abcdefghijklmnopqrstuvwxyz', //more than 10
@@ -535,7 +678,7 @@ export function testRecordsTags(): void {
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               stringWithLimit: 'abcdef', // more than 5 less than 10
@@ -547,13 +690,36 @@ export function testRecordsTags(): void {
           expect(validFooRecordReply.status.code).to.equal(202);
         });
 
-        it('should reject tag values that are do not contain the number of items within the `minItems` and `maxItems` values', async () => {
+        it('should reject tag values that do not contain the number of items within the `minItems` and `maxItems` values', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with minItems and maxItems for an array of numbers
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  numberArray: {
+                    type     : 'array',
+                    minItems : 2,
+                    maxItems : 3,
+                    items    : {
+                      type: 'number',
+                    }
+                  },
+                }
+              }
+            },
+          };
 
           // configure tags protocol
           const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : tagsProtocol,
+            author: alice,
+            protocolDefinition,
           });
 
           const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
@@ -564,7 +730,7 @@ export function testRecordsTags(): void {
           const minLengthRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               numberArray: [1] // less than 2
@@ -580,7 +746,7 @@ export function testRecordsTags(): void {
           const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               numberArray: [2,4,6,8] // more than 3
@@ -596,7 +762,7 @@ export function testRecordsTags(): void {
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             published    : true,
-            protocol     : tagsProtocol.protocol,
+            protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
             tags         : {
               numberArray: [2,3,4] // within the range
