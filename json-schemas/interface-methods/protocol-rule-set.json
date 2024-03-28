@@ -122,10 +122,19 @@
               "patternProperties": {
                 "type": {
                   "enum": ["string", "number"]
-                }
+                },
+                "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
             },
-            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems)$": {
+            "contains": {
+              "patternProperties": {
+                "type": {
+                  "enum": ["string", "number"]
+                },
+                "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
+              }
+            },
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
             }
           }
         }
