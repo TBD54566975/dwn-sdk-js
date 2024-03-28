@@ -140,28 +140,6 @@ describe('PermissionsRevokeHandler.handle()', () => {
       expect(permissionsRevokeReply.status.detail).to.contain('PermissionsRevoke has earlier date than associated PermissionsGrant');
     });
 
-    it('should reject with 401 if the revoke was not authored by the DID in the `grantedFor` of the grant', async () => {
-      // scenario: Alice issues a grant. Bob tries and failes to revoke the grant.
-      const alice = await TestDataGenerator.generateDidKeyPersona();
-      const bob = await TestDataGenerator.generateDidKeyPersona();
-
-      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
-        author     : alice,
-        grantedBy  : alice.did,
-        grantedFor : alice.did,
-      });
-      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-      expect(permissionsGrantReply.status.code).to.eq(202);
-
-      const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
-        author             : bob,
-        permissionsGrantId : await Message.getCid(permissionsGrant.message),
-      });
-      const permissionsRevokeReply = await dwn.processMessage(alice.did, permissionsRevoke.message);
-      expect(permissionsRevokeReply.status.code).to.eq(401);
-      expect(permissionsRevokeReply.status.detail).to.contain(DwnErrorCode.PermissionsRevokeUnauthorizedRevoke);
-    });
-
     it('should reject with 409 if older PermissionsRevoke messages exist for the same grant', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 

@@ -25,7 +25,7 @@ export type RecordsReadOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 };
 
 export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
@@ -92,8 +92,8 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
     await RecordsGrantAuthorization.authorizeRead({
       recordsReadMessage          : this.message,
       recordsWriteMessageToBeRead : matchedRecordsWrite,
-      expectedGrantedToInGrant    : this.signer!,
-      expectedGrantedForInGrant   : this.author!,
+      expectedGrantor             : this.author!,
+      expectedGrantee             : this.signer!,
       permissionsGrantMessage     : delegatedGrant,
       messageStore
     });

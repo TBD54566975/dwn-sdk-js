@@ -2,7 +2,7 @@ import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Filter } from '../types/query-types.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
@@ -15,6 +15,7 @@ import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
+import type { PermissionGrantModel } from '../types/permissions-grant-descriptor.js';
 
 /**
  * Class containing useful utilities related to the Records interface.
@@ -343,14 +344,18 @@ export class Records {
 
     if (authorDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.authorDelegatedGrant!;
-      if (delegatedGrant.descriptor.delegated !== true) {
+
+      // TODO: DO SOMETHING. Super inefficient
+      const permissionGrantEncoded = (delegatedGrant as RecordsQueryReplyEntry).encodedData!;
+      const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
+      if (permissionGrantModel.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsAuthorDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
         );
       }
 
-      const grantedTo = delegatedGrant.descriptor.grantedTo;
+      const grantedTo = delegatedGrant.descriptor.recipient;
       const signer = Message.getSigner(message);
       if (grantedTo !== signer) {
         throw new DwnError(
@@ -385,14 +390,19 @@ export class Records {
 
     if (ownerDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.ownerDelegatedGrant!;
-      if (delegatedGrant.descriptor.delegated !== true) {
+
+      // TODO: DO SOMETHING. Super inefficient
+      const permissionGrantEncoded = (delegatedGrant as RecordsQueryReplyEntry).encodedData!;
+      const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
+
+      if (permissionGrantModel.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsOwnerDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
         );
       }
 
-      const grantedTo = delegatedGrant.descriptor.grantedTo;
+      const grantedTo = delegatedGrant.descriptor.recipient;
       const signer = Jws.getSignerDid(message.authorization!.ownerSignature!.signatures[0]);
       if (grantedTo !== signer) {
         throw new DwnError(

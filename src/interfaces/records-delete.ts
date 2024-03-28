@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
@@ -21,7 +20,7 @@ export type RecordsDeleteOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 };
 
 export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
@@ -104,11 +103,11 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   public async authorizeDelegate(recordsWriteToDelete: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
     const delegatedGrantMessage = this.message.authorization!.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeDelete({
-      recordsDeleteMessage      : this.message,
+      recordsDeleteMessage    : this.message,
       recordsWriteToDelete,
-      expectedGrantedToInGrant  : this.signer!,
-      expectedGrantedForInGrant : this.author!,
-      permissionsGrantMessage   : delegatedGrantMessage,
+      expectedGrantor         : this.author!,
+      expectedGrantee         : this.signer!,
+      permissionsGrantMessage : delegatedGrantMessage,
       messageStore
     });
   }

@@ -64,7 +64,7 @@ export type RecordsWriteOptions = {
   /**
    * The delegated grant invoked to sign on behalf of the logical author, which is the grantor of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -145,7 +145,7 @@ export type CreateFromOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -492,7 +492,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public async sign(options: {
     signer: Signer,
-    delegatedGrant?: DelegatedGrantMessage,
+    delegatedGrant?: RecordsWriteMessage,
     permissionsGrantId?: string,
     protocolRole?: string
   }): Promise<void> {
@@ -577,7 +577,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * This is used when a DWN owner-delegate wants to retain a copy of a message that the owner did not author.
    * NOTE: requires the `RecordsWrite` to already have the author's signature.
    */
-  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: DelegatedGrantMessage): Promise<void> {
+  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: RecordsWriteMessage): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor,
@@ -788,10 +788,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage       : this.message,
-      expectedGrantedToInGrant  : this.signer!,
-      expectedGrantedForInGrant : this.author!,
-      permissionsGrantMessage   : delegatedGrant,
+      recordsWriteMessage     : this.message,
+      expectedGrantor         : this.author!,
+      expectedGrantee         : this.signer!,
+      permissionsGrantMessage : delegatedGrant,
       messageStore
     });
   }
@@ -803,10 +803,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization.ownerDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage       : this.message,
-      expectedGrantedToInGrant  : this.ownerSignatureSigner!,
-      expectedGrantedForInGrant : this.owner!,
-      permissionsGrantMessage   : delegatedGrant,
+      recordsWriteMessage     : this.message,
+      expectedGrantor         : this.owner!,
+      expectedGrantee         : this.ownerSignatureSigner!,
+      permissionsGrantMessage : delegatedGrant,
       messageStore
     });
   }

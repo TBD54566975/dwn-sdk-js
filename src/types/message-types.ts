@@ -1,6 +1,7 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
 import type { PaginationCursor, SortDirection } from './query-types.js';
+import type { RecordsWriteMessage } from './records-types.js';
 
 /**
  * Intersection type for all concrete message types.
@@ -23,7 +24,7 @@ export type AuthorizationModel = {
   /**
    * The delegated grant required when the message is signed by an author-delegate.
    */
-  authorDelegatedGrant?: DelegatedGrantMessage;
+  authorDelegatedGrant?: RecordsWriteMessage;
 
   /**
    * An "overriding" signature for a DWN owner or owner-delegate to store a message authored by another entity.
@@ -33,7 +34,7 @@ export type AuthorizationModel = {
   /**
    * The delegated grant required when the message is signed by an owner-delegate.
    */
-  ownerDelegatedGrant?: DelegatedGrantMessage;
+  ownerDelegatedGrant?: RecordsWriteMessage;
 };
 
 /**

@@ -1,7 +1,7 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
-import type { RecordsFilter, RecordsSubscribeDescriptor, RecordsSubscribeMessage } from '../types/records-types.js';
+import type { RecordsFilter, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
@@ -22,7 +22,7 @@ export type RecordsSubscribeOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 };
 
 /**
@@ -94,10 +94,10 @@ export class RecordsSubscribe extends AbstractMessage<RecordsSubscribeMessage> {
   public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeQueryOrSubscribe({
-      incomingMessage           : this.message,
-      expectedGrantedToInGrant  : this.signer!,
-      expectedGrantedForInGrant : this.author!,
-      permissionsGrantMessage   : delegatedGrant,
+      incomingMessage         : this.message,
+      expectedGrantor         : this.author!,
+      expectedGrantee         : this.signer!,
+      permissionsGrantMessage : delegatedGrant,
       messageStore
     });
   }

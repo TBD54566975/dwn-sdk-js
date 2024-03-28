@@ -266,7 +266,7 @@ export class GrantAuthorization {
       );
     }
 
-    // // TODO: DO SOMETHING. Super inefficient
+    // TODO: DO SOMETHING. Super inefficient
     const permissionsGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
 

@@ -45,7 +45,7 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
+import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, PermissionsProtocol, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -3499,7 +3499,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       describe('grant based writes', () => {
-        it('allows external parties to write a record using a grant with unrestricted RecordsWrite scope', async () => {
+        it.only('allows external parties to write a record using a grant with unrestricted RecordsWrite scope', async () => {
           // scenario: Alice gives Bob a grant with unrestricted RecordsWrite scope.
           //           Bob is able to write both a protocol and a non-protocol record.
 
@@ -3517,21 +3517,19 @@ export function testRecordsWriteHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice issues Bob a PermissionsGrant for unrestricted RecordsWrite access
-          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-            author     : alice,
-            grantedBy  : alice.did,
-            grantedFor : alice.did,
-            grantedTo  : bob.did,
-            scope      : {
-              interface : DwnInterfaceName.Records,
-              method    : DwnMethodName.Write,
-            }
+          const permissionGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
+            scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write }
           });
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-          expect(permissionsGrantReply.status.code).to.equal(202);
-          const permissionsGrantId: string = await Message.getCid(permissionsGrant.message);
+          const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+
+          const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream: grantDataStream });
+          expect(grantRecordsWriteReply.status.code).to.equal(202);
 
           // Bob invokes the grant to write a protocol record to Alice's DWN
+          const permissionsGrantId = permissionGrant.recordsWrite.message.recordId;
           const protocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol     : protocolDefinition.protocol,

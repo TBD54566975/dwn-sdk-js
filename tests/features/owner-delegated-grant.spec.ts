@@ -20,7 +20,7 @@ import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, PermissionsRevoke, ProtocolsConfigure } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, PermissionsProtocol, PermissionsRevoke, ProtocolsConfigure } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -72,13 +72,11 @@ export function testOwnerDelegatedGrant(): void {
           method    : DwnMethodName.Write,
           protocol  : 'chat'
         };
-        const grantToAppX = await PermissionsGrant.create({
+        const grantToAppX = await PermissionsProtocol.createGrant({
           delegated   : true, // this is a delegated grant
           dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
           description : 'Allow App X to write as me in chat protocol',
-          grantedBy   : alice.did,
           grantedTo   : appX.did,
-          grantedFor  : alice.did,
           scope,
           signer      : Jws.createSigner(alice)
         });
@@ -91,7 +89,7 @@ export function testOwnerDelegatedGrant(): void {
         });
 
         // App X signs over Bob's RecordsWrite as DWN owner but does not include the delegated grant (we remove it below)
-        await recordsWrite.signAsOwnerDelegate(Jws.createSigner(appX), grantToAppX.asDelegatedGrant());
+        await recordsWrite.signAsOwnerDelegate(Jws.createSigner(appX), grantToAppX.recordsWrite.message);
 
         delete recordsWrite.message.authorization!.ownerDelegatedGrant; // intentionally remove `ownerDelegatedGrant`
         const parsePromise = RecordsWrite.parse(recordsWrite.message);
@@ -110,13 +108,11 @@ export function testOwnerDelegatedGrant(): void {
           method    : DwnMethodName.Write,
           protocol  : 'chat'
         };
-        const grantToAppX = await PermissionsGrant.create({
+        const grantToAppX = await PermissionsProtocol.createGrant({
           delegated   : true, // this is a delegated grant
           dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
           description : 'Allow App X to write as me in chat protocol',
-          grantedBy   : alice.did,
           grantedTo   : appX.did,
-          grantedFor  : alice.did,
           scope,
           signer      : Jws.createSigner(alice)
         });
@@ -130,7 +126,7 @@ export function testOwnerDelegatedGrant(): void {
 
         // App X attempts to sign over Bob's RecordsWrite as the DWN owner by including an owner-delegated grant
         // but does not reference the grant ID in owner signature (we remove it below)
-        await recordsWrite.signAsOwnerDelegate(Jws.createSigner(appX), grantToAppX.asDelegatedGrant());
+        await recordsWrite.signAsOwnerDelegate(Jws.createSigner(appX), grantToAppX.recordsWrite.message);
 
         const ownerSignaturePayloadCopy = { ...recordsWrite.ownerSignaturePayload };
         delete ownerSignaturePayloadCopy.delegatedGrantId; // intentionally remove `delegatedGrantId` in ownerSignature
@@ -172,12 +168,10 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
@@ -202,7 +196,7 @@ export function testOwnerDelegatedGrant(): void {
 
       // 5. Verify that App Y cannot write Bob's message in Alice's DWN by invoking the delegated grant for App X.
       const appYAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
-      await appYAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appY), appXGrant.asDelegatedGrant());
+      await appYAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appY), appXGrant.recordsWrite.message);
       const appYWriteReply = await dwn.processMessage(
         alice.did,
         appYAugmentedWrite.message,
@@ -213,7 +207,7 @@ export function testOwnerDelegatedGrant(): void {
 
       // 6. Verify that App X can successfully write Bob's message in Alice's DWN by invoking an owner-delegated grant
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
-      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.asDelegatedGrant());
+      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.recordsWrite.message);
 
       const appXWriteReply = await dwn.processMessage(
         alice.did,
@@ -266,12 +260,10 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         // delegated   : true, // intentionally commented out to show that this is not a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
@@ -290,7 +282,7 @@ export function testOwnerDelegatedGrant(): void {
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
       await appXAugmentedWrite.signAsOwnerDelegate(
         Jws.createSigner(appX),
-        appXGrant.message as unknown as DelegatedGrantMessage // intentionally force invalid casting
+        appXGrant.recordsWrite.message
       );
 
       const appXWriteReply = await dwn.processMessage(
@@ -341,12 +333,10 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrantToRead = await PermissionsGrant.create({
+      const appXGrantToRead = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : readScope,
         signer      : Jws.createSigner(alice)
       });
@@ -358,12 +348,10 @@ export function testOwnerDelegatedGrant(): void {
         protocol  : `random-protocol`
       };
 
-      const appXGrantToWriteInRandomProtocol = await PermissionsGrant.create({
+      const appXGrantToWriteInRandomProtocol = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : randomProtocolWriteScope,
         signer      : Jws.createSigner(alice)
       });
@@ -382,7 +370,7 @@ export function testOwnerDelegatedGrant(): void {
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
       await appXAugmentedWrite.signAsOwnerDelegate(
         Jws.createSigner(appX),
-        appXGrantToRead.asDelegatedGrant()
+        appXGrantToRead.recordsWrite.message
       );
 
       const appXWriteReply = await dwn.processMessage(
@@ -397,7 +385,7 @@ export function testOwnerDelegatedGrant(): void {
       const appXAugmentedWrite2 = await RecordsWrite.parse(bobRecordsWrite.message);
       await appXAugmentedWrite2.signAsOwnerDelegate(
         Jws.createSigner(appX),
-        appXGrantToWriteInRandomProtocol.asDelegatedGrant()
+        appXGrantToWriteInRandomProtocol.recordsWrite.message
       );
 
       const appXWriteReply2 = await dwn.processMessage(
@@ -446,17 +434,15 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
 
-      const appXGrantMessage = appXGrant.asDelegatedGrant();
+      const appXGrantMessage = appXGrant.recordsWrite.message;
       appXGrantMessage.authorization.signature.signatures[0].signature = await TestDataGenerator.randomSignatureString();
 
       // 3. A third party (Bob) authors a RecordsWrite
@@ -519,24 +505,20 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
 
       await Time.minimalSleep();
 
-      const appXGrant2 = await PermissionsGrant.create({
+      const appXGrant2 = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
@@ -553,9 +535,9 @@ export function testOwnerDelegatedGrant(): void {
 
       // 4. Verify that App X cannot write Bob's message in Alice's DWN by invoking an owner-delegated grant with the wrong ID
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
-      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.asDelegatedGrant());
+      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.recordsWrite.message);
 
-      appXAugmentedWrite.message.authorization.ownerDelegatedGrant = appXGrant2.asDelegatedGrant(); // intentionally have a mismatching grant
+      appXAugmentedWrite.message.authorization.ownerDelegatedGrant = appXGrant2.recordsWrite.message; // intentionally have a mismatching grant
 
       const appXWriteReply = await dwn.processMessage(
         alice.did,
@@ -604,23 +586,21 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
 
-      const permissionsGrantReply = await dwn.processMessage(alice.did, appXGrant.message);
+      const permissionsGrantReply = await dwn.processMessage(alice.did, appXGrant.recordsWrite.message);
       expect(permissionsGrantReply.status.code).to.equal(202);
 
       // 3. Alice revokes the grant
       const permissionsRevoke = await PermissionsRevoke.create({
         signer             : Jws.createSigner(alice),
-        permissionsGrantId : await Message.getCid(appXGrant.message)
+        permissionsGrantId : await Message.getCid(appXGrant.recordsWrite.message)
       });
       const permissionsRevokeReply = await dwn.processMessage(alice.did, permissionsRevoke.message);
       expect(permissionsRevokeReply.status.code).to.equal(202);
@@ -637,7 +617,7 @@ export function testOwnerDelegatedGrant(): void {
 
       // 5. Verify that App X cannot write Bob's message in Alice's DWN by invoking a revoked owner-delegated grant
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
-      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.asDelegatedGrant());
+      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.recordsWrite.message);
 
       const appXWriteReply = await dwn.processMessage(
         alice.did,
@@ -685,12 +665,10 @@ export function testOwnerDelegatedGrant(): void {
         protocol
       };
 
-      const appXGrant = await PermissionsGrant.create({
+      const appXGrant = await PermissionsProtocol.createGrant({
         delegated   : true,
         dateExpires : Time.getCurrentTimestamp(), // intentionally set to current time to make it expired immediately
-        grantedBy   : alice.did,
         grantedTo   : appX.did,
-        grantedFor  : alice.did,
         scope       : scope,
         signer      : Jws.createSigner(alice)
       });
@@ -707,7 +685,7 @@ export function testOwnerDelegatedGrant(): void {
 
       // 4. Verify that App X cannot write Bob's message in Alice's DWN by invoking an expired owner-delegated grant
       const appXAugmentedWrite = await RecordsWrite.parse(bobRecordsWrite.message);
-      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.asDelegatedGrant());
+      await appXAugmentedWrite.signAsOwnerDelegate(Jws.createSigner(appX), appXGrant.recordsWrite.message);
 
       const appXWriteReply = await dwn.processMessage(
         alice.did,
