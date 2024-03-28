@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.foundation/dwn/json-schemas/events-filter.json",
   "type": "object",
   "additionalProperties": false,
@@ -13,7 +13,7 @@
       ],
       "type": "string"
     },
-    "method":{
+    "method": {
       "enum": [
         "Configure",
         "Delete",
@@ -96,14 +96,20 @@
         {
           "properties": {
             "published": {
-              "enum": [true]
+              "enum": [
+                true
+              ]
             }
           },
-          "required": ["published"]
+          "required": [
+            "published"
+          ]
         },
         {
           "not": {
-            "required": ["published"]
+            "required": [
+              "published"
+            ]
           }
         }
       ]

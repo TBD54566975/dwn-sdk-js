@@ -97,6 +97,16 @@ export type RecordsQueryReplyEntry = RecordsWriteMessage & {
   encodedData?: string;
 };
 
+/**
+ * Represents a RecordsWrite message with encoded data attached.
+ */
+export type DataEncodedRecordsWriteMessage = RecordsWriteMessage & {
+  /**
+   * The encoded data of the record if the data associated with the record is equal or smaller than `DwnConstant.maxDataSizeAllowedToBeEncoded`.
+   */
+  encodedData?: string;
+};
+
 export type RecordsQueryDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Query;

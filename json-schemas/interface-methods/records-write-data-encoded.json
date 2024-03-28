@@ -1,0 +1,16 @@
+{
+  "$id": "https://identity.foundation/dwn/json-schemas/records-write-data-encoded.json",
+  "$ref": "https://identity.foundation/dwn/json-schemas/records-write-unidentified.json",
+  "unevaluatedProperties": false,
+  "type": "object",
+  "required": [
+    "recordId",
+    "authorization",
+    "encodedData"
+  ],
+  "properties": {
+    "encodedData": {
+      "type": "string"
+    }
+  }
+}

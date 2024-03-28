@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
-import Ajv from 'ajv';
+import Ajv from 'ajv/dist/2020.js';
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
@@ -48,6 +48,7 @@ import RecordsQuery from '../json-schemas/interface-methods/records-query.json' 
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsSubscribe from '../json-schemas/interface-methods/records-subscribe.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
+import RecordsWriteDataEncoded from '../json-schemas/interface-methods/records-write-data-encoded.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
 
@@ -59,6 +60,7 @@ const schemas = {
   RecordsQuery,
   RecordsSubscribe,
   RecordsWrite,
+  RecordsWriteDataEncoded,
   RecordsWriteUnidentified,
   EventsFilter,
   EventsGet,

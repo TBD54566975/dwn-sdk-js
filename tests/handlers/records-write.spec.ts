@@ -3498,7 +3498,7 @@ export function testRecordsWriteHandler(): void {
         });
       });
 
-      describe.only('grant based writes', () => {
+      describe('grant based writes', () => {
         it('allows external parties to write a record using a grant with unrestricted RecordsWrite scope', async () => {
           // scenario: Alice gives Bob a grant with unrestricted RecordsWrite scope.
           //           Bob is able to write both a protocol and a non-protocol record.

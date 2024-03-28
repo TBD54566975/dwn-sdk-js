@@ -1,3 +1,4 @@
+import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
@@ -188,7 +189,8 @@ export class PermissionsProtocol {
   public static async createGrant(options: PermissionGrantCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
     permissionGrantModel: PermissionGrantModel,
-    permissionGrantBytes: Uint8Array
+    permissionGrantBytes: Uint8Array,
+    dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
     const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
@@ -213,10 +215,16 @@ export class PermissionsProtocol {
       data             : permissionGrantBytes,
     });
 
+    const dataEncodedMessage: DataEncodedRecordsWriteMessage = {
+      ...recordsWrite.message,
+      encodedData: Encoder.bytesToBase64Url(permissionGrantBytes)
+    };
+
     return {
       recordsWrite,
       permissionGrantModel,
-      permissionGrantBytes
+      permissionGrantBytes,
+      dataEncodedMessage
     };
   }
 

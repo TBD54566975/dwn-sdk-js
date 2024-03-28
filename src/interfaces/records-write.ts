@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageInterface } from '../types/message-interface.js';

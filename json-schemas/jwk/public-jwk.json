@@ -1,6 +1,6 @@
 {
   "$id": "https://identity.foundation/dwn/json-schemas/public-jwk.json",
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$ref": "https://identity.foundation/dwn/json-schemas/general-jwk.json",
   "not": {
     "anyOf": [
@@ -11,7 +11,13 @@
             "const": "EC"
           }
         },
-        "anyOf": [{ "required": ["d"] }]
+        "anyOf": [
+          {
+            "required": [
+              "d"
+            ]
+          }
+        ]
       },
       {
         "type": "object",
@@ -20,7 +26,13 @@
             "const": "OKP"
           }
         },
-        "anyOf": [{ "required": ["d"] }]
+        "anyOf": [
+          {
+            "required": [
+              "d"
+            ]
+          }
+        ]
       },
       {
         "type": "object",
@@ -34,16 +46,46 @@
           "dp": {},
           "dq": {},
           "qi": {},
-          "oth": { "type": "object" }
+          "oth": {
+            "type": "object"
+          }
         },
         "anyOf": [
-          { "required": ["d"] },
-          { "required": ["p"] },
-          { "required": ["q"] },
-          { "required": ["dp"] },
-          { "required": ["dq"] },
-          { "required": ["qi"] },
-          { "required": ["oth"] }
+          {
+            "required": [
+              "d"
+            ]
+          },
+          {
+            "required": [
+              "p"
+            ]
+          },
+          {
+            "required": [
+              "q"
+            ]
+          },
+          {
+            "required": [
+              "dp"
+            ]
+          },
+          {
+            "required": [
+              "dq"
+            ]
+          },
+          {
+            "required": [
+              "qi"
+            ]
+          },
+          {
+            "required": [
+              "oth"
+            ]
+          }
         ]
       }
     ]
