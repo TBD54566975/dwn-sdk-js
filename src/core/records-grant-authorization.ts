@@ -1,6 +1,5 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionConditions, PermissionGrantModel, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
-import type { PermissionsGrantMessage, RecordsPermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from '../utils/encoder.js';
@@ -23,7 +22,7 @@ export class RecordsGrantAuthorization {
       recordsWriteMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
     } = input;
 
-    await GrantAuthorization.performBaseValidationV2({
+    await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsWriteMessage,
       expectedGrantor,
       expectedGrantee,
@@ -36,7 +35,7 @@ export class RecordsGrantAuthorization {
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
     const permissionConditions = permissionGrantModel.conditions;
 
-    RecordsGrantAuthorization.verifyScopeV2(recordsWriteMessage, permissionScope);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionScope);
 
     RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionConditions);
   }
@@ -57,7 +56,7 @@ export class RecordsGrantAuthorization {
       recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
     } = input;
 
-    await GrantAuthorization.performBaseValidationV2({
+    await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsReadMessage,
       expectedGrantor,
       expectedGrantee,
@@ -68,7 +67,7 @@ export class RecordsGrantAuthorization {
     const permissionGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
-    RecordsGrantAuthorization.verifyScopeV2(recordsWriteMessageToBeRead, permissionScope);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionScope);
   }
 
   /**
@@ -86,7 +85,7 @@ export class RecordsGrantAuthorization {
       incomingMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
     } = input;
 
-    await GrantAuthorization.performBaseValidationV2({
+    await GrantAuthorization.performBaseValidation({
       incomingMessage,
       expectedGrantor,
       expectedGrantee,
@@ -124,7 +123,7 @@ export class RecordsGrantAuthorization {
       recordsDeleteMessage, recordsWriteToDelete, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
     } = input;
 
-    await GrantAuthorization.performBaseValidationV2({
+    await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsDeleteMessage,
       expectedGrantor,
       expectedGrantee,
@@ -150,25 +149,6 @@ export class RecordsGrantAuthorization {
    * Verifies the given record against the scope of the given grant.
    */
   private static verifyScope(
-    recordsWriteMessage: RecordsWriteMessage,
-    permissionsGrantMessage: RecordsPermissionsGrantMessage,
-  ): void {
-    const grantScope = permissionsGrantMessage.descriptor.scope;
-    if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
-      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
-      return;
-    } else if (recordsWriteMessage.descriptor.protocol !== undefined) {
-      // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.verifyProtocolRecordScope(recordsWriteMessage, grantScope);
-    } else {
-      RecordsGrantAuthorization.verifyFlatRecordScope(recordsWriteMessage, grantScope);
-    }
-  }
-
-  /**
-   * Verifies the given record against the scope of the given grant.
-   */
-  private static verifyScopeV2(
     recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope,
   ): void {

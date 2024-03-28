@@ -1,7 +1,6 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
-import type { PaginationCursor, SortDirection } from './query-types.js';
 import type { RecordsWriteMessage } from './records-types.js';
+import type { PaginationCursor, SortDirection } from './query-types.js';
 
 /**
  * Intersection type for all concrete message types.
