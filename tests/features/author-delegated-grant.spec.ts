@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../../src/types/delegated-grant-message.js';
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
@@ -24,12 +23,12 @@ import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsGrant, PermissionsProtocol, PermissionsRevoke, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 export function testAuthorDelegatedGrant(): void {
-  describe.only('author delegated grant', async () => {
+  describe('author delegated grant', async () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;

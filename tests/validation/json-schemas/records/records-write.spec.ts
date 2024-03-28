@@ -76,7 +76,7 @@ describe('RecordsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must NOT have additional properties');
+    }).throws('unevaluated properties: RecordsWrite: unknownProperty');
   });
 
   it('should throw if unknown property is given in the `descriptor`', () => {

@@ -4,7 +4,7 @@ import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
 
-import { DwnConstant, Message } from '../../src/index.js';
+import { DwnConstant, Message, PermissionsProtocol, Time } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -805,17 +805,17 @@ export function testRecordsReadHandler(): void {
           expect(recordsWriteReply.status.code).to.equal(202);
 
           // Alice gives Bob a PermissionsGrant with scope RecordsRead
-          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-            author     : alice,
-            grantedBy  : alice.did,
-            grantedFor : alice.did,
-            grantedTo  : bob.did,
-            scope      : {
+          const permissionsGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+            scope       : {
               interface : DwnInterfaceName.Records,
               method    : DwnMethodName.Write,
             }
           });
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
           expect(permissionsGrantReply.status.code).to.equal(202);
 
           // Bob tries to RecordsRead
@@ -824,7 +824,7 @@ export function testRecordsReadHandler(): void {
               recordId: recordsWrite.message.recordId,
             },
             signer             : Jws.createSigner(bob),
-            permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(401);
@@ -846,18 +846,18 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           // Alice issues a PermissionsGrant allowing Bob to read any record in her DWN
-          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-            author     : alice,
-            grantedBy  : alice.did,
-            grantedTo  : bob.did,
-            grantedFor : alice.did,
-            scope      : {
+          const permissionsGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+            scope       : {
               interface : DwnInterfaceName.Records,
               method    : DwnMethodName.Read,
-              // No futher restrictions on grant scope
+              // No further restrictions on grant scope
             }
           });
-          const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+          const grantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
           expect(grantReply.status.code).to.equal(202);
 
           // Bob invokes that grant to read a record from Alice's DWN
@@ -866,7 +866,7 @@ export function testRecordsReadHandler(): void {
               recordId: message.recordId,
             },
             signer             : Jws.createSigner(bob),
-            permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -900,17 +900,17 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record without using the PermissionsGrant
@@ -931,7 +931,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -964,18 +964,18 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 protocol  : protocolDefinition.protocol,
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record without using the PermissionsGrant
@@ -995,7 +995,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -1028,18 +1028,18 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 protocol  : 'a-different-protocol'
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1048,7 +1048,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1082,18 +1082,18 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 schema    : 'some-schema'
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1102,7 +1102,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1135,19 +1135,19 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 protocol  : protocolDefinition.protocol,
                 contextId : recordsWrite.message.contextId,
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1156,7 +1156,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -1188,19 +1188,19 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 protocol  : protocolDefinition.protocol,
                 contextId : await TestDataGenerator.randomCborSha256Cid(), // different contextId than what Bob will try to read
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1209,7 +1209,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1242,19 +1242,19 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface    : DwnInterfaceName.Records,
                 method       : DwnMethodName.Read,
                 protocol     : protocolDefinition.protocol,
                 protocolPath : recordsWrite.message.descriptor.protocolPath,
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1263,7 +1263,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -1295,19 +1295,19 @@ export function testRecordsReadHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedFor : alice.did,
-              grantedTo  : bob.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface    : DwnInterfaceName.Records,
                 method       : DwnMethodName.Read,
                 protocol     : protocolDefinition.protocol,
                 protocolPath : 'different-protocol-path', // different protocol path than what Bob will try to read
               }
             });
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(permissionsGrantReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
@@ -1316,7 +1316,7 @@ export function testRecordsReadHandler(): void {
                 recordId: recordsWrite.message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1341,18 +1341,18 @@ export function testRecordsReadHandler(): void {
             expect(writeReply.status.code).to.equal(202);
 
             // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedTo  : bob.did,
-              grantedFor : alice.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 schema    : message.descriptor.schema
               }
             });
-            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(grantReply.status.code).to.equal(202);
 
             // Bob invokes that grant to read a record from Alice's DWN
@@ -1361,7 +1361,7 @@ export function testRecordsReadHandler(): void {
                 recordId: message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(200);
@@ -1385,18 +1385,18 @@ export function testRecordsReadHandler(): void {
 
             // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
             const scopeSchema = 'scope-schema';
-            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-              author     : alice,
-              grantedBy  : alice.did,
-              grantedTo  : bob.did,
-              grantedFor : alice.did,
-              scope      : {
+            const permissionsGrant = await PermissionsProtocol.createGrant({
+              signer      : Jws.createSigner(alice),
+              grantedTo   : bob.did,
+              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+              scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
                 schema    : scopeSchema // different schema than the record Bob will try to read
               }
             });
-            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
+            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
             expect(grantReply.status.code).to.equal(202);
 
             // Bob invokes that grant to read a record from Alice's DWN
@@ -1405,7 +1405,7 @@ export function testRecordsReadHandler(): void {
                 recordId: message.recordId,
               },
               signer             : Jws.createSigner(bob),
-              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(401);
