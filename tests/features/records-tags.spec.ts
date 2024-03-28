@@ -773,6 +773,159 @@ export function testRecordsTags(): void {
           const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
           expect(validFooRecordReply.status.code).to.equal(202);
         });
+
+        it('should reject tag values that do not follow the constraints of the `uniqueItems` value', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with uniqueItems for an array of strings
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  uniqueStrings: {
+                    type        : 'array',
+                    uniqueItems : true,
+                    items       : {
+                      type: 'string',
+                    }
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with a `uniqueStrings` value with duplicate items
+          const duplicateItemsRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              uniqueStrings: ['a', 'a'] // duplicate items
+            }
+          });
+
+          // should fail
+          const duplicateItemsReply =
+            await dwn.processMessage(alice.did, duplicateItemsRecord.message, { dataStream: duplicateItemsRecord.dataStream });
+          expect(duplicateItemsReply.status.code).to.equal(400);
+
+          // write a foo record with a `uniqueStrings` value with unique items
+          const uniqueItemsRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              uniqueStrings: ['a', 'b'] // unique items
+            }
+          });
+
+          // should pass
+          const uniqueItemsReply = await dwn.processMessage(alice.did, uniqueItemsRecord.message, { dataStream: uniqueItemsRecord.dataStream });
+          expect(uniqueItemsReply.status.code).to.equal(202);
+        });
+
+        xit('should reject a record with a tag value does not conform to `contains`, `minContains` and `maxContains`', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with minContains and maxContains for an array of numbers
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  containsNumbers: {
+                    type  : 'array',
+                    items : {
+                      type: 'number'
+                    },
+                    contains: {
+                      type    : 'number',
+                      minimum : 80,
+                      maximum : 100
+                    },
+                    minContains : 2,
+                    maxContains : 3,
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with a `containsNumbers` value that does not have the minimum number of items
+          const minContainsRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              containsNumbers: [90] // less than 2
+            }
+          });
+
+          // should fail
+          const minContainsReply = await dwn.processMessage(alice.did, minContainsRecord.message, { dataStream: minContainsRecord.dataStream });
+          expect(minContainsReply.status.code).to.equal(400);
+
+
+          // write a foo record with a `containsNumbers` value that has more than the maximum number of items
+          const maxContainsRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              containsNumbers: [90, 95, 99, 100] // more than 3
+            }
+          });
+
+          // should fail
+          const maxContainsReply = await dwn.processMessage(alice.did, maxContainsRecord.message, { dataStream: maxContainsRecord.dataStream });
+          expect(maxContainsReply.status.code).to.equal(400);
+
+          // write a foo record with a `containsNumbers` value that does not have the minimum number of items
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              containsNumbers: [90, 95] // within the range
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
       });
 
       it('should be able to write a Record tags', async () => {
