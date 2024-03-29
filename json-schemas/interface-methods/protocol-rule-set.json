@@ -125,13 +125,13 @@
           "additionalProperties": false,
           "patternProperties": {
             "type": {
-              "enum": ["string", "number", "boolean", "array"]
+              "enum": ["string", "number", "integer", "boolean", "array"]
             },
             "items": {
               "type": "object",
               "patternProperties": {
                 "type": {
-                  "enum": ["string", "number"]
+                  "enum": ["string", "number", "integer"]
                 },
                 "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
@@ -140,7 +140,7 @@
               "type": "object",
               "patternProperties": {
                 "type": {
-                  "enum": ["string", "number"]
+                  "enum": ["string", "number", "integer"]
                 },
                 "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
