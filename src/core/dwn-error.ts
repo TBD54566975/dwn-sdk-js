@@ -53,8 +53,6 @@ export enum DwnErrorCode {
   PermissionsGrantScopeSchemaProhibitedFields = 'PermissionsGrantScopeSchemaProhibitedFields',
   PermissionsGrantUnauthorizedGrant = 'PermissionsGrantUnauthorizedGrant',
   PermissionsProtocolValidateSchemaUnexpectedRecord = 'PermissionsProtocolValidateSchemaUnexpectedRecord',
-  PermissionsRevokeMissingPermissionsGrant = 'PermissionsRevokeMissingPermissionsGrant',
-  PermissionsRevokeUnauthorizedRevoke = 'PermissionsRevokeUnauthorizedRevoke',
   PrivateKeySignerUnableToDeduceAlgorithm = 'PrivateKeySignerUnableToDeduceAlgorithm',
   PrivateKeySignerUnableToDeduceKeyId = 'PrivateKeySignerUnableToDeduceKeyId',
   PrivateKeySignerUnsupportedCurve = 'PrivateKeySignerUnsupportedCurve',

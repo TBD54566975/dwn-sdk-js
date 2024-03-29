@@ -33,16 +33,3 @@ export type RecordsPermissionsGrantMessage = PermissionsGrantMessage & {
     scope: RecordsPermissionScope;
   };
 };
-
-export type PermissionsRevokeDescriptor = {
-  interface: DwnInterfaceName.Permissions;
-  method: DwnMethodName.Revoke;
-  messageTimestamp: string;
-  // The CID of the `PermissionsGrant` message being revoked.
-  permissionsGrantId: string;
-};
-
-export type PermissionsRevokeMessage = GenericMessage & {
-  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
-  descriptor: PermissionsRevokeDescriptor;
-};

@@ -183,10 +183,12 @@ export class RecordsWriteHandler implements MethodHandler {
    */
   private async postProcessingForCoreRecordsWrite(tenant: string, recordsWrite: RecordsWrite): Promise<void> {
     // If this message is a Permission revocation, we need to delete all grant-authorized messages with timestamp after revocation
-    // NOTE: this code is a direct copy and paste from the original PermissionsRevokeHandler (no longer exists),
-    // but it appears that there was no test for it and it does not look like the code worked. For instance:
+    // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/716
+    // This code is a direct copy and paste from the original PermissionsRevokeHandler (no longer exists),
+    // but it appears that there was no test for it and it does not look like the code worked:
     // - not seeing `permissionsGrantId` being an index
     // - not seeing `this.dataStore` being called to delete actual data
+    // - test coverage is missing for the main delete logic
     if (recordsWrite.message.descriptor.protocol === PermissionsProtocol.uri &&
       recordsWrite.message.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
       const permissionsGrantId = recordsWrite.message.recordId;
