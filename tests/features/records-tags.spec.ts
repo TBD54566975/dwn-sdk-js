@@ -959,91 +959,630 @@ export function testRecordsTags(): void {
           expect(fooRecordReply.status.code).to.equal(202);
         });
 
-        xit('should reject a record with a tag value does not conform to `contains`, `minContains` and `maxContains`', async () => {
-          const alice = await TestDataGenerator.generateDidKeyPersona();
+        describe('contains', () => {
+          it('should reject a record tag that does not contain a value specified within the `enum` definition', async () => {
 
-          // protocol with minContains and maxContains for an array of numbers
-          const protocolDefinition: ProtocolDefinition = {
-            protocol  : 'http://example.com/protocol/withTags',
-            published : true,
-            types     : {
-              foo: {}
-            },
-            structure: {
-              foo: {
-                $tags: {
-                  containsNumbers: {
-                    type  : 'array',
-                    items : {
-                      type: 'number'
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with `enum` definition within `contains`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    status: {
+                      type  : 'array',
+                      items : {
+                        type: 'string'
+                      },
+                      contains: {
+                        type : 'string',
+                        enum : [ 'complete', 'in-progress', 'backlog' ]
+                      }
                     },
-                    contains: {
-                      type    : 'number',
-                      minimum : 80,
-                      maximum : 100
-                    },
-                    minContains : 2,
-                    maxContains : 3,
-                  },
+                  }
                 }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `status` value that is not represented in the `enum`
+            const invalidEnumRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                status: [ 'blocked' ] // 'blocked' is not in the enum
               }
-            },
-          };
+            });
 
-          // configure tags protocol
-          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition,
+            // should fail
+            const invalidEnumReply = await dwn.processMessage(alice.did, invalidEnumRecord.message, { dataStream: invalidEnumRecord.dataStream });
+            expect(invalidEnumReply.status.code).to.equal(400);
+            expect(invalidEnumReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(invalidEnumReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/status must contain at least 1 valid item(s)`);
+
+            // write a foo record that now adds a valid `status` value to the array
+            const validEnumRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                status: [ 'blocked', 'in-progress' ] // at least one is within the array
+              }
+            });
+
+            // should pass
+            const validEnumReply = await dwn.processMessage(alice.did, validEnumRecord.message, { dataStream: validEnumRecord.dataStream });
+            expect(validEnumReply.status.code).to.equal(202);
           });
 
-          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
-          expect(configureReply.status.code).to.equal(202);
+          it('should reject a record tag that does not contain a value within the `minimum` and `maximum` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
 
-          // write a foo record with a `containsNumbers` value that does not have the minimum number of items
-          const minContainsRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            published    : true,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-            tags         : {
-              containsNumbers: [90] // less than 2
-            }
+            // protocol with `minimum` and `maximum` definitions within `contains`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    containsNumbers: {
+                      type  : 'array',
+                      items : {
+                        type: 'number'
+                      },
+                      contains: {
+                        type    : 'number',
+                        minimum : 80,
+                        maximum : 100
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `containsNumbers` value that does not have a number within the range
+            const minContainsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                containsNumbers: [ 50, 101 ] // does not contain any numbers within the range
+              }
+            });
+
+            // should fail
+            const minContainsReply = await dwn.processMessage(alice.did, minContainsRecord.message, { dataStream: minContainsRecord.dataStream });
+            expect(minContainsReply.status.code).to.equal(400);
+            expect(minContainsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minContainsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/containsNumbers must contain at least 1 valid item(s)`);
+
+
+            // write a foo record with a `containsNumbers` value that has a number within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                containsNumbers: [ 50, 90, 101 ] // at least one number is within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
           });
 
-          // should fail
-          const minContainsReply = await dwn.processMessage(alice.did, minContainsRecord.message, { dataStream: minContainsRecord.dataStream });
-          expect(minContainsReply.status.code).to.equal(400);
+          it('should reject a record tag that does not contain a value within the `exclusiveMinimum` and `exclusiveMaximum` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with `minimum` and `maximum` definitions within `contains`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    containsNumbers: {
+                      type  : 'array',
+                      items : {
+                        type: 'number'
+                      },
+                      contains: {
+                        type             : 'number',
+                        exclusiveMinimum : 80,
+                        exclusiveMaximum : 100
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `containsNumbers` value that does not have a number within the range
+            const minContainsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                containsNumbers: [ 80, 100 ] // does not contain any numbers within the range
+              }
+            });
+
+            // should fail
+            const minContainsReply = await dwn.processMessage(alice.did, minContainsRecord.message, { dataStream: minContainsRecord.dataStream });
+            expect(minContainsReply.status.code).to.equal(400);
+            expect(minContainsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minContainsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/containsNumbers must contain at least 1 valid item(s)`);
 
 
-          // write a foo record with a `containsNumbers` value that has more than the maximum number of items
-          const maxContainsRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            published    : true,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-            tags         : {
-              containsNumbers: [90, 95, 99, 100] // more than 3
-            }
+            // write a foo record with a `containsNumbers` value that has a number within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                containsNumbers: [ 80, 90, 100 ] // at least one number is within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
           });
 
-          // should fail
-          const maxContainsReply = await dwn.processMessage(alice.did, maxContainsRecord.message, { dataStream: maxContainsRecord.dataStream });
-          expect(maxContainsReply.status.code).to.equal(400);
+          it('should reject a record tag that does not contain a value within the `minLength` and `maxLength` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
 
-          // write a foo record with a `containsNumbers` value that does not have the minimum number of items
-          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            published    : true,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-            tags         : {
-              containsNumbers: [90, 95] // within the range
-            }
+            // protocol with `minLength` and `maxLength` definitions within `contains`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    nickNames: {
+                      type  : 'array',
+                      items : {
+                        type: 'string'
+                      },
+                      contains: {
+                        type      : 'string',
+                        maxLength : 10,
+                        minLength : 2,
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `firstName` value that does not have a string within the range
+            const minContainsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                nickNames: ['a', 'b'] // only contains first initial, will fail
+              }
+            });
+
+            // should fail
+            const minContainsReply = await dwn.processMessage(alice.did, minContainsRecord.message, { dataStream: minContainsRecord.dataStream });
+            expect(minContainsReply.status.code).to.equal(400);
+            expect(minContainsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minContainsReply.status.detail).to
+              .contain(`${protocolDefinition.protocol}/foo/$tags/nickNames must contain at least 1 valid item(s)`);
+
+            // write a foo record with a `nickNames` value that has a string within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                nickNames: ['ali', 'a'] // at least one string is within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
+          });
+        });
+
+        describe('items', () => {
+          it('should reject a record tag that includes a value not specified within the `enum` definition', async () => {
+
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with `enum` definition within `items`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    status: {
+                      type  : 'array',
+                      items : {
+                        type : 'string',
+                        enum : [ 'complete', 'in-progress', 'backlog', 'approved' ]
+                      },
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `status` value that is not represented in the `enum`
+            const invalidEnumRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                status: [ 'in-progress', 'blocked' ] // 'blocked' is not in the enum
+              }
+            });
+
+            // should fail
+            const invalidEnumReply = await dwn.processMessage(alice.did, invalidEnumRecord.message, { dataStream: invalidEnumRecord.dataStream });
+            expect(invalidEnumReply.status.code).to.equal(400);
+            expect(invalidEnumReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(invalidEnumReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/status/1 must be equal to one of the allowed values`);
+
+            // write a foo record that now includes only valid `status` values
+            const validEnumRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                status: [ 'complete', 'approved' ] // both are in the enum
+              }
+            });
+
+            // should pass
+            const validEnumReply = await dwn.processMessage(alice.did, validEnumRecord.message, { dataStream: validEnumRecord.dataStream });
+            expect(validEnumReply.status.code).to.equal(202);
           });
 
-          // should pass
-          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
-          expect(validFooRecordReply.status.code).to.equal(202);
+          it('should reject a record tag which all items do not have a value within the `minimum` and `maximum` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with minContains and maxContains for an array of numbers
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    numbers: {
+                      type  : 'array',
+                      items : {
+                        type    : 'number',
+                        minimum : 80,
+                        maximum : 100
+                      },
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `numbers` value that is less than the minimum
+            const minItemssRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 50, 90 ] // contains an item less than the minimum
+              }
+            });
+
+            // should fail
+            const minItemsReply = await dwn.processMessage(alice.did, minItemssRecord.message, { dataStream: minItemssRecord.dataStream });
+            expect(minItemsReply.status.code).to.equal(400);
+            expect(minItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minItemsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/numbers/0 must be >= 80`);
+
+            // write a foo record with a `numbers` value that is more than the maximum
+            const maxItemssRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 85, 105 ] // contains an item more than the maximum
+              }
+            });
+
+            // should fail
+            const maxItemsReply = await dwn.processMessage(alice.did, maxItemssRecord.message, { dataStream: maxItemssRecord.dataStream });
+            expect(maxItemsReply.status.code).to.equal(400);
+            expect(maxItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(maxItemsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/numbers/1 must be <= 100`);
+
+
+            // write a foo record with a `numbers` value that are within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 85, 90 ] // both items within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
+          });
+
+          it('should reject a record tag which all items do not have a value within the `exclusiveMinimum` and `exclusiveMaximum` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with minContains and maxContains for an array of numbers
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    numbers: {
+                      type  : 'array',
+                      items : {
+                        type             : 'number',
+                        exclusiveMinimum : 80,
+                        exclusiveMaximum : 100
+                      },
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `numbers` value that is equal to than the exclusive minimum
+            const minItemsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 80, 90 ] // contains an item equal to the exclusive minimum
+              }
+            });
+
+            // should fail
+            const minItemsReply = await dwn.processMessage(alice.did, minItemsRecord.message, { dataStream: minItemsRecord.dataStream });
+            expect(minItemsReply.status.code).to.equal(400);
+            expect(minItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minItemsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/numbers/0 must be > 80`);
+
+            // write a foo record with a `numbers` value that is equal to than the exclusive maximum
+            const maxContainsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 90, 100 ] // contains an item that is equal to the exclusive maximum
+              }
+            });
+
+            // should fail
+            const maxItemsReply = await dwn.processMessage(alice.did, maxContainsRecord.message, { dataStream: maxContainsRecord.dataStream });
+            expect(maxItemsReply.status.code).to.equal(400);
+            expect(maxItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(maxItemsReply.status.detail)
+              .to.contain(`${protocolDefinition.protocol}/foo/$tags/numbers/1 must be < 100`);
+
+
+            // write a foo record with a `numbers` value that are within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                numbers: [ 81, 99 ] // both items within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
+          });
+
+          it('should reject a record tag that does not contain a value within the `minLength` and `maxLength` range ', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol with `minLength` and `maxLength` definitions within `contains`
+            const protocolDefinition: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    nickNames: {
+                      type  : 'array',
+                      items : {
+                        type      : 'string',
+                        maxLength : 10,
+                        minLength : 2,
+                      },
+                    },
+                  }
+                }
+              },
+            };
+
+            // configure tags protocol
+            const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+
+            const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+            expect(configureReply.status.code).to.equal(202);
+
+            // write a foo record with a `firstName` value that does not have a string within the range
+            const minItemsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                nickNames: ['ali', 'a'] // 'a' is too short
+              }
+            });
+
+            // should fail
+            const minItemsReply = await dwn.processMessage(alice.did, minItemsRecord.message, { dataStream: minItemsRecord.dataStream });
+            expect(minItemsReply.status.code).to.equal(400);
+            expect(minItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(minItemsReply.status.detail).to
+              .contain(`${protocolDefinition.protocol}/foo/$tags/nickNames/1 must NOT have fewer than 2 characters`);
+
+            // write a foo record with a `nickname` value this is too long
+            const maxItemsRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                nickNames: ['ali', 'alice-jane-mary'] // 'alice-jane-mary' is too long
+              }
+            });
+
+            // should fail
+            const maxItemsReply = await dwn.processMessage(alice.did, maxItemsRecord.message, { dataStream: maxItemsRecord.dataStream });
+            expect(maxItemsReply.status.code).to.equal(400);
+            expect(maxItemsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+            expect(maxItemsReply.status.detail).to
+              .contain(`${protocolDefinition.protocol}/foo/$tags/nickNames/1 must NOT have more than 10 characters`);
+
+            // write a foo record with a `nickNames` value that has a string within the range
+            const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              published    : true,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              tags         : {
+                nickNames: ['ali', 'allie'] // both items within range
+              }
+            });
+
+            // should pass
+            const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+            expect(validFooRecordReply.status.code).to.equal(202);
+          });
         });
       });
 
