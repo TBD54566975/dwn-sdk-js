@@ -19,7 +19,7 @@ export type PublicJwk = Jwk & {
   /** The "crv" (curve) parameter identifies the cryptographic curve used with the key.
    * MUST be present for all EC public keys
    */
-  crv: 'Ed25519' | 'secp256k1';
+  crv: 'Ed25519' | 'secp256k1' | 'P-256';
   /**
    * the x coordinate for the Elliptic Curve point.
    * Represented as the base64url encoding of the octet string representation of the coordinate.
