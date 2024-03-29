@@ -60,7 +60,7 @@ export function testRecordsTags(): void {
     describe('RecordsWrite with tags', () => {
       describe('protocol rules', () => {
         describe('ProtocolsConfigure', () => {
-          it('should support protocol tag types of string, number, boolean and array types of numbers and strings', async () => {
+          it('should support protocol tag types of string, number, integer, boolean and array types of numbers, integers and strings', async () => {
             const alice = await TestDataGenerator.generateDidKeyPersona();
 
             // configure a protocol with tags of string, number, boolean and array types of numbers and strings
@@ -79,6 +79,9 @@ export function testRecordsTags(): void {
                     numberType: {
                       type: 'number',
                     },
+                    integerType: {
+                      type: 'integer',
+                    },
                     booleanType: {
                       type: 'boolean',
                     },
@@ -92,6 +95,12 @@ export function testRecordsTags(): void {
                       type  : 'array',
                       items : {
                         type: 'number',
+                      }
+                    },
+                    integerArray: {
+                      type  : 'array',
+                      items : {
+                        type: 'integer',
                       }
                     },
                   }
@@ -350,6 +359,141 @@ export function testRecordsTags(): void {
             protocolPath : 'foo',
             tags         : {
               draft: true
+            }
+          });
+
+          const fooRecord2Reply = await dwn.processMessage(alice.did, fooRecord2.message, { dataStream: fooRecord2.dataStream });
+          expect(fooRecord2Reply.status.code).to.equal(202);
+        });
+
+        it('should reject a tag value that does not match the number type', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with a number type for a tag
+          const protocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  numberType: {
+                    type: 'number'
+                  }
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // `numberType` should be a number type, but we are passing a string
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberType: '1'
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberType must be number`);
+
+
+          // positive tests with an integer number
+          const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberType: 1
+            }
+          });
+
+          const fooRecord2Reply = await dwn.processMessage(alice.did, fooRecord2.message, { dataStream: fooRecord2.dataStream });
+          expect(fooRecord2Reply.status.code).to.equal(202);
+
+          // positive tests with a decimal number
+          const fooRecord3 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberType: 1.5
+            }
+          });
+
+          const fooRecord3Reply = await dwn.processMessage(alice.did, fooRecord3.message, { dataStream: fooRecord3.dataStream });
+          expect(fooRecord3Reply.status.code).to.equal(202);
+        });
+
+        it('should reject a tag value that does not match the integer type', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with an integer type for a tag
+          const protocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  count: {
+                    type: 'integer'
+                  }
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // `count` should be an integer type, but we are passing decimal number
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              count: 1.5
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/count must be integer`);
+
+          // positive test with an integer
+          const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              count: 1
             }
           });
 
@@ -779,6 +923,136 @@ export function testRecordsTags(): void {
             protocolPath : 'foo',
             tags         : {
               numberArray: [2,3,4] // within the range
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
+
+        it('should reject a value within an array that should only include numbers', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with an array of numbers
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  numberArray: {
+                    type  : 'array',
+                    items : {
+                      type: 'number',
+                    }
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with a `numberArray` value with a string
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: ['a']
+            }
+          });
+
+          // should fail
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray/0 must be number`);
+
+          // write a foo record with a `numberArray` value with a number (both integer and decimal)
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [1, 1.5]
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
+
+        it('should reject a value within an array that should only include integers', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with an array of numbers
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  numberArray: {
+                    type  : 'array',
+                    items : {
+                      type: 'integer',
+                    }
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record with a `numberArray` value with a decimal
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [1, 1.5]
+            }
+          });
+
+          // should fail
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray/1 must be integer`);
+
+          // write a foo record with a `numberArray` value with values of integers
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [1, 2]
             }
           });
 
