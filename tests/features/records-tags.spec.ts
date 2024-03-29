@@ -340,6 +340,7 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/draft must be boolean`);
 
           // positive test with a boolean
           const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
@@ -401,6 +402,8 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to
+            .contain(`${protocolDefinition.protocol}/foo/$tags/status must be equal to one of the allowed values`);
 
           // ensure the correct tag descriptor path is in the error message
           expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/status`);
@@ -468,6 +471,7 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/score must be >= 0`);
 
           // write a foo record with an `score` value greater than 100.
           const fooRecord2 = await TestDataGenerator.generateRecordsWrite({
@@ -484,6 +488,7 @@ export function testRecordsTags(): void {
           const fooRecord2Reply = await dwn.processMessage(alice.did, fooRecord2.message, { dataStream: fooRecord2.dataStream });
           expect(fooRecord2Reply.status.code).to.equal(400);
           expect(fooRecord2Reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecord2Reply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/score must be <= 100`);
 
           // write a foo record with a maximum `score` of 100.
           const validFooMaxRecord = await TestDataGenerator.generateRecordsWrite({
@@ -576,6 +581,7 @@ export function testRecordsTags(): void {
           const exclusiveMaxReply = await dwn.processMessage(alice.did, exclusiveMaxRecord.message, { dataStream: exclusiveMaxRecord.dataStream });
           expect(exclusiveMaxReply.status.code).to.equal(400);
           expect(exclusiveMaxReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(exclusiveMaxReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/hours must be < 24`);
 
           // write a foo record with an hour at the exclusiveMinimum
           const exclusiveMinRecord = await TestDataGenerator.generateRecordsWrite({
@@ -592,6 +598,7 @@ export function testRecordsTags(): void {
           const exclusiveMinReply = await dwn.processMessage(alice.did, exclusiveMinRecord.message, { dataStream: exclusiveMinRecord.dataStream });
           expect(exclusiveMinReply.status.code).to.equal(400);
           expect(exclusiveMinReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(exclusiveMinReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/hours must be > 0`);
 
           // write a foo record with an `hour` value within the range.
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
@@ -657,6 +664,8 @@ export function testRecordsTags(): void {
           const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
           expect(minLengthReply.status.code).to.equal(400);
           expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(minLengthReply.status.detail).to
+            .contain(`${protocolDefinition.protocol}/foo/$tags/stringWithLimit must NOT have fewer than 5 characters`);
 
           // write a foo record with a `stringWithLimit` value greater than the maximum length
           const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
@@ -673,6 +682,8 @@ export function testRecordsTags(): void {
           const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
           expect(maxLengthReply.status.code).to.equal(400);
           expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(maxLengthReply.status.detail).to
+            .contain(`${protocolDefinition.protocol}/foo/$tags/stringWithLimit must NOT have more than 10 characters`);
 
           // write a foo record with a `stringWithLimit` value within the range
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
@@ -741,6 +752,7 @@ export function testRecordsTags(): void {
           const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
           expect(minLengthReply.status.code).to.equal(400);
           expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(minLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have fewer than 2 items`);
 
           // write a foo record with a `numberArray` value with 4 items, more than the `maxItems` specified of 3
           const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
@@ -757,6 +769,7 @@ export function testRecordsTags(): void {
           const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
           expect(maxLengthReply.status.code).to.equal(400);
           expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(maxLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have more than 3 items`);
 
           // write a foo record with a `numberArray` value with 3 items, within the range
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
@@ -840,7 +853,7 @@ export function testRecordsTags(): void {
           expect(uniqueItemsReply.status.code).to.equal(202);
         });
 
-        it('should reject if tags are $required but not provided', async () => {
+        it('should reject if tags contain requiredTags but not provided', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with a required tag
@@ -853,8 +866,8 @@ export function testRecordsTags(): void {
             structure: {
               foo: {
                 $tags: {
-                  $required   : [ 'requiredTag' ],
-                  requiredTag : {
+                  requiredTags    : [ 'someRequiredTag' ],
+                  someRequiredTag : {
                     type: 'string',
                   },
                 }
@@ -882,10 +895,25 @@ export function testRecordsTags(): void {
           const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
           expect(fooRecordReply.status.code).to.equal(400);
           expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
-          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags must have required property 'requiredTag'`);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags must have required property 'someRequiredTag'`);
+
+          // write a foo record with the required tag
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              someRequiredTag: 'some-value'
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
         });
 
-        it('should accept any tag if $additionalProperties is set to true', async () => {
+        it('should accept any tag if allowUndefinedTags is set to true', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with no required tags
@@ -898,8 +926,8 @@ export function testRecordsTags(): void {
             structure: {
               foo: {
                 $tags: {
-                  $additionalProperties : true,
-                  optionalTag           : {
+                  allowUndefinedTags : true,
+                  optionalTag        : {
                     type: 'string',
                   },
                 }

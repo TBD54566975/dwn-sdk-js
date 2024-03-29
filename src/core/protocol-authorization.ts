@@ -699,12 +699,12 @@ export class ProtocolAuthorization {
       const { tags = {}, protocol, protocolPath } = incomingMessage.message.descriptor;
 
       // if additionalProperties is set to false and there are properties not defined in the schema, an error is thrown
-      const additionalProperties = ruleSet.$tags.$additionalProperties || false;
-      delete ruleSet.$tags.$additionalProperties;
+      const additionalProperties = ruleSet.$tags.allowUndefinedTags || false;
+      delete ruleSet.$tags.allowUndefinedTags;
 
       // if required is set, all required tags must be present
-      const required = ruleSet.$tags.$required || [];
-      delete ruleSet.$tags.$required;
+      const required = ruleSet.$tags.requiredTags || [];
+      delete ruleSet.$tags.requiredTags;
 
       const ajv = new Ajv.default();
       const compiledTags = ajv.compile({
