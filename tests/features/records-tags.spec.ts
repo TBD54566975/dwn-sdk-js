@@ -787,6 +787,100 @@ export function testRecordsTags(): void {
           expect(validFooRecordReply.status.code).to.equal(202);
         });
 
+        xit('should reject tag values that do not contain the number of items within the `minContains` and `maxContains` values', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with minContains and maxContains for an array of numbers
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  numberArray: {
+                    type  : 'array',
+                    items : {
+                      type: 'number',
+                    },
+                    contains: { // create a contains constraint
+                      type    : 'number',
+                      minimum : 80,
+                      maximum : 100
+                    },
+                    minContains : 2,
+                    maxContains : 4
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+
+          // write a foo record with a `numberArray` value with only 1 item that matches contains contraint, less than the `minContains` of 2
+          // but additional items that would equal more than 2 items
+          const minLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [ 1, 2, 81 ] // only 1 item that matches contains constraint
+            }
+          });
+
+          // should fail
+          const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
+          expect(minLengthReply.status.code).to.equal(400);
+          expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          console.log('failed', minLengthReply.status.detail);
+          expect(minLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have fewer than 2 items`);
+
+          // write a foo record with a `numberArray` value with 4 items, more than the `maxItems` specified of 3
+          const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [81,82,83,84,85] // more than 4 match the contains constraint
+            }
+          });
+
+          // should fail
+          const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
+          expect(maxLengthReply.status.code).to.equal(400);
+          expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          console.log('failed', maxLengthReply.status.detail);
+          expect(maxLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have more than 3 items`);
+
+          // write a foo record with a `numberArray` value with 3 items, within the range
+          const validFooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              numberArray: [ 1, 2, 81, 82, 83 ] // 3 items match contains constraint, within the range
+            }
+          });
+
+          // should pass
+          const validFooRecordReply = await dwn.processMessage(alice.did, validFooRecord.message, { dataStream: validFooRecord.dataStream });
+          expect(validFooRecordReply.status.code).to.equal(202);
+        });
+
         it('should reject tag values that do not follow the constraints of the `uniqueItems` value', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
