@@ -696,17 +696,22 @@ export class ProtocolAuthorization {
     ruleSet: ProtocolRuleSet
   ): void {
     if (ruleSet.$tags !== undefined) {
-      const { tags, protocol, protocolPath } = incomingMessage.message.descriptor;
+      const { tags = {}, protocol, protocolPath } = incomingMessage.message.descriptor;
 
-      if (tags === undefined) {
-        throw new DwnError(DwnErrorCode.ProtocolAuthorizationTagsNotPresent, 'tags not present');
-      }
+      // if additionalProperties is set to false and there are properties not defined in the schema, an error is thrown
+      const additionalProperties = ruleSet.$tags.$additionalProperties || false;
+      delete ruleSet.$tags.$additionalProperties;
+
+      // if required is set, all required tags must be present
+      const required = ruleSet.$tags.$required || [];
+      delete ruleSet.$tags.$required;
 
       const ajv = new Ajv.default();
       const compiledTags = ajv.compile({
-        type                 : 'object',
-        properties           : ruleSet.$tags,
-        additionalProperties : false, // this will cause validation to fail if unknown tags are present
+        type       : 'object',
+        properties : ruleSet.$tags,
+        required,
+        additionalProperties,
       });
 
       const validSchema = compiledTags(tags);

@@ -111,7 +111,16 @@
       "type": "object",
       "minProperties": 1,
       "patternProperties": {
-        ".*": {
+        "$required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "$additionalProperties": {
+          "type": "boolean"
+        },
+        "^[^$].*$": {
           "type": "object",
           "additionalProperties": false,
           "patternProperties": {
@@ -144,7 +153,7 @@
     }
   },
   "patternProperties": {
-    "^[^$].*": {
+    "^[^$].*$": {
       "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
     }
   }
