@@ -145,7 +145,7 @@
                 "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
             },
-            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems)$": {
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
             }
           }
         }
