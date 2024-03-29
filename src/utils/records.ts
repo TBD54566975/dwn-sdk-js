@@ -15,7 +15,7 @@ import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
-import type { PermissionGrantModel } from '../types/permissions-grant-descriptor.js';
+import type { PermissionGrantModel } from '../types/permission-types.js';
 
 /**
  * Class containing useful utilities related to the Records interface.

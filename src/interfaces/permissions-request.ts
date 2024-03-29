@@ -1,5 +1,5 @@
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionScope } from '../types/permissions-grant-descriptor.js';
+import type { PermissionConditions, PermissionScope } from '../types/permission-types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';

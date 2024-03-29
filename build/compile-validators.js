@@ -36,7 +36,6 @@ import PermissionGrantData from '../json-schemas/permissions/permission-grant-da
 import PermissionRequestData from '../json-schemas/permissions/permission-request-data.json' assert { type: 'json' };
 import PermissionRevocationData from '../json-schemas/permissions/permission-revocation-data.json' assert { type: 'json' };
 import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
-import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
 import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
 import PermissionsScopes from '../json-schemas/permissions/scopes.json' assert { type: 'json' };
 import ProtocolDefinition from '../json-schemas/interface-methods/protocol-definition.json' assert { type: 'json' };
@@ -79,7 +78,6 @@ const schemas = {
   PermissionRequestData,
   PermissionRevocationData,
   PermissionsDefinitions,
-  PermissionsGrant,
   PermissionsRequest,
   PermissionsScopes,
   ProtocolDefinition,

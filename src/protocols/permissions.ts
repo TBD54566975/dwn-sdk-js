@@ -1,10 +1,11 @@
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
+import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { Time } from '../index.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
@@ -269,6 +270,11 @@ export class PermissionsProtocol {
       validateJsonSchema('PermissionRequestData', dataObject);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
       validateJsonSchema('PermissionGrantData', dataObject);
+
+      // more nuanced validation that are annoying/difficult to do using JSON schema
+      const permissionGrantData = dataObject as PermissionGrantModel;
+      PermissionsProtocol.validateScope(permissionGrantData.scope);
+      Time.validateTimestamp(permissionGrantData.dateExpires);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
       validateJsonSchema('PermissionRevocationData', dataObject);
     } else {
@@ -305,5 +311,36 @@ export class PermissionsProtocol {
    */
   private static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
     return scope.interface === 'Records';
+  }
+
+
+  /**
+   * Validates scope.
+   */
+  private static validateScope(scope: PermissionScope): void {
+    if (!this.isRecordPermissionScope(scope)) {
+      return;
+    }
+    // else we are dealing with a RecordsPermissionScope
+
+    // `schema` scopes may not have protocol-related fields
+    if (scope.schema !== undefined) {
+      if (scope.protocol !== undefined || scope.contextId !== undefined || scope.protocolPath) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeSchemaProhibitedProperties,
+          'Permission grants that have `schema` present cannot also have protocol-related properties present'
+        );
+      }
+    }
+
+    if (scope.protocol !== undefined) {
+      // `contextId` and `protocolPath` are mutually exclusive
+      if (scope.contextId !== undefined && scope.protocolPath !== undefined) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties,
+          'Permission grants cannot have both `contextId` and `protocolPath` present'
+        );
+      }
+    }
   }
 };

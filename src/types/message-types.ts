@@ -37,14 +37,14 @@ export type AuthorizationModel = {
 };
 
 /**
- * Type of common decoded `authorization`property payload.
+ * Type of common decoded `authorization` property payload.
  */
 export type GenericSignaturePayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
 
   /**
-   * CID of a `PermissionsGrant` DWN message with `delegated` set to `true`.
+   * Record ID of a permission grant DWN `RecordsWrite` with `delegated` set to `true`.
    */
   delegatedGrantId?: string;
 

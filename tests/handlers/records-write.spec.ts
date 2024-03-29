@@ -33,7 +33,7 @@ import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
-import { PermissionsConditionPublication } from '../../src/types/permissions-grant-descriptor.js';
+import { PermissionConditionPublication } from '../../src/types/permission-types.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
@@ -3980,7 +3980,7 @@ export function testRecordsWriteHandler(): void {
                 method    : DwnMethodName.Write,
               },
               conditions: {
-                publication: PermissionsConditionPublication.Required,
+                publication: PermissionConditionPublication.Required,
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
@@ -4031,7 +4031,7 @@ export function testRecordsWriteHandler(): void {
                 method    : DwnMethodName.Write,
               },
               conditions: {
-                publication: PermissionsConditionPublication.Prohibited
+                publication: PermissionConditionPublication.Prohibited
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);

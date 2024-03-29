@@ -7,6 +7,7 @@ import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { MessagesGetMessage } from '../../src/types/messages-types.js';
 import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
 import type { PaginationCursor } from '../../src/types/query-types.js';
+import type { PermissionsRequestMessage } from '../../src/types/permissions-types.js';
 import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-configure.js';
 import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
@@ -17,8 +18,7 @@ import type { AuthorizationModel, Pagination } from '../../src/types/message-typ
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
 import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
-import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
-import type { PermissionsGrantMessage, PermissionsRequestMessage } from '../../src/types/permissions-types.js';
+import type { PermissionConditions, PermissionScope } from '../../src/types/permission-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
@@ -35,7 +35,6 @@ import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
-import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
@@ -205,30 +204,10 @@ export type GeneratePermissionsRequestInput = {
   scope?: PermissionScope;
   conditions?: PermissionConditions;
 };
-
-export type GeneratePermissionsGrantInput = {
-  author: Persona;
-  messageTimestamp?: string;
-  dateExpires?: string;
-  description?: string;
-  grantedTo?: string;
-  grantedBy?: string;
-  grantedFor?: string;
-  permissionsRequestId?: string;
-  scope?: PermissionScope;
-  conditions?: PermissionConditions;
-};
-
 export type GeneratePermissionsRequestOutput = {
   author: Persona;
   permissionsRequest: PermissionsRequest;
   message: PermissionsRequestMessage;
-};
-
-export type GeneratePermissionsGrantOutput = {
-  author: Persona;
-  permissionsGrant: PermissionsGrant;
-  message: PermissionsGrantMessage;
 };
 
 export type GenerateEventsGetInput = {
@@ -733,35 +712,6 @@ export class TestDataGenerator {
       author,
       permissionsRequest,
       message: permissionsRequest.message
-    };
-  }
-
-  /**
-   * Generates a PermissionsGrant message for testing.
-   */
-  public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
-    const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : input?.messageTimestamp ?? Time.getCurrentTimestamp(),
-      dateExpires,
-      description          : input?.description ?? 'drugs',
-      grantedBy            : input?.grantedBy ?? author.did,
-      grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,
-      grantedFor           : input?.grantedFor ?? author.did,
-      permissionsRequestId : input?.permissionsRequestId,
-      scope                : input?.scope ?? {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      },
-      conditions : input?.conditions,
-      signer     : Jws.createSigner(author)
-    });
-
-    return {
-      author,
-      permissionsGrant,
-      message: permissionsGrant.message
     };
   }
 

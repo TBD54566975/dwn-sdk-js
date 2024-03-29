@@ -13,7 +13,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsGrant, PermissionsProtocol } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsProtocol } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);

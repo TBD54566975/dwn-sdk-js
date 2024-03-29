@@ -3,7 +3,6 @@ import type { MessageInterface } from '../types/message-interface.js';
 import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
-import { PermissionsGrant } from '../interfaces/permissions-grant.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 

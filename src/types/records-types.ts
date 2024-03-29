@@ -46,7 +46,7 @@ export type InternalRecordsWriteMessage = GenericMessage & {
   encryption?: EncryptionProperty;
 };
 
-export type RecordsWriteMessage = GenericMessage & {
+export type RecordsWriteMessage = {
   authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   recordId: string,
   contextId?: string;

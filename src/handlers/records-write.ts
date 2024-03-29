@@ -147,7 +147,7 @@ export class RecordsWriteHandler implements MethodHandler {
           e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
           e.code === DwnErrorCode.RecordsWriteDataSizeMismatch ||
-          e.code === DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord ||
+          e.code.startsWith('PermissionsProtocolValidate') ||
           e.code.startsWith('SchemaValidator')) {
           return messageReplyFromError(error, 400);
         }

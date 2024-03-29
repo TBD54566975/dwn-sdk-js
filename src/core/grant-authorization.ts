@@ -1,6 +1,6 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionGrantModel } from '../types/permissions-grant-descriptor.js';
+import type { PermissionGrantModel } from '../types/permission-types.js';
 import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from '../utils/encoder.js';

@@ -1,10 +1,10 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionConditions, PermissionGrantModel, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
+import type { PermissionConditions, PermissionGrantModel, RecordsPermissionScope } from '../types/permission-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from '../utils/encoder.js';
 import { GrantAuthorization } from './grant-authorization.js';
-import { PermissionsConditionPublication } from '../types/permissions-grant-descriptor.js';
+import { PermissionConditionPublication } from '../types/permission-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
@@ -230,7 +230,7 @@ export class RecordsGrantAuthorization {
   private static verifyConditions(recordsWriteMessage: RecordsWriteMessage, conditions: PermissionConditions | undefined): void {
 
     // If conditions require publication, RecordsWrite must have `published` === true
-    if (conditions?.publication === PermissionsConditionPublication.Required && !recordsWriteMessage.descriptor.published) {
+    if (conditions?.publication === PermissionConditionPublication.Required && !recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired,
         'PermissionsGrant requires message to be published'
@@ -238,7 +238,7 @@ export class RecordsGrantAuthorization {
     }
 
     // if conditions prohibit publication, RecordsWrite must have published === false or undefined
-    if (conditions?.publication === PermissionsConditionPublication.Prohibited && recordsWriteMessage.descriptor.published) {
+    if (conditions?.publication === PermissionConditionPublication.Prohibited && recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
         'PermissionsGrant prohibits message from being published'

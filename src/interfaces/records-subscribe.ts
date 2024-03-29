@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
