@@ -840,6 +840,97 @@ export function testRecordsTags(): void {
           expect(uniqueItemsReply.status.code).to.equal(202);
         });
 
+        it('should reject if tags are $required but not provided', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with a required tag
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  $required   : [ 'requiredTag' ],
+                  requiredTag : {
+                    type: 'string',
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record without the required tag
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(400);
+          expect(fooRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
+          expect(fooRecordReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags must have required property 'requiredTag'`);
+        });
+
+        it('should accept any tag if $additionalProperties is set to true', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+
+          // protocol with no required tags
+          const protocolDefinition: ProtocolDefinition = {
+            protocol  : 'http://example.com/protocol/withTags',
+            published : true,
+            types     : {
+              foo: {}
+            },
+            structure: {
+              foo: {
+                $tags: {
+                  $additionalProperties : true,
+                  optionalTag           : {
+                    type: 'string',
+                  },
+                }
+              }
+            },
+          };
+
+          // configure tags protocol
+          const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition,
+          });
+
+          const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+          expect(configureReply.status.code).to.equal(202);
+
+          // write a foo record without the required tag
+          const fooRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            published    : true,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo',
+            tags         : {
+              randomTag: 'some-value'
+            }
+          });
+
+          const fooRecordReply = await dwn.processMessage(alice.did, fooRecord.message, { dataStream: fooRecord.dataStream });
+          expect(fooRecordReply.status.code).to.equal(202);
+        });
+
         xit('should reject a record with a tag value does not conform to `contains`, `minContains` and `maxContains`', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 

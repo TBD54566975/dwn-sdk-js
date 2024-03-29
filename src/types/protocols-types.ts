@@ -132,6 +132,10 @@ export type ProtocolRuleSet = {
    * If $tags is set, the record must conform to the tag rules.
    */
   $tags?: {
+    /** array of required tags */
+    $required?: string[],
+    /** allow properties other than those explicitly listed. defaults to false  */
+    $additionalProperties?: boolean;
     [key: string]: any;
   }
 
