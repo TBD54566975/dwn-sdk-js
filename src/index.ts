@@ -7,7 +7,6 @@ export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscript
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { PermissionConditions, PermissionScope } from './types/permission-types.js';
-export type { PermissionsRequestDescriptor, PermissionsRequestMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
@@ -35,7 +34,6 @@ export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages-get.js';
 export { UnionMessageReply } from './core/message-reply.js';
 export { MessageStore, MessageStoreOptions } from './types/message-store.js';
-export { PermissionsRequest, PermissionsRequestOptions } from './interfaces/permissions-request.js';
 export { PermissionsProtocol } from './protocols/permissions.js';
 export { PrivateKeySigner } from './utils/private-key-signer.js';
 export { Protocols } from './utils/protocols.js';

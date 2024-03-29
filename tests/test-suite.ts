@@ -14,7 +14,6 @@ import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
 import { testOwnerDelegatedGrant } from './features/owner-delegated-grant.spec.js';
 import { testOwnerSignature } from './features/owner-signature.spec.js';
 import { testPermissions } from './features/permissions.spec.js';
-import { testPermissionsRequestHandler } from './handlers/permissions-request.spec.js';
 import { testProtocolCreateAction } from './features/protocol-create-action.spec.js';
 import { testProtocolDeleteAction } from './features/protocol-delete-action.spec.js';
 import { testProtocolsConfigureHandler } from './handlers/protocols-configure.spec.js';
@@ -52,7 +51,6 @@ export class TestSuite {
     testEventsSubscribeHandler();
     testEventsQueryHandler();
     testMessagesGetHandler();
-    testPermissionsRequestHandler();
     testProtocolsConfigureHandler();
     testProtocolsQueryHandler();
     testRecordsDeleteHandler();

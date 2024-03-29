@@ -5,7 +5,6 @@ import type { EventLog } from './types/event-log.js';
 import type { EventStream } from './types/subscriptions.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
-import type { PermissionsRequestMessage } from './types/permissions-types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
@@ -22,7 +21,6 @@ import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
-import { PermissionsRequestHandler } from './handlers/permissions-request.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
@@ -68,12 +66,6 @@ export class Dwn {
         this.didResolver,
         this.messageStore,
         this.dataStore,
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Request]: new PermissionsRequestHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
       ),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver,
@@ -159,7 +151,6 @@ export class Dwn {
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
   public async processMessage(
