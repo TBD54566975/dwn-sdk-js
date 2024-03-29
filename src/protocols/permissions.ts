@@ -1,10 +1,12 @@
-import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
+import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../types/records-types.js';
 import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 
 import { Encoder } from '../utils/encoder.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { validateJsonSchema } from '../schema-validator.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 /**
@@ -255,6 +257,27 @@ export class PermissionsProtocol {
       permissionRevocationModel,
       permissionRevocationBytes
     };
+  }
+
+  /**
+   * Validates the given Permissions protocol RecordsWrite. It can be a request, grant, or revocation.
+   */
+  public static validateSchema(recordsWriteMessage: RecordsWriteMessage, dataBytes: Uint8Array): void {
+    const dataString = Encoder.bytesToString(dataBytes);
+    const dataObject = JSON.parse(dataString);
+    if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
+      validateJsonSchema('PermissionRequestData', dataObject);
+    } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
+      validateJsonSchema('PermissionGrantData', dataObject);
+    } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+      validateJsonSchema('PermissionRevocationData', dataObject);
+    } else {
+      // defensive programming, should be unreachable externally
+      throw new DwnError(
+        DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord,
+        `Unexpected permission record: ${recordsWriteMessage.descriptor.protocolPath}`
+      );
+    }
   }
 
   /**

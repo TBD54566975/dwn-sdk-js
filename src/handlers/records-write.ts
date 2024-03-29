@@ -15,6 +15,7 @@ import { Encoder } from '../utils/encoder.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
@@ -140,12 +141,16 @@ export class RecordsWriteHandler implements MethodHandler {
       }
     } catch (error) {
       const e = error as any;
-      if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
+      if (e.code !== undefined) {
+        if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
           e.code === DwnErrorCode.RecordsWriteMissingDataInPrevious ||
           e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
-          e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
-        return messageReplyFromError(error, 400);
+          e.code === DwnErrorCode.RecordsWriteDataSizeMismatch ||
+          e.code === DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord ||
+          e.code.startsWith('SchemaValidator')) {
+          return messageReplyFromError(error, 400);
+        }
       }
 
       // else throw
@@ -156,13 +161,48 @@ export class RecordsWriteHandler implements MethodHandler {
       status: { code: 202, detail: 'Accepted' }
     };
 
-    // delete all existing messages that are not newest, except for the initial write
+    // delete all existing messages of the same record that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
       tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog
     );
 
+    await this.postProcessingForCoreRecordsWrite(tenant, recordsWrite);
+
     return messageReply;
   };
+
+  private static validateSchemaForCoreRecordsWrite(recordsWriteMessage: RecordsWriteMessage, dataBytes: Uint8Array): void {
+    if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri) {
+      PermissionsProtocol.validateSchema(recordsWriteMessage, dataBytes);
+    }
+  }
+
+  /**
+   * Performs additional necessary tasks if the RecordsWrite handled is a core DWN RecordsWrite that need additional processing.
+   * For instance: a Permission revocation RecordsWrite.
+   */
+  private async postProcessingForCoreRecordsWrite(tenant: string, recordsWrite: RecordsWrite): Promise<void> {
+    // If this message is a Permission revocation, we need to delete all grant-authorized messages with timestamp after revocation
+    // NOTE: this code is a direct copy and paste from the original PermissionsRevokeHandler (no longer exists),
+    // but it appears that there was no test for it and it does not look like the code worked. For instance:
+    // - not seeing `permissionsGrantId` being an index
+    // - not seeing `this.dataStore` being called to delete actual data
+    if (recordsWrite.message.descriptor.protocol === PermissionsProtocol.uri &&
+      recordsWrite.message.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+      const permissionsGrantId = recordsWrite.message.recordId;
+      const grantAuthorizedMessagesQuery = {
+        permissionsGrantId,
+        dateCreated: { gte: recordsWrite.message.descriptor.messageTimestamp },
+      };
+      const { messages: grantAuthorizedMessagesAfterRevoke } = await this.messageStore.query(tenant, [ grantAuthorizedMessagesQuery ]);
+      const grantAuthorizedMessageCidsAfterRevoke: string[] = [];
+      for (const grantAuthorizedMessage of grantAuthorizedMessagesAfterRevoke) {
+        const messageCid = await Message.getCid(grantAuthorizedMessage);
+        await this.messageStore.delete(tenant, messageCid);
+      }
+      this.eventLog.deleteEventsByCid(tenant, grantAuthorizedMessageCidsAfterRevoke);
+    }
+  }
 
   /**
    * Returns a `RecordsQueryReplyEntry` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
@@ -182,10 +222,13 @@ export class RecordsWriteHandler implements MethodHandler {
 
     // if data is below the threshold, we store it within MessageStore
     if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
+      // validate data integrity before setting.
       const dataBytes = await DataStream.toBytes(dataStream!);
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
-      // validate data integrity before setting.
       RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
+
+      RecordsWriteHandler.validateSchemaForCoreRecordsWrite(message, dataBytes);
+
       messageWithOptionalEncodedData = await this.cloneAndAddEncodedData(message, dataBytes);
     } else {
       // split the dataStream into two: one for CID computation and one for storage
@@ -271,6 +314,7 @@ export class RecordsWriteHandler implements MethodHandler {
         `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${expectedDataCid}`
       );
     }
+
     if (expectedDataSize !== actualDataSize) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteDataSizeMismatch,

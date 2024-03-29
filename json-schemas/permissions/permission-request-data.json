@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.foundation/dwn/json-schemas/permission-request-data.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "delegated",
+    "scope"
+  ],
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "delegated": {
+      "type": "boolean"
+    },
+    "scope": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
+    },
+    "conditions": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
+    }
+  }
+}

@@ -32,6 +32,9 @@ import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json'
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
 import NumberRangeFilter from '../json-schemas/interface-methods/number-range-filter.json' assert { type: 'json' };
 import PaginationCursor from '../json-schemas/interface-methods/pagination-cursor.json' assert { type: 'json' };
+import PermissionGrantData from '../json-schemas/permissions/permission-grant-data.json' assert { type: 'json' };
+import PermissionRequestData from '../json-schemas/permissions/permission-request-data.json' assert { type: 'json' };
+import PermissionRevocationData from '../json-schemas/permissions/permission-revocation-data.json' assert { type: 'json' };
 import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
 import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
 import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
@@ -73,6 +76,9 @@ const schemas = {
   MessagesGet,
   NumberRangeFilter,
   PaginationCursor,
+  PermissionGrantData,
+  PermissionRequestData,
+  PermissionRevocationData,
   PermissionsDefinitions,
   PermissionsGrant,
   PermissionsRequest,
