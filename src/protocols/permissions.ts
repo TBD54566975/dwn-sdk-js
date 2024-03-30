@@ -5,7 +5,7 @@ import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel
 
 import { Encoder } from '../utils/encoder.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
-import { Time } from '../index.js';
+import { Time } from '../utils/time.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
