@@ -350,12 +350,12 @@ export class RecordsWriteHandler implements MethodHandler {
       // if author is the same as the target tenant, we can directly grant access
       return;
     } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
-      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
+      const permissionGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
       await RecordsGrantAuthorization.authorizeWrite({
         recordsWriteMessage : recordsWrite.message,
         expectedGrantor     : tenant,
         expectedGrantee     : recordsWrite.author,
-        permissionsGrantMessage,
+        permissionGrantMessage,
         messageStore
       });
     } else if (recordsWrite.message.descriptor.protocol !== undefined) {

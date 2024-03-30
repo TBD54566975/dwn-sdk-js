@@ -93,7 +93,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
       recordsWriteMessageToBeRead : matchedRecordsWrite,
       expectedGrantor             : this.author!,
       expectedGrantee             : this.signer!,
-      permissionsGrantMessage     : delegatedGrant,
+      permissionGrantMessage      : delegatedGrant,
       messageStore
     });
   }

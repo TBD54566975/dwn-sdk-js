@@ -15,22 +15,22 @@ export class RecordsGrantAuthorization {
     recordsWriteMessage: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionsGrantMessage: RecordsWriteMessage,
+    permissionGrantMessage: RecordsWriteMessage,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsWriteMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
+      recordsWriteMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsWriteMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       messageStore
     });
 
-    const permissionGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
     const permissionConditions = permissionGrantModel.conditions;
@@ -49,22 +49,22 @@ export class RecordsGrantAuthorization {
     recordsWriteMessageToBeRead: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionsGrantMessage: RecordsWriteMessage,
+    permissionGrantMessage: RecordsWriteMessage,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
+      recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsReadMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       messageStore
     });
 
-    const permissionGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
     RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionScope);
@@ -78,23 +78,23 @@ export class RecordsGrantAuthorization {
     incomingMessage: RecordsQueryMessage | RecordsSubscribeMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionsGrantMessage: RecordsWriteMessage,
+    permissionGrantMessage: RecordsWriteMessage,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      incomingMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
+      incomingMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       messageStore
     });
 
     // If the grant specifies a protocol, the subscribe or query must specify the same protocol.
-    const permissionGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
     const protocolInGrant = permissionScope.protocol;
@@ -116,23 +116,23 @@ export class RecordsGrantAuthorization {
     recordsWriteToDelete: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionsGrantMessage: RecordsWriteMessage,
+    permissionGrantMessage: RecordsWriteMessage,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsDeleteMessage, recordsWriteToDelete, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore
+      recordsDeleteMessage, recordsWriteToDelete, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsDeleteMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       messageStore
     });
 
     // If the grant specifies a protocol, the delete must be deleting a record with the same protocol.
-    const permissionGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
     const protocolInGrant = permissionScope.protocol;

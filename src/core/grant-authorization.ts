@@ -6,7 +6,6 @@ import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/recor
 import { Encoder } from '../utils/encoder.js';
 import { Message } from './message.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
-import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -27,23 +26,22 @@ export class GrantAuthorization {
     incomingMessage: GenericMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionsGrantMessage: RecordsWriteMessage,
+    permissionGrantMessage: RecordsWriteMessage,
     messageStore: MessageStore,
     }): Promise<void> {
-    const { incomingMessage, expectedGrantor, expectedGrantee, permissionsGrantMessage, messageStore } = input;
+    const { incomingMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore } = input;
 
     const incomingMessageDescriptor = incomingMessage.descriptor;
-    const permissionsGrantId = permissionsGrantMessage.recordId;
-    const permissionGrantRecordsWrite = await RecordsWrite.parse(permissionsGrantMessage); // TODO: FIX! inefficient?
+    const permissionsGrantId = permissionGrantMessage.recordId;
 
-    GrantAuthorization.verifyExpectedGrantedToAndGrantedFor(expectedGrantor, expectedGrantee, permissionGrantRecordsWrite);
+    GrantAuthorization.verifyExpectedGrantedToAndGrantedFor(expectedGrantor, expectedGrantee, permissionGrantMessage);
 
     // verify that grant is active during incomingMessage's timestamp
     const grantedFor = expectedGrantor; // renaming for better readability now that we have verified the grantor above
     await GrantAuthorization.verifyGrantActive(
       grantedFor,
       incomingMessageDescriptor.messageTimestamp,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       permissionsGrantId,
       messageStore
     );
@@ -52,7 +50,7 @@ export class GrantAuthorization {
     await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(
       incomingMessageDescriptor.interface,
       incomingMessageDescriptor.method,
-      permissionsGrantMessage,
+      permissionGrantMessage,
       permissionsGrantId
     );
   }
@@ -99,10 +97,10 @@ export class GrantAuthorization {
   private static verifyExpectedGrantedToAndGrantedFor(
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantRecordsWrite: RecordsWrite
+    permissionGrantMessage: RecordsWriteMessage
   ): void {
 
-    const actualGrantee = permissionGrantRecordsWrite.message.descriptor.recipient;
+    const actualGrantee = permissionGrantMessage.descriptor.recipient;
     if (expectedGrantee !== actualGrantee) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
@@ -110,7 +108,7 @@ export class GrantAuthorization {
       );
     }
 
-    const actualGrantor = permissionGrantRecordsWrite.author;
+    const actualGrantor = Message.getSigner(permissionGrantMessage);
     if (expectedGrantor !== actualGrantor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,

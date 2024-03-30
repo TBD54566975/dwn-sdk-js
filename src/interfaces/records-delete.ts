@@ -103,11 +103,11 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   public async authorizeDelegate(recordsWriteToDelete: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
     const delegatedGrantMessage = this.message.authorization!.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeDelete({
-      recordsDeleteMessage    : this.message,
+      recordsDeleteMessage   : this.message,
       recordsWriteToDelete,
-      expectedGrantor         : this.author!,
-      expectedGrantee         : this.signer!,
-      permissionsGrantMessage : delegatedGrantMessage,
+      expectedGrantor        : this.author!,
+      expectedGrantee        : this.signer!,
+      permissionGrantMessage : delegatedGrantMessage,
       messageStore
     });
   }

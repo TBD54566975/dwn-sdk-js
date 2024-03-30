@@ -787,10 +787,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage     : this.message,
-      expectedGrantor         : this.author!,
-      expectedGrantee         : this.signer!,
-      permissionsGrantMessage : delegatedGrant,
+      recordsWriteMessage    : this.message,
+      expectedGrantor        : this.author!,
+      expectedGrantee        : this.signer!,
+      permissionGrantMessage : delegatedGrant,
       messageStore
     });
   }
@@ -802,10 +802,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
     const delegatedGrant = this.message.authorization.ownerDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage     : this.message,
-      expectedGrantor         : this.owner!,
-      expectedGrantee         : this.ownerSignatureSigner!,
-      permissionsGrantMessage : delegatedGrant,
+      recordsWriteMessage    : this.message,
+      expectedGrantor        : this.owner!,
+      expectedGrantee        : this.ownerSignatureSigner!,
+      permissionGrantMessage : delegatedGrant,
       messageStore
     });
   }
