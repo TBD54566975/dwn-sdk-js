@@ -6,6 +6,7 @@ import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMess
 import { AbstractMessage } from '../core/abstract-message.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -78,7 +79,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     if (this.author === tenant) {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
-      const permissionGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
+      const permissionGrantMessage = await PermissionsProtocol.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
       await GrantAuthorization.performBaseValidation({
         incomingMessage : this.message,
         expectedGrantor : tenant,

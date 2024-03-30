@@ -1,3 +1,5 @@
+import type { GenericMessage } from '../types/message-types.js';
+import type { MessageStore } from '../types/message-store.js';
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../types/records-types.js';
@@ -8,6 +10,7 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { Time } from '../utils/time.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 /**
@@ -284,6 +287,42 @@ export class PermissionsProtocol {
         `Unexpected permission record: ${recordsWriteMessage.descriptor.protocolPath}`
       );
     }
+  }
+
+
+
+  /**
+   * Fetches PermissionsGrantMessage with CID `permissionsGrantId`.
+   * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
+   * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
+   */
+  public static async fetchGrant(
+    tenant: string,
+    messageStore: MessageStore,
+    permissionsGrantId: string,
+  ): Promise<RecordsWriteMessage> {
+
+    const grantQuery = {
+      recordId          : permissionsGrantId,
+      isLatestBaseState : true
+    };
+    const { messages } = await messageStore.query(tenant, [grantQuery]);
+    const possibleGrantMessage: GenericMessage | undefined = messages[0];
+
+    const dwnInterface = possibleGrantMessage?.descriptor.interface;
+    const dwnMethod = possibleGrantMessage?.descriptor.method;
+
+    if (dwnInterface !== DwnInterfaceName.Records ||
+        dwnMethod !== DwnMethodName.Write ||
+        (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantMissing,
+        `Could not find permission grant with record ID ${permissionsGrantId}.`
+      );
+    }
+
+    const permissionsGrantMessage = possibleGrantMessage as RecordsWriteMessage;
+    return permissionsGrantMessage;
   }
 
   /**

@@ -5,9 +5,7 @@ import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/recor
 
 import { Encoder } from '../utils/encoder.js';
 import { Message } from './message.js';
-import { PermissionsProtocol } from '../protocols/permissions.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class GrantAuthorization {
 
@@ -53,40 +51,6 @@ export class GrantAuthorization {
       permissionGrantMessage,
       permissionsGrantId
     );
-  }
-
-  /**
-   * Fetches PermissionsGrantMessage with CID `permissionsGrantId`.
-   * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
-   * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
-   */
-  public static async fetchGrant(
-    tenant: string,
-    messageStore: MessageStore,
-    permissionsGrantId: string,
-  ): Promise<RecordsWriteMessage> {
-
-    const grantQuery = {
-      recordId          : permissionsGrantId,
-      isLatestBaseState : true
-    };
-    const { messages } = await messageStore.query(tenant, [grantQuery]);
-    const possibleGrantMessage: GenericMessage | undefined = messages[0];
-
-    const dwnInterface = possibleGrantMessage?.descriptor.interface;
-    const dwnMethod = possibleGrantMessage?.descriptor.method;
-
-    if (dwnInterface !== DwnInterfaceName.Records ||
-        dwnMethod !== DwnMethodName.Write ||
-        (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
-      throw new DwnError(
-        DwnErrorCode.GrantAuthorizationGrantMissing,
-        `Could not find permission grant with record ID ${permissionsGrantId}.`
-      );
-    }
-
-    const permissionsGrantMessage = possibleGrantMessage as RecordsWriteMessage;
-    return permissionsGrantMessage;
   }
 
   /**
