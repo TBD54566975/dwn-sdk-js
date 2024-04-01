@@ -1,9 +1,8 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
-import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
+import type { PermissionConditions, RecordsPermissionScope } from '../types/permission-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
-import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionConditionPublication } from '../types/permission-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
