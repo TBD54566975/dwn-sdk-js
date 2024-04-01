@@ -10,22 +10,6 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
   /**
-   * Validates that the given scope is a RecordsPermissionScope.
-   * @throws {DwnError} if scope is not a RecordsPermissionScope.
-   * @returns The scope cast to a RecordsPermissionScope.
-   */
-  private static validateIsScopedToRecords(scope: PermissionScope): RecordsPermissionScope {
-    if (scope.interface !== DwnInterfaceName.Records) {
-      throw new DwnError(
-        DwnErrorCode.RecordsGrantAuthorizationScopeNotRecords,
-        `Permission gran is not scoped to Records, it is scope to ${scope.interface} instead.`
-      );
-    }
-
-    return scope as RecordsPermissionScope;
-  }
-
-  /**
    * Authorizes the given RecordsWrite in the scope of the DID given.
    */
   public static async authorizeWrite(input: {
@@ -47,7 +31,8 @@ export class RecordsGrantAuthorization {
       messageStore
     });
 
-    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionGrant.scope);
+    // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionGrant.scope as RecordsPermissionScope);
 
     RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionGrant.conditions);
   }
@@ -76,7 +61,8 @@ export class RecordsGrantAuthorization {
       messageStore
     });
 
-    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionGrant.scope);
+    // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionGrant.scope as RecordsPermissionScope);
   }
 
   /**
@@ -103,8 +89,8 @@ export class RecordsGrantAuthorization {
     });
 
     // If the grant specifies a protocol, the subscribe or query must specify the same protocol.
-
-    const permissionScope = RecordsGrantAuthorization.validateIsScopedToRecords(permissionGrant.scope);
+    // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
+    const permissionScope = permissionGrant.scope as RecordsPermissionScope;
     const protocolInGrant = permissionScope.protocol;
     const protocolInMessage = incomingMessage.descriptor.filter.protocol;
     if (protocolInGrant !== undefined && protocolInMessage !== protocolInGrant) {
@@ -140,7 +126,8 @@ export class RecordsGrantAuthorization {
     });
 
     // If the grant specifies a protocol, the delete must be deleting a record with the same protocol.
-    const permissionScope = RecordsGrantAuthorization.validateIsScopedToRecords(permissionGrant.scope);
+    // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
+    const permissionScope = permissionGrant.scope as RecordsPermissionScope;
     const protocolInGrant = permissionScope.protocol;
     const protocolOfRecordToDelete = recordsWriteToDelete.descriptor.protocol;
     if (protocolInGrant !== undefined && protocolOfRecordToDelete !== protocolInGrant) {
@@ -156,10 +143,8 @@ export class RecordsGrantAuthorization {
    */
   private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
-    scope: PermissionScope,
+    grantScope: RecordsPermissionScope,
   ): void {
-    const grantScope = RecordsGrantAuthorization.validateIsScopedToRecords(scope);
-
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
       return;

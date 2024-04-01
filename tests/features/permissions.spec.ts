@@ -204,7 +204,6 @@ export function testPermissions(): void {
       expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
     });
 
-
     describe('schema validation', () => {
       it('should reject with 400 if a permission message fails schema validation', async () => {
         // Scenario:
