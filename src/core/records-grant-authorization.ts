@@ -30,6 +30,7 @@ export class RecordsGrantAuthorization {
       messageStore
     });
 
+    // TODO: yet another base64url decode!!!
     const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
     const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
     const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;

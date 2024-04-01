@@ -5,13 +5,14 @@ import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/recor
 
 import { Encoder } from '../utils/encoder.js';
 import { Message } from './message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class GrantAuthorization {
 
   /**
    * Performs base PermissionsGrant-based authorization against the given message:
-   * 1. Validates the `expectedGrantedToInGrant` and `expectedGrantedForInGrant` values against the actual values in given permissions grant.
+   * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permissions grant.
    * 2. Verifies that the incoming message is within the allowed time frame of the grant, and the grant has not been revoked.
    * 3. Verifies that the `interface` and `method` grant scopes match the incoming message.
    *
@@ -30,17 +31,17 @@ export class GrantAuthorization {
     const { incomingMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore } = input;
 
     const incomingMessageDescriptor = incomingMessage.descriptor;
-    const permissionsGrantId = permissionGrantMessage.recordId;
 
-    GrantAuthorization.verifyExpectedGrantedToAndGrantedFor(expectedGrantor, expectedGrantee, permissionGrantMessage);
+    const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
+
+    GrantAuthorization.verifyExpectedGrantorAndGrantee(expectedGrantor, expectedGrantee, permissionGrant);
 
     // verify that grant is active during incomingMessage's timestamp
     const grantedFor = expectedGrantor; // renaming for better readability now that we have verified the grantor above
     await GrantAuthorization.verifyGrantActive(
       grantedFor,
       incomingMessageDescriptor.messageTimestamp,
-      permissionGrantMessage,
-      permissionsGrantId,
+      permissionGrant,
       messageStore
     );
 
@@ -48,23 +49,22 @@ export class GrantAuthorization {
     await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(
       incomingMessageDescriptor.interface,
       incomingMessageDescriptor.method,
-      permissionGrantMessage,
-      permissionsGrantId
+      permissionGrant,
     );
   }
 
   /**
    * Verifies the given `expectedGrantor` and `expectedGrantee` values against
    * the actual signer and recipient in given permissions grant.
-   * @throws {DwnError} if `expectedGrantedToInGrant` or `expectedGrantedForInGrant` do not match the actual values in the grant.
+   * @throws {DwnError} if `expectedGrantor` or `expectedGrantee` do not match the actual values in the grant.
    */
-  private static verifyExpectedGrantedToAndGrantedFor(
+  private static verifyExpectedGrantorAndGrantee(
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage
+    permissionGrant: PermissionGrant
   ): void {
 
-    const actualGrantee = permissionGrantMessage.descriptor.recipient;
+    const actualGrantee = permissionGrant.grantee;
     if (expectedGrantee !== actualGrantee) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
@@ -72,7 +72,7 @@ export class GrantAuthorization {
       );
     }
 
-    const actualGrantor = Message.getSigner(permissionGrantMessage);
+    const actualGrantor = permissionGrant.grantor;
     if (expectedGrantor !== actualGrantor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
@@ -84,19 +84,17 @@ export class GrantAuthorization {
   /**
    * Verify that the incoming message is within the allowed time frame of the grant,
    * and the grant has not been revoked.
-   * @param permissionsGrantId Purely being passed as an optimization. Technically can be computed from `permissionsGrantMessage`.
    * @param messageStore Used to check if the grant has been revoked.
    * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
   private static async verifyGrantActive(
     grantedFor: string,
     incomingMessageTimestamp: string,
-    permissionsGrantMessage: RecordsWriteMessage,
-    permissionsGrantId: string,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   ): Promise<void> {
     // Check that incomingMessage is within the grant's time frame
-    if (incomingMessageTimestamp < permissionsGrantMessage.descriptor.messageTimestamp) {
+    if (incomingMessageTimestamp < permissionGrant.dateGranted) {
       // grant is not yet active
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantNotYetActive,
@@ -104,11 +102,7 @@ export class GrantAuthorization {
       );
     }
 
-    // TODO: DO SOMETHING. Super inefficient
-    const permissionsGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
-
-    if (incomingMessageTimestamp >= permissionsGrant.dateExpires) {
+    if (incomingMessageTimestamp >= permissionGrant.dateExpires) {
       // grant has expired
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantExpired,
@@ -118,7 +112,7 @@ export class GrantAuthorization {
 
     // Check if grant has been revoked
     const query = {
-      parentId          : permissionsGrantId,
+      parentId          : permissionGrant.id,
       isLatestBaseState : true
     };
     const { messages: revokes } = await messageStore.query(grantedFor, [query]);
@@ -127,7 +121,7 @@ export class GrantAuthorization {
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantRevoked,
-        `PermissionsGrant with CID ${permissionsGrantId} has been revoked`,
+        `PermissionsGrant with CID ${permissionGrant.id} has been revoked`,
       );
     }
   }
@@ -140,23 +134,18 @@ export class GrantAuthorization {
   private static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,
     dwnMethod: string,
-    permissionsGrantMessage: RecordsWriteMessage,
-    permissionsGrantId: string
+    permissionGrant: PermissionGrant,
   ): Promise<void> {
 
-    // // TODO: DO SOMETHING. Super inefficient
-    const permissionsGrantEncoded = (permissionsGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
-
-    if (dwnInterface !== permissionsGrant.scope.interface) {
+    if (dwnInterface !== permissionGrant.scope.interface) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationInterfaceMismatch,
-        `DWN Interface of incoming message is outside the scope of permission grant with ID ${permissionsGrantId}`
+        `DWN Interface of incoming message is outside the scope of permission grant with ID ${permissionGrant.id}`
       );
-    } else if (dwnMethod !== permissionsGrant.scope.method) {
+    } else if (dwnMethod !== permissionGrant.scope.method) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationMethodMismatch,
-        `DWN Method of incoming message is outside the scope of permission grant with ID ${permissionsGrantId}`
+        `DWN Method of incoming message is outside the scope of permission grant with ID ${permissionGrant.id}`
       );
     }
   }
