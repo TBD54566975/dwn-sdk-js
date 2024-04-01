@@ -4,6 +4,7 @@ import type { RecordsFilter, RecordsSubscribeDescriptor, RecordsSubscribeMessage
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -91,12 +92,12 @@ export class RecordsSubscribe extends AbstractMessage<RecordsSubscribeMessage> {
  * @param messageStore Used to check if the grant has been revoked.
  */
   public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization!.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeQueryOrSubscribe({
-      incomingMessage        : this.message,
-      expectedGrantor        : this.author!,
-      expectedGrantee        : this.signer!,
-      permissionGrantMessage : delegatedGrant,
+      incomingMessage : this.message,
+      expectedGrantor : this.author!,
+      expectedGrantee : this.signer!,
+      permissionGrant : delegatedGrant,
       messageStore
     });
   }

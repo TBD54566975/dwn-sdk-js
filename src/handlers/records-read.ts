@@ -133,13 +133,13 @@ export class RecordsReadHandler implements MethodHandler {
       // The recipient of a message may always read it
       return;
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
-      const permissionGrantMessage = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
       await RecordsGrantAuthorization.authorizeRead({
         recordsReadMessage          : recordsRead.message,
         recordsWriteMessageToBeRead : matchedRecordsWrite.message,
         expectedGrantor             : tenant,
         expectedGrantee             : recordsRead.author,
-        permissionGrantMessage,
+        permissionGrant,
         messageStore
       });
     } else if (descriptor.protocol !== undefined) {

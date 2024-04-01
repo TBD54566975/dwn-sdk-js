@@ -18,8 +18,8 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidKey, UniversalResolver } from '@web5/dids';
 import { DataStream, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, PermissionsProtocol, ProtocolsQuery, RecordsWrite } from '../../src/index.js';
+import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 

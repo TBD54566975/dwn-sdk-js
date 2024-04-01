@@ -1,14 +1,14 @@
 import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
 
-import { Message } from '../core/message.js';
-import { Records } from '../utils/records.js';
-import { removeUndefinedProperties } from '../utils/object.js';
-import { Time } from '../utils/time.js';
-import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PermissionConditions, PermissionGrantModel, PermissionScope } from '../types/permission-types.js';
+
 import { Encoder } from '../utils/encoder.js';
+import { Message } from '../core/message.js';
 
 
+/**
+ * A class representing a Permission Grant for a more convenient abstraction.
+ */
 export class PermissionGrant {
 
   /**

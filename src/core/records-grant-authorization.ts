@@ -1,13 +1,30 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionConditions, PermissionGrantModel, RecordsPermissionScope } from '../types/permission-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { PermissionGrant } from '../protocols/permission-grant.js';
+import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteMessage } from '../types/records-types.js';
 
-import { Encoder } from '../utils/encoder.js';
+import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionConditionPublication } from '../types/permission-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
+  /**
+   * Validates that the given scope is a RecordsPermissionScope.
+   * @throws {DwnError} if scope is not a RecordsPermissionScope.
+   * @returns The scope cast to a RecordsPermissionScope.
+   */
+  private static validateIsScopedToRecords(scope: PermissionScope): RecordsPermissionScope {
+    if (scope.interface !== DwnInterfaceName.Records) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeNotRecords,
+        `Permission gran is not scoped to Records, it is scope to ${scope.interface} instead.`
+      );
+    }
+
+    return scope as RecordsPermissionScope;
+  }
+
   /**
    * Authorizes the given RecordsWrite in the scope of the DID given.
    */
@@ -15,30 +32,24 @@ export class RecordsGrantAuthorization {
     recordsWriteMessage: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsWriteMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
+      recordsWriteMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsWriteMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionGrantMessage,
+      permissionGrant,
       messageStore
     });
 
-    // TODO: yet another base64url decode!!!
-    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-    const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
-    const permissionConditions = permissionGrantModel.conditions;
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionGrant.scope);
 
-    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionScope);
-
-    RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionConditions);
+    RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionGrant.conditions);
   }
 
   /**
@@ -50,25 +61,22 @@ export class RecordsGrantAuthorization {
     recordsWriteMessageToBeRead: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
+      recordsReadMessage, recordsWriteMessageToBeRead, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsReadMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionGrantMessage,
+      permissionGrant,
       messageStore
     });
 
-    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-    const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
-    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionScope);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionGrant.scope);
   }
 
   /**
@@ -79,25 +87,24 @@ export class RecordsGrantAuthorization {
     incomingMessage: RecordsQueryMessage | RecordsSubscribeMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      incomingMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
+      incomingMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionGrantMessage,
+      permissionGrant,
       messageStore
     });
 
     // If the grant specifies a protocol, the subscribe or query must specify the same protocol.
-    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-    const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
+
+    const permissionScope = RecordsGrantAuthorization.validateIsScopedToRecords(permissionGrant.scope);
     const protocolInGrant = permissionScope.protocol;
     const protocolInMessage = incomingMessage.descriptor.filter.protocol;
     if (protocolInGrant !== undefined && protocolInMessage !== protocolInGrant) {
@@ -117,25 +124,23 @@ export class RecordsGrantAuthorization {
     recordsWriteToDelete: RecordsWriteMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsDeleteMessage, recordsWriteToDelete, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore
+      recordsDeleteMessage, recordsWriteToDelete, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
       incomingMessage: recordsDeleteMessage,
       expectedGrantor,
       expectedGrantee,
-      permissionGrantMessage,
+      permissionGrant,
       messageStore
     });
 
     // If the grant specifies a protocol, the delete must be deleting a record with the same protocol.
-    const permissionGrantEncoded = (permissionGrantMessage as RecordsQueryReplyEntry).encodedData!;
-    const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-    const permissionScope = permissionGrantModel.scope as RecordsPermissionScope;
+    const permissionScope = RecordsGrantAuthorization.validateIsScopedToRecords(permissionGrant.scope);
     const protocolInGrant = permissionScope.protocol;
     const protocolOfRecordToDelete = recordsWriteToDelete.descriptor.protocol;
     if (protocolInGrant !== undefined && protocolOfRecordToDelete !== protocolInGrant) {
@@ -151,8 +156,9 @@ export class RecordsGrantAuthorization {
    */
   private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
-    grantScope: RecordsPermissionScope,
+    scope: PermissionScope,
   ): void {
+    const grantScope = RecordsGrantAuthorization.validateIsScopedToRecords(scope);
 
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
@@ -175,7 +181,7 @@ export class RecordsGrantAuthorization {
     // Protocol records must have grants specifying the protocol
     if (grantScope.protocol === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol,
+        DwnErrorCode.RecordsGrantAuthorizationScopeMissingProtocol,
         'Grant for protocol record must specify protocol in its scope'
       );
     }

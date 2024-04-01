@@ -1,11 +1,8 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionGrantModel } from '../types/permission-types.js';
-import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
+import type { PermissionGrant } from '../protocols/permission-grant.js';
 
-import { Encoder } from '../utils/encoder.js';
 import { Message } from './message.js';
-import { PermissionGrant } from '../protocols/permission-grant.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class GrantAuthorization {
@@ -25,14 +22,12 @@ export class GrantAuthorization {
     incomingMessage: GenericMessage,
     expectedGrantor: string,
     expectedGrantee: string,
-    permissionGrantMessage: RecordsWriteMessage,
+    permissionGrant: PermissionGrant,
     messageStore: MessageStore,
     }): Promise<void> {
-    const { incomingMessage, expectedGrantor, expectedGrantee, permissionGrantMessage, messageStore } = input;
+    const { incomingMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore } = input;
 
     const incomingMessageDescriptor = incomingMessage.descriptor;
-
-    const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
 
     GrantAuthorization.verifyExpectedGrantorAndGrantee(expectedGrantor, expectedGrantee, permissionGrant);
 

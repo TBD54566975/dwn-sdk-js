@@ -6,6 +6,7 @@ import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../typ
 import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
+import { PermissionGrant } from './permission-grant.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { Time } from '../utils/time.js';
 import { validateJsonSchema } from '../schema-validator.js';
@@ -300,7 +301,7 @@ export class PermissionsProtocol {
     tenant: string,
     messageStore: MessageStore,
     permissionsGrantId: string,
-  ): Promise<RecordsWriteMessage> {
+  ): Promise<PermissionGrant> {
 
     const grantQuery = {
       recordId          : permissionsGrantId,
@@ -321,8 +322,10 @@ export class PermissionsProtocol {
       );
     }
 
-    const permissionsGrantMessage = possibleGrantMessage as RecordsWriteMessage;
-    return permissionsGrantMessage;
+    const permissionGrantMessage = possibleGrantMessage as RecordsWriteMessage;
+    const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
+
+    return permissionGrant;
   }
 
   /**

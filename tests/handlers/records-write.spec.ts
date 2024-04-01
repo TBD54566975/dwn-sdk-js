@@ -3679,7 +3679,7 @@ export function testRecordsWriteHandler(): void {
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(401);
-            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol);
+            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeMissingProtocol);
           });
 
           it('allows writes of protocol records with matching contextId grant scopes', async () => {

@@ -23,6 +23,7 @@ import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -785,12 +786,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage    : this.message,
-      expectedGrantor        : this.author!,
-      expectedGrantee        : this.signer!,
-      permissionGrantMessage : delegatedGrant,
+      recordsWriteMessage : this.message,
+      expectedGrantor     : this.author!,
+      expectedGrantee     : this.signer!,
+      permissionGrant     : delegatedGrant,
       messageStore
     });
   }
@@ -800,12 +801,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = this.message.authorization.ownerDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.ownerDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage    : this.message,
-      expectedGrantor        : this.owner!,
-      expectedGrantee        : this.ownerSignatureSigner!,
-      permissionGrantMessage : delegatedGrant,
+      recordsWriteMessage : this.message,
+      expectedGrantor     : this.owner!,
+      expectedGrantee     : this.ownerSignatureSigner!,
+      permissionGrant     : delegatedGrant,
       messageStore
     });
   }

@@ -5,6 +5,7 @@ import type { RecordsDeleteDescriptor, RecordsDeleteMessage, RecordsWriteMessage
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -101,13 +102,13 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeDelegate(recordsWriteToDelete: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
-    const delegatedGrantMessage = this.message.authorization!.authorDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization!.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeDelete({
-      recordsDeleteMessage   : this.message,
+      recordsDeleteMessage : this.message,
       recordsWriteToDelete,
-      expectedGrantor        : this.author!,
-      expectedGrantee        : this.signer!,
-      permissionGrantMessage : delegatedGrantMessage,
+      expectedGrantor      : this.author!,
+      expectedGrantee      : this.signer!,
+      permissionGrant      : delegatedGrant,
       messageStore
     });
   }

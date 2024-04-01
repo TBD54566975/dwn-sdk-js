@@ -2,7 +2,7 @@ import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Filter } from '../types/query-types.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
@@ -11,11 +11,11 @@ import { FilterUtility } from './filter.js';
 import { Jws } from './jws.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
-import type { PermissionGrantModel } from '../types/permission-types.js';
 
 /**
  * Class containing useful utilities related to the Records interface.
@@ -345,10 +345,8 @@ export class Records {
     if (authorDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.authorDelegatedGrant!;
 
-      // TODO: DO SOMETHING. Super inefficient
-      const permissionGrantEncoded = (delegatedGrant as RecordsQueryReplyEntry).encodedData!;
-      const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-      if (permissionGrantModel.delegated !== true) {
+      const permissionGrant = await PermissionGrant.parse(delegatedGrant);
+      if (permissionGrant.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsAuthorDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
@@ -390,12 +388,9 @@ export class Records {
 
     if (ownerDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.ownerDelegatedGrant!;
+      const permissionGrant = await PermissionGrant.parse(delegatedGrant);
 
-      // TODO: DO SOMETHING. Super inefficient
-      const permissionGrantEncoded = (delegatedGrant as RecordsQueryReplyEntry).encodedData!;
-      const permissionGrantModel = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
-
-      if (permissionGrantModel.delegated !== true) {
+      if (permissionGrant.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsOwnerDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
