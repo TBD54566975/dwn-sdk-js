@@ -112,8 +112,8 @@ export class Secp256r1 {
     }
     const hashedContent = await sha256.encode(content);
     const keyBytes = p256.ProjectivePoint.fromAffine({
-      x : Secp256r1.bytesToBigInt(Secp256r1.base64ToBytes(publicJwk.x)),
-      y : Secp256r1.bytesToBigInt(Secp256r1.base64ToBytes(publicJwk.y!)),
+      x : Secp256r1.bytesToBigInt(Encoder.base64UrlToBytes(publicJwk.x)),
+      y : Secp256r1.bytesToBigInt(Encoder.base64UrlToBytes(publicJwk.y!)),
     }).toRawBytes(false);
 
     return p256.verify(sig, hashedContent, keyBytes);
@@ -134,14 +134,6 @@ export class Secp256r1 {
     const privateJwk: PrivateJwk = { ...publicJwk, d };
 
     return { publicJwk, privateJwk };
-  }
-
-  public static base64ToBytes(s: string): Uint8Array {
-    const inputBase64Url = s
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-    return u8a.fromString(inputBase64Url, 'base64url');
   }
 
   public static bytesToBigInt(b: Uint8Array): bigint {
