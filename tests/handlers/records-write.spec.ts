@@ -1183,8 +1183,8 @@ export function testRecordsWriteHandler(): void {
           });
 
           it('should allow co-update with ancestor recipient rule', async () => {
-            // scenario: Alice creates a post with Bob as recipient. Alice adds a tag to the post. Bob is able to update
-            //           the tag because he is recipient of the post. Bob is not able to create a new tag.
+            // scenario: Alice creates a post with Bob as recipient. Alice adds a `post/tag` to the post. Bob is able to update
+            //           the `post/tag` because he is recipient of the post. Bob is not able to create a new `post/tag`.
 
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
