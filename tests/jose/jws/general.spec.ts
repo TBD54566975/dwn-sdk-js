@@ -10,6 +10,7 @@ import sinon from 'sinon';
 import { UniversalResolver } from '@web5/dids';
 
 const { Ed25519, secp256k1 } = signatureAlgorithms;
+const secp256r1 = signatureAlgorithms['P-256'];
 
 chai.use(chaiAsPromised);
 
@@ -47,6 +48,47 @@ describe('General JWS Sign/Verify', () => {
     });
 
     const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
+    expect(verificationResult.signers.length).to.equal(1);
+    expect(verificationResult.signers).to.include('did:jank:alice');
+  });
+
+  it('should sign and verify secp256r1 signature using a key vector correctly', async () => {
+    const { privateJwk, publicJwk } = await secp256r1.generateKeyPair();
+    const payloadBytes = new TextEncoder().encode('anyPayloadValue');
+    const keyId = 'did:jank:alice#key1';
+
+    const jwsBuilder = await GeneralJwsBuilder.create(payloadBytes, [
+      new PrivateKeySigner({ privateJwk, keyId }),
+    ]);
+    const jws = jwsBuilder.getJws();
+
+    const mockResolutionResult = {
+      didResolutionMetadata : {},
+      didDocument           : {
+        verificationMethod: [
+          {
+            id           : keyId,
+            type         : 'JsonWebKey2020',
+            controller   : 'did:jank:alice',
+            publicKeyJwk : publicJwk,
+          },
+        ],
+      },
+      didDocumentMetadata: {},
+    };
+
+    const resolverStub = sinon.createStubInstance(UniversalResolver, {
+      // @ts-ignore
+      resolve: sinon
+        .stub()
+        .withArgs('did:jank:alice')
+        .resolves(mockResolutionResult),
+    });
+
+    const verificationResult = await GeneralJwsVerifier.verifySignatures(
+      jws,
+      resolverStub
+    );
     expect(verificationResult.signers.length).to.equal(1);
     expect(verificationResult.signers).to.include('did:jank:alice');
   });
