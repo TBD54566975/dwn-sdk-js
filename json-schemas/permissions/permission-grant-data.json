@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.foundation/dwn/json-schemas/permission-grant-data.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dateExpires",
+    "scope"
+  ],
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "dateExpires": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+    },
+    "requestId": {
+      "type": "string"
+    },
+    "delegated": {
+      "type": "boolean"
+    },
+    "scope": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
+    },
+    "conditions": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
+    }
+  }
+}

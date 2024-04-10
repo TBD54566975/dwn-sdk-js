@@ -35,7 +35,7 @@ export function testMessageStore(): void {
       it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        const { message } = await TestDataGenerator.generatePermissionsRequest();
+        const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
 
         await messageStore.put(alice.did, message, { messageTimestamp });

@@ -11,7 +11,6 @@ import type { UnionMessageReply } from './core/message-reply.js';
 import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
@@ -22,9 +21,6 @@ import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
-import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
-import { PermissionsRequestHandler } from './handlers/permissions-request.js';
-import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
@@ -70,24 +66,6 @@ export class Dwn {
         this.didResolver,
         this.messageStore,
         this.dataStore,
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Grant]: new PermissionsGrantHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Request]: new PermissionsRequestHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
-      ),
-      [DwnInterfaceName.Permissions + DwnMethodName.Revoke]: new PermissionsRevokeHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-        this.eventStream
       ),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver,
@@ -173,9 +151,6 @@ export class Dwn {
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsGrantMessage): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
   public async processMessage(

@@ -54,7 +54,7 @@ export type InternalRecordsWriteMessage = GenericMessage & {
   encryption?: EncryptionProperty;
 };
 
-export type RecordsWriteMessage = GenericMessage & {
+export type RecordsWriteMessage = {
   authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   recordId: string,
   contextId?: string;
@@ -99,6 +99,16 @@ export type RecordsQueryReplyEntry = RecordsWriteMessage & {
    */
   initialWrite?: RecordsWriteMessage;
 
+  /**
+   * The encoded data of the record if the data associated with the record is equal or smaller than `DwnConstant.maxDataSizeAllowedToBeEncoded`.
+   */
+  encodedData?: string;
+};
+
+/**
+ * Represents a RecordsWrite message with encoded data attached.
+ */
+export type DataEncodedRecordsWriteMessage = RecordsWriteMessage & {
   /**
    * The encoded data of the record if the data associated with the record is equal or smaller than `DwnConstant.maxDataSizeAllowedToBeEncoded`.
    */

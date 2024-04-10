@@ -1,6 +1,6 @@
 {
   "$id": "https://identity.foundation/dwn/json-schemas/authorization-owner.json",
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -8,13 +8,13 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
     "authorDelegatedGrant": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions-grant.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/records-write-data-encoded.json"
     },
     "ownerSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
     "ownerDelegatedGrant": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions-grant.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/records-write-data-encoded.json"
     }
   },
   "description": "`signature` can exist by itself. But if `ownerSignature` is present, then `signature` must also exist",

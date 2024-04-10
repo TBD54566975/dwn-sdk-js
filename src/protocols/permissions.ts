@@ -1,9 +1,17 @@
+import type { GenericMessage } from '../types/message-types.js';
+import type { MessageStore } from '../types/message-store.js';
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
+import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
+import { PermissionGrant } from './permission-grant.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { Time } from '../utils/time.js';
+import { validateJsonSchema } from '../schema-validator.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 /**
@@ -188,7 +196,8 @@ export class PermissionsProtocol {
   public static async createGrant(options: PermissionGrantCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
     permissionGrantModel: PermissionGrantModel,
-    permissionGrantBytes: Uint8Array
+    permissionGrantBytes: Uint8Array,
+    dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
     const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
@@ -205,6 +214,7 @@ export class PermissionsProtocol {
     const recordsWrite = await RecordsWrite.create({
       signer           : options.signer,
       messageTimestamp : options.dateGranted,
+      dateCreated      : options.dateGranted,
       recipient        : options.grantedTo,
       protocol         : PermissionsProtocol.uri,
       protocolPath     : PermissionsProtocol.grantPath,
@@ -212,10 +222,16 @@ export class PermissionsProtocol {
       data             : permissionGrantBytes,
     });
 
+    const dataEncodedMessage: DataEncodedRecordsWriteMessage = {
+      ...recordsWrite.message,
+      encodedData: Encoder.bytesToBase64Url(permissionGrantBytes)
+    };
+
     return {
       recordsWrite,
       permissionGrantModel,
-      permissionGrantBytes
+      permissionGrantBytes,
+      dataEncodedMessage
     };
   }
 
@@ -234,7 +250,7 @@ export class PermissionsProtocol {
     const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationModel);
     const recordsWrite = await RecordsWrite.create({
       signer          : options.signer,
-      parentContextId : options.grantId,
+      parentContextId : options.grantId, // NOTE: since the grant is the root record, its record ID is also the context ID
       protocol        : PermissionsProtocol.uri,
       protocolPath    : PermissionsProtocol.revocationPath,
       dataFormat      : 'application/json',
@@ -246,6 +262,70 @@ export class PermissionsProtocol {
       permissionRevocationModel,
       permissionRevocationBytes
     };
+  }
+
+  /**
+   * Validates the given Permissions protocol RecordsWrite. It can be a request, grant, or revocation.
+   */
+  public static validateSchema(recordsWriteMessage: RecordsWriteMessage, dataBytes: Uint8Array): void {
+    const dataString = Encoder.bytesToString(dataBytes);
+    const dataObject = JSON.parse(dataString);
+    if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
+      validateJsonSchema('PermissionRequestData', dataObject);
+    } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
+      validateJsonSchema('PermissionGrantData', dataObject);
+
+      // more nuanced validation that are annoying/difficult to do using JSON schema
+      const permissionGrantData = dataObject as PermissionGrantModel;
+      PermissionsProtocol.validateScope(permissionGrantData.scope);
+      Time.validateTimestamp(permissionGrantData.dateExpires);
+    } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+      validateJsonSchema('PermissionRevocationData', dataObject);
+    } else {
+      // defensive programming, should be unreachable externally
+      throw new DwnError(
+        DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord,
+        `Unexpected permission record: ${recordsWriteMessage.descriptor.protocolPath}`
+      );
+    }
+  }
+
+
+
+  /**
+   * Fetches PermissionGrant with the specified `recordID`.
+   * @returns the PermissionGrant matching the `recordId` specified.
+   * @throws {Error} if PermissionGrant does not exist
+   */
+  public static async fetchGrant(
+    tenant: string,
+    messageStore: MessageStore,
+    permissionsGrantId: string,
+  ): Promise<PermissionGrant> {
+
+    const grantQuery = {
+      recordId          : permissionsGrantId,
+      isLatestBaseState : true
+    };
+    const { messages } = await messageStore.query(tenant, [grantQuery]);
+    const possibleGrantMessage: GenericMessage | undefined = messages[0];
+
+    const dwnInterface = possibleGrantMessage?.descriptor.interface;
+    const dwnMethod = possibleGrantMessage?.descriptor.method;
+
+    if (dwnInterface !== DwnInterfaceName.Records ||
+        dwnMethod !== DwnMethodName.Write ||
+        (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantMissing,
+        `Could not find permission grant with record ID ${permissionsGrantId}.`
+      );
+    }
+
+    const permissionGrantMessage = possibleGrantMessage as RecordsWriteMessage;
+    const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
+
+    return permissionGrant;
   }
 
   /**
@@ -273,5 +353,36 @@ export class PermissionsProtocol {
    */
   private static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
     return scope.interface === 'Records';
+  }
+
+
+  /**
+   * Validates scope.
+   */
+  private static validateScope(scope: PermissionScope): void {
+    if (!this.isRecordPermissionScope(scope)) {
+      return;
+    }
+    // else we are dealing with a RecordsPermissionScope
+
+    // `schema` scopes may not have protocol-related fields
+    if (scope.schema !== undefined) {
+      if (scope.protocol !== undefined || scope.contextId !== undefined || scope.protocolPath) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeSchemaProhibitedProperties,
+          'Permission grants that have `schema` present cannot also have protocol-related properties present'
+        );
+      }
+    }
+
+    if (scope.protocol !== undefined) {
+      // `contextId` and `protocolPath` are mutually exclusive
+      if (scope.contextId !== undefined && scope.protocolPath !== undefined) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties,
+          'Permission grants cannot have both `contextId` and `protocolPath` present'
+        );
+      }
+    }
   }
 };

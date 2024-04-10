@@ -24,11 +24,23 @@ export function validateJsonSchema(schemaName: string, payload: any): void {
   // AJV is configured by default to stop validating after the 1st error is encountered which means
   // there will only ever be one error;
   const [ errorObj ] = validateFn.errors;
-  let { instancePath, message } = errorObj;
+  let { instancePath, message, keyword } = errorObj;
 
   if (!instancePath) {
     instancePath = schemaName;
   }
 
-  throw new DwnError(DwnErrorCode.SchemaValidationFailure, `${instancePath}: ${message}`);
+  // handle a few frequently occurred errors to give more meaningful error for debugging
+
+  if (keyword === 'additionalProperties') {
+    const keyword = errorObj.params.additionalProperty;
+    throw new DwnError(DwnErrorCode.SchemaValidatorAdditionalPropertyNotAllowed, `${message}: ${instancePath}: ${keyword}`);
+  }
+
+  if (keyword === 'unevaluatedProperties') {
+    const keyword = errorObj.params.unevaluatedProperty;
+    throw new DwnError(DwnErrorCode.SchemaValidatorUnevaluatedPropertyNotAllowed, `${message}: ${instancePath}: ${keyword}`);
+  }
+
+  throw new DwnError(DwnErrorCode.SchemaValidatorFailure, `${instancePath}: ${message}`);
 }

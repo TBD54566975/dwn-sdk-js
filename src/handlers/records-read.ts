@@ -8,9 +8,9 @@ import type { RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply } fro
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
 import { Encoder } from '../utils/encoder.js';
-import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
@@ -133,13 +133,13 @@ export class RecordsReadHandler implements MethodHandler {
       // The recipient of a message may always read it
       return;
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
-      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
       await RecordsGrantAuthorization.authorizeRead({
         recordsReadMessage          : recordsRead.message,
         recordsWriteMessageToBeRead : matchedRecordsWrite.message,
-        expectedGrantedToInGrant    : recordsRead.author,
-        expectedGrantedForInGrant   : tenant,
-        permissionsGrantMessage,
+        expectedGrantor             : tenant,
+        expectedGrantee             : recordsRead.author,
+        permissionGrant,
         messageStore
       });
     } else if (descriptor.protocol !== undefined) {

@@ -1,12 +1,10 @@
 {
+  "$id": "https://identity.foundation/dwn/json-schemas/records-write.json",
   "$ref": "https://identity.foundation/dwn/json-schemas/records-write-unidentified.json",
-  "allOf": [
-    {
-      "type": "object",
-      "required": [
-        "recordId",
-        "authorization"
-      ]
-    }
+  "unevaluatedProperties": false,
+  "type": "object",
+  "required": [
+    "recordId",
+    "authorization"
   ]
 }

@@ -17,8 +17,6 @@ import type { AuthorizationModel, Pagination } from '../../src/types/message-typ
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsWriteTags } from '../../src/types/records-types.js';
 import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
-import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
-import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
@@ -35,9 +33,6 @@ import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
-import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
-import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
-import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
@@ -50,7 +45,6 @@ import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { HdKey, KeyDerivationScheme } from '../../src/utils/hd-key.js';
 
 /**
@@ -196,54 +190,6 @@ export type GenerateRecordsDeleteOutput = {
   author: Persona;
   recordsDelete: RecordsDelete;
   message: RecordsDeleteMessage;
-};
-
-export type GeneratePermissionsRequestInput = {
-  author: Persona;
-  messageTimestamp?: string;
-  description?: string;
-  grantedTo?: string;
-  grantedBy?: string;
-  grantedFor?: string;
-  scope?: PermissionScope;
-  conditions?: PermissionConditions;
-};
-
-export type GeneratePermissionsGrantInput = {
-  author: Persona;
-  messageTimestamp?: string;
-  dateExpires?: string;
-  description?: string;
-  grantedTo?: string;
-  grantedBy?: string;
-  grantedFor?: string;
-  permissionsRequestId?: string;
-  scope?: PermissionScope;
-  conditions?: PermissionConditions;
-};
-
-export type GeneratePermissionsRevokeInput = {
-  author: Persona;
-  dateCreated?: string;
-  permissionsGrantId?: string;
-};
-
-export type GeneratePermissionsRequestOutput = {
-  author: Persona;
-  permissionsRequest: PermissionsRequest;
-  message: PermissionsRequestMessage;
-};
-
-export type GeneratePermissionsGrantOutput = {
-  author: Persona;
-  permissionsGrant: PermissionsGrant;
-  message: PermissionsGrantMessage;
-};
-
-export type GeneratePermissionsRevokeOutput = {
-  author: Persona;
-  permissionsRevoke: PermissionsRevoke;
-  message: PermissionsRevokeMessage;
 };
 
 export type GenerateEventsGetInput = {
@@ -724,81 +670,6 @@ export class TestDataGenerator {
       author,
       recordsDelete,
       message: recordsDelete.message
-    };
-  }
-
-  /**
-   * Generates a PermissionsRequest message for testing.
-   */
-  public static async generatePermissionsRequest(input?: GeneratePermissionsRequestInput): Promise<GeneratePermissionsRequestOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const permissionsRequest = await PermissionsRequest.create({
-      messageTimestamp : Time.getCurrentTimestamp(),
-      description      : input?.description,
-      grantedBy        : input?.grantedBy ?? 'did:jank:bob',
-      grantedTo        : input?.grantedTo ?? 'did:jank:alice',
-      grantedFor       : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
-      scope            : input?.scope ?? {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      },
-      conditions : input?.conditions,
-      signer     : Jws.createSigner(author)
-    });
-
-    return {
-      author,
-      permissionsRequest,
-      message: permissionsRequest.message
-    };
-  }
-
-  /**
-   * Generates a PermissionsGrant message for testing.
-   */
-  public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
-    const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : input?.messageTimestamp ?? Time.getCurrentTimestamp(),
-      dateExpires,
-      description          : input?.description ?? 'drugs',
-      grantedBy            : input?.grantedBy ?? author.did,
-      grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,
-      grantedFor           : input?.grantedFor ?? author.did,
-      permissionsRequestId : input?.permissionsRequestId,
-      scope                : input?.scope ?? {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      },
-      conditions : input?.conditions,
-      signer     : Jws.createSigner(author)
-    });
-
-    return {
-      author,
-      permissionsGrant,
-      message: permissionsGrant.message
-    };
-  }
-
-  /**
-   * Generates a PermissionsRevoke message for testing.
-   */
-  public static async generatePermissionsRevoke(input?: GeneratePermissionsRevokeInput): Promise<GeneratePermissionsRevokeOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const signer = Jws.createSigner(author);
-
-    const permissionsRevoke = await PermissionsRevoke.create({
-      signer,
-      permissionsGrantId : input?.permissionsGrantId ?? await TestDataGenerator.randomCborSha256Cid(),
-      messageTimestamp   : input?.dateCreated
-    });
-
-    return {
-      author,
-      permissionsRevoke,
-      message: permissionsRevoke.message
     };
   }
 

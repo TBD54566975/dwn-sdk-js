@@ -13,7 +13,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsGrant } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsProtocol } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -268,19 +268,17 @@ describe('RecordsWrite', () => {
         method    : DwnMethodName.Write,
         protocol  : 'chat'
       };
-      const grantToBob = await PermissionsGrant.create({
+      const grantToBob = await PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
         description : 'Allow Bob to write as me in chat protocol',
-        grantedBy   : alice.did,
         grantedTo   : bob.did,
-        grantedFor  : alice.did,
-        scope,
-        signer      : Jws.createSigner(alice)
+        scope
       });
 
       const createPromise = RecordsWrite.create({
-        delegatedGrant : grantToBob.asDelegatedGrant(),
+        delegatedGrant : grantToBob.recordsWrite.message,
         dataFormat     : 'application/octet-stream',
         data           : TestDataGenerator.randomBytes(10),
       });
@@ -446,17 +444,15 @@ describe('RecordsWrite', () => {
         method    : DwnMethodName.Write,
         protocol  : 'chat'
       };
-      const ownerDelegatedGrant = await PermissionsGrant.create({
+      const ownerDelegatedGrant = await PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        grantedBy   : alice.did,
         grantedTo   : bob.did,
-        grantedFor  : alice.did,
-        scope,
-        signer      : Jws.createSigner(alice)
+        scope
       });
 
-      await expect(recordsWrite.signAsOwnerDelegate(Jws.createSigner(bob), ownerDelegatedGrant.asDelegatedGrant()))
+      await expect(recordsWrite.signAsOwnerDelegate(Jws.createSigner(bob), ownerDelegatedGrant.recordsWrite.message))
         .to.be.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor);
 
       expect(recordsWrite.owner).to.be.undefined;

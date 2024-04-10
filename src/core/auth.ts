@@ -3,7 +3,7 @@ import type { MessageInterface } from '../types/message-interface.js';
 import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
-import { PermissionsGrant } from '../interfaces/permissions-grant.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 /**
@@ -25,13 +25,13 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
 
   if (authorizationModel.authorDelegatedGrant !== undefined) {
     // verify the signature of the grantor of the author-delegated grant
-    const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
+    const authorDelegatedGrant = await RecordsWrite.parse(authorizationModel.authorDelegatedGrant);
     await GeneralJwsVerifier.verifySignatures(authorDelegatedGrant.message.authorization.signature, didResolver);
   }
 
   if (authorizationModel.ownerDelegatedGrant !== undefined) {
     // verify the signature of the grantor of the owner-delegated grant
-    const ownerDelegatedGrant = await PermissionsGrant.parse(authorizationModel.ownerDelegatedGrant);
+    const ownerDelegatedGrant = await RecordsWrite.parse(authorizationModel.ownerDelegatedGrant);
     await GeneralJwsVerifier.verifySignatures(ownerDelegatedGrant.message.authorization.signature, didResolver);
   }
 }

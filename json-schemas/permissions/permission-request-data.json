@@ -1,25 +1,18 @@
 {
-  "$id": "https://identity.foundation/dwn/json-schemas/permission-grant.json",
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://identity.foundation/dwn/json-schemas/permission-request-data.json",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "dateExpires",
+    "delegated",
     "scope"
   ],
   "properties": {
-    "dateExpires": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
-    },
     "description": {
       "type": "string"
     },
     "delegated": {
       "type": "boolean"
-    },
-    "requestId": {
-      "description": "CID of an associated permission request DWN message",
-      "type": "string"
     },
     "scope": {
       "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"

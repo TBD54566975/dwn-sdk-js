@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
@@ -6,6 +5,7 @@ import type { RecordsDeleteDescriptor, RecordsDeleteMessage, RecordsWriteMessage
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -21,7 +21,7 @@ export type RecordsDeleteOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 };
 
 export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
@@ -102,13 +102,13 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeDelegate(recordsWriteToDelete: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
-    const delegatedGrantMessage = this.message.authorization!.authorDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization!.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeDelete({
-      recordsDeleteMessage      : this.message,
+      recordsDeleteMessage : this.message,
       recordsWriteToDelete,
-      expectedGrantedToInGrant  : this.signer!,
-      expectedGrantedForInGrant : this.author!,
-      permissionsGrantMessage   : delegatedGrantMessage,
+      expectedGrantor      : this.author!,
+      expectedGrantee      : this.signer!,
+      permissionGrant      : delegatedGrant,
       messageStore
     });
   }

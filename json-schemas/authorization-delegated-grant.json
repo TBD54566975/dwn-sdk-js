@@ -1,6 +1,6 @@
 {
   "$id": "https://identity.foundation/dwn/json-schemas/authorization-delegated-grant.json",
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -8,7 +8,7 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
     "authorDelegatedGrant": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions-grant.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/records-write-data-encoded.json"
     }
   }
 }

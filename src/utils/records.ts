@@ -11,6 +11,7 @@ import { FilterUtility } from './filter.js';
 import { Jws } from './jws.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -383,14 +384,16 @@ export class Records {
 
     if (authorDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.authorDelegatedGrant!;
-      if (delegatedGrant.descriptor.delegated !== true) {
+
+      const permissionGrant = await PermissionGrant.parse(delegatedGrant);
+      if (permissionGrant.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsAuthorDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
         );
       }
 
-      const grantedTo = delegatedGrant.descriptor.grantedTo;
+      const grantedTo = delegatedGrant.descriptor.recipient;
       const signer = Message.getSigner(message);
       if (grantedTo !== signer) {
         throw new DwnError(
@@ -425,14 +428,16 @@ export class Records {
 
     if (ownerDelegatedGrantDefined) {
       const delegatedGrant = message.authorization!.ownerDelegatedGrant!;
-      if (delegatedGrant.descriptor.delegated !== true) {
+      const permissionGrant = await PermissionGrant.parse(delegatedGrant);
+
+      if (permissionGrant.delegated !== true) {
         throw new DwnError(
           DwnErrorCode.RecordsOwnerDelegatedGrantNotADelegatedGrant,
           `The owner delegated grant given is not a delegated grant.`
         );
       }
 
-      const grantedTo = delegatedGrant.descriptor.grantedTo;
+      const grantedTo = delegatedGrant.descriptor.recipient;
       const signer = Jws.getSignerDid(message.authorization!.ownerSignature!.signatures[0]);
       if (grantedTo !== signer) {
         throw new DwnError(

@@ -1,5 +1,5 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
+import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, SortDirection } from './query-types.js';
 
 /**
@@ -23,7 +23,7 @@ export type AuthorizationModel = {
   /**
    * The delegated grant required when the message is signed by an author-delegate.
    */
-  authorDelegatedGrant?: DelegatedGrantMessage;
+  authorDelegatedGrant?: DelegatedGrantRecordsWriteMessage;
 
   /**
    * An "overriding" signature for a DWN owner or owner-delegate to store a message authored by another entity.
@@ -33,18 +33,46 @@ export type AuthorizationModel = {
   /**
    * The delegated grant required when the message is signed by an owner-delegate.
    */
-  ownerDelegatedGrant?: DelegatedGrantMessage;
+  ownerDelegatedGrant?: DelegatedGrantRecordsWriteMessage;
+};
+
+type DelegatedGrantRecordsWriteMessage = {
+  authorization: {
+    /**
+     * The signature of the author.
+     */
+    signature: GeneralJws;
+  },
+  recordId: string,
+  contextId?: string;
+  // NOTE: This is a direct copy of `RecordsWriteDescriptor` to avoid circular references.
+  descriptor: {
+    interface: DwnInterfaceName.Records;
+    method: DwnMethodName.Write;
+    protocol?: string;
+    protocolPath?: string;
+    recipient?: string;
+    schema?: string;
+    parentId?: string;
+    dataCid: string;
+    dataSize: number;
+    dateCreated: string;
+    messageTimestamp: string;
+    published?: boolean;
+    datePublished?: string;
+    dataFormat: string;
+  };
 };
 
 /**
- * Type of common decoded `authorization`property payload.
+ * Type of common decoded `authorization` property payload.
  */
 export type GenericSignaturePayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
 
   /**
-   * CID of a `PermissionsGrant` DWN message with `delegated` set to `true`.
+   * Record ID of a permission grant DWN `RecordsWrite` with `delegated` set to `true`.
    */
   delegatedGrantId?: string;
 

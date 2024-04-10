@@ -1,4 +1,3 @@
-import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageInterface } from '../types/message-interface.js';
@@ -25,6 +24,7 @@ import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -66,7 +66,7 @@ export type RecordsWriteOptions = {
   /**
    * The delegated grant invoked to sign on behalf of the logical author, which is the grantor of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -148,7 +148,7 @@ export type CreateFromOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: DelegatedGrantMessage;
+  delegatedGrant?: RecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -497,7 +497,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public async sign(options: {
     signer: Signer,
-    delegatedGrant?: DelegatedGrantMessage,
+    delegatedGrant?: RecordsWriteMessage,
     permissionsGrantId?: string,
     protocolRole?: string
   }): Promise<void> {
@@ -582,7 +582,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * This is used when a DWN owner-delegate wants to retain a copy of a message that the owner did not author.
    * NOTE: requires the `RecordsWrite` to already have the author's signature.
    */
-  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: DelegatedGrantMessage): Promise<void> {
+  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: RecordsWriteMessage): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor,
@@ -799,12 +799,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage       : this.message,
-      expectedGrantedToInGrant  : this.signer!,
-      expectedGrantedForInGrant : this.author!,
-      permissionsGrantMessage   : delegatedGrant,
+      recordsWriteMessage : this.message,
+      expectedGrantor     : this.author!,
+      expectedGrantee     : this.signer!,
+      permissionGrant     : delegatedGrant,
       messageStore
     });
   }
@@ -814,12 +814,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = this.message.authorization.ownerDelegatedGrant!;
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.ownerDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
-      recordsWriteMessage       : this.message,
-      expectedGrantedToInGrant  : this.ownerSignatureSigner!,
-      expectedGrantedForInGrant : this.owner!,
-      permissionsGrantMessage   : delegatedGrant,
+      recordsWriteMessage : this.message,
+      expectedGrantor     : this.owner!,
+      expectedGrantee     : this.ownerSignatureSigner!,
+      permissionGrant     : delegatedGrant,
       messageStore
     });
   }

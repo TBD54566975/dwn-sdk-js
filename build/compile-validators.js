@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
-import Ajv from 'ajv';
+import Ajv from 'ajv/dist/2020.js';
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
@@ -32,10 +32,10 @@ import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json'
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
 import NumberRangeFilter from '../json-schemas/interface-methods/number-range-filter.json' assert { type: 'json' };
 import PaginationCursor from '../json-schemas/interface-methods/pagination-cursor.json' assert { type: 'json' };
+import PermissionGrantData from '../json-schemas/permissions/permission-grant-data.json' assert { type: 'json' };
+import PermissionRequestData from '../json-schemas/permissions/permission-request-data.json' assert { type: 'json' };
+import PermissionRevocationData from '../json-schemas/permissions/permission-revocation-data.json' assert { type: 'json' };
 import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
-import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
-import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
-import PermissionsRevoke from '../json-schemas/interface-methods/permissions-revoke.json' assert { type: 'json' };
 import PermissionsScopes from '../json-schemas/permissions/scopes.json' assert { type: 'json' };
 import ProtocolDefinition from '../json-schemas/interface-methods/protocol-definition.json' assert { type: 'json' };
 import ProtocolRuleSet from '../json-schemas/interface-methods/protocol-rule-set.json' assert { type: 'json' };
@@ -48,6 +48,7 @@ import RecordsQuery from '../json-schemas/interface-methods/records-query.json' 
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsSubscribe from '../json-schemas/interface-methods/records-subscribe.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
+import RecordsWriteDataEncoded from '../json-schemas/interface-methods/records-write-data-encoded.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
 import StringRangeFilter from '../json-schemas/interface-methods/string-range-filter.json' assert { type: 'json' };
@@ -60,6 +61,7 @@ const schemas = {
   RecordsQuery,
   RecordsSubscribe,
   RecordsWrite,
+  RecordsWriteDataEncoded,
   RecordsWriteUnidentified,
   EventsFilter,
   EventsGet,
@@ -72,10 +74,10 @@ const schemas = {
   MessagesGet,
   NumberRangeFilter,
   PaginationCursor,
+  PermissionGrantData,
+  PermissionRequestData,
+  PermissionRevocationData,
   PermissionsDefinitions,
-  PermissionsGrant,
-  PermissionsRequest,
-  PermissionsRevoke,
   PermissionsScopes,
   ProtocolDefinition,
   ProtocolRuleSet,
