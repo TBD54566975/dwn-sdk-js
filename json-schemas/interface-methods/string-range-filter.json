@@ -1,5 +1,5 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.foundation/dwn/json-schemas/string-range-filter.json",
   "type": "object",
   "minProperties": 1,
@@ -21,22 +21,30 @@
   "dependencies": {
     "gt": {
       "not": {
-        "required": ["gte"]
+        "required": [
+          "gte"
+        ]
       }
     },
     "gte": {
       "not": {
-        "required": ["gt"]
+        "required": [
+          "gt"
+        ]
       }
     },
     "lt": {
       "not": {
-        "required": ["lte"]
+        "required": [
+          "lte"
+        ]
       }
     },
     "lte": {
       "not": {
-        "required": ["lt"]
+        "required": [
+          "lt"
+        ]
       }
     }
   }
