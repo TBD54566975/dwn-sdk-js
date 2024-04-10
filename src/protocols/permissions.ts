@@ -293,9 +293,9 @@ export class PermissionsProtocol {
 
 
   /**
-   * Fetches PermissionsGrantMessage with CID `permissionsGrantId`.
-   * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
-   * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
+   * Fetches PermissionGrant with the specified `recordID`.
+   * @returns the PermissionGrant matching the `recordId` specified.
+   * @throws {Error} if PermissionGrant does not exist
    */
   public static async fetchGrant(
     tenant: string,

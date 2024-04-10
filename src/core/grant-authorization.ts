@@ -108,6 +108,7 @@ export class GrantAuthorization {
     // Check if grant has been revoked
     const query = {
       parentId          : permissionGrant.id,
+      protocolPath      : `grant/revocation`, // NOTE: this is optional, not referencing PermissionsProtocol.revocationPath due to circular dependency
       isLatestBaseState : true
     };
     const { messages: revokes } = await messageStore.query(grantedFor, [query]);

@@ -190,7 +190,7 @@ export class RecordsWriteHandler implements MethodHandler {
     // - test coverage is missing for the main delete logic
     if (recordsWrite.message.descriptor.protocol === PermissionsProtocol.uri &&
       recordsWrite.message.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
-      const permissionsGrantId = recordsWrite.message.recordId;
+      const permissionsGrantId = recordsWrite.message.descriptor.parentId!;
       const grantAuthorizedMessagesQuery = {
         permissionsGrantId,
         dateCreated: { gte: recordsWrite.message.descriptor.messageTimestamp },
