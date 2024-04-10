@@ -51,6 +51,7 @@ import RecordsWrite from '../json-schemas/interface-methods/records-write.json' 
 import RecordsWriteDataEncoded from '../json-schemas/interface-methods/records-write-data-encoded.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
+import StringRangeFilter from '../json-schemas/interface-methods/string-range-filter.json' assert { type: 'json' };
 
 const schemas = {
   Authorization,
@@ -86,7 +87,8 @@ const schemas = {
   RecordsFilter,
   PublicJwk,
   GenericSignaturePayload,
-  RecordsWriteSignaturePayload
+  RecordsWriteSignaturePayload,
+  StringRangeFilter
 };
 
 const ajv = new Ajv({ code: { source: true, esm: true }, allowUnionTypes: true });

@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/string-range-filter.json",
+  "type": "object",
+  "minProperties": 1,
+  "additionalProperties": false,
+  "properties": {
+    "gt": {
+      "type": "string"
+    },
+    "gte": {
+      "type": "string"
+    },
+    "lt": {
+      "type": "string"
+    },
+    "lte": {
+      "type": "string"
+    }
+  },
+  "dependencies": {
+    "gt": {
+      "not": {
+        "required": ["gte"]
+      }
+    },
+    "gte": {
+      "not": {
+        "required": ["gt"]
+      }
+    },
+    "lt": {
+      "not": {
+        "required": ["lte"]
+      }
+    },
+    "lte": {
+      "not": {
+        "required": ["lt"]
+      }
+    }
+  }
+}

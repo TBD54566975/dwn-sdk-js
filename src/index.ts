@@ -44,6 +44,7 @@ export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { RecordsSubscribe, RecordsSubscribeOptions } from './interfaces/records-subscribe.js';
 export { Secp256k1 } from './utils/secp256k1.js';
+export { Secp256r1 } from './utils/secp256r1.js';
 export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';

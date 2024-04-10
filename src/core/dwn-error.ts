@@ -151,6 +151,7 @@ export enum DwnErrorCode {
   SchemaValidatorSchemaNotFound = 'SchemaValidatorSchemaNotFound',
   SchemaValidatorUnevaluatedPropertyNotAllowed = 'SchemaValidatorUnevaluatedPropertyNotAllowed',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
+  Secp256r1KeyNotValid = 'Secp256r1KeyNotValid',
   TimestampInvalid = 'TimestampInvalid',
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
   UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
