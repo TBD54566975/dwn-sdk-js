@@ -1061,7 +1061,7 @@ export function testRecordsTags(): void {
           expect(validFooRecordReply.status.code).to.equal(202);
         });
 
-        xit('should reject tag values that do not contain the number of items within the `minContains` and `maxContains` values', async () => {
+        it('should reject tag values that do not contain the number of items within the `minContains` and `maxContains` values', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with minContains and maxContains for an array of numbers
@@ -1118,8 +1118,8 @@ export function testRecordsTags(): void {
           const minLengthReply = await dwn.processMessage(alice.did, minLengthRecord.message, { dataStream: minLengthRecord.dataStream });
           expect(minLengthReply.status.code).to.equal(400);
           expect(minLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
-          console.log('failed', minLengthReply.status.detail);
-          expect(minLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have fewer than 2 items`);
+          expect(minLengthReply.status.detail)
+            .to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must contain at least 2 and no more than 4 valid item(s)`);
 
           // write a foo record with a `numberArray` value with 4 items, more than the `maxItems` specified of 3
           const maxLengthRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1136,8 +1136,8 @@ export function testRecordsTags(): void {
           const maxLengthReply = await dwn.processMessage(alice.did, maxLengthRecord.message, { dataStream: maxLengthRecord.dataStream });
           expect(maxLengthReply.status.code).to.equal(400);
           expect(maxLengthReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema);
-          console.log('failed', maxLengthReply.status.detail);
-          expect(maxLengthReply.status.detail).to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must NOT have more than 3 items`);
+          expect(maxLengthReply.status.detail)
+            .to.contain(`${protocolDefinition.protocol}/foo/$tags/numberArray must contain at least 2 and no more than 4 valid item(s)`);
 
           // write a foo record with a `numberArray` value with 3 items, within the range
           const validFooRecord = await TestDataGenerator.generateRecordsWrite({
