@@ -117,7 +117,7 @@ export function testRecordsTags(): void {
             expect(configureReply.status.code).to.equal(202);
           });
 
-          describe('should not support tag types', () => {
+          describe('should reject invalid tag types', () => {
             it('object', async () => {
               const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -1221,7 +1221,7 @@ export function testRecordsTags(): void {
           expect(uniqueItemsReply.status.code).to.equal(202);
         });
 
-        it('should reject if tags contain requiredTags but not provided', async () => {
+        it('should only accept a record containing tags required by requiredTags', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with a required tag
@@ -1954,7 +1954,7 @@ export function testRecordsTags(): void {
         });
       });
 
-      it('should be able to write a Record tags', async () => {
+      it('should be able to write a Record with tags', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create tags that represent `string[]`, `number[]`, `string`, `number`, or `boolean` values.
