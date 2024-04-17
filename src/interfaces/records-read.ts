@@ -15,7 +15,7 @@ export type RecordsReadOptions = {
   filter: RecordsFilter;
   messageTimestamp?: string;
   signer?: Signer;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
   /**
    * Used when authorizing protocol records.
    * The protocol path to the role record type whose recipient is the author of this RecordsRead
@@ -52,7 +52,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, signer, permissionsGrantId, protocolRole } = options;
+    const { filter, signer, permissionGrantId, protocolRole } = options;
     const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: RecordsReadDescriptor = {
@@ -70,7 +70,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
       authorization = await Message.createAuthorization({
         descriptor,
         signer,
-        permissionsGrantId,
+        permissionGrantId,
         protocolRole,
         delegatedGrant: options.delegatedGrant
       });

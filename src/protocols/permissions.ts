@@ -300,11 +300,11 @@ export class PermissionsProtocol {
   public static async fetchGrant(
     tenant: string,
     messageStore: MessageStore,
-    permissionsGrantId: string,
+    permissionGrantId: string,
   ): Promise<PermissionGrant> {
 
     const grantQuery = {
-      recordId          : permissionsGrantId,
+      recordId          : permissionGrantId,
       isLatestBaseState : true
     };
     const { messages } = await messageStore.query(tenant, [grantQuery]);
@@ -318,7 +318,7 @@ export class PermissionsProtocol {
         (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantMissing,
-        `Could not find permission grant with record ID ${permissionsGrantId}.`
+        `Could not find permission grant with record ID ${permissionGrantId}.`
       );
     }
 

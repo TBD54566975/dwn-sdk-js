@@ -93,7 +93,7 @@ export class GrantAuthorization {
       // grant is not yet active
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantNotYetActive,
-        `The message has a timestamp before the associated PermissionsGrant becomes active`,
+        `The message has a timestamp before the associated permission grant becomes active`,
       );
     }
 
@@ -124,7 +124,7 @@ export class GrantAuthorization {
 
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
-   * @param permissionsGrantId Purely being passed for logging purposes.
+   * @param permissionGrantId Purely being passed for logging purposes.
    * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
    */
   private static async verifyGrantScopeInterfaceAndMethod(

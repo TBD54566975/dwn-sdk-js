@@ -70,7 +70,7 @@ export type GenerateProtocolsConfigureInput = {
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateProtocolsConfigureOutput = {
@@ -82,7 +82,7 @@ export type GenerateProtocolsConfigureOutput = {
 export type GenerateProtocolsQueryInput = {
   author?: Persona;
   messageTimestamp?: string;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
   filter?: {
     protocol: string;
   }
@@ -115,7 +115,7 @@ export type GenerateRecordsWriteInput = {
   messageTimestamp?: string;
   datePublished?: string;
   encryptionInput?: EncryptionInput;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateFromRecordsWriteInput = {
@@ -308,7 +308,7 @@ export class TestDataGenerator {
       messageTimestamp   : input?.messageTimestamp,
       definition,
       signer,
-      permissionsGrantId : input?.permissionsGrantId
+      permissionGrantId : input?.permissionGrantId
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);
@@ -333,7 +333,7 @@ export class TestDataGenerator {
       messageTimestamp   : input?.messageTimestamp,
       filter             : input?.filter,
       signer,
-      permissionsGrantId : input?.permissionsGrantId,
+      permissionGrantId : input?.permissionGrantId,
     };
     removeUndefinedProperties(options);
 
@@ -390,7 +390,7 @@ export class TestDataGenerator {
       signer,
       attestationSigners,
       encryptionInput    : input?.encryptionInput,
-      permissionsGrantId : input?.permissionsGrantId,
+      permissionGrantId : input?.permissionGrantId,
     };
 
     const recordsWrite = await RecordsWrite.create(options);

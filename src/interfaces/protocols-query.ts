@@ -18,7 +18,7 @@ export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
   signer?: Signer;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
@@ -54,8 +54,8 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     if (options.signer !== undefined) {
       authorization = await Message.createAuthorization({
         descriptor,
-        signer             : options.signer,
-        permissionsGrantId : options.permissionsGrantId
+        signer            : options.signer,
+        permissionGrantId : options.permissionGrantId
       });
     }
 
@@ -78,8 +78,8 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
-      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
+    } else if (this.author !== undefined && this.signaturePayload!.permissionGrantId) {
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionGrantId);
       await GrantAuthorization.performBaseValidation({
         incomingMessage : this.message,
         expectedGrantor : tenant,

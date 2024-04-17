@@ -247,10 +247,10 @@ export function testProtocolsQueryHandler(): void {
           expect(grantRecordsWriteReply.status.code).to.equal(202);
 
           // 2. Verify Bob can perform a ProtocolsQuery
-          const permissionsGrantId = permissionGrant.recordsWrite.message.recordId;
+          const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author: bob,
-            permissionsGrantId,
+            permissionGrantId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(200);
@@ -258,7 +258,7 @@ export function testProtocolsQueryHandler(): void {
           // 3. Verify that Mallory cannot to use Bob's permission grant to gain access to Alice's DWN
           const malloryProtocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author: mallory,
-            permissionsGrantId,
+            permissionGrantId,
           });
           const malloryProtocolsQueryReply = await dwn.processMessage(alice.did, malloryProtocolsQuery.message);
           expect(malloryProtocolsQueryReply.status.code).to.equal(401);
@@ -267,7 +267,7 @@ export function testProtocolsQueryHandler(): void {
           // 4. Alice revokes Bob's grant
           const revokeWrite = await PermissionsProtocol.createRevocation({
             signer      : Jws.createSigner(alice),
-            grantId     : permissionsGrantId,
+            grantId     : permissionGrantId,
             dateRevoked : Time.getCurrentTimestamp()
           });
 
@@ -281,7 +281,7 @@ export function testProtocolsQueryHandler(): void {
           // 5. Verify Bob cannot perform ProtocolsQuery with the revoked grant
           const unauthorizedProtocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author: bob,
-            permissionsGrantId,
+            permissionGrantId,
           });
           const unauthorizedProtocolsQueryReply = await dwn.processMessage(alice.did, unauthorizedProtocolsQuery.message);
           expect(unauthorizedProtocolsQueryReply.status.code).to.equal(401);
@@ -309,7 +309,7 @@ export function testProtocolsQueryHandler(): void {
           // Bob does ProtocolsQuery after the grant has expired
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author             : bob,
-            permissionsGrantId : permissionGrant.recordsWrite.message.recordId,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);
@@ -343,7 +343,7 @@ export function testProtocolsQueryHandler(): void {
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author             : bob,
             messageTimestamp   : protocolsQueryTimestamp,
-            permissionsGrantId : permissionGrant.recordsWrite.message.recordId,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);
@@ -371,7 +371,7 @@ export function testProtocolsQueryHandler(): void {
           // Bob tries to ProtocolsQuery
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author             : bob,
-            permissionsGrantId : permissionGrant.recordsWrite.message.recordId,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);
@@ -379,7 +379,7 @@ export function testProtocolsQueryHandler(): void {
         });
 
         it('rejects with 401 if the permission grant cannot be found', async () => {
-          // scenario: Bob uses a permissionsGrantId to ProtocolsQuery, but no PermissionsGrant can be found.
+          // scenario: Bob uses a permissionGrantId to ProtocolsQuery, but no permission grant can be found.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -387,7 +387,7 @@ export function testProtocolsQueryHandler(): void {
           // Bob tries to ProtocolsQuery
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author             : bob,
-            permissionsGrantId : await TestDataGenerator.randomCborSha256Cid(),
+            permissionGrantId : await TestDataGenerator.randomCborSha256Cid(),
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);
@@ -420,10 +420,10 @@ export function testProtocolsQueryHandler(): void {
           expect(grantRecordsWriteReply.status.code).to.equal(202);
 
           // 3. Verify that Carol cannot use permission grant to gain access to Bob's DWN
-          const permissionsGrantId = permissionGrant.recordsWrite.message.recordId;
+          const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
             author: carol,
-            permissionsGrantId,
+            permissionGrantId,
           });
           const protocolsQueryReply = await dwn.processMessage(bob.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);

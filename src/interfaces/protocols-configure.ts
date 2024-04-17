@@ -13,7 +13,7 @@ export type ProtocolsConfigureOptions = {
   messageTimestamp?: string;
   definition: ProtocolDefinition;
   signer: Signer;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessage> {
@@ -36,8 +36,8 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
 
     const authorization = await Message.createAuthorization({
       descriptor,
-      signer             : options.signer,
-      permissionsGrantId : options.permissionsGrantId
+      signer            : options.signer,
+      permissionGrantId : options.permissionGrantId
     });
     const message = { descriptor, authorization };
 
