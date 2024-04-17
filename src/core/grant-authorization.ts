@@ -9,7 +9,7 @@ export class GrantAuthorization {
 
   /**
    * Performs base permissions-grant-based authorization against the given message:
-   * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permissions grant.
+   * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permission grant.
    * 2. Verifies that the incoming message is within the allowed time frame of the grant, and the grant has not been revoked.
    * 3. Verifies that the `interface` and `method` grant scopes match the incoming message.
    *
@@ -50,7 +50,7 @@ export class GrantAuthorization {
 
   /**
    * Verifies the given `expectedGrantor` and `expectedGrantee` values against
-   * the actual signer and recipient in given permissions grant.
+   * the actual signer and recipient in given permission grant.
    * @throws {DwnError} if `expectedGrantor` or `expectedGrantee` do not match the actual values in the grant.
    */
   private static verifyExpectedGrantorAndGrantee(
@@ -63,7 +63,7 @@ export class GrantAuthorization {
     if (expectedGrantee !== actualGrantee) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
-        `Permissions grant is granted to ${actualGrantee}, but need to be granted to ${expectedGrantee}`
+        `Permission grant is granted to ${actualGrantee}, but need to be granted to ${expectedGrantee}`
       );
     }
 
@@ -71,7 +71,7 @@ export class GrantAuthorization {
     if (expectedGrantor !== actualGrantor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
-        `Permissions grant is granted by ${actualGrantor}, but need to be granted by ${expectedGrantor}`
+        `Permission grant is granted by ${actualGrantor}, but need to be granted by ${expectedGrantor}`
       );
     }
   }
@@ -117,7 +117,7 @@ export class GrantAuthorization {
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantRevoked,
-        `Permissions grant with CID ${permissionGrant.id} has been revoked`,
+        `Permission grant with CID ${permissionGrant.id} has been revoked`,
       );
     }
   }
