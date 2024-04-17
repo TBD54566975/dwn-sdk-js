@@ -110,41 +110,49 @@
     "$tags": {
       "type": "object",
       "minProperties": 1,
-      "patternProperties": {
+      "properties": {
         "requiredTags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
         },
         "allowUndefinedTags": {
-          "type": "boolean"
-        },
+            "type": "boolean"
+        }
+      },
+      "patternProperties": {
         "^(?!requiredTags$|allowUndefinedTags$).*$": {
           "type": "object",
           "additionalProperties": false,
-          "patternProperties": {
+          "properties": {
             "type": {
               "enum": ["string", "number", "integer", "boolean", "array"]
             },
             "items": {
               "type": "object",
-              "patternProperties": {
+              "properties": {
                 "type": {
                   "enum": ["string", "number", "integer"]
-                },
+                }
+              },
+              "patternProperties": {
                 "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
             },
             "contains": {
               "type": "object",
-              "patternProperties": {
+              "properties": {
                 "type": {
                   "enum": ["string", "number", "integer"]
-                },
+                }
+              },
+              "patternProperties": {
                 "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
               }
-            },
+            }
+          },
+          "patternProperties": {
             "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
             }
           }
