@@ -2,35 +2,26 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.foundation/dwn/json-schemas/permissions/defs.json",
   "type": "object",
-  "definitions": {
-    "grantedTo": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
-    "grantedBy": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
-    "grantedFor": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
+  "$defs": {
     "scope": {
       "oneOf": [
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-query-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/protocols-query-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-read-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/records-read-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-delete-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/records-delete-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-write-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/records-write-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-query-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/records-query-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-subscribe-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/records-subscribe-scope"
         }
       ]
     },

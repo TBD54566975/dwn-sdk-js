@@ -12,7 +12,7 @@
       "type": "string"
     },
     "dateExpires": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
     },
     "requestId": {
       "type": "string"
@@ -21,10 +21,10 @@
       "type": "boolean"
     },
     "scope": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/$defs/scope"
     },
     "conditions": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/$defs/conditions"
     }
   }
 }

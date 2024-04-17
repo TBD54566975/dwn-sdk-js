@@ -32,7 +32,7 @@
           "type": "string"
         },
         "messageTimestamp": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "filter": {
           "type": "object",
@@ -43,7 +43,7 @@
               "type": "string"
             },
             "recipient": {
-              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
             }
           }
         }

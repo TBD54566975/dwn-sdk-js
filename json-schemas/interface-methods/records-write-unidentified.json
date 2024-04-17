@@ -29,7 +29,7 @@
           ]
         },
         "initializationVector": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/base64url"
         },
         "keyEncryption": {
           "type": "array",
@@ -59,16 +59,16 @@
                 ]
               },
               "encryptedKey": {
-                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/base64url"
               },
               "initializationVector": {
-                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/base64url"
               },
               "ephemeralPublicKey": {
                 "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
               },
               "messageAuthenticationCode": {
-                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/base64url"
               }
             },
             "additionalProperties": false,
@@ -107,7 +107,7 @@
           "type": "string"
         },
         "recipient": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
         },
         "protocol": {
           "type": "string"
@@ -163,16 +163,16 @@
           "type": "number"
         },
         "dateCreated": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "messageTimestamp": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "published": {
           "type": "boolean"
         },
         "datePublished": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "dataFormat": {
           "type": "string"

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.foundation/dwn/json-schemas/defs.json",
   "type": "object",
-  "definitions": {
+  "$defs": {
     "base64url": {
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]+$"

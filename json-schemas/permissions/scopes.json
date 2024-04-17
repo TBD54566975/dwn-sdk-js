@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json",
   "type": "object",
-  "definitions": {
+  "$defs": {
     "protocols-query-scope": {
       "type": "object",
       "properties": {

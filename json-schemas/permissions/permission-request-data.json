@@ -15,10 +15,10 @@
       "type": "boolean"
     },
     "scope": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/$defs/scope"
     },
     "conditions": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/$defs/conditions"
     }
   }
 }

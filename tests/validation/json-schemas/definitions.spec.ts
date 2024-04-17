@@ -6,7 +6,7 @@ import { expect } from 'chai';
 describe('date-time schema', async () => {
 
   const ajv = new Ajv.default();
-  const validateDateTime = ajv.compile(definitions.definitions['date-time']);
+  const validateDateTime = ajv.compile(definitions.$defs['date-time']);
 
   it('should accept ISO 8601 date-time strings accepted by DWN', () => {
     expect(validateDateTime('2022-04-29T10:30:00.123456Z')).to.be.true;

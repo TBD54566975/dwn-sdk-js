@@ -12,13 +12,13 @@
       "type": "string"
     },
     "author": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
     },
     "attester": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
     },
     "recipient": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
     },
     "contextId": {
       "type": "string"
@@ -82,10 +82,10 @@
       "additionalProperties": false,
       "properties": {
         "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         }
       }
     },
@@ -95,10 +95,10 @@
       "additionalProperties": false,
       "properties": {
         "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         }
       }
     },
@@ -108,10 +108,10 @@
       "additionalProperties": false,
       "properties": {
         "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         }
       }
     }
