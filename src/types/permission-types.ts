@@ -1,9 +1,9 @@
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 /**
- * The data model of a permission request.
+ * Type for the data payload of a permission request message.
  */
-export type PermissionRequestModel = {
+export type PermissionRequestData = {
 
   /**
    * If the grant is a delegated grant or not. If `true`, the `grantedTo` will be able to act as the `grantedBy` within the scope of this grant.
@@ -24,9 +24,9 @@ export type PermissionRequestModel = {
 };
 
 /**
- * The data model of a permission grant.
+ * Type for the data payload of a permission grant message.
  */
-export type PermissionGrantModel = {
+export type PermissionGrantData = {
   /**
    * Optional string that communicates what the grant would be used for
    */
@@ -56,9 +56,9 @@ export type PermissionGrantModel = {
 };
 
 /**
- * The data model of a permission revocation.
+ * Type for the data payload of a permission revocation message.
  */
-export type PermissionRevocationModel = {
+export type PermissionRevocationData = {
   /**
    * Optional string that communicates the details of the revocation.
    */

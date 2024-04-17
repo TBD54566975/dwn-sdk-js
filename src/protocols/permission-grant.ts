@@ -1,6 +1,6 @@
 import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
 
-import type { PermissionConditions, PermissionGrantModel, PermissionScope } from '../types/permission-types.js';
+import type { PermissionConditions, PermissionGrantData, PermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
 import { Message } from '../core/message.js';
@@ -78,7 +78,7 @@ export class PermissionGrant {
 
     // properties from the data payload itself.
     const permissionGrantEncoded = (message as RecordsQueryReplyEntry).encodedData!;
-    const permissionGrant = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
+    const permissionGrant = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantData;
     this.dateExpires = permissionGrant.dateExpires;
     this.delegated = permissionGrant.delegated;
     this.description = permissionGrant.description;
