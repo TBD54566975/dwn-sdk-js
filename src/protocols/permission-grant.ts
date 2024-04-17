@@ -77,14 +77,14 @@ export class PermissionGrant {
     this.dateGranted = message.descriptor.dateCreated;
 
     // properties from the data payload itself.
-    const permissionsGrantEncoded = (message as RecordsQueryReplyEntry).encodedData!;
-    const permissionsGrant = Encoder.base64UrlToObject(permissionsGrantEncoded) as PermissionGrantModel;
-    this.dateExpires = permissionsGrant.dateExpires;
-    this.delegated = permissionsGrant.delegated;
-    this.description = permissionsGrant.description;
-    this.requestId = permissionsGrant.requestId;
-    this.scope = permissionsGrant.scope;
-    this.conditions = permissionsGrant.conditions;
+    const permissionGrantEncoded = (message as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrant = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantModel;
+    this.dateExpires = permissionGrant.dateExpires;
+    this.delegated = permissionGrant.delegated;
+    this.description = permissionGrant.description;
+    this.requestId = permissionGrant.requestId;
+    this.scope = permissionGrant.scope;
+    this.conditions = permissionGrant.conditions;
   }
 }
 

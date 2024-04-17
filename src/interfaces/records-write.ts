@@ -390,10 +390,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     if (options.signer !== undefined) {
       await recordsWrite.sign({
-        signer             : options.signer,
-        delegatedGrant     : options.delegatedGrant,
+        signer            : options.signer,
+        delegatedGrant    : options.delegatedGrant,
         permissionGrantId : options.permissionGrantId,
-        protocolRole       : options.protocolRole
+        protocolRole      : options.protocolRole
       });
     }
 

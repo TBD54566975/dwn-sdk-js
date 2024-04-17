@@ -8,7 +8,7 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 export class GrantAuthorization {
 
   /**
-   * Performs base PermissionsGrant-based authorization against the given message:
+   * Performs base permissions-grant-based authorization against the given message:
    * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permissions grant.
    * 2. Verifies that the incoming message is within the allowed time frame of the grant, and the grant has not been revoked.
    * 3. Verifies that the `interface` and `method` grant scopes match the incoming message.
@@ -101,7 +101,7 @@ export class GrantAuthorization {
       // grant has expired
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantExpired,
-        `The message has timestamp after the expiry of the associated PermissionsGrant`,
+        `The message has timestamp after the expiry of the associated permission grant`,
       );
     }
 
@@ -117,7 +117,7 @@ export class GrantAuthorization {
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantRevoked,
-        `PermissionsGrant with CID ${permissionGrant.id} has been revoked`,
+        `Permissions grant with CID ${permissionGrant.id} has been revoked`,
       );
     }
   }
@@ -125,7 +125,7 @@ export class GrantAuthorization {
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
    * @param permissionGrantId Purely being passed for logging purposes.
-   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
+   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the permission grant.
    */
   private static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,

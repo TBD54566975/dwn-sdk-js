@@ -303,12 +303,12 @@ export function testProtocolsQueryHandler(): void {
           });
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(permissionsGrantReply.status.code).to.equal(202);
+          const permissionGrantWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Bob does ProtocolsQuery after the grant has expired
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-            author             : bob,
+            author            : bob,
             permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
@@ -336,13 +336,13 @@ export function testProtocolsQueryHandler(): void {
           });
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(permissionsGrantReply.status.code).to.equal(202);
+          const permissionGrantWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Bob does ProtocolsQuery but his message has timestamp before the grant is active
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-            author             : bob,
-            messageTimestamp   : protocolsQueryTimestamp,
+            author            : bob,
+            messageTimestamp  : protocolsQueryTimestamp,
             permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
@@ -370,7 +370,7 @@ export function testProtocolsQueryHandler(): void {
 
           // Bob tries to ProtocolsQuery
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-            author             : bob,
+            author            : bob,
             permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
@@ -386,7 +386,7 @@ export function testProtocolsQueryHandler(): void {
 
           // Bob tries to ProtocolsQuery
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-            author             : bob,
+            author            : bob,
             permissionGrantId : await TestDataGenerator.randomCborSha256Cid(),
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);

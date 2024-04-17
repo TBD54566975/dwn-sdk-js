@@ -603,7 +603,7 @@ export class ProtocolAuthorization {
     const author = incomingMessage.author;
     const actionRules = ruleSet.$actions;
 
-    // We have already checked that the message is not from tenant, owner, or permissionsGrant
+    // We have already checked that the message is not from tenant, owner, or permission grant authorized
     if (actionRules === undefined) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationActionRulesNotFound,

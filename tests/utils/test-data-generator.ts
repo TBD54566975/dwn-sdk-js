@@ -305,7 +305,7 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: ProtocolsConfigureOptions = {
-      messageTimestamp   : input?.messageTimestamp,
+      messageTimestamp  : input?.messageTimestamp,
       definition,
       signer,
       permissionGrantId : input?.permissionGrantId
@@ -330,8 +330,8 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: ProtocolsQueryOptions = {
-      messageTimestamp   : input?.messageTimestamp,
-      filter             : input?.filter,
+      messageTimestamp  : input?.messageTimestamp,
+      filter            : input?.filter,
       signer,
       permissionGrantId : input?.permissionGrantId,
     };
@@ -371,25 +371,25 @@ export class TestDataGenerator {
     }
 
     const options: RecordsWriteOptions = {
-      recipient          : input?.recipient,
-      protocol           : input?.protocol,
-      protocolPath       : input?.protocolPath,
-      protocolRole       : input?.protocolRole,
-      schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
-      tags               : input?.tags,
-      recordId           : input?.recordId,
-      parentContextId    : input?.parentContextId,
-      published          : input?.published,
-      dataFormat         : input?.dataFormat ?? 'application/json',
-      dateCreated        : input?.dateCreated,
-      messageTimestamp   : input?.messageTimestamp,
-      datePublished      : input?.datePublished,
-      data               : dataBytes,
+      recipient         : input?.recipient,
+      protocol          : input?.protocol,
+      protocolPath      : input?.protocolPath,
+      protocolRole      : input?.protocolRole,
+      schema            : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
+      tags              : input?.tags,
+      recordId          : input?.recordId,
+      parentContextId   : input?.parentContextId,
+      published         : input?.published,
+      dataFormat        : input?.dataFormat ?? 'application/json',
+      dateCreated       : input?.dateCreated,
+      messageTimestamp  : input?.messageTimestamp,
+      datePublished     : input?.datePublished,
+      data              : dataBytes,
       dataCid,
       dataSize,
       signer,
       attestationSigners,
-      encryptionInput    : input?.encryptionInput,
+      encryptionInput   : input?.encryptionInput,
       permissionGrantId : input?.permissionGrantId,
     };
 

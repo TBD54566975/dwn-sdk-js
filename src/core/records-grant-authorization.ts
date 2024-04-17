@@ -37,7 +37,7 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes a RecordsReadMessage using the given PermissionsGrant.
+   * Authorizes a RecordsReadMessage using the given permission grant.
    * @param messageStore Used to check if the given grant has been revoked.
    */
   public static async authorizeRead(input: {
@@ -224,7 +224,7 @@ export class RecordsGrantAuthorization {
     if (conditions?.publication === PermissionConditionPublication.Required && !recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired,
-        'PermissionsGrant requires message to be published'
+        'Permission grant requires message to be published'
       );
     }
 
@@ -232,7 +232,7 @@ export class RecordsGrantAuthorization {
     if (conditions?.publication === PermissionConditionPublication.Prohibited && recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
-        'PermissionsGrant prohibits message from being published'
+        'Permission grant prohibits message from being published'
       );
     }
   }

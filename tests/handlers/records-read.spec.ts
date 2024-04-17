@@ -815,15 +815,19 @@ export function testRecordsReadHandler(): void {
             }
           });
           const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-          expect(permissionsGrantReply.status.code).to.equal(202);
+          const permissionGrantWriteReply = await dwn.processMessage(
+            alice.did,
+            permissionsGrant.recordsWrite.message,
+            { dataStream: grantDataStream }
+          );
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Bob tries to RecordsRead
           const recordsRead = await RecordsRead.create({
             filter: {
               recordId: recordsWrite.message.recordId,
             },
-            signer             : Jws.createSigner(bob),
+            signer            : Jws.createSigner(bob),
             permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -865,7 +869,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            signer             : Jws.createSigner(bob),
+            signer            : Jws.createSigner(bob),
             permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -910,8 +914,12 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record without using the PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
@@ -930,7 +938,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
@@ -975,8 +983,12 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record without using the PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
@@ -994,7 +1006,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
@@ -1039,15 +1051,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1093,15 +1109,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1147,15 +1167,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1200,15 +1224,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1254,15 +1282,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1307,15 +1339,19 @@ export function testRecordsReadHandler(): void {
               }
             });
             const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionsGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
@@ -1360,7 +1396,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1404,7 +1440,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              signer             : Jws.createSigner(bob),
+              signer            : Jws.createSigner(bob),
               permissionGrantId : permissionsGrant.recordsWrite.message.recordId,
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
