@@ -2693,53 +2693,5 @@ export function testRecordsTags(): void {
         expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
       });
     });
-
-    describe('RecordsDelete with tags', () => {
-      it('should delete record with tags', async () => {
-        const alice = await TestDataGenerator.generateDidKeyPersona();
-
-        // create a record with a tag
-        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
-          author    : alice,
-          published : true,
-          schema    : 'post',
-          tags      : {
-            stringTag: 'string-value',
-          }
-        });
-
-        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
-        expect(tagsRecord1Reply.status.code).to.equal(202);
-
-        //sanity: query for the record
-        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : {
-            tags: {
-              stringTag: 'string-value'
-            }
-          }
-        });
-
-        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
-        expect(tagsQueryMatchReply.status.code).to.equal(200);
-        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
-        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
-
-
-        // delete the record
-        const recordDelete = await TestDataGenerator.generateRecordsDelete({
-          author   : alice,
-          recordId : tagsRecord1.message.recordId,
-        });
-        const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
-        expect(recordDeleteReply.status.code).to.equal(202);
-
-        // issue the the same query should return no results
-        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
-        expect(tagsQueryMatchReply2.status.code).to.equal(200);
-        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
-      });
-    });
   });
 }
