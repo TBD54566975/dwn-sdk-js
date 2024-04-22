@@ -28,6 +28,7 @@ export enum DwnErrorCode {
   EventEmitterStreamNotOpenError = 'EventEmitterStreamNotOpenError',
   EventsSubscribeEventStreamUnimplemented = 'EventsSubscribeEventStreamUnimplemented',
   GeneralJwsVerifierGetPublicKeyNotFound = 'GeneralJwsVerifierGetPublicKeyNotFound',
+  GeneralJwsVerifierVerificationMethodNotFound = 'GeneralJwsVerifierVerificationMethodNotFound',
   GeneralJwsVerifierInvalidSignature = 'GeneralJwsVerifierInvalidSignature',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',

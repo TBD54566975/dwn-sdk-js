@@ -84,7 +84,11 @@ export class GeneralJwsVerifier {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
     const did = Jws.extractDid(kid);
-    const { didDocument } = await didResolver.resolve(did);
+    const { didDocument, didResolutionMetadata } = await didResolver.resolve(did);
+    if (didResolutionMetadata.error) {
+      throw new DwnError(DwnErrorCode.GeneralJwsVerifierGetPublicKeyNotFound, `DID resolution failed for ${did}`);
+    }
+
     const { verificationMethod: verificationMethods = [] } = didDocument || {};
 
     let verificationMethod: DidVerificationMethod | undefined;
@@ -100,7 +104,7 @@ export class GeneralJwsVerifier {
     }
 
     if (!verificationMethod) {
-      throw new DwnError(DwnErrorCode.GeneralJwsVerifierGetPublicKeyNotFound, 'public key needed to verify signature not found in DID Document');
+      throw new DwnError(DwnErrorCode.GeneralJwsVerifierVerificationMethodNotFound, 'public key needed to verify signature not found in DID Document');
     }
 
     validateJsonSchema('JwkVerificationMethod', verificationMethod);
