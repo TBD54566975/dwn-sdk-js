@@ -133,6 +133,21 @@ export function testRecordsTags(): void {
           numberArrayTag : [ 0, 1 ,2 ],
         });
 
+        // Sanity: Query for a tag value
+        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: 'string-value'
+            }
+          }
+        });
+
+        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply.status.code).to.equal(200);
+        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
+        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
+
         // update the record with new tags
         const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
           author        : alice,
@@ -146,6 +161,11 @@ export function testRecordsTags(): void {
         expect(updatedRecordReadReply.status.code).to.equal(200);
         expect(updatedRecordReadReply.record).to.not.be.undefined;
         expect(updatedRecordReadReply.record!.descriptor.tags).to.deep.equal({ newTag: 'new-value' });
+
+        // Sanity: Query for the old tag value should return no results
+        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply2.status.code).to.equal(200);
+        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
       });
     });
 
