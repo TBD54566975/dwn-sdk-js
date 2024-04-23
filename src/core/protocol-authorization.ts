@@ -357,7 +357,7 @@ export class ProtocolAuthorization {
       if (declaredProtocolPath !== declaredTypeName) {
         throw new DwnError(
           DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath,
-          `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentContextId'.`
+          `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parent'.`
         );
       }
 

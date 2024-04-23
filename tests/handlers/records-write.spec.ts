@@ -2479,7 +2479,7 @@ export function testRecordsWriteHandler(): void {
           const reply = await dwn.processMessage(alice.did, credentialApplication.message, { dataStream: credentialApplication.dataStream });
           expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath);
-          expect(reply.status.detail).to.contain('is not valid for records with no parentContextId');
+          expect(reply.status.detail).to.contain('is not valid for records with no parent');
         });
 
         it('#690 - should only allow data format of a protocol-space record to be updated to any value allowed by the protocol configuration', async () => {
