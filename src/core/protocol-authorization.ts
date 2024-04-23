@@ -698,13 +698,13 @@ export class ProtocolAuthorization {
     if (ruleSet.$tags !== undefined) {
       const { tags = {}, protocol, protocolPath } = incomingMessage.message.descriptor;
 
-      const { allowUndefinedTags, requiredTags, ...properties } = ruleSet.$tags;
+      const { $allowUndefinedTags, $requiredTags, ...properties } = ruleSet.$tags;
 
-      // if allowUndefinedTags is set to false and there are properties not defined in the schema, an error is thrown
-      const additionalProperties = allowUndefinedTags || false;
+      // if $allowUndefinedTags is set to false and there are properties not defined in the schema, an error is thrown
+      const additionalProperties = $allowUndefinedTags || false;
 
-      // if requiredTags is set, all required tags must be present
-      const required = requiredTags || [];
+      // if $requiredTags is set, all required tags must be present
+      const required = $requiredTags || [];
 
       const ajv = new Ajv.default();
       const compiledTags = ajv.compile({

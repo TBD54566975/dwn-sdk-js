@@ -133,9 +133,9 @@ export type ProtocolRuleSet = {
    */
   $tags?: {
     /** array of required tags */
-    requiredTags?: string[],
+    $requiredTags?: string[],
     /** allow properties other than those explicitly listed. defaults to false  */
-    allowUndefinedTags?: boolean;
+    $allowUndefinedTags?: boolean;
 
     [key: string]: any;
   }

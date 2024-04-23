@@ -111,18 +111,18 @@
       "type": "object",
       "minProperties": 1,
       "properties": {
-        "requiredTags": {
+        "$requiredTags": {
             "type": "array",
             "items": {
                 "type": "string"
             }
         },
-        "allowUndefinedTags": {
+        "$allowUndefinedTags": {
             "type": "boolean"
         }
       },
       "patternProperties": {
-        "^(?!requiredTags$|allowUndefinedTags$).*$": {
+        "^(?!\\$requiredTags$|\\$allowUndefinedTags$).*$": {
           "type": "object",
           "additionalProperties": false,
           "properties": {

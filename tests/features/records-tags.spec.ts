@@ -455,7 +455,7 @@ export function testRecordsTags(): void {
               foo: {
                 $tags: {
                   count: {
-                    type: 'integer'
+                    type: 'integer',
                   }
                 }
               }
@@ -1221,7 +1221,7 @@ export function testRecordsTags(): void {
           expect(uniqueItemsReply.status.code).to.equal(202);
         });
 
-        it('should only accept a record containing tags required by requiredTags', async () => {
+        it('should only accept a record containing tags required by $requiredTags', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with a required tag
@@ -1234,7 +1234,7 @@ export function testRecordsTags(): void {
             structure: {
               foo: {
                 $tags: {
-                  requiredTags    : [ 'someRequiredTag' ],
+                  $requiredTags   : [ 'someRequiredTag' ],
                   someRequiredTag : {
                     type: 'string',
                   },
@@ -1281,7 +1281,7 @@ export function testRecordsTags(): void {
           expect(validFooRecordReply.status.code).to.equal(202);
         });
 
-        it('should accept any tag if allowUndefinedTags is set to true', async () => {
+        it('should accept any tag if $allowUndefinedTags is set to true', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
 
           // protocol with no required tags
@@ -1294,8 +1294,8 @@ export function testRecordsTags(): void {
             structure: {
               foo: {
                 $tags: {
-                  allowUndefinedTags : true,
-                  optionalTag        : {
+                  $allowUndefinedTags : true,
+                  optionalTag         : {
                     type: 'string',
                   },
                 }
