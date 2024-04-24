@@ -185,14 +185,14 @@ export class RecordsWriteHandler implements MethodHandler {
     // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/716
     // This code is a direct copy and paste from the original PermissionsRevokeHandler (no longer exists),
     // but it appears that there was no test for it and it does not look like the code worked:
-    // - not seeing `permissionsGrantId` being an index
+    // - not seeing `permissionGrantId` being an index
     // - not seeing `this.dataStore` being called to delete actual data
     // - test coverage is missing for the main delete logic
     if (recordsWrite.message.descriptor.protocol === PermissionsProtocol.uri &&
       recordsWrite.message.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
-      const permissionsGrantId = recordsWrite.message.descriptor.parentId!;
+      const permissionGrantId = recordsWrite.message.descriptor.parentId!;
       const grantAuthorizedMessagesQuery = {
-        permissionsGrantId,
+        permissionGrantId,
         dateCreated: { gte: recordsWrite.message.descriptor.messageTimestamp },
       };
       const { messages: grantAuthorizedMessagesAfterRevoke } = await this.messageStore.query(tenant, [ grantAuthorizedMessagesQuery ]);
@@ -348,8 +348,8 @@ export class RecordsWriteHandler implements MethodHandler {
     } else if (recordsWrite.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
       return;
-    } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
-      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
+    } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionGrantId !== undefined) {
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionGrantId);
       await RecordsGrantAuthorization.authorizeWrite({
         recordsWriteMessage : recordsWrite.message,
         expectedGrantor     : tenant,

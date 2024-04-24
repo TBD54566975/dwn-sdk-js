@@ -8,8 +8,8 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 export class GrantAuthorization {
 
   /**
-   * Performs base PermissionsGrant-based authorization against the given message:
-   * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permissions grant.
+   * Performs base permissions-grant-based authorization against the given message:
+   * 1. Validates the `expectedGrantor` and `expectedGrantee` values against the actual values in given permission grant.
    * 2. Verifies that the incoming message is within the allowed time frame of the grant, and the grant has not been revoked.
    * 3. Verifies that the `interface` and `method` grant scopes match the incoming message.
    *
@@ -50,7 +50,7 @@ export class GrantAuthorization {
 
   /**
    * Verifies the given `expectedGrantor` and `expectedGrantee` values against
-   * the actual signer and recipient in given permissions grant.
+   * the actual signer and recipient in given permission grant.
    * @throws {DwnError} if `expectedGrantor` or `expectedGrantee` do not match the actual values in the grant.
    */
   private static verifyExpectedGrantorAndGrantee(
@@ -63,7 +63,7 @@ export class GrantAuthorization {
     if (expectedGrantee !== actualGrantee) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
-        `Permissions grant is granted to ${actualGrantee}, but need to be granted to ${expectedGrantee}`
+        `Permission grant is granted to ${actualGrantee}, but need to be granted to ${expectedGrantee}`
       );
     }
 
@@ -71,7 +71,7 @@ export class GrantAuthorization {
     if (expectedGrantor !== actualGrantor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
-        `Permissions grant is granted by ${actualGrantor}, but need to be granted by ${expectedGrantor}`
+        `Permission grant is granted by ${actualGrantor}, but need to be granted by ${expectedGrantor}`
       );
     }
   }
@@ -93,7 +93,7 @@ export class GrantAuthorization {
       // grant is not yet active
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantNotYetActive,
-        `The message has a timestamp before the associated PermissionsGrant becomes active`,
+        `The message has a timestamp before the associated permission grant becomes active`,
       );
     }
 
@@ -101,7 +101,7 @@ export class GrantAuthorization {
       // grant has expired
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantExpired,
-        `The message has timestamp after the expiry of the associated PermissionsGrant`,
+        `The message has timestamp after the expiry of the associated permission grant`,
       );
     }
 
@@ -117,15 +117,15 @@ export class GrantAuthorization {
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantRevoked,
-        `PermissionsGrant with CID ${permissionGrant.id} has been revoked`,
+        `Permission grant with CID ${permissionGrant.id} has been revoked`,
       );
     }
   }
 
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
-   * @param permissionsGrantId Purely being passed for logging purposes.
-   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
+   * @param permissionGrantId Purely being passed for logging purposes.
+   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the permission grant.
    */
   private static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,

@@ -13,7 +13,7 @@
     "delegatedGrantId": {
       "type": "string"
     },
-    "permissionsGrantId": {
+    "permissionGrantId": {
       "type": "string"
     },
     "protocolRole": {

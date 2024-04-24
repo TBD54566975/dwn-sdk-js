@@ -3,7 +3,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { ProtocolDefinition } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DataEncodedRecordsWriteMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { PermissionConditions, PermissionGrantModel, PermissionRequestModel, PermissionRevocationModel, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
+import type { PermissionConditions, PermissionGrantData, PermissionRequestData, PermissionRevocationData, PermissionScope, RecordsPermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
 import { PermissionGrant } from './permission-grant.js';
@@ -152,7 +152,7 @@ export class PermissionsProtocol {
     }
   };
 
-  public static parseRequest(base64UrlEncodedRequest: string): PermissionRequestModel {
+  public static parseRequest(base64UrlEncodedRequest: string): PermissionRequestData {
     return Encoder.base64UrlToObject(base64UrlEncodedRequest);
   }
 
@@ -161,19 +161,19 @@ export class PermissionsProtocol {
    */
   public static async createRequest(options: PermissionRequestCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
-    permissionRequestModel: PermissionRequestModel,
+    permissionRequestData: PermissionRequestData,
     permissionRequestBytes: Uint8Array
   }> {
     const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
-    const permissionRequestModel: PermissionRequestModel = {
+    const permissionRequestData: PermissionRequestData = {
       description : options.description,
       delegated   : options.delegated,
       scope,
       conditions  : options.conditions,
     };
 
-    const permissionRequestBytes = Encoder.objectToBytes(permissionRequestModel);
+    const permissionRequestBytes = Encoder.objectToBytes(permissionRequestData);
     const recordsWrite = await RecordsWrite.create({
       signer           : options.signer,
       messageTimestamp : options.dateRequested,
@@ -185,7 +185,7 @@ export class PermissionsProtocol {
 
     return {
       recordsWrite,
-      permissionRequestModel,
+      permissionRequestData,
       permissionRequestBytes
     };
   }
@@ -195,13 +195,13 @@ export class PermissionsProtocol {
    */
   public static async createGrant(options: PermissionGrantCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
-    permissionGrantModel: PermissionGrantModel,
+    permissionGrantData: PermissionGrantData,
     permissionGrantBytes: Uint8Array,
     dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
     const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
-    const permissionGrantModel: PermissionGrantModel = {
+    const permissionGrantData: PermissionGrantData = {
       dateExpires : options.dateExpires,
       requestId   : options.requestId,
       description : options.description,
@@ -210,7 +210,7 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
-    const permissionGrantBytes = Encoder.objectToBytes(permissionGrantModel);
+    const permissionGrantBytes = Encoder.objectToBytes(permissionGrantData);
     const recordsWrite = await RecordsWrite.create({
       signer           : options.signer,
       messageTimestamp : options.dateGranted,
@@ -229,7 +229,7 @@ export class PermissionsProtocol {
 
     return {
       recordsWrite,
-      permissionGrantModel,
+      permissionGrantData,
       permissionGrantBytes,
       dataEncodedMessage
     };
@@ -240,14 +240,14 @@ export class PermissionsProtocol {
    */
   public static async createRevocation(options: PermissionRevocationCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
-    permissionRevocationModel: PermissionRevocationModel,
+    permissionRevocationData: PermissionRevocationData,
     permissionRevocationBytes: Uint8Array
   }> {
-    const permissionRevocationModel: PermissionRevocationModel = {
+    const permissionRevocationData: PermissionRevocationData = {
       description: options.description,
     };
 
-    const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationModel);
+    const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationData);
     const recordsWrite = await RecordsWrite.create({
       signer          : options.signer,
       parentContextId : options.grantId, // NOTE: since the grant is the root record, its record ID is also the context ID
@@ -259,7 +259,7 @@ export class PermissionsProtocol {
 
     return {
       recordsWrite,
-      permissionRevocationModel,
+      permissionRevocationData,
       permissionRevocationBytes
     };
   }
@@ -276,7 +276,7 @@ export class PermissionsProtocol {
       validateJsonSchema('PermissionGrantData', dataObject);
 
       // more nuanced validation that are annoying/difficult to do using JSON schema
-      const permissionGrantData = dataObject as PermissionGrantModel;
+      const permissionGrantData = dataObject as PermissionGrantData;
       PermissionsProtocol.validateScope(permissionGrantData.scope);
       Time.validateTimestamp(permissionGrantData.dateExpires);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
@@ -300,11 +300,11 @@ export class PermissionsProtocol {
   public static async fetchGrant(
     tenant: string,
     messageStore: MessageStore,
-    permissionsGrantId: string,
+    permissionGrantId: string,
   ): Promise<PermissionGrant> {
 
     const grantQuery = {
-      recordId          : permissionsGrantId,
+      recordId          : permissionGrantId,
       isLatestBaseState : true
     };
     const { messages } = await messageStore.query(tenant, [grantQuery]);
@@ -318,7 +318,7 @@ export class PermissionsProtocol {
         (possibleGrantMessage as RecordsWriteMessage).descriptor.protocolPath !== PermissionsProtocol.grantPath) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationGrantMissing,
-        `Could not find permission grant with record ID ${permissionsGrantId}.`
+        `Could not find permission grant with record ID ${permissionGrantId}.`
       );
     }
 

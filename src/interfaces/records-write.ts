@@ -70,7 +70,7 @@ export type RecordsWriteOptions = {
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 /**
@@ -390,10 +390,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     if (options.signer !== undefined) {
       await recordsWrite.sign({
-        signer             : options.signer,
-        delegatedGrant     : options.delegatedGrant,
-        permissionsGrantId : options.permissionsGrantId,
-        protocolRole       : options.protocolRole
+        signer            : options.signer,
+        delegatedGrant    : options.delegatedGrant,
+        permissionGrantId : options.permissionGrantId,
+        protocolRole      : options.protocolRole
       });
     }
 
@@ -498,10 +498,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public async sign(options: {
     signer: Signer,
     delegatedGrant?: RecordsWriteMessage,
-    permissionsGrantId?: string,
+    permissionGrantId?: string,
     protocolRole?: string
   }): Promise<void> {
-    const { signer, delegatedGrant, permissionsGrantId, protocolRole } = options;
+    const { signer, delegatedGrant, permissionGrantId, protocolRole } = options;
 
     // compute delegated grant ID and author if delegated grant is given
     let delegatedGrantId;
@@ -540,7 +540,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       encryption  : this._message.encryption,
       signer,
       delegatedGrantId,
-      permissionsGrantId,
+      permissionGrantId,
       protocolRole
     });
 
@@ -948,10 +948,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     encryption: EncryptionProperty | undefined,
     signer: Signer,
     delegatedGrantId?: string,
-    permissionsGrantId?: string,
+    permissionGrantId?: string,
     protocolRole?: string
   }): Promise<GeneralJws> {
-    const { recordId, contextId, descriptorCid, attestation, encryption, signer, delegatedGrantId, permissionsGrantId, protocolRole } = input;
+    const { recordId, contextId, descriptorCid, attestation, encryption, signer, delegatedGrantId, permissionGrantId, protocolRole } = input;
 
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
@@ -963,7 +963,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       attestationCid,
       encryptionCid,
       delegatedGrantId,
-      permissionsGrantId,
+      permissionGrantId,
       protocolRole
     };
     removeUndefinedProperties(signaturePayload);

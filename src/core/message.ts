@@ -80,17 +80,17 @@ export class Message {
     descriptor: Descriptor,
     signer: Signer,
     delegatedGrant?: RecordsWriteMessage,
-    permissionsGrantId?: string,
+    permissionGrantId?: string,
     protocolRole?: string
   }): Promise<AuthorizationModel> {
-    const { descriptor, signer, delegatedGrant, permissionsGrantId, protocolRole } = input;
+    const { descriptor, signer, delegatedGrant, permissionGrantId, protocolRole } = input;
 
     let delegatedGrantId;
     if (delegatedGrant !== undefined) {
       delegatedGrantId = await Message.getCid(delegatedGrant);
     }
 
-    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, permissionsGrantId, protocolRole });
+    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, permissionGrantId, protocolRole });
 
     const authorization: AuthorizationModel = {
       signature
@@ -110,7 +110,7 @@ export class Message {
   public static async createSignature(
     descriptor: Descriptor,
     signer: Signer,
-    additionalPayloadProperties?: { delegatedGrantId?: string, permissionsGrantId?: string, protocolRole?: string }
+    additionalPayloadProperties?: { delegatedGrantId?: string, permissionGrantId?: string, protocolRole?: string }
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 

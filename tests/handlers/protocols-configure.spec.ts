@@ -278,7 +278,7 @@ export function testProtocolsConfigureHandler(): void {
       });
 
       it('rejects non-tenant non-granted ProtocolsConfigures with 401', async () => {
-        // Bob tries to ProtocolsConfigure to Alice's DWN without a PermissionsGrant
+        // Bob tries to ProtocolsConfigure to Alice's DWN without a permission grant
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 

@@ -3516,7 +3516,7 @@ export function testRecordsWriteHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // Alice issues Bob a PermissionsGrant for unrestricted RecordsWrite access
+          // Alice issues Bob a permission grant for unrestricted RecordsWrite access
           const permissionGrant = await PermissionsProtocol.createGrant({
             signer      : Jws.createSigner(alice),
             grantedTo   : bob.did,
@@ -3529,12 +3529,12 @@ export function testRecordsWriteHandler(): void {
           expect(grantRecordsWriteReply.status.code).to.equal(202);
 
           // Bob invokes the grant to write a protocol record to Alice's DWN
-          const permissionsGrantId = permissionGrant.recordsWrite.message.recordId;
+          const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
           const protocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol     : protocolDefinition.protocol,
             protocolPath : 'foo',
-            permissionsGrantId,
+            permissionGrantId,
           });
           const recordsWriteReply =
             await dwn.processMessage(alice.did, protocolRecordsWrite.message, { dataStream: protocolRecordsWrite.dataStream });
@@ -3543,7 +3543,7 @@ export function testRecordsWriteHandler(): void {
           // Bob writes a non-protocol record to Alice's DWN
           const nonProtocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author: bob,
-            permissionsGrantId,
+            permissionGrantId,
           });
           const recordsWriteReply2 =
             await dwn.processMessage(alice.did, nonProtocolRecordsWrite.message, { dataStream: nonProtocolRecordsWrite.dataStream });
@@ -3568,8 +3568,8 @@ export function testRecordsWriteHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3579,16 +3579,20 @@ export function testRecordsWriteHandler(): void {
                 protocol  : protocolDefinition.protocol,
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant in order to write a record to the protocol
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'foo',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'foo',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(202);
@@ -3611,8 +3615,8 @@ export function testRecordsWriteHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant with a different protocol than what Bob will try to write to
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant with a different protocol than what Bob will try to write to
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3622,16 +3626,20 @@ export function testRecordsWriteHandler(): void {
                 protocol  : 'some-other-protocol',
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant, failing to write to a different protocol than the grant allows
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'foo',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'foo',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(401);
@@ -3655,8 +3663,8 @@ export function testRecordsWriteHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant with a non-protocol scope
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant with a non-protocol scope
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3666,16 +3674,20 @@ export function testRecordsWriteHandler(): void {
                 schema    : 'some-schema',
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant, failing to write to a different protocol than the grant allows
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'foo',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'foo',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(401);
@@ -3712,8 +3724,8 @@ export function testRecordsWriteHandler(): void {
               await dwn.processMessage(alice.did, alicesRecordsWrite.message, { dataStream: alicesRecordsWrite.dataStream });
             expect(alicesRecordsWriteReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3724,19 +3736,23 @@ export function testRecordsWriteHandler(): void {
                 contextId : alicesRecordsWrite.message.contextId,
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant in order to write a record to the protocol
             const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'email/email',
-              schema             : protocolDefinition.types.email.schema,
-              dataFormat         : protocolDefinition.types.email.dataFormats![0],
-              parentContextId    : alicesRecordsWrite.message.contextId,
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'email/email',
+              schema            : protocolDefinition.types.email.schema,
+              dataFormat        : protocolDefinition.types.email.dataFormats![0],
+              parentContextId   : alicesRecordsWrite.message.contextId,
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });
             expect(bobsRecordsWriteReply.status.code).to.equal(202);
@@ -3772,8 +3788,8 @@ export function testRecordsWriteHandler(): void {
               await dwn.processMessage(alice.did, alicesRecordsWrite.message, { dataStream: alicesRecordsWrite.dataStream });
             expect(alicesRecordsWriteReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3784,19 +3800,23 @@ export function testRecordsWriteHandler(): void {
                 contextId : await TestDataGenerator.randomCborSha256Cid(), // different contextId than what Bob will try to write to
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant in order to write a record to the protocol
             const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'email/email',
-              schema             : protocolDefinition.types.email.schema,
-              dataFormat         : protocolDefinition.types.email.dataFormats![0],
-              parentContextId    : alicesRecordsWrite.message.contextId,
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'email/email',
+              schema            : protocolDefinition.types.email.schema,
+              dataFormat        : protocolDefinition.types.email.dataFormats![0],
+              parentContextId   : alicesRecordsWrite.message.contextId,
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });
             expect(bobsRecordsWriteReply.status.code).to.equal(401);
@@ -3820,8 +3840,8 @@ export function testRecordsWriteHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3832,16 +3852,20 @@ export function testRecordsWriteHandler(): void {
                 protocolPath : 'foo',
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant in order to write a record to the protocol
             const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'foo',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'foo',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });
             expect(bobsRecordsWriteReply.status.code).to.equal(202);
@@ -3864,8 +3888,8 @@ export function testRecordsWriteHandler(): void {
             const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolsConfigureReply.status.code).to.equal(202);
 
-            // Alice gives Bob a PermissionsGrant
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3876,16 +3900,20 @@ export function testRecordsWriteHandler(): void {
                 protocolPath : 'some-other-protocol-path',
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant in order to write a record to the protocol
             const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              protocol           : protocolDefinition.protocol,
-              protocolPath       : 'foo',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              protocol          : protocolDefinition.protocol,
+              protocolPath      : 'foo',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, { dataStream: bobsRecordsWrite.dataStream });
             expect(bobsRecordsWriteReply.status.code).to.equal(401);
@@ -3901,9 +3929,9 @@ export function testRecordsWriteHandler(): void {
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
-            // Alice gives Bob a PermissionsGrant for a certain schema
+            // Alice gives Bob a permission grant for a certain schema
             const schema = 'http://example.com/schema';
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3913,15 +3941,19 @@ export function testRecordsWriteHandler(): void {
                 schema,
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant to write a record
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
+              author            : bob,
               schema,
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(202);
@@ -3935,8 +3967,8 @@ export function testRecordsWriteHandler(): void {
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
 
-            // Alice gives Bob a PermissionsGrant for a certain schema
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            // Alice gives Bob a permission grant for a certain schema
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3946,15 +3978,19 @@ export function testRecordsWriteHandler(): void {
                 schema    : 'some-schema',
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
             // Bob invokes the grant, failing write a record
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author             : bob,
-              schema             : 'some-other-schema',
-              permissionsGrantId : permissionsGrant.recordsWrite.message.recordId,
+              author            : bob,
+              schema            : 'some-other-schema',
+              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(401);
@@ -3971,7 +4007,7 @@ export function testRecordsWriteHandler(): void {
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === required
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -3983,17 +4019,21 @@ export function testRecordsWriteHandler(): void {
                 publication: PermissionConditionPublication.Required,
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
-            const permissionsGrantId = permissionsGrant.recordsWrite.message.recordId;
+            const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
 
             // Bob is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : true,
-              permissionsGrantId
+              permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
               alice.did,
@@ -4006,7 +4046,7 @@ export function testRecordsWriteHandler(): void {
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : false,
-              permissionsGrantId
+              permissionGrantId
             });
             const unpublishedRecordsWriteReply =
               await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, { dataStream: unpublishedRecordsWrite.dataStream });
@@ -4022,7 +4062,7 @@ export function testRecordsWriteHandler(): void {
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === prohibited
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -4034,17 +4074,21 @@ export function testRecordsWriteHandler(): void {
                 publication: PermissionConditionPublication.Prohibited
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
-            const permissionsGrantId = permissionsGrant.recordsWrite.message.recordId;
+            const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
 
             // Bob not is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : true,
-              permissionsGrantId
+              permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
               alice.did,
@@ -4058,7 +4102,7 @@ export function testRecordsWriteHandler(): void {
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : false,
-              permissionsGrantId
+              permissionGrantId
             });
             const unpublishedRecordsWriteReply =
               await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, { dataStream: unpublishedRecordsWrite.dataStream });
@@ -4073,7 +4117,7 @@ export function testRecordsWriteHandler(): void {
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
             // Alice creates a grant for Bob with `published` === prohibited
-            const permissionsGrant = await PermissionsProtocol.createGrant({
+            const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
               grantedTo   : bob.did,
               dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
@@ -4085,17 +4129,21 @@ export function testRecordsWriteHandler(): void {
                 // publication: '', // intentionally undefined
               }
             });
-            const grantDataStream = DataStream.fromBytes(permissionsGrant.permissionGrantBytes);
-            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.recordsWrite.message, { dataStream: grantDataStream });
-            expect(permissionsGrantReply.status.code).to.equal(202);
+            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+            const permissionGrantWriteReply = await dwn.processMessage(
+              alice.did,
+              permissionGrant.recordsWrite.message,
+              { dataStream: grantDataStream }
+            );
+            expect(permissionGrantWriteReply.status.code).to.equal(202);
 
-            const permissionsGrantId = permissionsGrant.recordsWrite.message.recordId;
+            const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
 
             // Bob is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : true,
-              permissionsGrantId
+              permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
               alice.did,
@@ -4108,7 +4156,7 @@ export function testRecordsWriteHandler(): void {
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
               author    : bob,
               published : false,
-              permissionsGrantId
+              permissionGrantId
             });
             const unpublishedRecordsWriteReply =
               await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, { dataStream: unpublishedRecordsWrite.dataStream });

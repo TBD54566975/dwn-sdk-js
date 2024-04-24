@@ -593,8 +593,8 @@ export function testOwnerDelegatedGrant(): void {
         signer      : Jws.createSigner(alice)
       });
       const grantDataStream = DataStream.fromBytes(appXGrant.permissionGrantBytes);
-      const permissionsGrantReply = await dwn.processMessage(alice.did, appXGrant.recordsWrite.message, { dataStream: grantDataStream });
-      expect(permissionsGrantReply.status.code).to.equal(202);
+      const permissionGrantWriteReply = await dwn.processMessage(alice.did, appXGrant.recordsWrite.message, { dataStream: grantDataStream });
+      expect(permissionGrantWriteReply.status.code).to.equal(202);
 
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({

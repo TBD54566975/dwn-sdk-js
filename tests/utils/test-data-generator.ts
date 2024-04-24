@@ -70,7 +70,7 @@ export type GenerateProtocolsConfigureInput = {
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateProtocolsConfigureOutput = {
@@ -82,7 +82,7 @@ export type GenerateProtocolsConfigureOutput = {
 export type GenerateProtocolsQueryInput = {
   author?: Persona;
   messageTimestamp?: string;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
   filter?: {
     protocol: string;
   }
@@ -115,7 +115,7 @@ export type GenerateRecordsWriteInput = {
   messageTimestamp?: string;
   datePublished?: string;
   encryptionInput?: EncryptionInput;
-  permissionsGrantId?: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateFromRecordsWriteInput = {
@@ -305,10 +305,10 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: ProtocolsConfigureOptions = {
-      messageTimestamp   : input?.messageTimestamp,
+      messageTimestamp  : input?.messageTimestamp,
       definition,
       signer,
-      permissionsGrantId : input?.permissionsGrantId
+      permissionGrantId : input?.permissionGrantId
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);
@@ -330,10 +330,10 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: ProtocolsQueryOptions = {
-      messageTimestamp   : input?.messageTimestamp,
-      filter             : input?.filter,
+      messageTimestamp  : input?.messageTimestamp,
+      filter            : input?.filter,
       signer,
-      permissionsGrantId : input?.permissionsGrantId,
+      permissionGrantId : input?.permissionGrantId,
     };
     removeUndefinedProperties(options);
 
@@ -371,26 +371,26 @@ export class TestDataGenerator {
     }
 
     const options: RecordsWriteOptions = {
-      recipient          : input?.recipient,
-      protocol           : input?.protocol,
-      protocolPath       : input?.protocolPath,
-      protocolRole       : input?.protocolRole,
-      schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
-      tags               : input?.tags,
-      recordId           : input?.recordId,
-      parentContextId    : input?.parentContextId,
-      published          : input?.published,
-      dataFormat         : input?.dataFormat ?? 'application/json',
-      dateCreated        : input?.dateCreated,
-      messageTimestamp   : input?.messageTimestamp,
-      datePublished      : input?.datePublished,
-      data               : dataBytes,
+      recipient         : input?.recipient,
+      protocol          : input?.protocol,
+      protocolPath      : input?.protocolPath,
+      protocolRole      : input?.protocolRole,
+      schema            : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
+      tags              : input?.tags,
+      recordId          : input?.recordId,
+      parentContextId   : input?.parentContextId,
+      published         : input?.published,
+      dataFormat        : input?.dataFormat ?? 'application/json',
+      dateCreated       : input?.dateCreated,
+      messageTimestamp  : input?.messageTimestamp,
+      datePublished     : input?.datePublished,
+      data              : dataBytes,
       dataCid,
       dataSize,
       signer,
       attestationSigners,
-      encryptionInput    : input?.encryptionInput,
-      permissionsGrantId : input?.permissionsGrantId,
+      encryptionInput   : input?.encryptionInput,
+      permissionGrantId : input?.permissionGrantId,
     };
 
     const recordsWrite = await RecordsWrite.create(options);

@@ -37,7 +37,7 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes a RecordsReadMessage using the given PermissionsGrant.
+   * Authorizes a RecordsReadMessage using the given permission grant.
    * @param messageStore Used to check if the given grant has been revoked.
    */
   public static async authorizeRead(input: {
@@ -65,7 +65,7 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes the scope of a PermissionsGrant for RecordsQuery or RecordsSubscribe.
+   * Authorizes the scope of a permission grant for RecordsQuery or RecordsSubscribe.
    * @param messageStore Used to check if the grant has been revoked.
    */
   public static async authorizeQueryOrSubscribe(input: {
@@ -101,7 +101,7 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Authorizes the scope of a PermissionsGrant for RecordsDelete.
+   * Authorizes the scope of a permission grant for RecordsDelete.
    * @param messageStore Used to check if the grant has been revoked.
    */
   public static async authorizeDelete(input: {
@@ -208,7 +208,7 @@ export class RecordsGrantAuthorization {
       if (grantScope.schema !== recordsWriteMessage.descriptor.schema) {
         throw new DwnError(
           DwnErrorCode.RecordsGrantAuthorizationScopeSchema,
-          `Record does not have schema in PermissionsGrant scope with schema '${grantScope.schema}'`
+          `Record does not have schema in permission grant scope with schema '${grantScope.schema}'`
         );
       }
     }
@@ -224,7 +224,7 @@ export class RecordsGrantAuthorization {
     if (conditions?.publication === PermissionConditionPublication.Required && !recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired,
-        'PermissionsGrant requires message to be published'
+        'Permission grant requires message to be published'
       );
     }
 
@@ -232,7 +232,7 @@ export class RecordsGrantAuthorization {
     if (conditions?.publication === PermissionConditionPublication.Prohibited && recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
-        'PermissionsGrant prohibits message from being published'
+        'Permission grant prohibits message from being published'
       );
     }
   }
