@@ -781,7 +781,8 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     // in order to avoid name clashes with first-class index keys
     // we build the indexes with `tag.property_name` for each tag property.
-    if (tags !== undefined) {
+    // we only index tags if the message is the latest base state, as that's the only time filtering for tags is relevant.
+    if (tags !== undefined && isLatestBaseState === true) {
       const flattenedTags = Records.buildTagIndexes({ ...tags });
       indexes = { ...indexes, ...flattenedTags };
     }

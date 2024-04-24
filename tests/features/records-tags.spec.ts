@@ -11,7 +11,9 @@ import { DidKey } from '@web5/dids';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
+import { Records } from '../../src/utils/records.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
+import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -2117,6 +2119,21 @@ export function testRecordsTags(): void {
           numberArrayTag : [ 0, 1 ,2 ],
         });
 
+        // Sanity: Query for a tag value
+        const tagsQueryMatch = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              stringTag: 'string-value'
+            }
+          }
+        });
+
+        const tagsQueryMatchReply = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply.status.code).to.equal(200);
+        expect(tagsQueryMatchReply.entries?.length).to.equal(1);
+        expect(tagsQueryMatchReply.entries![0].recordId).to.equal(tagsRecord1.message.recordId);
+
         // update the record with new tags
         const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
           author        : alice,
@@ -2130,6 +2147,59 @@ export function testRecordsTags(): void {
         expect(updatedRecordReadReply.status.code).to.equal(200);
         expect(updatedRecordReadReply.record).to.not.be.undefined;
         expect(updatedRecordReadReply.record!.descriptor.tags).to.deep.equal({ newTag: 'new-value' });
+
+        // Sanity: Query for the old tag value should return no results
+        const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);
+        expect(tagsQueryMatchReply2.status.code).to.equal(200);
+        expect(tagsQueryMatchReply2.entries?.length).to.equal(0);
+      });
+
+      it('should not index tags when the record is not `latestBaseState`', async () => {
+        const buildTagIndexSpy = sinon.spy(Records, 'buildTagIndexes');
+        const constructIndexesSpy = sinon.spy(RecordsWrite.prototype, 'constructIndexes');
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // write a record with tags, this should trigger the `buildTagIndexes` method
+        const tagsRecord1 = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : true,
+          schema    : 'post',
+          tags      : {
+            stringTag      : 'string-value',
+            numberTag      : 54566975,
+            booleanTag     : false,
+            stringArrayTag : [ 'string-value', 'string-value2' ],
+            numberArrayTag : [ 0, 1 ,2 ],
+          }
+        });
+
+        // write the record
+        const tagsRecord1Reply = await dwn.processMessage(alice.did, tagsRecord1.message, { dataStream: tagsRecord1.dataStream });
+        expect(tagsRecord1Reply.status.code).to.equal(202);
+
+        // verify that construct Indexes was called
+        expect(constructIndexesSpy.callCount).to.equal(1);
+        // verify that buildTagIndexes was called
+        expect(buildTagIndexSpy.callCount).to.equal(1);
+
+
+        // reset counters
+        constructIndexesSpy.resetHistory();
+        buildTagIndexSpy.resetHistory();
+
+        // update the record without any tags this time
+        const updatedRecord = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : tagsRecord1.recordsWrite,
+        });
+        const updatedRecordReply = await dwn.processMessage(alice.did, updatedRecord.message, { dataStream: updatedRecord.dataStream });
+        expect(updatedRecordReply.status.code).to.equal(202);
+
+        // construct Indexes should be called once for the `initialWrite` and once for the updated write
+        expect(constructIndexesSpy.callCount).to.equal(2);
+        // verify that buildTagIndexes was not called at all
+        expect(buildTagIndexSpy.callCount).to.equal(0);
       });
     });
 
