@@ -82,6 +82,7 @@ export enum DwnErrorCode {
   ProtocolsConfigureInvalidActionUpdateWithoutCreate = 'ProtocolsConfigureInvalidActionUpdateWithoutCreate',
   ProtocolsConfigureInvalidRecipientOfAction = 'ProtocolsConfigureInvalidRecipientOfAction',
   ProtocolsConfigureInvalidRuleSetRecordType = 'ProtocolsConfigureInvalidRuleSetRecordType',
+  ProtocolsConfigureInvalidTagSchema = 'ProtocolsConfigureInvalidTagSchema',
   ProtocolsConfigureQueryNotAllowed = 'ProtocolsConfigureQueryNotAllowed',
   ProtocolsConfigureRecordNestingDepthExceeded = 'ProtocolsConfigureRecordNestingDepthExceeded',
   ProtocolsConfigureRoleDoesNotExistAtGivenPath = 'ProtocolsConfigureRoleDoesNotExistAtGivenPath',

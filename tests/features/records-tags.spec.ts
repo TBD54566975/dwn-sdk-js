@@ -117,6 +117,90 @@ export function testRecordsTags(): void {
             expect(configureReply.status.code).to.equal(202);
           });
 
+          it('should reject tags that have invalid schema definitions during create', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol definition with an invalid schema
+            const invalidSchemaProtocol: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    invalidTag: {
+                      type  : 'array',
+                      items : {
+                        type: 'number'
+                      },
+                      contains: {
+                        type    : 'number',
+                        minimum : 'ten', // should be a number
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            const protocolConfigure = TestDataGenerator.generateProtocolsConfigure({
+              author             : alice,
+              protocolDefinition : invalidSchemaProtocol,
+            });
+
+            expect(protocolConfigure).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidTagSchema);
+          });
+
+          it('should reject tags that have invalid schema definitions during process', async () => {
+            const alice = await TestDataGenerator.generateDidKeyPersona();
+
+            // protocol definition with an invalid schema
+            const invalidSchemaProtocol: ProtocolDefinition = {
+              protocol  : 'http://example.com/protocol/withTags',
+              published : true,
+              types     : {
+                foo: {}
+              },
+              structure: {
+                foo: {
+                  $tags: {
+                    invalidTag: {
+                      type  : 'array',
+                      items : {
+                        type: 'number'
+                      },
+                      contains: {
+                        type    : 'number',
+                        minimum : 'ten', // should be a number
+                      }
+                    },
+                  }
+                }
+              },
+            };
+
+            // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+            const descriptor: ProtocolsConfigureDescriptor = {
+              interface        : DwnInterfaceName.Protocols,
+              method           : DwnMethodName.Configure,
+              messageTimestamp : Time.getCurrentTimestamp(),
+              definition       : invalidSchemaProtocol
+            };
+
+            const authorization = await Message.createAuthorization({
+              descriptor,
+              signer: Jws.createSigner(alice)
+            });
+            const protocolsConfigureMessage = { descriptor, authorization };
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+            expect(protocolsConfigureReply.status.code).to.equal(400);
+            expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureInvalidTagSchema);
+            expect(protocolsConfigureReply.status.detail).to.contain(`foo/$tags/invalidTag/contains/minimum must be number`);
+          });
+
           describe('should reject invalid tag types', () => {
             it('object', async () => {
               const alice = await TestDataGenerator.generateDidKeyPersona();

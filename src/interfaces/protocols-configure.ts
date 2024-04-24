@@ -2,6 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
+import Ajv from 'ajv/dist/2020.js';
 import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -129,7 +130,6 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   private static validateRuleSetRecursively(
     input: { ruleSet: ProtocolRuleSet, ruleSetProtocolPath: string, recordTypes: string[], roles: string[] }
   ): void {
-
     const { ruleSet, ruleSetProtocolPath, recordTypes, roles } = input;
 
     // Validate $actions in the rule set
@@ -141,6 +141,21 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
           DwnErrorCode.ProtocolsConfigureInvalidSize,
           `Invalid size range found: max limit ${max} less than min limit ${min} at protocol path '${ruleSetProtocolPath}'`
         );
+      }
+    }
+
+    if (ruleSet.$tags) {
+      const ajv = new Ajv.default();
+      const { $allowUndefinedTags, $requiredTags, ...tagProperties } = ruleSet.$tags;
+
+      // we validate each tag's expected schema to ensure it is a valid JSON schema
+      for (const tag in tagProperties) {
+        const tagSchemaDefinition = tagProperties[tag];
+
+        if (!ajv.validateSchema(tagSchemaDefinition)) {
+          const schemaError = ajv.errorsText(ajv.errors, { dataVar: `${ruleSetProtocolPath}/$tags/${tag}` });
+          throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidTagSchema, `tags schema validation error: ${schemaError}`);
+        }
       }
     }
 
