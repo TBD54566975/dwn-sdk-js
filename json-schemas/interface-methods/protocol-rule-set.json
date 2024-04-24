@@ -106,10 +106,62 @@
           "minimum": 0
         }
       }
+    },
+    "$tags": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "$requiredTags": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "$allowUndefinedTags": {
+            "type": "boolean"
+        }
+      },
+      "patternProperties": {
+        "^(?!\\$requiredTags$|\\$allowUndefinedTags$).*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "enum": ["string", "number", "integer", "boolean", "array"]
+            },
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "enum": ["string", "number", "integer"]
+                }
+              },
+              "patternProperties": {
+                "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
+              }
+            },
+            "contains": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "enum": ["string", "number", "integer"]
+                }
+              },
+              "patternProperties": {
+                "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength)$": {}
+              }
+            }
+          },
+          "patternProperties": {
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
+            }
+          }
+        }
+      }
     }
   },
   "patternProperties": {
-    "^[^$].*": {
+    "^[^$].*$": {
       "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
     }
   }

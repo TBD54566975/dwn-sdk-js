@@ -128,6 +128,18 @@ export type ProtocolRuleSet = {
     max?: number
   }
 
+  /**
+   * If $tags is set, the record must conform to the tag rules.
+   */
+  $tags?: {
+    /** array of required tags */
+    $requiredTags?: string[],
+    /** allow properties other than those explicitly listed. defaults to false  */
+    $allowUndefinedTags?: boolean;
+
+    [key: string]: any;
+  }
+
   // JSON Schema verifies that properties other than properties prefixed with $ will actually have type ProtocolRuleSet
   [key: string]: any;
 };

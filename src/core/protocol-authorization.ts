@@ -7,6 +7,7 @@ import type { RecordsSubscribe } from '../interfaces/records-subscribe.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
+import Ajv from 'ajv/dist/2020.js';
 import { FilterUtility } from '../utils/filter.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
@@ -62,6 +63,9 @@ export class ProtocolAuthorization {
 
     // Verify size limit
     ProtocolAuthorization.verifySizeLimit(incomingMessage, ruleSet);
+
+    // Verify protocol tags
+    ProtocolAuthorization.verifyTagsIfNeeded(incomingMessage, ruleSet);
   }
 
   /**
@@ -684,6 +688,41 @@ export class ProtocolAuthorization {
 
     if (dataSize > max) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationMaxSizeInvalid, `data size ${dataSize} is more than allowed ${max}`);
+    }
+  }
+
+  private static verifyTagsIfNeeded(
+    incomingMessage: RecordsWrite,
+    ruleSet: ProtocolRuleSet
+  ): void {
+    if (ruleSet.$tags !== undefined) {
+      const { tags = {}, protocol, protocolPath } = incomingMessage.message.descriptor;
+
+      const { $allowUndefinedTags, $requiredTags, ...properties } = ruleSet.$tags;
+
+      // if $allowUndefinedTags is set to false and there are properties not defined in the schema, an error is thrown
+      const additionalProperties = $allowUndefinedTags || false;
+
+      // if $requiredTags is set, all required tags must be present
+      const required = $requiredTags || [];
+
+      const ajv = new Ajv.default();
+      const compiledTags = ajv.compile({
+        type: 'object',
+        properties,
+        required,
+        additionalProperties,
+      });
+
+      const validSchema = compiledTags(tags);
+      if (!validSchema) {
+        // the `dataVar` is used to add a qualifier to the error message.
+        // For example. If the error is related to a tag `status` in a protocol `https://example.protocol` with the protocolPath `example/path`
+        // the error would be described as `https://example.protocol/example/path/$tags/status'
+        // without this decorator it would show up as `data/status` which may be confusing.
+        const schemaError = ajv.errorsText(compiledTags.errors, { dataVar: `${protocol}/${protocolPath}/$tags` });
+        throw new DwnError(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema, `tags schema validation error: ${schemaError}`);
+      }
     }
   }
 
