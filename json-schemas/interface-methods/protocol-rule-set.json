@@ -112,13 +112,13 @@
       "minProperties": 1,
       "properties": {
         "$requiredTags": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "$allowUndefinedTags": {
-            "type": "boolean"
+          "type": "boolean"
         }
       },
       "patternProperties": {
@@ -127,13 +127,23 @@
           "additionalProperties": false,
           "properties": {
             "type": {
-              "enum": ["string", "number", "integer", "boolean", "array"]
+              "enum": [
+                "string",
+                "number",
+                "integer",
+                "boolean",
+                "array"
+              ]
             },
             "items": {
               "type": "object",
               "properties": {
                 "type": {
-                  "enum": ["string", "number", "integer"]
+                  "enum": [
+                    "string",
+                    "number",
+                    "integer"
+                  ]
                 }
               },
               "patternProperties": {
@@ -144,7 +154,11 @@
               "type": "object",
               "properties": {
                 "type": {
-                  "enum": ["string", "number", "integer"]
+                  "enum": [
+                    "string",
+                    "number",
+                    "integer"
+                  ]
                 }
               },
               "patternProperties": {
@@ -153,16 +167,32 @@
             }
           },
           "patternProperties": {
-            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {}
+          },
+          "$expiration": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "duration": {
+                "type": "number",
+                "minimum": 1,
+                "$comment": "Amount of milliseconds to add to dateCreated to determine expiration date"
+              },
+              "timespan": {
+                "type": "string",
+                "minimum": "1s",
+                "$comment": "Time span to add to dateCreated to determine expiration date (e.g. 30s, 45m, 10h, 2D, 3W, 6M, 2Y)"
+              },
+              "datetime": {
+                "type": "string",
+                "$comment": "Datetime string in ISO8601 format (YYYY-MM-DDThh:mm:ssZ) after which a record expires"
+              }
             }
+          }
+        },
+        "patternProperties": {
+          "^[^$].*$": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
           }
         }
       }
-    }
-  },
-  "patternProperties": {
-    "^[^$].*$": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
-    }
-  }
-}
