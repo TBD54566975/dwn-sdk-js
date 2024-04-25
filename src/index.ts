@@ -8,7 +8,7 @@ export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { PermissionConditions, PermissionScope } from './types/permission-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
+export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordsWriteDescriptor, RecordsWriteTags, RecordsWriteTagValue, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
