@@ -124,12 +124,12 @@ export class StorageController {
     eventLog: EventLog
   ): Promise<void> {
     // delete the data from the data store first so no chance of orphaned data (not having a message referencing it) in case of server crash
-    // NOTE: only the `RecordsWrite` with latest timestamp can possibly have data associated with it so we do this check as an optimization
-    // NOTE: however there could be no data associated with the `RecordsWrite` with latest timestamp still, because either:
-    //       1. the data is encoded with the message itself
-    //       2. the `RecordsWrite` is not the "true" latest state due to:
-    //          a. sync has yet to write the latest `RecordsWrite`
-    //          b. the latest `RecordsWrite` is in a different page of results in the caller of this method
+    // NOTE: only the `RecordsWrite` with latest timestamp can possibly have data associated with it so we do this filtering as an optimization
+    // NOTE: however there could still be no data associated with the `RecordsWrite` with newest timestamp, because either:
+    //       1. the data is encoded with the message itself; or
+    //       2. the newest `RecordsWrite` may not be the "true" latest state due to:
+    //          a. sync has yet to write the latest `RecordsWrite`; or
+    //          b. `recordMessages` maybe an incomplete page of results if the caller uses the paging in its query
     // Calling dataStore.delete() is a no-op if the data is not found, so we are safe to call it redundantly.
     const recordsWrites = recordMessages.filter((message) => message.descriptor.method === DwnMethodName.Write);
     const newestRecordsWrite = (await Message.getNewestMessage(recordsWrites)) as RecordsWriteMessage;
