@@ -46,28 +46,6 @@ export class StorageController {
   }
 
   /**
-   * Performs `RecordsDelete` on the specified record and in addition purges (permanent hard-delete) all its descendant's data.
-   * @param existingRecordMessages The existing messages of the same record. Mainly given as an optimization to avoid re-querying the message store.
-   */
-  public static async pruneRecordHierarchy(
-    tenant: string,
-    recordsDeleteMessage: RecordsDeleteMessage,
-    existingMessages: GenericMessage[],
-    messageStore: MessageStore,
-    dataStore: DataStore,
-    eventLog: EventLog
-  ): Promise<void> {
-
-    // purge the child record including its descendent records first to prevent orphaned messages
-    await StorageController.purgeRecordDescendants(tenant, recordsDeleteMessage.descriptor.recordId, messageStore, dataStore, eventLog);
-
-    // then perform the usual RecordDelete on the record itself
-    await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
-      tenant, existingMessages, recordsDeleteMessage, messageStore, dataStore, eventLog
-    );
-  }
-
-  /**
    * Purges (permanent hard-delete) all descendant's data of the given `recordId`.
    */
   public static async purgeRecordDescendants(
