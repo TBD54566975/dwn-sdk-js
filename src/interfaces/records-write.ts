@@ -322,7 +322,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     if ((options.data === undefined && options.dataCid === undefined) ||
       (options.data !== undefined && options.dataCid !== undefined)) {
-      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive, 'one and only one parameter between `data` and `dataCid` is allowed');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive, 'one and only one parameter between `data` and `dataCid` is required');
     }
 
     if ((options.dataCid === undefined && options.dataSize !== undefined) ||

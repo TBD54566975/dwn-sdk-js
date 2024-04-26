@@ -100,6 +100,11 @@ export class RecordsDeleteHandler implements MethodHandler {
       this.eventStream.emit(tenant, { message, initialWrite }, indexes);
     }
 
+    if (message.descriptor.prune) {
+      // purge/hard-delete all descendent records
+      await StorageController.purgeRecordDescendants(tenant, message.descriptor.recordId, this.messageStore, this.dataStore, this.eventLog);
+    }
+
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
       tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog

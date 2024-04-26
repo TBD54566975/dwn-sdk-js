@@ -227,6 +227,11 @@ export type RecordsDeleteMessage = GenericMessage & {
 export type RecordsDeleteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Delete;
-  recordId: string;
   messageTimestamp: string;
+  recordId: string;
+
+  /**
+   * Denotes if all the descendent records should be purged.
+   */
+  prune: boolean
 };

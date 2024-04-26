@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
 import type { Filter, KeyValues, StartsWithFilter } from '../types/query-types.js';
+import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsSubscribeMessage, RecordsWriteDescriptor, RecordsWriteMessage, RecordsWriteTags, RecordsWriteTagsFilter } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
@@ -15,12 +15,25 @@ import { PermissionGrant } from '../protocols/permission-grant.js';
 import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 /**
  * Class containing useful utilities related to the Records interface.
  */
 export class Records {
+
+  /**
+   * Checks if the given message is a `RecordsWriteMessage`.
+   */
+  public static isRecordsWrite(message: GenericMessage): message is RecordsWriteMessage {
+    const isRecordsWrite =
+      message.descriptor.interface === DwnInterfaceName.Records &&
+      message.descriptor.method === DwnMethodName.Write;
+
+    return isRecordsWrite;
+  }
+
   /**
    * Decrypts the encrypted data in a message reply using the given ancestor private key.
    * @param ancestorPrivateKey Any ancestor private key in the key derivation path.

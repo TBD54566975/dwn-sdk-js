@@ -77,7 +77,7 @@ describe('RecordsWrite', () => {
       };
       const createPromise1 = RecordsWrite.create(options1);
 
-      await expect(createPromise1).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+      await expect(createPromise1).to.be.rejectedWith(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive);
 
       // testing `data` and `dataCid` both undefined
       const options2 = {
@@ -92,7 +92,7 @@ describe('RecordsWrite', () => {
       };
       const createPromise2 = RecordsWrite.create(options2);
 
-      await expect(createPromise2).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+      await expect(createPromise2).to.be.rejectedWith(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive);
     });
 
     it('should required `dataCid` and `dataSize` to be both defined or undefined at the same time', async () => {

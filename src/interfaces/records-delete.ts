@@ -19,6 +19,11 @@ export type RecordsDeleteOptions = {
   signer: Signer;
 
   /**
+   * Denotes if all the descendent records should be purged. Defaults to `false`.
+   */
+  prune?: boolean
+
+  /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
   delegatedGrant?: RecordsWriteMessage;
@@ -52,8 +57,9 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
     const descriptor: RecordsDeleteDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Delete,
+      messageTimestamp : options.messageTimestamp ?? currentTime,
       recordId,
-      messageTimestamp : options.messageTimestamp ?? currentTime
+      prune            : options.prune ?? false
     };
 
     const authorization = await Message.createAuthorization({
