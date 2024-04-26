@@ -70,8 +70,7 @@ export function testRecordsPrune(): void {
       const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
       expect(protocolsConfigureReply.status.code).to.equal(202);
 
-
-      // 1. Alice writes 2 foos, 2 bars under foo1, and 2 bazes under bar1
+      // writes 2 foos, 2 bars under foo1, and 2 bazes under bar1
 
       // write 2 foos
       const fooData = TestDataGenerator.randomBytes(100);
@@ -142,7 +141,7 @@ export function testRecordsPrune(): void {
       const baz1UpdateResponse = await dwn.processMessage(alice.did, baz1Update.message, { dataStream: DataStream.fromBytes(newBaz1Data) });
       expect(baz1UpdateResponse.status.code).equals(202);
 
-      // make latest state of baz1 a `RecordsDelete`
+      // make latest state of baz2 a `RecordsDelete`
       const baz2Delete = await RecordsDelete.create({
         signer   : Jws.createSigner(alice),
         recordId : baz2.message.recordId
