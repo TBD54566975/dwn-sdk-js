@@ -100,10 +100,17 @@ export class RecordsDeleteHandler implements MethodHandler {
       this.eventStream.emit(tenant, { message, initialWrite }, indexes);
     }
 
-    // delete all existing messages that are not newest, except for the initial write
-    await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
-      tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog
-    );
+    if (message.descriptor.prune) {
+      // purge/hard-delete all descendent records
+      await StorageController.pruneRecordHierarchy(
+        tenant, message, existingMessages, this.messageStore, this.dataStore, this.eventLog
+      );
+    } else {
+      // delete all existing messages that are not newest, except for the initial write
+      await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
+        tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog
+      );
+    }
 
     const messageReply = {
       status: { code: 202, detail: 'Accepted' }

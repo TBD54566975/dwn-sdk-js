@@ -18,7 +18,8 @@
         "interface",
         "method",
         "messageTimestamp",
-        "recordId"
+        "recordId",
+        "prune"
       ],
       "properties": {
         "interface": {
@@ -38,6 +39,9 @@
         },
         "recordId": {
           "type": "string"
+        },
+        "prune": {
+          "type": "boolean"
         }
       }
     }
