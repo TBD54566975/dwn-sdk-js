@@ -103,7 +103,6 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (message.descriptor.prune) {
       // purge/hard-delete all descendent records
       await StorageController.purgeRecordDescendants(tenant, message.descriptor.recordId, this.messageStore, this.dataStore, this.eventLog);
-
     }
 
     // delete all existing messages that are not newest, except for the initial write
