@@ -163,7 +163,7 @@ export class ProtocolAuthorization {
     );
 
     // Verify expiry
-    ProtocolAuthorization.verifyExpiry(incomingMessage, ruleSet)
+    ProtocolAuthorization.verifyExpiration(incomingMessage, ruleSet);
   }
 
   public static async authorizeQueryOrSubscribe(
@@ -730,29 +730,48 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies that reads adhere to the $expiry constraint if provided
-   * @throws {Error} if expiry date is passed.
-   */
-  private static verifyExpiry(
-    incomingMessage: RecordsRead,
+    * Verifies that queries and reads adhere to the $expiration constraint if provided
+    * @throws {Error} if more than one $expiration property is set,
+    */
+  private static verifyExpiration(
+    incomingMessage: RecordsWrite,
     ruleSet: ProtocolRuleSet
   ): void {
-    const ruleExpiry = ruleSet.$expiry;
-    if (!ruleExpiry) {
+    const ruleExpiration = ruleSet.$expiration;
+    if (!ruleExpiration) {
       return;
     }
 
-    const dateCreated = incomingMessage.message.descriptor.filter?.dateCreated;
-    if (!dateCreated) {
-      return;
+    const expirationEntries = Object.entries(ruleExpiration);
+    if (expirationEntries.length > 1) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration,
+        `invalid property: expiration ${ruleExpiration} cannot set more than one property`);
     }
 
-    const dateExpiry = dateCreated + ruleExpiry;
-    if (Date.now() > dateExpiry) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationExpiryReached, `dateExpiry ${dateExpiry} has passed`);
+    const { duration, datetime } = ruleExpiration;
+    if (!duration && !datetime) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration, `invalid property ${ruleExpiration}: must set at least one property`);
     }
 
-  }
+    if (duration && typeof duration === 'number' && duration < 1) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration, `invalid property: duration ${duration} number must must be >= 1`);
+    } else if (typeof duration === 'string') {
+      const [amount, unit] = duration.split('')[0];
+      if ((unit === 's' && parseInt(amount) < 1)) {
+        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
+          `invalid property: if duration unit ${unit} = s, amount ${amount} must >= 1 (i.e. 1s)`);
+      }
+      if (!/\d{1,}(s|m|h|d|y)/.test(duration)) {
+        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
+          `invalid property: duration ${duration} format must be \"<amount><s|m|h|d|y>\" (e.g. 1s, 10d, 5y)`);
+      }
+    }
+
+    if (datetime && /(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)Z/.test(datetime)) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDatetime,
+        `invalid format: datetime ${datetime} does not conform to ISO-8601 UTC format`);
+    }
+  };
 
   /**
    * If the given RecordsWrite is not a role record, this method does nothing and succeeds immediately.
