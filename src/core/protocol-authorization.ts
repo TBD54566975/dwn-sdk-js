@@ -161,6 +161,9 @@ export class ProtocolAuthorization {
       ancestorMessageChain,
       messageStore,
     );
+
+    // Verify expiry
+    ProtocolAuthorization.verifyExpiry(incomingMessage, ruleSet)
   }
 
   public static async authorizeQueryOrSubscribe(
@@ -724,6 +727,31 @@ export class ProtocolAuthorization {
         throw new DwnError(DwnErrorCode.ProtocolAuthorizationTagsInvalidSchema, `tags schema validation error: ${schemaError}`);
       }
     }
+  }
+
+  /**
+   * Verifies that reads adhere to the $expiry constraint if provided
+   * @throws {Error} if expiry date is passed.
+   */
+  private static verifyExpiry(
+    incomingMessage: RecordsRead,
+    ruleSet: ProtocolRuleSet
+  ): void {
+    const ruleExpiry = ruleSet.$expiry;
+    if (!ruleExpiry) {
+      return;
+    }
+
+    const dateCreated = incomingMessage.message.descriptor.filter?.dateCreated;
+    if (!dateCreated) {
+      return;
+    }
+
+    const dateExpiry = dateCreated + ruleExpiry;
+    if (Date.now() > dateExpiry) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationExpiryReached, `dateExpiry ${dateExpiry} has passed`);
+    }
+
   }
 
   /**
