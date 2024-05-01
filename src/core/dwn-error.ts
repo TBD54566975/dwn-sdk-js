@@ -78,7 +78,6 @@ export enum DwnErrorCode {
   ProtocolsConfigureDuplicateRoleInRuleSet = 'ProtocolsConfigureDuplicateRoleInRuleSet',
   ProtocolsConfigureInvalidExpiration = 'ProtocolsConfigureInvalidExpiration',
   ProtocolsConfigureInvalidExpirationDuration = 'ProtocolsConfigureInvalidExpirationDuration',
-  ProtocolsConfigureInvalidExpirationDatetime = 'ProtocolsConfigureInvalidExpirationDatetime',
   ProtocolsConfigureInvalidSize = 'ProtocolsConfigureInvalidSize',
   ProtocolsConfigureInvalidActionMissingOf = 'ProtocolsConfigureInvalidActionMissingOf',
   ProtocolsConfigureInvalidActionOfNotAllowed = 'ProtocolsConfigureInvalidActionOfNotAllowed',

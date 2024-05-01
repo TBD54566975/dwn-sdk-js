@@ -140,6 +140,10 @@ export type ProtocolRuleSet = {
     [key: string]: any;
   }
 
+  $expiration?: {
+    duration?: string | number;
+  }
+
   // JSON Schema verifies that properties other than properties prefixed with $ will actually have type ProtocolRuleSet
   [key: string]: any;
 };

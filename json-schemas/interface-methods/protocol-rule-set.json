@@ -168,31 +168,46 @@
           },
           "patternProperties": {
             "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {}
-          },
-          "$expiration": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "duration": {
-                "type": "number",
-                "minimum": 1,
-                "$comment": "Amount of milliseconds to add to dateCreated to determine expiration date"
-              },
-              "timespan": {
-                "type": "string",
-                "minimum": "1s",
-                "$comment": "Time span to add to dateCreated to determine expiration date (e.g. 30s, 45m, 10h, 2D, 3W, 6M, 2Y)"
-              },
-              "datetime": {
-                "type": "string",
-                "$comment": "Datetime string in ISO8601 format (YYYY-MM-DDThh:mm:ssZ) after which a record expires"
-              }
-            }
-          }
-        },
-        "patternProperties": {
-          "^[^$].*$": {
-            "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
           }
         }
       }
+    },
+    "$expiration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration": {
+          "type": "object",
+          "properties": {
+            "oneOf": [
+              {
+                "type": "object",
+                "$comment": "Amount and unit represent a semantic duration of time using an amount (number) and a unit (character) to set an expiration date relative to record.dateCreated (e.g. 1s). Upon record query/read, this is converted to milliseconds, added to record.dateCreated to calculate dateExpiration and compared against original dateCreated.",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "$comment": ""
+                  },
+                  "unit": {
+                    "type": "string",
+                    "$comment": "Single char representing a unit of time. Must be one of: s (seconds), m (minutes), h (hours), d (days), y (years). E.g. 100s, 75m, 2d, 4y"
+                  }
+                }
+              },
+              {
+                "type": "number",
+                "minimum": 1,
+                "$comment": "Numeric duration representing amount of milliseconds to wait from the record.dateCreated before records expire"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "patternProperties": {
+    "^[^$].*$": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
+    }
+  }
+}

@@ -737,40 +737,43 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsWrite,
     ruleSet: ProtocolRuleSet
   ): void {
-    const ruleExpiration = ruleSet.$expiration;
-    if (!ruleExpiration) {
+    const { expiration } = incomingMessage.message.descriptor ?? {};
+    if (!expiration){
       return;
     }
 
-    const expirationEntries = Object.entries(ruleExpiration);
-    if (expirationEntries.length > 1) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration,
-        `invalid property: expiration ${ruleExpiration} cannot set more than one property`);
+    const { duration } = expiration ?? {};
+    if (!duration) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration, `invalid property: duration cannot be null`);
+    }
+    const typeOfDuration: string | number = typeof duration;
+    if (!['string', 'number'].includes(typeOfDuration)) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
+        `invalid property: duration must be string or number, not ${typeOfDuration}`);
     }
 
-    const { duration, datetime } = ruleExpiration;
-    if (!duration && !datetime) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration, `invalid property ${ruleExpiration}: must set at least one property`);
-    }
-
-    if (duration && typeof duration === 'number' && duration < 1) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration, `invalid property: duration ${duration} number must must be >= 1`);
-    } else if (typeof duration === 'string') {
-      const [amount, unit] = duration.split('')[0];
-      if ((unit === 's' && parseInt(amount) < 1)) {
+    if (typeof duration === 'number' && duration < 1) {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
+        `invalid property: duration ${duration} number must must be >= 1`);
+    } else if (typeof duration === 'string'){
+      const units = ['s', 'm', 'h', 'd', 'y'];
+      if (!units.some(unit => duration.endsWith(unit))) {
         throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-          `invalid property: if duration unit ${unit} = s, amount ${amount} must >= 1 (i.e. 1s)`);
+          `invalid property: duration ${duration} must end with one of ${units}`);
       }
-      if (!/\d{1,}(s|m|h|d|y)/.test(duration)) {
+
+      if (/^0/.test(duration)) {
         throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-          `invalid property: duration ${duration} format must be \"<amount><s|m|h|d|y>\" (e.g. 1s, 10d, 5y)`);
+          `invalid property: duration cannot start with 0`);
+      }
+
+      if (isNaN(parseInt(duration.slice(0, -1)))) {
+        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
+          `invalid property: duration cannot be NaN`);
       }
     }
 
-    if (datetime && /(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)Z/.test(datetime)) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDatetime,
-        `invalid format: datetime ${datetime} does not conform to ISO-8601 UTC format`);
-    }
+
   };
 
   /**

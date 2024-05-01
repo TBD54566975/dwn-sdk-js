@@ -21,6 +21,15 @@ export type RecordsWriteTags = {
 
 export type RecordsWriteTagsFilter = StartsWithFilter | RangeFilter | string | number | boolean;
 
+export type ExpirationFilter = {
+  duration?: string | number;
+};
+
+export type RecordsWriteExpiration = {
+  [property: string]: string | number;
+};
+
+
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Write;
@@ -32,6 +41,7 @@ export type RecordsWriteDescriptor = {
   parentId?: string;
   dataCid: string;
   dataSize: number;
+  expiration?: RecordsWriteExpiration;
   dateCreated: string;
   messageTimestamp: string;
   published?: boolean;
@@ -152,6 +162,7 @@ export type RecordsFilter = {
   parentId?: string;
   dataFormat?: string;
   dataSize?: RangeFilter;
+  expiration?: ExpirationFilter;
   dataCid?: string;
   dateCreated?: RangeCriterion;
   datePublished?: RangeCriterion;
