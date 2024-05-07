@@ -10,6 +10,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import nestedProtocolDefinition from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 
 import { DwnInterfaceName } from '../../src/enums/dwn-interface-method.js';
@@ -17,7 +18,7 @@ import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DataStream, Dwn, DwnConstant, Jws, ProtocolsConfigure, RecordsDelete, RecordsQuery, RecordsWrite, SortDirection } from '../../src/index.js';
+import { DataStream, Dwn, DwnConstant, DwnErrorCode, Jws, ProtocolsConfigure, RecordsDelete, RecordsQuery, RecordsWrite, SortDirection } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
@@ -61,7 +62,7 @@ export function testRecordsPrune(): void {
     it('should purge all descendants when given RecordsDelete with `prune` set to `true`', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
-      // create a protocol with foo <- bar <- baz structure
+      // install a protocol with foo <- bar <- baz structure
       const nestedProtocol = nestedProtocolDefinition;
       const protocolsConfig = await ProtocolsConfigure.create({
         definition : nestedProtocol,
@@ -207,6 +208,525 @@ export function testRecordsPrune(): void {
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only foo2 is left
       expect(reply2.entries![0]).to.deep.include(foo2.message);
+    });
+
+    describe('prune and co-prune protocol action', () => {
+      it('should only allow a non-owner author to prune if `prune` is allowed and set to `true` in RecordsDelete', async () => {
+        // Scenario:
+        // 1. Alice installs a protocol allowing others to add and prune records.
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        // 3. Verify Bob cannot prune the records if `prune` is not set to `true` in RecordsDelete.
+        // 4. Verify Bob can prune the records by setting `prune` to `true` in RecordsDelete.
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // 1. Alice installs a protocol allowing others to add and prune records.
+        const protocolDefinition = {
+          protocol  : 'http://post-protocol.xyz',
+          published : true,
+          types     : {
+            post: {
+              schema      : 'eph',
+              dataFormats : [
+                'application/json'
+              ]
+            },
+            attachment: { }
+          },
+          structure: {
+            post: {
+              $actions: [
+                {
+                  who : 'anyone',
+                  can : [
+                    'create',
+                    'read'
+                  ]
+                },
+                {
+                  // allowing author to prune, but not delete
+                  who : 'author',
+                  of  : 'post',
+                  can : ['prune']
+                }
+              ],
+              attachment: {
+                $actions: [
+                  {
+                    who : 'anyone',
+                    can : ['read']
+                  },
+                  {
+                    who : 'author',
+                    of  : 'post',
+                    can : ['create']
+                  }
+                ]
+              }
+            }
+          }
+        };
+        const protocolsConfig = await ProtocolsConfigure.create({
+          definition : protocolDefinition,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        const postData = TestDataGenerator.randomBytes(100);
+        const postOptions = {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'post',
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          data         : postData
+        };
+
+        const post = await RecordsWrite.create(postOptions);
+        const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
+        expect(postWriteResponse.status.code).equals(202);
+
+        const attachmentData = TestDataGenerator.randomBytes(100);
+        const attachmentOptions = {
+          signer          : Jws.createSigner(bob),
+          protocol        : protocolDefinition.protocol,
+          protocolPath    : 'post/attachment',
+          parentContextId : post.message.contextId,
+          dataFormat      : 'application/octet-stream',
+          data            : attachmentData
+        };
+
+        const attachment = await RecordsWrite.create(attachmentOptions);
+        const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
+        expect(attachmentWriteResponse.status.code).equals(202);
+
+        // 3. Verify Bob cannot prune the records if `prune` is not set to `true` in RecordsDelete.
+        const unauthorizedPostPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          // prune    : true, // intentionally not setting `prune` to true
+          signer   : Jws.createSigner(bob)
+        });
+
+        const unauthorizedPostPruneReply = await dwn.processMessage(alice.did, unauthorizedPostPrune.message);
+        expect(unauthorizedPostPruneReply.status.code).to.equal(401);
+        expect(unauthorizedPostPruneReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+        // 4. Verify Bob can prune the records by setting `prune` to `true` in RecordsDelete.
+        const postPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(bob)
+        });
+
+        const pruneReply = await dwn.processMessage(alice.did, postPrune.message);
+        expect(pruneReply.status.code).to.equal(202);
+
+        // sanity test `RecordsQuery` no longer returns the deleted record
+        const recordsQuery = await RecordsQuery.create({
+          signer : Jws.createSigner(bob),
+          filter : { protocol: protocolDefinition.protocol }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(0);
+      });
+
+      it('should not allow a non-owner author to prune if `prune` is not an authorized action', async () => {
+        // Scenario:
+        // 1. Alice installs a protocol allowing others to add records but not prune.
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        // 3. Verify Bob cannot prune the records.
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // 1. Alice installs a protocol allowing others to add records but not prune.
+        const protocolDefinition = messageProtocolDefinition;
+        const protocolsConfig = await ProtocolsConfigure.create({
+          definition : protocolDefinition,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        const messageData = TestDataGenerator.randomBytes(100);
+        const messageOptions = {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'message',
+          schema       : protocolDefinition.types.message.schema,
+          dataFormat   : protocolDefinition.types.message.dataFormats[0],
+          data         : messageData
+        };
+
+        const message = await RecordsWrite.create(messageOptions);
+        const messageWriteResponse = await dwn.processMessage(alice.did, message.message, { dataStream: DataStream.fromBytes(messageData) });
+        expect(messageWriteResponse.status.code).equals(202);
+
+        const attachmentData = TestDataGenerator.randomBytes(100);
+        const attachmentOptions = {
+          signer          : Jws.createSigner(bob),
+          protocol        : protocolDefinition.protocol,
+          protocolPath    : 'message/attachment',
+          parentContextId : message.message.contextId,
+          dataFormat      : 'application/octet-stream',
+          data            : attachmentData
+        };
+
+        const attachment = await RecordsWrite.create(attachmentOptions);
+        const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
+        expect(attachmentWriteResponse.status.code).equals(202);
+
+        // 3. Verify Bob cannot prune the records.
+        const messagePrune = await RecordsDelete.create({
+          recordId : message.message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(bob)
+        });
+
+        const deleteReply = await dwn.processMessage(alice.did, messagePrune.message);
+        expect(deleteReply.status.code).to.equal(401);
+        expect(deleteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+        // sanity test `RecordsQuery` still returns the records
+        const recordsQuery = await RecordsQuery.create({
+          signer : Jws.createSigner(alice),
+          filter : { protocol: protocolDefinition.protocol }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(2);
+      });
+
+      it('should allow a non-author to prune if `co-prune` is allowed and `prune` is set to `true` in RecordsDelete', async () => {
+        // Scenario:
+        // 1. Alice installs a protocol allowing others to add and prune records.
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        // 3. Verify Carol cannot prune the records if `prune` is not set to `true` in RecordsDelete.
+        // 4. Verify Carol can prune the records by setting `prune` to `true` in RecordsDelete.
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // 1. Alice installs a protocol allowing others to add and prune records.
+        const protocolDefinition = {
+          protocol  : 'http://post-protocol.xyz',
+          published : true,
+          types     : {
+            post: {
+              schema      : 'eph',
+              dataFormats : [
+                'application/json'
+              ]
+            },
+            attachment: { }
+          },
+          structure: {
+            post: {
+              $actions: [
+                {
+                  who : 'anyone',
+                  can : [
+                    'create',
+                    'co-prune', // allowing anyone to prune
+                    'read'
+                  ]
+                }
+              ],
+              attachment: {
+                $actions: [
+                  {
+                    who : 'anyone',
+                    can : [
+                      'create',
+                      'read'
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        };
+        const protocolsConfig = await ProtocolsConfigure.create({
+          definition : protocolDefinition,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        const postData = TestDataGenerator.randomBytes(100);
+        const postOptions = {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'post',
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          data         : postData
+        };
+
+        const post = await RecordsWrite.create(postOptions);
+        const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
+        expect(postWriteResponse.status.code).equals(202);
+
+        const attachmentData = TestDataGenerator.randomBytes(100);
+        const attachmentOptions = {
+          signer          : Jws.createSigner(bob),
+          protocol        : protocolDefinition.protocol,
+          protocolPath    : 'post/attachment',
+          parentContextId : post.message.contextId,
+          dataFormat      : 'application/octet-stream',
+          data            : attachmentData
+        };
+
+        const attachment = await RecordsWrite.create(attachmentOptions);
+        const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
+        expect(attachmentWriteResponse.status.code).equals(202);
+
+        // 3. Verify Carol cannot prune the records if `prune` is not set to `true` in RecordsDelete.
+        const unauthorizedPostPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          // prune    : true, // intentionally not setting `prune` to true
+          signer   : Jws.createSigner(carol)
+        });
+
+        const unauthorizedPostPruneReply = await dwn.processMessage(alice.did, unauthorizedPostPrune.message);
+        expect(unauthorizedPostPruneReply.status.code).to.equal(401);
+        expect(unauthorizedPostPruneReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+        // 4. Verify Carol can prune the records by setting `prune` to `true` in RecordsDelete.
+        const postPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(carol)
+        });
+
+        const deleteReply = await dwn.processMessage(alice.did, postPrune.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        // sanity test `RecordsQuery` no longer returns the deleted record
+        const recordsQuery = await RecordsQuery.create({
+          signer : Jws.createSigner(bob),
+          filter : { protocol: protocolDefinition.protocol }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(0);
+      });
+
+      it('should not allow a non-author to prune if `prune` is allowed but `co-prune` is not allowed', async () => {
+        // Scenario:
+        // 1. Alice installs a protocol allowing others to add records AND only author to prune.
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        // 3. Verify Carol cannot prune the records.
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // 1. Alice installs a protocol allowing others to add records AND only author to prune.
+        const protocolDefinition = {
+          protocol  : 'http://post-protocol.xyz',
+          published : true,
+          types     : {
+            post: {
+              schema      : 'eph',
+              dataFormats : [
+                'application/json'
+              ]
+            },
+            attachment: { }
+          },
+          structure: {
+            post: {
+              $actions: [
+                {
+                  who : 'anyone',
+                  can : [
+                    'create',
+                    'read'
+                  ]
+                },
+                {
+                  // allowing author to prune, but not delete
+                  who : 'author',
+                  of  : 'post',
+                  can : ['prune']
+                }
+              ],
+              attachment: {
+                $actions: [
+                  {
+                    who : 'anyone',
+                    can : ['read']
+                  },
+                  {
+                    who : 'author',
+                    of  : 'post',
+                    can : ['create']
+                  }
+                ]
+              }
+            }
+          }
+        };
+        const protocolsConfig = await ProtocolsConfigure.create({
+          definition : protocolDefinition,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        const postData = TestDataGenerator.randomBytes(100);
+        const postOptions = {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'post',
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          data         : postData
+        };
+
+        const post = await RecordsWrite.create(postOptions);
+        const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
+        expect(postWriteResponse.status.code).equals(202);
+
+        const attachmentData = TestDataGenerator.randomBytes(100);
+        const attachmentOptions = {
+          signer          : Jws.createSigner(bob),
+          protocol        : protocolDefinition.protocol,
+          protocolPath    : 'post/attachment',
+          parentContextId : post.message.contextId,
+          dataFormat      : 'application/octet-stream',
+          data            : attachmentData
+        };
+
+        const attachment = await RecordsWrite.create(attachmentOptions);
+        const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
+        expect(attachmentWriteResponse.status.code).equals(202);
+
+        // 3. Verify Carol cannot prune the records.
+        const postPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(carol)
+        });
+
+        const deleteReply = await dwn.processMessage(alice.did, postPrune.message);
+        expect(deleteReply.status.code).to.equal(401);
+        expect(deleteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+        // sanity test `RecordsQuery` still returns the records
+        const recordsQuery = await RecordsQuery.create({
+          signer : Jws.createSigner(bob),
+          filter : { protocol: protocolDefinition.protocol }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(2);
+      });
+
+      it('should throw if only `delete` is allowed but received a RecordsDelete with `prune` set to `true`', async () => {
+        // Scenario:
+        // 1. Alice installs a protocol allowing others to add and delete (not prune) records.
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        // 3. Verify Bob cannot prune the records.
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // 1. Alice installs a protocol allowing others to add and delete (not prune) records.
+        const protocolDefinition = {
+          protocol  : 'http://post-protocol.xyz',
+          published : true,
+          types     : {
+            post: {
+              schema      : 'eph',
+              dataFormats : [
+                'application/json'
+              ]
+            },
+            attachment: { }
+          },
+          structure: {
+            post: {
+              $actions: [
+                {
+                  who : 'anyone',
+                  can : [
+                    'create',
+                    'delete', // only allow delete, not prune
+                    'read'
+                  ]
+                }
+              ],
+              attachment: {
+                $actions: [
+                  {
+                    who : 'anyone',
+                    can : [
+                      'create',
+                      'read'
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        };
+        const protocolsConfig = await ProtocolsConfigure.create({
+          definition : protocolDefinition,
+          signer     : Jws.createSigner(alice)
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // 2. Bob writes a record + a descendant in Alice's DWN.
+        const postData = TestDataGenerator.randomBytes(100);
+        const postOptions = {
+          signer       : Jws.createSigner(bob),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'post',
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          data         : postData
+        };
+
+        const post = await RecordsWrite.create(postOptions);
+        const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
+        expect(postWriteResponse.status.code).equals(202);
+
+        const attachmentData = TestDataGenerator.randomBytes(100);
+        const attachmentOptions = {
+          signer          : Jws.createSigner(bob),
+          protocol        : protocolDefinition.protocol,
+          protocolPath    : 'post/attachment',
+          parentContextId : post.message.contextId,
+          dataFormat      : 'application/octet-stream',
+          data            : attachmentData
+        };
+
+        const attachment = await RecordsWrite.create(attachmentOptions);
+        const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
+        expect(attachmentWriteResponse.status.code).equals(202);
+
+        // 3. Verify Bob cannot prune the records.
+        const unauthorizedPostPrune = await RecordsDelete.create({
+          recordId : post.message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(bob)
+        });
+
+        const unauthorizedPostPruneReply = await dwn.processMessage(alice.did, unauthorizedPostPrune.message);
+        expect(unauthorizedPostPruneReply.status.code).to.equal(401);
+        expect(unauthorizedPostPruneReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+      });
     });
   });
 }

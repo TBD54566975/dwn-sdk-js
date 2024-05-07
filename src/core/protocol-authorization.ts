@@ -533,23 +533,36 @@ export class ProtocolAuthorization {
 
     switch (incomingMessage.message.descriptor.method) {
     case DwnMethodName.Delete:
-      const recordId = (incomingMessage as RecordsDelete).message.descriptor.recordId;
+      const recordsDelete = incomingMessage as RecordsDelete;
+      const recordId = recordsDelete.message.descriptor.recordId;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWrite(messageStore, tenant, recordId);
 
-      // if there is no initial write to delete, then no action rule can authorize the incoming message
+      // if there is no initial write, then no action rule can authorize the incoming message, because we won't know who the original author is
       // NOTE: purely defensive programming: currently not reachable
       // because RecordsDelete handler already have an existence check prior to this method being called.
       if (initialWrite === undefined) {
         return [];
       }
 
-      if (incomingMessage.author === initialWrite.author) {
-        // A delete by the original record author can be authorized by either a 'delete' or 'co-delete' rule.
-        return [ProtocolAction.Delete, ProtocolAction.CoDelete];
+      const actionsThatWouldAuthorizeDelete = [];
+      const prune = recordsDelete.message.descriptor.prune;
+      if (prune) {
+        actionsThatWouldAuthorizeDelete.push(ProtocolAction.CoPrune);
+
+        // A prune by the original record author can also be authorized by a 'prune' rule.
+        if (incomingMessage.author === initialWrite.author) {
+          actionsThatWouldAuthorizeDelete.push(ProtocolAction.Prune);
+        }
       } else {
-        // A delete by someone who is not the original record author can only be authorized by a 'co-delete' rule.
-        return [ProtocolAction.CoDelete];
+        actionsThatWouldAuthorizeDelete.push(ProtocolAction.CoDelete);
+
+        // A delete by the original record author can also be authorized by a 'delete' rule.
+        if (incomingMessage.author === initialWrite.author) {
+          actionsThatWouldAuthorizeDelete.push(ProtocolAction.Delete);
+        }
       }
+
+      return actionsThatWouldAuthorizeDelete;
 
     case DwnMethodName.Query:
       return [ProtocolAction.Query];
@@ -607,11 +620,12 @@ export class ProtocolAuthorization {
     const author = incomingMessage.author;
     const actionRules = ruleSet.$actions;
 
-    // We have already checked that the message is not from tenant, owner, or permission grant authorized
+    // NOTE: We have already checked that the message is not from tenant, owner, or permission grant authorized prior to this method being called.
+
     if (actionRules === undefined) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationActionRulesNotFound,
-        `no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`
+        `no action rule defined for Records${incomingMessageMethod}, ${author} is unauthorized`
       );
     }
 
@@ -662,7 +676,7 @@ export class ProtocolAuthorization {
     // No action rules were satisfied, author is not authorized
     throw new DwnError(
       DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
-      `inbound message action ${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
+      `inbound message action Records${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
     );
   }
 

@@ -47,9 +47,11 @@
                   "type": "string",
                   "enum": [
                     "co-delete",
+                    "co-prune",
                     "co-update",
                     "create",
                     "delete",
+                    "prune",
                     "read",
                     "update"
                   ]

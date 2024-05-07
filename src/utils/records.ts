@@ -480,7 +480,7 @@ export class Records {
    * Checks if the filter supports returning published records.
    */
   static filterIncludesPublishedRecords(filter: RecordsFilter): boolean {
-    // When `published` and `datePublished` range are both undefined, published records can be returned.
+    // NOTE: published records should still be returned when `published` and `datePublished` range are both undefined.
     return filter.datePublished !== undefined || filter.published !== false;
   }
 

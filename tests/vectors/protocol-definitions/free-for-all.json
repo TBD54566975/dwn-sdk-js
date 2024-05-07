@@ -7,7 +7,8 @@
       "dataFormats": [
         "application/json"
       ]
-    }
+    },
+    "attachment": { }
   },
   "structure": {
     "post": {
@@ -17,11 +18,28 @@
           "can": [
             "create",
             "update",
+            "delete",
+            "prune",
             "read",
-            "co-delete"
+            "co-delete",
+            "co-prune"
           ]
         }
-      ]
+      ],
+      "attachment": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": [
+              "create",
+              "update",
+              "delete",
+              "read",
+              "co-delete"
+            ]
+          }
+        ]
+      }
     }
   }
 }
