@@ -115,9 +115,8 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Performs protocol-based authorization against the incoming RecordsRead  message.
-   * @param newestRecordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
-   *                     or the latest RecordsWrite associated with the recordId being read.
+   * Performs protocol-based authorization against the incoming `RecordsRead` message.
+   * @param newestRecordsWrite The latest RecordsWrite associated with the recordId being read.
    * @throws {Error} if authorization fails.
    */
   public static async authorizeRead(
@@ -203,6 +202,10 @@ export class ProtocolAuthorization {
     );
   }
 
+  /**
+   * Performs protocol-based authorization against the incoming `RecordsDelete` message.
+   * @param newestRecordsWrite The latest `RecordsWrite` associated with the recordId being deleted.
+   */
   public static async authorizeDelete(
     tenant: string,
     incomingMessage: RecordsDelete,
@@ -287,8 +290,8 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
     newestRecordsWrite: RecordsWrite,
     messageStore: MessageStore
-  )
-    : Promise<RecordsWriteMessage[]> {
+  ) : Promise<RecordsWriteMessage[]> {
+
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
     if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
@@ -297,8 +300,6 @@ export class ProtocolAuthorization {
       ancestorMessageChain.push(newestRecordsWrite.message);
     }
 
-    const protocol = newestRecordsWrite.message.descriptor.protocol!;
-
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = newestRecordsWrite.message.descriptor.parentId;
     while (currentParentId !== undefined) {
@@ -306,7 +307,6 @@ export class ProtocolAuthorization {
       const query: Filter = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
-        protocol,
         recordId  : currentParentId
       };
       const { messages: parentMessages } = await messageStore.query(tenant, [query]);

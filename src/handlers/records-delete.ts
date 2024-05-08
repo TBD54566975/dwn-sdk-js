@@ -116,21 +116,26 @@ export class RecordsDeleteHandler implements MethodHandler {
     return messageReply;
   };
 
+  /**
+   * Authorizes a RecordsDelete message.
+   *
+   * @param newestRecordsWrite Newest RecordsWrite of the record to be deleted.
+   */
   private static async authorizeRecordsDelete(
     tenant: string,
     recordsDelete: RecordsDelete,
-    recordsWriteToDelete: RecordsWrite,
+    newestRecordsWrite: RecordsWrite,
     messageStore: MessageStore
   ): Promise<void> {
 
     if (Message.isSignedByAuthorDelegate(recordsDelete.message)) {
-      await recordsDelete.authorizeDelegate(recordsWriteToDelete.message, messageStore);
+      await recordsDelete.authorizeDelegate(newestRecordsWrite.message, messageStore);
     }
 
     if (recordsDelete.author === tenant) {
       return;
-    } else if (recordsWriteToDelete.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeDelete(tenant, recordsDelete, recordsWriteToDelete, messageStore);
+    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeDelete(tenant, recordsDelete, newestRecordsWrite, messageStore);
     } else {
       throw new DwnError(
         DwnErrorCode.RecordsDeleteAuthorizationFailed,
