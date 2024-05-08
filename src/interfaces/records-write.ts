@@ -836,24 +836,9 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const recordsWriteMessage = message as RecordsWriteMessage;
-    const author = RecordsWrite.getAuthor(recordsWriteMessage);
+    const author = Message.getAuthor(recordsWriteMessage);
     const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
     return (entryId === recordsWriteMessage.recordId);
-  }
-
-  /**
-   * Gets the DID of the author of the given message.
-   */
-  public static getAuthor(message: RecordsWriteMessage): string | undefined {
-    let author;
-
-    if (message.authorization.authorDelegatedGrant !== undefined) {
-      author = Message.getSigner(message.authorization.authorDelegatedGrant);
-    } else {
-      author = Message.getSigner(message);
-    }
-
-    return author;
   }
 
   /**
