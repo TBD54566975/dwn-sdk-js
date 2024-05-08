@@ -1022,7 +1022,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the DID of the author of the given message.
+   * Gets the DID of the attesters of the given message.
    */
   public static getAttesters(message: InternalRecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];

@@ -292,6 +292,7 @@ export class ProtocolAuthorization {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
     if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
+      // TODO: Probably better to rename to `inheritance chain` or `messageAncestryChain` or `recordChain`
       // Unless inboundMessage is a Write, recordsWrite is also an ancestor message
       ancestorMessageChain.push(newestRecordsWrite.message);
     }
@@ -320,6 +321,7 @@ export class ProtocolAuthorization {
         );
       }
 
+      // TODO: we need to grab the initial write author
       const parent = parentMessages[0] as RecordsWriteMessage;
       ancestorMessageChain.push(parent);
 
@@ -639,6 +641,21 @@ export class ProtocolAuthorization {
         continue;
       }
 
+      // Code reaches here means this action rule has an allowed action that matches the action of the message.
+      // The remaining code checks the actor/author of the incoming message.
+
+      // If the action rule allows `anyone`, then no further checks are needed.
+      if (actionRule.who === ProtocolActor.Anyone) {
+        return;
+      }
+
+      // Since not `anyone` is allowed in this action rule, we will need to check the author of the incoming message,
+      // if the author of incoming message is not defined, this action rule cannot authorize the incoming message.
+      if (author === undefined) {
+        continue;
+      }
+
+      // go through role validation path if a role is invoked by the incoming message
       if (invokedRole !== undefined) {
         // When a protocol role is being invoked, we require that there is a matching `role` rule.
         if (actionRule.role === invokedRole) {
@@ -647,36 +664,44 @@ export class ProtocolAuthorization {
         } else {
           continue;
         }
-      } else if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined && author !== undefined) {
+      }
+
+      // else we go through the actor (`who`) validation
+
+      // If `of` is not set, handle it as a special case
+      // NOTE: `of` is always set if `who` is set to `author` (we do this check in `validateRuleSetRecursively()`)
+      if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined) {
+        // If the action rule specifies a recipient without `of` and the incoming message is authenticated:
+
         // Author must be recipient of the record being accessed
         let recordsWriteMessage: RecordsWriteMessage;
         if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
           recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
         } else {
-          // else the incoming message must be a RecordsDelete because only `co-update` and `co-delete` are allowed recipient actions
+          // else the incoming message must be a `RecordsDelete` because only `co-update`, `co-delete`, `co-prune` are allowed recipient actions,
+          // (we do this check in `validateRuleSetRecursively()`)
+          // and we have already checked that the incoming message is not a `RecordsWrite` above which covers `co-update` path.
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
 
         if (recordsWriteMessage.descriptor.recipient === author) {
           return;
+        } else {
+          continue;
         }
-      } else if (actionRule.who === ProtocolActor.Anyone) {
-        return;
-      } else if (author === undefined) {
-        continue;
       }
 
-      // else we need to check the actor (e.g. author/recipient) allowed by current action rule in the corresponding ancestor message
+      // validate the actor (e.g. author/recipient) allowed by current action rule in the corresponding ancestor message
       const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
       if (ancestorRuleSuccess) {
         return;
       }
     }
 
-    // No action rules were satisfied, author is not authorized
+    // No action rules were satisfied, message is not authorized
     throw new DwnError(
       DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
-      `inbound message action Records${incomingMessageMethod} not allowed for author ${incomingMessage.author}`
+      `Inbound message action Records${incomingMessageMethod} by author ${incomingMessage.author} not allowed.`
     );
   }
 

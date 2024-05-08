@@ -183,7 +183,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
         );
       }
 
-      // Validate that if `who === recipient` and `of === undefined`, then `can` can only contain `co-delete` and `co-update`
+      // Validate that if `who === recipient` and `of === undefined`, then `can` can only contain `co-update`, `co-delete`, and `co-prune`.
       // We do not allow `read`, `write`, or `query` in the `can` array because:
       // - `read` - Recipients are always allowed to `read`.
       // - `write` - Entails ability to create and update.
@@ -192,11 +192,14 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
       // - `query` - Only authorized using roles, so allowing direct recipients to query is outside the scope.
       if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined) {
 
-        // throw if `can` contains a value that is not `co-update` or `co-delete`
-        if (actionRule.can.some((allowedAction) => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete].includes(allowedAction as ProtocolAction))) {
+        // throw if `can` contains a value that is not `co-update`, `co-delete`, or `co-prune`
+        const hasDisallowedAction = actionRule.can.some(
+          action => ![ProtocolAction.CoUpdate, ProtocolAction.CoDelete, ProtocolAction.CoPrune].includes(action as ProtocolAction)
+        );
+        if (hasDisallowedAction) {
           throw new DwnError(
             DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
-            'Rules for `recipient` without `of` property must have `can` containing only `co-update` or `co-delete`'
+            'Rules for `recipient` without `of` property must have `can` containing only `co-update`, `co-delete`, and `co-prune`.'
           );
         }
       }
