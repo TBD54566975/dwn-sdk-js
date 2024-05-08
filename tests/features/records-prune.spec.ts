@@ -226,13 +226,8 @@ export function testRecordsPrune(): void {
           protocol  : 'http://post-protocol.xyz',
           published : true,
           types     : {
-            post: {
-              schema      : 'eph',
-              dataFormats : [
-                'application/json'
-              ]
-            },
-            attachment: { }
+            post       : { },
+            attachment : { }
           },
           structure: {
             post: {
@@ -241,14 +236,9 @@ export function testRecordsPrune(): void {
                   who : 'anyone',
                   can : [
                     'create',
+                    'prune', // allowing author to prune, but not delete
                     'read'
                   ]
-                },
-                {
-                  // allowing author to prune, but not delete
-                  who : 'author',
-                  of  : 'post',
-                  can : ['prune']
                 }
               ],
               attachment: {
@@ -280,8 +270,7 @@ export function testRecordsPrune(): void {
           signer       : Jws.createSigner(bob),
           protocol     : protocolDefinition.protocol,
           protocolPath : 'post',
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          dataFormat   : 'application/json',
           data         : postData
         };
 
@@ -418,13 +407,8 @@ export function testRecordsPrune(): void {
           protocol  : 'http://post-protocol.xyz',
           published : true,
           types     : {
-            post: {
-              schema      : 'eph',
-              dataFormats : [
-                'application/json'
-              ]
-            },
-            attachment: { }
+            post       : { },
+            attachment : { }
           },
           structure: {
             post: {
@@ -465,8 +449,7 @@ export function testRecordsPrune(): void {
           signer       : Jws.createSigner(bob),
           protocol     : protocolDefinition.protocol,
           protocolPath : 'post',
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          dataFormat   : 'application/json',
           data         : postData
         };
 
@@ -534,13 +517,8 @@ export function testRecordsPrune(): void {
           protocol  : 'http://post-protocol.xyz',
           published : true,
           types     : {
-            post: {
-              schema      : 'eph',
-              dataFormats : [
-                'application/json'
-              ]
-            },
-            attachment: { }
+            post       : { },
+            attachment : { }
           },
           structure: {
             post: {
@@ -549,14 +527,9 @@ export function testRecordsPrune(): void {
                   who : 'anyone',
                   can : [
                     'create',
+                    'prune', // allowing author to prune, but not delete
                     'read'
                   ]
-                },
-                {
-                  // allowing author to prune, but not delete
-                  who : 'author',
-                  of  : 'post',
-                  can : ['prune']
                 }
               ],
               attachment: {
@@ -588,8 +561,7 @@ export function testRecordsPrune(): void {
           signer       : Jws.createSigner(bob),
           protocol     : protocolDefinition.protocol,
           protocolPath : 'post',
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          dataFormat   : 'application/json',
           data         : postData
         };
 
@@ -646,13 +618,8 @@ export function testRecordsPrune(): void {
           protocol  : 'http://post-protocol.xyz',
           published : true,
           types     : {
-            post: {
-              schema      : 'eph',
-              dataFormats : [
-                'application/json'
-              ]
-            },
-            attachment: { }
+            post       : { },
+            attachment : { }
           },
           structure: {
             post: {
@@ -693,8 +660,7 @@ export function testRecordsPrune(): void {
           signer       : Jws.createSigner(bob),
           protocol     : protocolDefinition.protocol,
           protocolPath : 'post',
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          dataFormat   : 'application/json',
           data         : postData
         };
 
