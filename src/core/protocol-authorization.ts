@@ -77,9 +77,18 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
-    // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, incomingMessage, messageStore);
+    const existingInitialWrite = await ProtocolAuthorization.fetchInitialWrite(tenant, incomingMessage.message.recordId, messageStore);
+
+    let descendantRecordId;
+    if (existingInitialWrite === undefined) {
+      // NOTE: the incoming message "should" be an initial write at this point,
+      // but we don't check if it is here because it is checked in the RecordsWriteHandler already (even though at a later stage).
+      descendantRecordId = incomingMessage.message.descriptor.parentId;
+    } else {
+      descendantRecordId = incomingMessage.message.recordId;
+    }
+
+    const ancestorMessageChain = await ProtocolAuthorization.constructAncestorMessageChain(tenant, descendantRecordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -127,7 +136,7 @@ export class ProtocolAuthorization {
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, newestRecordsWrite.message.recordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -215,7 +224,7 @@ export class ProtocolAuthorization {
 
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage.message.descriptor.recordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -281,54 +290,66 @@ export class ProtocolAuthorization {
 
   /**
    * Constructs a chain of ancestor messages
-   * @param newestRecordsWrite The newest RecordsWrite associated with the recordId being written.
-   *                           This will be the incoming RecordsWrite itself if the incoming message is a RecordsWrite.
+   * @param descendantRecordId The ID of the descendent record to start constructing the record chain from by walking up the parent chain.
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
   private static async constructAncestorMessageChain(
     tenant: string,
-    incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
-    newestRecordsWrite: RecordsWrite,
+    descendantRecordId: string | undefined,
     messageStore: MessageStore
   ) : Promise<RecordsWriteMessage[]> {
 
-    const ancestorMessageChain: RecordsWriteMessage[] = [];
-
-    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
-      // TODO: Probably better to rename to `inheritance chain` or `messageAncestryChain` or `recordChain`
-      // Unless inboundMessage is a Write, recordsWrite is also an ancestor message
-      ancestorMessageChain.push(newestRecordsWrite.message);
+    if (descendantRecordId === undefined) {
+      return [];
     }
 
-    // keep walking up the chain from the inbound message's parent, until there is no more parent
-    let currentParentId = newestRecordsWrite.message.descriptor.parentId;
-    while (currentParentId !== undefined) {
-      // fetch parent
-      const query: Filter = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
-        recordId  : currentParentId
-      };
-      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
+    const ancestorMessageChain: RecordsWriteMessage[] = [];
 
-      // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing, so if this condition is triggered,
-      // it means there is an unexpected bug that caused an invalid message being saved to the DWN.
+    // keep walking up the chain from the inbound message's parent, until there is no more parent
+    let currentRecordId: string | undefined = descendantRecordId;
+    while (currentRecordId !== undefined) {
+
+      const initialWrite = await ProtocolAuthorization.fetchInitialWrite(tenant, currentRecordId, messageStore);
+
+      // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing,
+      // so if this condition is triggered, it means there is an unexpected bug that caused an incomplete chain.
       // We add additional defensive check here because returning an unexpected/incorrect ancestor chain could lead to security vulnerabilities.
-      if (parentMessages.length === 0) {
+      if (initialWrite === undefined) {
         throw new DwnError(
           DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingAncestorChain,
-          `Unexpected error that should never trigger: no parent found with ID ${currentParentId} when constructing ancestor message chain.`
+          `Unexpected error that should never trigger: no parent found with ID ${currentRecordId} when constructing ancestor message chain.`
         );
       }
 
-      // TODO: we need to grab the initial write author
-      const parent = parentMessages[0] as RecordsWriteMessage;
-      ancestorMessageChain.push(parent);
-
-      currentParentId = parent.descriptor.parentId;
+      ancestorMessageChain.push(initialWrite);
+      currentRecordId = initialWrite.descriptor.parentId;
     }
 
     return ancestorMessageChain.reverse(); // root ancestor first
+  }
+
+  /**
+   * Fetches the initial RecordsWrite message associated with the given (tenant + recordId).
+   */
+  private static async fetchInitialWrite(
+    tenant: string,
+    recordId: string,
+    messageStore: MessageStore
+  ): Promise<RecordsWriteMessage | undefined> {
+
+    const query: Filter = {
+      interface : DwnInterfaceName.Records,
+      method    : DwnMethodName.Write,
+      recordId  : recordId
+    };
+    const { messages } = await messageStore.query(tenant, [query]);
+
+    if (messages.length === 0) {
+      return undefined;
+    }
+
+    const initialWrite = await RecordsWrite.getInitialWrite(messages);
+    return initialWrite;
   }
 
   /**

@@ -978,7 +978,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the initial write from the given list or record write.
+   * Gets the initial write from the given list of `RecordWrite`.
    */
   public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage> {
     for (const message of messages) {
@@ -987,7 +987,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       }
     }
 
-    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `initial write is not found`);
+    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `Initial write is not found.`);
   }
 
   /**
