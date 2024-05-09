@@ -22,7 +22,7 @@ module.exports = [{
   // IMPORTANT and confusing: `ignores` only exclude files from the `files` setting.
   // To exclude *.js files entirely, you need to have a separate config object altogether. (See another `ignores` below.)
   ignores: [
-    '**/dist/**',
+    '**/*.d.ts',
   ],
   rules: {
     'curly'      : ['error', 'all'],
