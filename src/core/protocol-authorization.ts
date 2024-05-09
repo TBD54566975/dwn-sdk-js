@@ -88,7 +88,7 @@ export class ProtocolAuthorization {
       descendantRecordId = incomingMessage.message.recordId;
     }
 
-    const ancestorMessageChain = await ProtocolAuthorization.constructAncestorMessageChain(tenant, descendantRecordId, messageStore);
+    const recordChain = await ProtocolAuthorization.constructRecordChain(tenant, descendantRecordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -118,7 +118,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       ruleSet,
-      ancestorMessageChain,
+      recordChain,
       messageStore,
     );
   }
@@ -134,9 +134,9 @@ export class ProtocolAuthorization {
     newestRecordsWrite: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
-    // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, newestRecordsWrite.message.recordId, messageStore);
+    // fetch record chain
+    const recordChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructRecordChain(tenant, newestRecordsWrite.message.recordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -166,7 +166,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       ruleSet,
-      ancestorMessageChain,
+      recordChain,
       messageStore,
     );
   }
@@ -206,7 +206,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       ruleSet,
-      [], // ancestor chain is not relevant to subscriptions
+      [], // record chain is not relevant to subscriptions
       messageStore,
     );
   }
@@ -222,9 +222,9 @@ export class ProtocolAuthorization {
     messageStore: MessageStore,
   ): Promise<void> {
 
-    // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage.message.descriptor.recordId, messageStore);
+    // fetch record chain
+    const recordChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructRecordChain(tenant, incomingMessage.message.descriptor.recordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
@@ -254,7 +254,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       ruleSet,
-      ancestorMessageChain,
+      recordChain,
       messageStore,
     );
   }
@@ -289,11 +289,14 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Constructs a chain of ancestor messages
-   * @param descendantRecordId The ID of the descendent record to start constructing the record chain from by walking up the parent chain.
-   * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
+   * Constructs the chain of EXISTING records in the datastore where the first record is the root initial `RecordsWrite` of the record chain
+   * and last record is the initial `RecordsWrite` of the descendant record specified.
+   * @param descendantRecordId The ID of the descendent record to start constructing the record chain from by repeatedly looking up the parent.
+   * @returns the record chain where each record is represented by its initial `RecordsWrite`;
+   *          returns empty array if `descendantRecordId` is `undefined`.
+   * @throws {DwnError} if `descendantRecordId` is defined but any initial `RecordsWrite` is not found in the chain of records.
    */
-  private static async constructAncestorMessageChain(
+  private static async constructRecordChain(
     tenant: string,
     descendantRecordId: string | undefined,
     messageStore: MessageStore
@@ -303,7 +306,7 @@ export class ProtocolAuthorization {
       return [];
     }
 
-    const ancestorMessageChain: RecordsWriteMessage[] = [];
+    const recordChain: RecordsWriteMessage[] = [];
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentRecordId: string | undefined = descendantRecordId;
@@ -311,21 +314,22 @@ export class ProtocolAuthorization {
 
       const initialWrite = await ProtocolAuthorization.fetchInitialWrite(tenant, currentRecordId, messageStore);
 
-      // We already check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing,
+      // RecordsWrite needed should be available since we perform necessary checks at the time of writes,
+      // eg. check the immediate parent in `verifyProtocolPathAndContextId` at the time of writing,
       // so if this condition is triggered, it means there is an unexpected bug that caused an incomplete chain.
-      // We add additional defensive check here because returning an unexpected/incorrect ancestor chain could lead to security vulnerabilities.
+      // We add additional defensive check here because returning an unexpected/incorrect record chain could lead to security vulnerabilities.
       if (initialWrite === undefined) {
         throw new DwnError(
-          DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingAncestorChain,
-          `Unexpected error that should never trigger: no parent found with ID ${currentRecordId} when constructing ancestor message chain.`
+          DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingRecordChain,
+          `Unexpected error that should never trigger: no parent found with ID ${currentRecordId} when constructing record chain.`
         );
       }
 
-      ancestorMessageChain.push(initialWrite);
+      recordChain.push(initialWrite);
       currentRecordId = initialWrite.descriptor.parentId;
     }
 
-    return ancestorMessageChain.reverse(); // root ancestor first
+    return recordChain.reverse(); // root record first
   }
 
   /**
@@ -368,7 +372,7 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual ancestor chain.
+   * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual record chain.
    * @throws {DwnError} if fails verification.
    */
   private static async verifyProtocolPathAndContextId(
@@ -635,7 +639,7 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsSubscribe | RecordsWrite,
     ruleSet: ProtocolRuleSet,
-    ancestorMessageChain: RecordsWriteMessage[],
+    recordChain: RecordsWriteMessage[],
     messageStore: MessageStore,
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
@@ -702,7 +706,7 @@ export class ProtocolAuthorization {
           // else the incoming message must be a `RecordsDelete` because only `co-update`, `co-delete`, `co-prune` are allowed recipient actions,
           // (we do this check in `validateRuleSetRecursively()`)
           // and we have already checked that the incoming message is not a `RecordsWrite` above which covers `co-update` path.
-          recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
+          recordsWriteMessage = recordChain[recordChain.length - 1];
         }
 
         if (recordsWriteMessage.descriptor.recipient === author) {
@@ -712,8 +716,8 @@ export class ProtocolAuthorization {
         }
       }
 
-      // validate the actor (e.g. author/recipient) allowed by current action rule in the corresponding ancestor message
-      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
+      // validate the actor is allowed by the current action rule
+      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, recordChain);
       if (ancestorRuleSuccess) {
         return;
       }
@@ -864,16 +868,16 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Checks if there is a record in the ancestor chain matching the `who: 'author' | 'recipient'` action rule.
-   * @returns true if the action rule is satisfied. false otherwise
+   * Checks if the `who: 'author' | 'recipient'` action rule has a matching record in the record chain.
+   * @returns `true` if the action rule is satisfied; `false` otherwise.
    */
   private static async checkActor(
     author: string,
     actionRule: ProtocolActionRule,
-    ancestorMessageChain: RecordsWriteMessage[],
+    recordChain: RecordsWriteMessage[],
   ): Promise<boolean> {
-    // Iterate up the ancestor chain to find a message with matching protocolPath
-    const ancestorRecordsWrite = ancestorMessageChain.find((recordsWriteMessage) =>
+    // find a message with matching protocolPath
+    const ancestorRecordsWrite = recordChain.find((recordsWriteMessage) =>
       recordsWriteMessage.descriptor.protocolPath === actionRule.of!
     );
 
@@ -885,10 +889,10 @@ export class ProtocolAuthorization {
     }
 
     if (actionRule.who === ProtocolActor.Recipient) {
-      // Recipient of ancestor message must be the author of the incoming message
+      // author of the incoming message must be the recipient of the ancestor message
       return author === ancestorRecordsWrite.descriptor.recipient;
     } else { // actionRule.who === ProtocolActor.Author
-      // Author of ancestor message must be the author of the incoming message
+      // author of the incoming message must be the author of the ancestor message
       const ancestorAuthor = (await RecordsWrite.parse(ancestorRecordsWrite)).author;
       return author === ancestorAuthor;
     }
