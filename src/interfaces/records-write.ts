@@ -978,7 +978,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the initial write from the given list of `RecordWrite`.
+   * Gets the initial write from the given list of `RecordsWrite`.
    */
   public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage> {
     for (const message of messages) {
