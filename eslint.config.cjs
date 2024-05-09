@@ -1,17 +1,29 @@
-module.exports = {
-  parser        : '@typescript-eslint/parser',
-  parserOptions : {
-    ecmaVersion : 'latest', // Allows the use of modern ECMAScript features
-    sourceType  : 'module', // Allows for the use of imports
+const tsParser = require("@typescript-eslint/parser");
+
+const tsPlugin = require("@typescript-eslint/eslint-plugin");
+const todoPlzPlugin = require('eslint-plugin-todo-plz');
+
+module.exports = [{
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      ecmaFeatures: { modules: true },
+      ecmaVersion: 'latest',
+      project: './tsconfig.json',
+    },
   },
-  plugins: [
-    '@typescript-eslint',
-    'todo-plz' // for enforcing TODO formatting to require "github.com/TBD54566975/dwn-sdk-js/issues/"
+  plugins: {
+    "@typescript-eslint": tsPlugin,
+    'todo-plz': todoPlzPlugin // for enforcing TODO formatting to require "github.com/TBD54566975/dwn-sdk-js/issues/"
+  },
+  files: [
+    '**/*.ts'
   ],
-  env: {
-    node    : true, // Enable Node.js global variables
-    browser : true
-  },
+  // IMPORTANT and confusing: `ignores` only exclude files from the `files` setting.
+  // To exclude *.js files entirely, you need to have a separate config object altogether. (See another `ignores` below.)
+  ignores: [
+    '**/dist/**',
+  ],
   rules: {
     'curly'      : ['error', 'all'],
     'no-console' : 'off',
@@ -71,4 +83,8 @@ module.exports = {
     // enforce github issue reference for every TO-DO comment
     'todo-plz/ticket-ref': ['error', { 'commentPattern': '.*github\.com\/TBD54566975\/dwn-sdk-js\/issues\/.*' }],
   }
-};
+}, {
+  ignores: [
+    '**/*.js',
+  ],
+}];
