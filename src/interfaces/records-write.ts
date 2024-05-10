@@ -250,13 +250,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      // if the message authorization contains author delegated grant, the author would be the grantor of the grant
-      // else the author would be the signer of the message
-      if (message.authorization.authorDelegatedGrant !== undefined) {
-        this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
-      } else {
-        this._author = Message.getSigner(message as GenericMessage);
-      }
+      this._author = Records.getAuthor(message as RecordsWriteMessage);
 
       this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
 
@@ -836,24 +830,9 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const recordsWriteMessage = message as RecordsWriteMessage;
-    const author = RecordsWrite.getAuthor(recordsWriteMessage);
+    const author = Records.getAuthor(recordsWriteMessage);
     const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
     return (entryId === recordsWriteMessage.recordId);
-  }
-
-  /**
-   * Gets the DID of the author of the given message.
-   */
-  public static getAuthor(message: RecordsWriteMessage): string | undefined {
-    let author;
-
-    if (message.authorization.authorDelegatedGrant !== undefined) {
-      author = Message.getSigner(message.authorization.authorDelegatedGrant);
-    } else {
-      author = Message.getSigner(message);
-    }
-
-    return author;
   }
 
   /**
