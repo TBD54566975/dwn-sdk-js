@@ -20,7 +20,6 @@ process.env.FIREFOX_BIN = playwright.firefox.executablePath();
  *
  * @param {KarmaConfig} config
  */
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 module.exports = function configure(config) {
   config.set({
     plugins: [
