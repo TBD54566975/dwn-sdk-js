@@ -206,7 +206,7 @@ export class ProtocolAuthorization {
       tenant,
       incomingMessage,
       ruleSet,
-      [], // record chain is not relevant to subscriptions
+      [], // record chain is not relevant to queries or subscriptions
       messageStore,
     );
   }
