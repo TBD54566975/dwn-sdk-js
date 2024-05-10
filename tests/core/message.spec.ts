@@ -20,27 +20,6 @@ describe('Message', () => {
     });
   });
 
-  describe('getAuthor()', () => {
-    it('should return the signer of various message types', async () => {
-      const bob = await TestDataGenerator.generatePersona();
-
-      // create a protocol message without `authorization`
-      const { message: protocolsQueryMessage } = await TestDataGenerator.generateProtocolsQuery({ author: bob });
-      const author = Message.getAuthor(protocolsQueryMessage);
-      expect(author).to.equal(bob.did);
-
-      // create a record message
-      const { message: recordsWriteMessage } = await TestDataGenerator.generateRecordsWrite({ author: bob });
-      const author2 = Message.getAuthor(recordsWriteMessage);
-      expect(author2).to.equal(bob.did);
-
-      // create a delete message
-      const { message: recordsDeleteMessage } = await TestDataGenerator.generateRecordsDelete({ author: bob });
-      const author3 = Message.getAuthor(recordsDeleteMessage);
-      expect(author3).to.equal(bob.did);
-    });
-  });
-
   describe('toJSON()', () => {
     it('should return the message passed in to the constructor', async () => {
       // create a message without `authorization`

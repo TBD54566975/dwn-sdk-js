@@ -42,21 +42,6 @@ export class Message {
   }
 
   /**
-   * Gets the DID of the author of the given message.
-   */
-  public static getAuthor(message: GenericMessage): string | undefined {
-    let author;
-
-    if (message.authorization?.authorDelegatedGrant !== undefined) {
-      author = Message.getSigner(message.authorization.authorDelegatedGrant);
-    } else {
-      author = Message.getSigner(message);
-    }
-
-    return author;
-  }
-
-  /**
    * Gets the CID of the given message.
    */
   public static async getCid(message: GenericMessage): Promise<string> {

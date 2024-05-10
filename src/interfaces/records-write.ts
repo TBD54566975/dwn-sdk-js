@@ -250,7 +250,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._author = Message.getAuthor(message);
+      this._author = Records.getAuthor(message as RecordsWriteMessage);
 
       this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
 
@@ -830,7 +830,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     }
 
     const recordsWriteMessage = message as RecordsWriteMessage;
-    const author = Message.getAuthor(recordsWriteMessage);
+    const author = Records.getAuthor(recordsWriteMessage);
     const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
     return (entryId === recordsWriteMessage.recordId);
   }
