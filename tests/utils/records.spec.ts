@@ -1,9 +1,11 @@
-import type { DerivedPrivateJwk, RecordsWriteDescriptor } from '../../src/index.js';
+import type { DerivedPrivateJwk, PermissionScope, RecordsWriteDescriptor } from '../../src/index.js';
+
+import { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
-import { expect } from 'chai';
-import { DwnInterfaceName, DwnMethodName, KeyDerivationScheme, Records, TestDataGenerator } from '../../src/index.js';
+import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { DwnInterfaceName, DwnMethodName, Jws, KeyDerivationScheme, PermissionsProtocol, Records, TestDataGenerator, Time } from '../../src/index.js';
 
 describe('Records', () => {
   describe('deriveLeafPrivateKey()', () => {
@@ -33,7 +35,39 @@ describe('Records', () => {
     });
 
     it('should get the author of a delegated message', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const deviceX = await TestDataGenerator.generatePersona();
 
+      // create a delegation scope from alice to deviceX for writing records with schema `foo/bar`
+      const scope:PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        schema    : 'foo/bar',
+      };
+
+      // create the delegated grant message
+      const bobGrant = await PermissionsProtocol.createGrant({
+        delegated   : true,
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        grantedTo   : deviceX.did,
+        scope       : scope,
+        signer      : Jws.createSigner(alice)
+      });
+
+      // create a record message using the grant
+      const writeData = TestDataGenerator.randomBytes(32);
+
+      const { message } = await RecordsWrite.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : bobGrant.dataEncodedMessage,
+        schema         : 'foo/bar',
+        dataFormat     : 'application/json',
+        data           : writeData,
+      });
+
+      // expect message author to be alice
+      const author = Records.getAuthor(message);
+      expect(author).to.equal(alice.did);
     });
   });
 
