@@ -83,7 +83,7 @@ export class ProtocolAuthorization {
     if (existingInitialWrite === undefined) {
       // NOTE: we can assume this message is an initial write because an existing initial write does not exist.
       // Additionally, we check further down in the `RecordsWriteHandler` if the incoming message is an initialWrite,
-      // so we don't check explicitly here to avoid an unnecessary duplicate check.  
+      // so we don't check explicitly here to avoid an unnecessary duplicate check.
       recordChain = await ProtocolAuthorization.constructRecordChain(tenant, incomingMessage.message.descriptor.parentId, messageStore);
     } else {
       recordChain = await ProtocolAuthorization.constructRecordChain(tenant, incomingMessage.message.recordId, messageStore);
