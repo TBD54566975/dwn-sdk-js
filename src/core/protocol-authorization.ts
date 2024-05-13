@@ -79,16 +79,15 @@ export class ProtocolAuthorization {
   ): Promise<void> {
     const existingInitialWrite = await ProtocolAuthorization.fetchInitialWrite(tenant, incomingMessage.message.recordId, messageStore);
 
-    let descendantRecordId;
+    let recordChain;
     if (existingInitialWrite === undefined) {
-      // NOTE: the incoming message "should" be an initial write at this point,
-      // but we don't check if it is here because it is checked in the RecordsWriteHandler already (even though at a later stage).
-      descendantRecordId = incomingMessage.message.descriptor.parentId;
+      // NOTE: we can assume this message is an initial write because an existing initial write does not exist.
+      // Additionally, we check further down in the `RecordsWriteHandler` if the incoming message is an initialWrite,
+      // so we don't check explicitly here to avoid an unnecessary duplicate check.  
+      recordChain = await ProtocolAuthorization.constructRecordChain(tenant, incomingMessage.message.descriptor.parentId, messageStore);
     } else {
-      descendantRecordId = incomingMessage.message.recordId;
+      recordChain = await ProtocolAuthorization.constructRecordChain(tenant, incomingMessage.message.recordId, messageStore);
     }
-
-    const recordChain = await ProtocolAuthorization.constructRecordChain(tenant, descendantRecordId, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
