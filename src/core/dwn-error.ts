@@ -68,7 +68,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
   ProtocolAuthorizationParentlessIncorrectProtocolPath = 'ProtocolAuthorizationParentlessIncorrectProtocolPath',
   ProtocolAuthorizationNotARole = 'ProtocolAuthorizationNotARole',
-  ProtocolAuthorizationParentNotFoundConstructingAncestorChain = 'ProtocolAuthorizationParentNotFoundConstructingAncestorChain',
+  ProtocolAuthorizationParentNotFoundConstructingRecordChain = 'ProtocolAuthorizationParentNotFoundConstructingRecordChain',
   ProtocolAuthorizationProtocolNotFound = 'ProtocolAuthorizationProtocolNotFound',
   ProtocolAuthorizationQueryWithoutRole = 'ProtocolAuthorizationQueryWithoutRole',
   ProtocolAuthorizationRoleMissingRecipient = 'ProtocolAuthorizationRoleMissingRecipient',

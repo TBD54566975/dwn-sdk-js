@@ -21,7 +21,7 @@ describe('ProtocolAuthorization', () => {
       messageStoreStub.query.resolves({ messages: [] }); // simulate parent not in message store
 
       await expect(ProtocolAuthorization.authorizeWrite(alice.did, recordsWrite, messageStoreStub)).to.be.rejectedWith(
-        DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingAncestorChain
+        DwnErrorCode.ProtocolAuthorizationParentNotFoundConstructingRecordChain
       );
     });
   });

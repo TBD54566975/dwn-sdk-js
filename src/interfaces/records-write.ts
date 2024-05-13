@@ -957,7 +957,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the initial write from the given list or record write.
+   * Gets the initial write from the given list of `RecordsWrite`.
    */
   public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage> {
     for (const message of messages) {
@@ -966,7 +966,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       }
     }
 
-    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `initial write is not found`);
+    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `Initial write is not found.`);
   }
 
   /**
@@ -1001,7 +1001,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * Gets the DID of the author of the given message.
+   * Gets the DID of the attesters of the given message.
    */
   public static getAttesters(message: InternalRecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];

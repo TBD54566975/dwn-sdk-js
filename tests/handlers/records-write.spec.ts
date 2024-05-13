@@ -928,7 +928,7 @@ export function testRecordsWriteHandler(): void {
           const reply = await dwn.processMessage(tenant, message, { dataStream });
 
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('initial write is not found');
+          expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteGetInitialWriteNotFound);
         });
 
         it('should return 400 if `dateCreated` and `messageTimestamp` are not the same in an initial write', async () => {
