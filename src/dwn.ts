@@ -15,6 +15,7 @@ import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryRe
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
+import { DwnDidResolver } from './dids/dwn-did-resolver.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
@@ -114,10 +115,13 @@ export class Dwn {
    * Creates an instance of the DWN.
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
-    config.didResolver ??= new UniversalResolver({
+    const universalResolver = new UniversalResolver({
       didResolvers : [DidDht, DidIon, DidKey],
       cache        : new DidResolverCacheLevel({ location: 'RESOLVERCACHE' }),
     });
+
+    config.didResolver ??= new DwnDidResolver({}, universalResolver);
+
     config.tenantGate ??= new AllowAllTenantGate();
 
     const dwn = new Dwn(config);
