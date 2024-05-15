@@ -6,7 +6,6 @@ import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-import { getWebcryptoSubtle } from '@noble/ciphers/webcrypto';
 
 /**
  * Class containing SECP256K1 related utility methods.
@@ -154,85 +153,5 @@ export class Secp256k1 {
     const { d: _d, ...publicKey } = privateKeyJwk;
     return publicKey;
   }
-
-  /**
-   * Derives a hardened hierarchical deterministic public key.
-   * @returns uncompressed public key
-   */
-  public static async derivePublicKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
-    Secp256k1.validateKeyDerivationPath(relativePath);
-
-    // derive the private key first then compute the derived public key from the derive private key
-    const derivedPrivateKey = await Secp256k1.derivePrivateKey(privateKey, relativePath);
-    const derivedPublicKey = await Secp256k1.getPublicKey(derivedPrivateKey);
-    return derivedPublicKey;
-  }
-
-  /**
-   * Derives a hardened hierarchical deterministic private key.
-   */
-  public static async derivePrivateKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
-    Secp256k1.validateKeyDerivationPath(relativePath);
-
-    let currentPrivateKey = privateKey;
-    for (const segment of relativePath) {
-      const derivationSegment = Encoder.stringToBytes(segment);
-      currentPrivateKey = await Secp256k1.deriveChildPrivateKey(currentPrivateKey, derivationSegment);
-    }
-
-    return currentPrivateKey;
-  }
-
-  /**
-   * Derives a child private key using the given derivation path segment.
-   */
-  public static async deriveChildPrivateKey(privateKey: Uint8Array, derivationPathSegment: Uint8Array): Promise<Uint8Array> {
-    const derivedKey = await deriveKeyWithHKDF({
-      hashAlgorithm: 'SHA-256',
-      initialKeyMaterial: privateKey,
-      salt: undefined,
-      info: derivationPathSegment, // use the derivation path segment as the application specific info for key derivation
-      keyLengthInBytes: 32 // 32 bytes = 256 bits
-    });
-
-    return derivedKey;
-  }
-
-  /**
-   * Parses the given key derivation path.
-   * @returns Path segments if successfully validate the derivation path.
-   * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
-   */
-  private static validateKeyDerivationPath(pathSegments: string[]): void {
-    if (pathSegments.includes('')) {
-      throw new DwnError(DwnErrorCode.HdKeyDerivationPathInvalid, `Invalid key derivation path: ${pathSegments}`);
-    }
-  }
 }
 
-async function deriveKeyWithHKDF(param: {
-  hashAlgorithm: string,
-  initialKeyMaterial: Uint8Array,
-  salt: Uint8Array | undefined,
-  info: Uint8Array,
-  keyLengthInBytes: number
-}): Promise<Uint8Array> {
-  const { hashAlgorithm, initialKeyMaterial, salt, info, keyLengthInBytes } = param;
-  const finalSalt = salt ?? new Uint8Array(0); // if salt is not provided, use an empty array
-
-  const webCrypto = getWebcryptoSubtle() as SubtleCrypto;
-
-  // Import the `initialKeyMaterial` into the Web Crypto API to use for the key derivation operation.
-  const webCryptoKey = await webCrypto.importKey('raw', initialKeyMaterial, { name: 'HKDF' }, false, ['deriveBits']);
-
-  // Derive the bytes using the Web Crypto API.
-  const derivedKeyBuffer = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: hashAlgorithm, salt: finalSalt, info },
-    webCryptoKey,
-    keyLengthInBytes * 8 // convert from bytes to bits
-  );
-
-  // Convert from ArrayBuffer to Uint8Array.
-  const derivedKeyBytes = new Uint8Array(derivedKeyBuffer);
-  return derivedKeyBytes;
-}
