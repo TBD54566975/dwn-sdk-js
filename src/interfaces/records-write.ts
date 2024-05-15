@@ -837,6 +837,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   /**
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
+   * @param descriptor Descriptor of the `RecordsWrite` message which contains the information need by key path derivation schemes.
    */
   private static async createEncryptionProperty(
     descriptor: RecordsWriteDescriptor,

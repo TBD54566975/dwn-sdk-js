@@ -14,7 +14,11 @@
         "publicKeyJwk": {
           "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
         }
-      }
+      },
+      "required": [
+        "rootKeyId",
+        "publicKeyJwk"
+      ]
     },
     "$actions": {
       "type": "array",
