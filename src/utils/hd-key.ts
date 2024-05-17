@@ -115,8 +115,7 @@ export class HdKey {
   }
 
   /**
-   * Parses the given key derivation path.
-   * @returns Path segments if successfully validate the derivation path.
+   * Validates that no empty strings exist within the derivation path segments array.
    * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
    */
   private static validateKeyDerivationPath(pathSegments: string[]): void {
