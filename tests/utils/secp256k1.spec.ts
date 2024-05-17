@@ -1,4 +1,3 @@
-import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
@@ -46,36 +45,6 @@ describe('Secp256k1', () => {
       const signatureBytes = await Secp256k1.sign(contentBytes, privateJwk);
 
       expect(signatureBytes.length).to.equal(64); // DER format would be 70 bytes
-    });
-  });
-
-  describe('derivePublic/PrivateKey()', () => {
-    it('should be able to derive same key using different ancestor along the chain path', async () => {
-      const { privateKey } = await Secp256k1.generateKeyPairRaw();
-
-      const fullPathToG = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-      const fullPathToD = ['a', 'b', 'c', 'd'];
-      const relativePathFromDToG = ['e', 'f', 'g'];
-
-      // testing private key derivation from different ancestor in the same chain
-      const privateKeyG = await Secp256k1.derivePrivateKey(privateKey, fullPathToG);
-      const privateKeyD = await Secp256k1.derivePrivateKey(privateKey, fullPathToD);
-      const privateKeyGFromD = await Secp256k1.derivePrivateKey(privateKeyD, relativePathFromDToG);
-      expect(ArrayUtility.byteArraysEqual(privateKeyG, privateKeyGFromD)).to.be.true;
-
-      // testing public key derivation from different ancestor private key in the same chain
-      const publicKeyG = await Secp256k1.derivePublicKey(privateKey, fullPathToG);
-      const publicKeyGFromD = await Secp256k1.derivePublicKey(privateKeyD, relativePathFromDToG);
-      expect(ArrayUtility.byteArraysEqual(publicKeyG, publicKeyGFromD)).to.be.true;
-    });
-
-    it('should throw if derivation path is invalid', async () => {
-      const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
-
-      const invalidPath = ['should not have segment with empty string', ''];
-
-      await expect(Secp256k1.derivePublicKey(publicKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
-      await expect(Secp256k1.derivePrivateKey(privateKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
     });
   });
 });

@@ -103,6 +103,12 @@ export type ProtocolActionRule = {
  * Config for protocol-path encryption scheme.
  */
 export type ProtocolPathEncryption = {
+
+  /**
+   * The ID of the root key that derives the public key at this protocol path for encrypting the symmetric key used for data encryption.
+   */
+  rootKeyId: string;
+
   /**
    * Public key for encrypting the symmetric key used for data encryption.
    */

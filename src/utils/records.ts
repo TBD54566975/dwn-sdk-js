@@ -9,13 +9,13 @@ import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { FilterUtility } from './filter.js';
 import { Jws } from './jws.js';
-import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
 import { PermissionGrant } from '../protocols/permission-grant.js';
 import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import { HdKey, KeyDerivationScheme } from './hd-key.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 /**
@@ -226,7 +226,7 @@ export class Records {
 
     const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPrivateKeyDerivationPath.length);
     const ancestorPrivateKeyBytes = Secp256k1.privateJwkToBytes(ancestorPrivateKey.derivedPrivateKey);
-    const leafPrivateKey = await Secp256k1.derivePrivateKey(ancestorPrivateKeyBytes, subDerivationPath);
+    const leafPrivateKey = await HdKey.derivePrivateKeyBytes(ancestorPrivateKeyBytes, subDerivationPath);
 
     return leafPrivateKey;
   }
