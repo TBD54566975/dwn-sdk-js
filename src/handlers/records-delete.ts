@@ -54,26 +54,19 @@ export class RecordsDeleteHandler implements MethodHandler {
 
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
-    let incomingMessageIsNewest = false;
-    let newestMessage;
-    // if incoming message is newest
-    if (newestExistingMessage === undefined || await Message.isNewer(message, newestExistingMessage)) {
-      incomingMessageIsNewest = true;
-      newestMessage = message;
-    } else { // existing message is the same age or newer than the incoming message
-      newestMessage = newestExistingMessage;
-    }
-
-    if (!incomingMessageIsNewest) {
-      return {
-        status: { code: 409, detail: 'Conflict' }
-      };
-    }
 
     // return Not Found if record does not exist or is already deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
       return {
         status: { code: 404, detail: 'Not Found' }
+      };
+    }
+
+    // if the incoming message is not the newest, return Conflict
+    const incomingDeleteIsNewest = await Message.isNewer(message, newestExistingMessage);
+    if (!incomingDeleteIsNewest) {
+      return {
+        status: { code: 409, detail: 'Conflict' }
       };
     }
 
@@ -107,7 +100,7 @@ export class RecordsDeleteHandler implements MethodHandler {
 
     // delete all existing messages that are not newest, except for the initial write
     await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
-      tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog
+      tenant, existingMessages, message, this.messageStore, this.dataStore, this.eventLog
     );
 
     const messageReply = {
