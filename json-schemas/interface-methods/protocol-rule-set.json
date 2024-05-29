@@ -176,32 +176,29 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "duration": {
-          "type": "object",
-          "properties": {
-            "oneOf": [
-              {
-                "type": "object",
-                "$comment": "Amount and unit represent a semantic duration of time using an amount (number) and a unit (character) to set an expiration date relative to record.dateCreated (e.g. 1s). Upon record query/read, this is converted to milliseconds, added to record.dateCreated to calculate dateExpiration and compared against original dateCreated.",
-                "properties": {
-                  "amount": {
-                    "type": "number",
-                    "$comment": ""
-                  },
-                  "unit": {
-                    "type": "string",
-                    "$comment": "Single char representing a unit of time. Must be one of: s (seconds), m (minutes), h (hours), d (days), y (years). E.g. 100s, 75m, 2d, 4y"
-                  }
-                }
-              },
-              {
+        "oneOf": [
+          {
+            "required": [
+              "amount"
+            ],
+            "type": "object",
+            "properties": {
+              "amount": {
                 "type": "number",
                 "minimum": 1,
-                "$comment": "Numeric duration representing amount of milliseconds to wait from the record.dateCreated before records expire"
+                "$comment": "If only amount is set without unit, represents amount of milliseconds to wait from the record.dateCreated before records expire."
+              },
+              "unit": {
+                "type": "string",
+                "$comment": "Single character signaling how to interpret the given 'amount'. If present, must be one of: s (seconds), m (minutes), h (hours), d (days), y (years). E.g. 100s, 75m, 2d, 4y",
+                "patternProperties": {
+                  "^(s|m|d|y)$": {}
+                }
               }
-            ]
+            },
+            "$comment": "Amount is used to calculate an expiration date. Amount and unit are used to calculate a millisecond duration, which is then used to calculate an expiration date. Expiration is relative to `record.dateCreated`."
           }
-        }
+        ]
       }
     }
   },

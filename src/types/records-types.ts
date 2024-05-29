@@ -25,9 +25,7 @@ export type ExpirationFilter = {
   duration?: string | number;
 };
 
-export type RecordsWriteExpiration = {
-  [property: string]: string | number;
-};
+export type RecordsWriteExpiration = { amount: number; unit: string };
 
 
 export type RecordsWriteDescriptor = {

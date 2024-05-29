@@ -731,48 +731,62 @@ export class ProtocolAuthorization {
 
   /**
     * Verifies that queries and reads adhere to the $expiration constraint if provided
-    * @throws {Error} if more than one $expiration property is set,
+    * @throws {Error} if typeof $expiration != number | {}
+    * @throws {Error} if typeof $expiration === {} and amount | unit === undefined
+    *
     */
   private static verifyExpiration(
     incomingMessage: RecordsWrite,
     ruleSet: ProtocolRuleSet
   ): void {
-    const { expiration } = incomingMessage.message.descriptor ?? {};
-    if (!expiration){
+    const ruleExpiration = ruleSet?.$expiration;
+    if (!ruleExpiration) {
       return;
     }
 
-    const { duration } = expiration ?? {};
-    if (!duration) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpiration, `invalid property: duration cannot be null`);
-    }
-    const typeOfDuration: string | number = typeof duration;
-    if (!['string', 'number'].includes(typeOfDuration)) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-        `invalid property: duration must be string or number, not ${typeOfDuration}`);
+    const incomingExpiration = incomingMessage.message.descriptor.expiration;
+    if (!incomingExpiration) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationMissing,
+        `missing expiration descriptor: protocol ruleset requires $expiration`);
     }
 
-    if (typeof duration === 'number' && duration < 1) {
-      throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-        `invalid property: duration ${duration} number must must be >= 1`);
-    } else if (typeof duration === 'string'){
-      const units = ['s', 'm', 'h', 'd', 'y'];
-      if (!units.some(unit => duration.endsWith(unit))) {
-        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-          `invalid property: duration ${duration} must end with one of ${units}`);
-      }
-
-      if (/^0/.test(duration)) {
-        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-          `invalid property: duration cannot start with 0`);
-      }
-
-      if (isNaN(parseInt(duration.slice(0, -1)))) {
-        throw new DwnError(DwnErrorCode.ProtocolsConfigureInvalidExpirationDuration,
-          `invalid property: duration cannot be NaN`);
-      }
+    const { amount, unit } = incomingExpiration || {};
+    if (!(amount && unit)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration descriptor: if set, $expiration must be type object with properties amount and/or unit`);
     }
 
+    if (!amount) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration descriptor: if set, $expiration.amount ${amount} cannot be null`);
+    }
+
+    if (typeof amount !== 'number') {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} type = ${typeof amount}, must be number`);
+    }
+
+    if (isNaN(amount)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} cannot be NaN`);
+    }
+
+    if (amount <= 0) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} must be greater than 0`);
+    }
+
+    if (typeof unit !== 'string') {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationUnitInvalid,
+        `invalid expiration property: $expiration.unit ${unit} type ${typeof unit} must be string`);
+    }
+
+
+    const validUnits = ['s', 'm', 'h', 'd', 'y'];
+    if (!validUnits.some(validUnit => unit === validUnit)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationUnitInvalid,
+        `invalid property: expiration.unit ${unit} must be one of ${validUnits.join()}`);
+    }
 
   };
 
