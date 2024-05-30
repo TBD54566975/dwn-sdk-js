@@ -1,10 +1,11 @@
+import type { Readable } from 'readable-stream';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type MessagesGetDescriptor = {
   interface : DwnInterfaceName.Messages;
   method: DwnMethodName.Get;
-  messageCids: string[];
+  messageCid: string;
   messageTimestamp: string;
 };
 
@@ -15,11 +16,10 @@ export type MessagesGetMessage = GenericMessage & {
 
 export type MessagesGetReplyEntry = {
   messageCid: string;
-  message?: GenericMessage;
-  encodedData?: string;
+  message?: (GenericMessage & { data?: Readable });
   error?: string;
 };
 
 export type MessagesGetReply = GenericMessageReply & {
-  entries?: MessagesGetReplyEntry[];
+  entry?: MessagesGetReplyEntry;
 };

@@ -35,12 +35,8 @@
         "messageTimestamp": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
-        "messageCids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1
+        "messageCid": {
+          "type": "string"
         }
       }
     }
