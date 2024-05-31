@@ -30,6 +30,7 @@ import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
 import { ResumableTaskManager } from './core/resumable-task-manager.js';
+import { StorageController } from './store/storage-controller.js';
 import { DidDht, DidIon, DidKey, DidResolverCacheLevel, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
@@ -53,7 +54,16 @@ export class Dwn {
     this.resumableTaskStore = config.resumableTaskStore;
     this.eventLog = config.eventLog;
     this.eventStream = config.eventStream;
-    this.resumableTaskManager = new ResumableTaskManager(config.resumableTaskStore);
+
+    this.resumableTaskManager = new ResumableTaskManager(
+      config.resumableTaskStore,
+      new StorageController({
+        messageStore : this.messageStore,
+        dataStore    : this.dataStore,
+        eventLog     : this.eventLog,
+        eventStream  : this.eventStream
+      })
+    );
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]: new EventsGetHandler(
@@ -87,9 +97,7 @@ export class Dwn {
       [DwnInterfaceName.Records + DwnMethodName.Delete]: new RecordsDeleteHandler(
         this.didResolver,
         this.messageStore,
-        this.dataStore,
-        this.eventLog,
-        this.eventStream
+        this.resumableTaskManager
       ),
       [DwnInterfaceName.Records + DwnMethodName.Query]: new RecordsQueryHandler(
         this.didResolver,
@@ -128,9 +136,6 @@ export class Dwn {
 
     const dwn = new Dwn(config);
     await dwn.open();
-
-    await dwn.resumableTaskManager.resumeTasksAndWaitForCompletion();
-
     return dwn;
   }
 
@@ -140,6 +145,8 @@ export class Dwn {
     await this.resumableTaskStore.open();
     await this.eventLog.open();
     await this.eventStream?.open();
+
+    await this.resumableTaskManager.resumeTasksAndWaitForCompletion();
   }
 
   public async close(): Promise<void> {

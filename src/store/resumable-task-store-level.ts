@@ -42,12 +42,12 @@ export class ResumableTaskStoreLevel implements ResumableTaskStore {
     await this.db.close();
   }
 
-  public async register(task: any): Promise<ManagedResumableTask> {
+  public async register(task: any, timeoutInSeconds: number): Promise<ManagedResumableTask> {
     const taskId = await Cid.computeCid(task);
 
     const managedResumableTask: ManagedResumableTask = {
       id         : taskId,
-      timeout    : Date.now() + (ResumableTaskStoreLevel.taskTimeoutInSeconds * 1000),
+      timeout    : Date.now() + (timeoutInSeconds * 1000),
       retryCount : 0,
       task,
     };
@@ -67,7 +67,7 @@ export class ResumableTaskStoreLevel implements ResumableTaskStore {
       const task = JSON.parse(value) as ManagedResumableTask;
 
       // if the task is timed-out, we can give it to the caller to handle
-      if (task.timeout >= Date.now()) {
+      if (Date.now() >= task.timeout) {
         // update the task metadata first before adding to list of tasks to return
         task.timeout = Date.now() + (ResumableTaskStoreLevel.taskTimeoutInSeconds * 1000);
         task.retryCount++;

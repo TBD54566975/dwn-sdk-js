@@ -4,7 +4,7 @@
 export type ManagedResumableTask = {
   /** Globally unique ID. Used to extend or delete the task. */
   id: string;
-  /** Task specific data. */
+  /** Task specific data. This is deliberately of type `any` because this store should not have to be ware of its type. */
   task: any;
   /** Task timeout in Epoch Time. */
   timeout: number;
@@ -48,11 +48,12 @@ export interface ResumableTaskStore {
   /**
    * Registers a new resumable task that is currently in-flight/under processing to the store.
    * If the task is timed out, a client will be able to grab it through the `grab()` method and resume the task.
-   * @param task Task specific data. This is deliberately of type `any` because the store should not care about its type.
+   * @param task Task specific data.  This is deliberately of type `any` because this store should not have to be ware of its type.
+   * @param timeoutInSeconds Timeout in seconds from the current time.
    * @returns A `ManagedResumableTask` object that can be used to extend or delete the task.
    * @throws {Error} with `code` set to `ResumableTaskAlreadyExists` if the same task is already registered.
    */
-  register(task: any): Promise<ManagedResumableTask>;
+  register(task: any, timeoutInSeconds: number): Promise<ManagedResumableTask>;
 
   /**
    * Grabs a number of unhandled tasks from the store. Unhandled tasks are tasks that are not currently in-flight/under processing.

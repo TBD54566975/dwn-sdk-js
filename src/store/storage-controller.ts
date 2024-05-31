@@ -1,5 +1,6 @@
 import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsDeleteMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
@@ -7,13 +8,81 @@ import type { RecordsDeleteMessage, RecordsQueryReplyEntry, RecordsWriteMessage 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
+import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+
+
+export type ResumableRecordsDeleteData = {
+  tenant: string;
+  message: RecordsDeleteMessage;
+};
 
 /**
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
  */
 export class StorageController {
+
+  private messageStore: MessageStore;
+  private dataStore: DataStore;
+  private eventLog: EventLog;
+  private eventStream?: EventStream;
+
+  public constructor({ messageStore, dataStore, eventLog, eventStream }: {
+    messageStore: MessageStore,
+    dataStore: DataStore,
+    eventLog: EventLog,
+    eventStream?: EventStream}
+  ) {
+    this.messageStore = messageStore;
+    this.dataStore = dataStore;
+    this.eventLog = eventLog;
+    this.eventStream = eventStream;
+  }
+
+  public async performRecordsDelete({ tenant, message }: ResumableRecordsDeleteData): Promise<void> {
+    // get existing records matching the `recordId`
+    const query = {
+      interface : DwnInterfaceName.Records,
+      recordId  : message.descriptor.recordId
+    };
+    const { messages: existingMessages } = await this.messageStore.query(tenant, [ query ]);
+
+    // find which message is the newest, and if the incoming message is the newest
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
+
+    // if no messages found for the record, nothing to do
+    if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+      return;
+    }
+
+    // NOTE: code above is duplicated from `RecordsDeleteHandler` and is already performed if this was invoked by the `RecordsDeleteHandler`,
+    // But we repeat the logic for the code path when the ResumableTaskManager resumes the task.
+    // We make the two different code paths to share this same method to reduce code duplication, there might be a better way to refactor this.
+
+    const recordsDelete = await RecordsDelete.parse(message);
+    const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+    const indexes = recordsDelete.constructIndexes(initialWrite);
+    const messageCid = await Message.getCid(message);
+    await this.messageStore.put(tenant, message, indexes);
+    await this.eventLog.append(tenant, messageCid, indexes);
+
+    // only emit if the event stream is set
+    if (this.eventStream !== undefined) {
+      this.eventStream.emit(tenant, { message, initialWrite }, indexes);
+    }
+
+    if (message.descriptor.prune) {
+      // purge/hard-delete all descendent records
+      await StorageController.purgeRecordDescendants(tenant, message.descriptor.recordId, this.messageStore, this.dataStore, this.eventLog);
+    }
+
+    // delete all existing messages that are not newest, except for the initial write
+    await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
+      tenant, existingMessages, message, this.messageStore, this.dataStore, this.eventLog
+    );
+  }
+
   /**
    * Deletes the data referenced by the given message if needed.
    * @param message The message to check if the data it references should be deleted.

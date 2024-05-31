@@ -1,5 +1,6 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
+import type { ResumableTaskManager } from '../../src/core/resumable-task-manager.js';
 import type {
   DataStore,
   EventLog,
@@ -764,9 +765,9 @@ export function testRecordsDeleteHandler(): void {
       const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
       const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const resumableTaskManager = stubInterface<ResumableTaskManager>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
       const reply = await recordsDeleteHandler.handle({ tenant, message });
       expect(reply.status.code).to.equal(401);
     });
@@ -777,9 +778,9 @@ export function testRecordsDeleteHandler(): void {
 
       // setting up a stub method resolver & message store
       const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const resumableTaskManager = stubInterface<ResumableTaskManager>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsDelete, 'parse').throws('anyError');

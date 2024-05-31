@@ -1,10 +1,8 @@
-import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '@web5/dids';
-import type { EventLog } from '../types/event-log.js';
-import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { ResumableTaskManager } from '../core/resumable-task-manager.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -13,7 +11,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { StorageController } from '../store/storage-controller.js';
+import { ResumableTaskName } from '../core/resumable-task-manager.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -22,9 +20,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
     private messageStore: MessageStore,
-    private dataStore: DataStore,
-    private eventLog: EventLog,
-    private eventStream?: EventStream
+    private resumableTaskManager: ResumableTaskManager,
   ) { }
 
   public async handle({
@@ -82,26 +78,10 @@ export class RecordsDeleteHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
-    const indexes = recordsDelete.constructIndexes(initialWrite);
-    const messageCid = await Message.getCid(message);
-    await this.messageStore.put(tenant, message, indexes);
-    await this.eventLog.append(tenant, messageCid, indexes);
-
-    // only emit if the event stream is set
-    if (this.eventStream !== undefined) {
-      this.eventStream.emit(tenant, { message, initialWrite }, indexes);
-    }
-
-    if (message.descriptor.prune) {
-      // purge/hard-delete all descendent records
-      await StorageController.purgeRecordDescendants(tenant, message.descriptor.recordId, this.messageStore, this.dataStore, this.eventLog);
-    }
-
-    // delete all existing messages that are not newest, except for the initial write
-    await StorageController.deleteAllOlderMessagesButKeepInitialWrite(
-      tenant, existingMessages, message, this.messageStore, this.dataStore, this.eventLog
-    );
+    await this.resumableTaskManager.run({
+      name : ResumableTaskName.RecordsDelete,
+      data : { tenant, message }
+    });
 
     const messageReply = {
       status: { code: 202, detail: 'Accepted' }
