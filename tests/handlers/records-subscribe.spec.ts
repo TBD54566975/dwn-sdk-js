@@ -1,6 +1,6 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, RecordsWriteMessage, ResumableTaskStore } from '../../src/index.js';
 import type { RecordEvent, RecordsFilter, RecordSubscriptionHandler } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -30,6 +30,7 @@ export function testRecordsSubscribeHandler(): void {
     describe('EventStream disabled',() => {
       let didResolver: DidResolver;
       let messageStore: MessageStore;
+      let resumableTaskStore: ResumableTaskStore;
       let dataStore: DataStore;
       let eventLog: EventLog;
       let dwn: Dwn;
@@ -42,12 +43,14 @@ export function testRecordsSubscribeHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
 
         dwn = await Dwn.create({
           didResolver,
           messageStore,
           dataStore,
+          resumableTaskStore,
           eventLog,
         });
 
@@ -60,6 +63,7 @@ export function testRecordsSubscribeHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 
@@ -69,7 +73,7 @@ export function testRecordsSubscribeHandler(): void {
 
       it('should respond with a 501 if subscriptions are not supported', async () => {
         await dwn.close(); // close the original dwn instance
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog }); // leave out eventStream
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, resumableTaskStore }); // leave out eventStream
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         // attempt to subscribe
@@ -86,6 +90,7 @@ export function testRecordsSubscribeHandler(): void {
       let didResolver: DidResolver;
       let messageStore: MessageStore;
       let dataStore: DataStore;
+      let resumableTaskStore: ResumableTaskStore;
       let eventLog: EventLog;
       let eventStream: EventStream;
       let dwn: Dwn;
@@ -98,10 +103,11 @@ export function testRecordsSubscribeHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
         eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
       });
 
       beforeEach(async () => {
@@ -110,6 +116,7 @@ export function testRecordsSubscribeHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 

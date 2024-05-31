@@ -1,4 +1,4 @@
-import type { DataStore, EventLog, MessageStore } from '../src/index.js';
+import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../src/index.js';
 
 import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec.js';
 import { testDwnClass } from './dwn.spec.js';
@@ -38,7 +38,12 @@ export class TestSuite {
    * Runs tests that uses the store implementations passed.
    * Uses default implementation if not given.
    */
-  public static runStoreDependentTests(overrides?: { messageStore?: MessageStore, dataStore?: DataStore, eventLog?: EventLog }): void {
+  public static runStoreDependentTests(overrides?: {
+    messageStore?: MessageStore,
+    dataStore?: DataStore,
+    eventLog?: EventLog,
+    resumableTaskStore?: ResumableTaskStore,
+  }): void {
 
     before(async () => {
       TestStores.override(overrides);

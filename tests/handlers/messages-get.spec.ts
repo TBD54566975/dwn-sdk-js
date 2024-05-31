@@ -4,7 +4,8 @@ import type {
   DataStore,
   EventLog,
   MessagesGetReply,
-  MessageStore
+  MessageStore,
+  ResumableTaskStore,
 } from '../../src/index.js';
 
 import { expect } from 'chai';
@@ -25,6 +26,7 @@ export function testMessagesGetHandler(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
 
@@ -36,16 +38,18 @@ export function testMessagesGetHandler(): void {
       const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
+      resumableTaskStore = stores.resumableTaskStore;
       eventLog = stores.eventLog;
       eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
     });
 
     beforeEach(async () => {
     // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await resumableTaskStore.clear();
       await eventLog.clear();
 
       sinon.restore(); // wipe all previous stubs/spies/mocks/fakes

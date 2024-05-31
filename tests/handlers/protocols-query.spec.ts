@@ -4,7 +4,8 @@ import type {
   DataStore,
   EventLog,
   MessageStore,
-  ProtocolsConfigureMessage
+  ProtocolsConfigureMessage,
+  ResumableTaskStore,
 } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -28,6 +29,7 @@ export function testProtocolsQueryHandler(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -42,10 +44,11 @@ export function testProtocolsQueryHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
         eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
       });
 
       beforeEach(async () => {
@@ -54,6 +57,7 @@ export function testProtocolsQueryHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 

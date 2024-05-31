@@ -1,6 +1,6 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, PermissionScope, ResumableTaskStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
@@ -28,6 +28,7 @@ export function testOwnerDelegatedGrant(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -40,10 +41,11 @@ export function testOwnerDelegatedGrant(): void {
       const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
+      resumableTaskStore = stores.resumableTaskStore;
       eventLog = stores.eventLog;
       eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
     });
 
     beforeEach(async () => {
@@ -52,6 +54,7 @@ export function testOwnerDelegatedGrant(): void {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await resumableTaskStore.clear();
       await eventLog.clear();
     });
 
