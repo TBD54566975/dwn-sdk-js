@@ -365,10 +365,12 @@ export function testResumableTasks(): void {
 
       // 4. Verify that the task timeout is automatically extended.
       await clock.tickAsync(ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 2 * 1000); // advancing time up to 2 extension cycles
-      // IMPORTANT: This call ensure all scheduled timers are executed
+      // IMPORTANT: This call ensures all scheduled timers are executed
       // In theory calling `tickAsync()` or `runToLastAsync()` alone should execute all scheduled timers
-      // but for some reason this behavior does not happen ONLY in Safari.
-      // a work-around that I found right now is to call BOTH `tickAsync()` and `runToLastAsync()`.
+      // but for some reason this behavior does not happen ONLY in Safari. I found 2o workarounds:
+      // 1. call BOTH `tickAsync()` and `runToLastAsync()`.
+      // 2. call `tickAsync()` with a longer time.
+      // Chose the first workaround because it is should be the more reliable of the two.
       await clock.runToLastAsync();
 
       let latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
