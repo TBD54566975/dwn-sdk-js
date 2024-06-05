@@ -259,7 +259,7 @@ export function testResumableTasks(): void {
 
       // 1. Insert a 1 resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed.
       const recordsDelete = await RecordsDelete.create({
-        recordId : 'any-record-id',
+        recordId : 'non-existent-record-id', // opportunistically testing non-existent record delete path
         prune    : true,
         signer   : Jws.createSigner(alice)
       });
@@ -274,15 +274,16 @@ export function testResumableTasks(): void {
       await resumableTaskStore.register(resumableTask, 0); // 0 timeout to ensure it immediately times out for resuming
 
       // 2. Restart the DWN to trigger the resumable task to be resumed, force the task to throw an exception on the first attempt.
+      const originalPerformRecordsDelete = dwn['storageController']['performRecordsDelete'].bind(dwn['storageController']);
       let attemptCount = 0;
-      sinon.stub(dwn['storageController'], 'performRecordsDelete').callsFake(async () => {
+      sinon.stub(dwn['storageController'], 'performRecordsDelete').callsFake(async (input) => {
         attemptCount++;
 
         if (attemptCount === 1) {
-          throw new Error('Force error in first attempt.');
+          throw new Error('This is fine, we deliberately force an error in the first attempt in this test.');
         }
 
-        return; // succeed on the subsequent attempt
+        await originalPerformRecordsDelete(input);
       });
 
       await dwn.close();
