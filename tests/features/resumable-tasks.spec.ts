@@ -154,6 +154,7 @@ export function testResumableTasks(): void {
       // 5. Verify tasks were resumed in 2 batches (2 calls of `ResumableTaskStore.grab()`).
       // 6. Verify that 3 processed resumable tasks are deleted from resumable task store.
       // 7. Verify that only 1 record remains in the DWN.
+      // 8. Set ResumableTaskManager.resumableTaskBatchSize back to original value.
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -167,6 +168,7 @@ export function testResumableTasks(): void {
       expect(protocolsConfigureReply.status.code).to.equal(202);
 
       // 1. Set ResumableTaskManager.resumableTaskBatchSize to 2.
+      const originalResumableTaskBatchSize = dwn['resumableTaskManager']['resumableTaskBatchSize'];
       dwn['resumableTaskManager']['resumableTaskBatchSize'] = 2;
 
       // 2. Write 4 records to DWN (for deletion later).
@@ -242,6 +244,52 @@ export function testResumableTasks(): void {
       expect(recordsQueryResponse.status.code).equals(200);
       expect(recordsQueryResponse.entries).to.have.lengthOf(1);
       expect(recordsQueryResponse.entries![0].recordId).to.equal(recordsWrites[0].message.recordId);
+
+      // 8. Set ResumableTaskManager.resumableTaskBatchSize back to original value.
+      dwn['resumableTaskManager']['resumableTaskBatchSize'] = originalResumableTaskBatchSize;
+    });
+
+    it('should continue to retry tasks that throw exceptions until success when DWN starts', async () => {
+      // Scenario:
+      // 1. Insert a 1 resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed.
+      // 2. Restart the DWN to trigger the resumable task to be resumed, force the task to throw an exception on the first attempt.
+      // 3. Verify the task is retried until it succeeds.
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      // 1. Insert a 1 resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed.
+      const recordsDelete = await RecordsDelete.create({
+        recordId : 'any-record-id',
+        prune    : true,
+        signer   : Jws.createSigner(alice)
+      });
+
+      const resumableTask: ResumableTask = {
+        name : ResumableTaskName.RecordsDelete,
+        data : {
+          tenant  : alice.did,
+          message : recordsDelete.message
+        }
+      };
+      await resumableTaskStore.register(resumableTask, 0); // 0 timeout to ensure it immediately times out for resuming
+
+      // 2. Restart the DWN to trigger the resumable task to be resumed, force the task to throw an exception on the first attempt.
+      let attemptCount = 0;
+      sinon.stub(dwn['storageController'], 'performRecordsDelete').callsFake(async () => {
+        attemptCount++;
+
+        if (attemptCount === 1) {
+          throw new Error('Force error in first attempt.');
+        }
+
+        return; // succeed on the subsequent attempt
+      });
+
+      await dwn.close();
+      await dwn.open();
+
+      // 3. Verify the task is retried until it succeeds.
+      expect(attemptCount).to.equal(2);
     });
 
     it('should extend long running tasks automatically to prevent it from timing out', async () => {
