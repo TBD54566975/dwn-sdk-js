@@ -26,6 +26,7 @@ import { testRecordsReadHandler } from './handlers/records-read.spec.js';
 import { testRecordsSubscribeHandler } from './handlers/records-subscribe.spec.js';
 import { testRecordsTags } from './features/records-tags.spec.js';
 import { testRecordsWriteHandler } from './handlers/records-write.spec.js';
+import { testResumableTasks } from './features/resumable-tasks.spec.js';
 import { TestStores } from './test-stores.js';
 import { testSubscriptionScenarios } from './scenarios/subscriptions.spec.js';
 
@@ -76,6 +77,7 @@ export class TestSuite {
     testProtocolUpdateAction();
     testRecordsPrune();
     testRecordsTags();
+    testResumableTasks();
 
     // scenario tests
     testEndToEndScenarios();

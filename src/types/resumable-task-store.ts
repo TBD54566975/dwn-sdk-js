@@ -65,6 +65,13 @@ export interface ResumableTaskStore {
   grab(count: number): Promise<ManagedResumableTask[] | undefined>;
 
   /**
+   * Reads the task associated with the task ID provided regardless of whether it is in-flight/under processing or not.
+   * This is mainly introduced for testing purposes: ie. to check the status of a task for easy test verification.
+   * @param taskId ID of the task to read.
+   */
+  read(taskId: string): Promise<ManagedResumableTask | undefined>;
+
+  /**
    * Extends the timeout of the task associated with the task ID provided.
    * No-op if the task is not found, as this implies that the task has already been completed.
    * This allows the client that is executing the task to continue working on it before the task is considered timed out.

@@ -43,6 +43,7 @@ export class Dwn {
   private eventLog: EventLog;
   private tenantGate: TenantGate;
   private eventStream?: EventStream;
+  private storageController: StorageController;
   private resumableTaskManager: ResumableTaskManager;
 
   private constructor(config: DwnConfig) {
@@ -54,15 +55,15 @@ export class Dwn {
     this.resumableTaskStore = config.resumableTaskStore;
     this.eventLog = config.eventLog;
     this.eventStream = config.eventStream;
-
+    this.storageController = new StorageController({
+      messageStore : this.messageStore,
+      dataStore    : this.dataStore,
+      eventLog     : this.eventLog,
+      eventStream  : this.eventStream
+    });
     this.resumableTaskManager = new ResumableTaskManager(
       config.resumableTaskStore,
-      new StorageController({
-        messageStore : this.messageStore,
-        dataStore    : this.dataStore,
-        eventLog     : this.eventLog,
-        eventStream  : this.eventStream
-      })
+      this.storageController
     );
 
     this.methodHandlers = {
@@ -139,6 +140,9 @@ export class Dwn {
     return dwn;
   }
 
+  /**
+   * Initializes the DWN instance and opens the connection to it.
+   */
   private async open(): Promise<void> {
     await this.messageStore.open();
     await this.dataStore.open();

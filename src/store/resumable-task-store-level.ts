@@ -84,6 +84,17 @@ export class ResumableTaskStoreLevel implements ResumableTaskStore {
     return tasks;
   }
 
+  public async read(taskId: string): Promise<ManagedResumableTask | undefined> {
+    const value = await this.db.get(taskId);
+
+    if (value) {
+      const task = JSON.parse(value) as ManagedResumableTask;
+      return task;
+    } else {
+      return undefined;
+    }
+  }
+
   public async extend(taskId: string, timeoutInSeconds: number): Promise<void> {
     const value = await this.db.get(taskId);
 

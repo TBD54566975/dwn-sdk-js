@@ -5,7 +5,7 @@ export enum ResumableTaskName {
   RecordsDelete = 'RecordsDelete',
 }
 
-type ResumableTask = {
+export type ResumableTask = {
   name: ResumableTaskName;
   data: any;
 };
@@ -27,7 +27,7 @@ export class ResumableTaskManager {
   /**
    * The frequency at which the automatic timeout extension is requested for a resumable task.
    */
-  private static readonly timeoutExtensionFrequencyInSeconds = 30;
+  public static readonly timeoutExtensionFrequencyInSeconds = 30;
 
   /**
    * Runs a new resumable task.
@@ -37,7 +37,6 @@ export class ResumableTaskManager {
 
     // register the new resumable task before running it so that it can be resumed if it times out for any reason
     const managedResumableTask = await this.resumableTaskStore.register(task, timeoutInSeconds);
-
     await this.runWithAutomaticTimeoutExtension(managedResumableTask);
   }
 
@@ -45,22 +44,29 @@ export class ResumableTaskManager {
    * Runs a resumable task with automatic timeout extension.
    */
   private async runWithAutomaticTimeoutExtension(managedTask: ManagedResumableTask): Promise<void> {
-    const extensionFrequencyInSeconds = 30;
-    const timeoutInSeconds = extensionFrequencyInSeconds * 2; // give ample time for extension to take place
+    const timeoutInSeconds = ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 2; // give ample time for extension to take place
 
-    let idOfSetInterval;
+    let timer!: NodeJS.Timer;
     try {
       // start a timer loop to keep extending the timeout of the task until it is completed
-      idOfSetInterval = setInterval(() => {
+      timer = setInterval(() => {
         this.resumableTaskStore.extend(managedTask.id, timeoutInSeconds);
-      }, extensionFrequencyInSeconds);
+      }, ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 1000);
 
       const handler = this.resumableTaskHandlers[managedTask.task.name];
       await handler(managedTask.task.data);
       await this.resumableTaskStore.delete(managedTask.id);
     } finally {
-      clearInterval(idOfSetInterval); // remove the timeout extension loop when the task is completed or failed
+      ResumableTaskManager.clearTimeoutExtensionTimer(timer);
     }
+  }
+
+  /**
+   * Removes the specified timeout extension loop timer.
+   * NOTE: created mainly for testing purposes so we can spy on this specific method without needing to filter out other `clearInterval` calls.
+   */
+  public static clearTimeoutExtensionTimer(timer: NodeJS.Timer): void {
+    clearInterval(timer);
   }
 
   /**
