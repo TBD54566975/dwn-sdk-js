@@ -60,9 +60,9 @@ export interface ResumableTaskStore {
    * NOTE: The implementation must make sure that once the tasks are grabbed by a client,
    * they are considered in-flight/under processing and cannot be grabbed by another client until they are timed out.
    * @param count Desired number of tasks to grab.
-   * @returns A list of tasks exclusive for the caller to handle; or `undefined` if there is no tasks, or if all tasks are already grabbed by others.
+   * @returns A list of tasks exclusive for the caller to handle; or empty array if there is no tasks, or if all tasks are already grabbed by others.
    */
-  grab(count: number): Promise<ManagedResumableTask[] | undefined>;
+  grab(count: number): Promise<ManagedResumableTask[]>;
 
   /**
    * Reads the task associated with the task ID provided regardless of whether it is in-flight/under processing or not.

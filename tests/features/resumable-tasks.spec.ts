@@ -19,7 +19,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { useFakeTimers } from 'sinon';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { ProtocolsConfigure, RecordsDelete } from '../../src/index.js';
+import { ProtocolsConfigure, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { ResumableTaskManager, ResumableTaskName } from '../../src/core/resumable-task-manager.js';
 
 chai.use(chaiAsPromised);
@@ -71,7 +71,7 @@ export function testResumableTasks(): void {
       await dwn.close();
     });
 
-    it('should resume tasks that are not completed upon start of the DWN', async () => {
+    it('should resume tasks that are not completed when DWN starts', async () => {
       // Scenario: DWN has a `RecordsDelete` task that is not completed, it should resume the task upon restart
       // 1. Write a record to DWN (for deletion later).
       // 2. Insert a resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed.
@@ -140,6 +140,108 @@ export function testResumableTasks(): void {
       const readReply2 = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply2.status.code).to.equal(404);
       expect(readReply2.record).to.be.undefined;
+    });
+
+    it('should only resume tasks that are timed-out up to the batch size when DWN starts', async () => {
+      // Scenario: DWN has multiple `RecordsDelete` tasks that are not completed,
+      // it should grab tasks no greater than the batch size and only tasks that are timed-out.
+      // 1. Set ResumableTaskManager.resumableTaskBatchSize to 2.
+      // 2. Write 4 records to DWN (for deletion later).
+      // 3. Insert a 4 resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed:
+      //    a. 1 task that is not timed-out (currently in-flight).
+      //    b. 3 tasks that are already timed-out.
+      // 4. Restart the DWN to trigger the resumable task to be resumed.
+      // 5. Verify tasks were resumed in 2 batches (2 calls of `ResumableTaskStore.grab()`).
+      // 6. Verify that 3 processed resumable tasks are deleted from resumable task store.
+      // 7. Verify that only 1 record remains in the DWN.
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      // install a protocol to allow records to be written
+      const protocolDefinition = minimalProtocolDefinition;
+      const protocolsConfig = await ProtocolsConfigure.create({
+        definition : protocolDefinition,
+        signer     : Jws.createSigner(alice)
+      });
+      const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(protocolsConfigureReply.status.code).to.equal(202);
+
+      // 1. Set ResumableTaskManager.resumableTaskBatchSize to 2.
+      dwn['resumableTaskManager']['resumableTaskBatchSize'] = 2;
+
+      // 2. Write 4 records to DWN (for deletion later).
+      const recordsWrites = [];
+      for (let i = 0; i < 4; i++) {
+        const data = TestDataGenerator.randomBytes(100);
+        const messageOptions = {
+          signer       : Jws.createSigner(alice),
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'foo',
+          dataFormat   : 'any-data-format',
+          data         : data
+        };
+
+        const recordsWrite = await RecordsWrite.create(messageOptions);
+        const recordsWriteResponse = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: DataStream.fromBytes(data) });
+        expect(recordsWriteResponse.status.code).equals(202);
+
+        recordsWrites.push(recordsWrite);
+      }
+
+      // 3. Insert a 4 resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed:
+      //    a. 1 task that is not timed-out (currently in-flight).
+      //    b. 3 tasks that are already timed-out.
+
+      // IMPORTANT!!! This is to avoid `RecordsDelete` having the same timestamp as `RecordsWrite` which causes the delete to be discarded.
+      await clock.tickAsync(1);
+      for (let i = 0; i < 4; i++) {
+        const recordsDelete = await RecordsDelete.create({
+          recordId : recordsWrites[i].message.recordId,
+          prune    : true,
+          signer   : Jws.createSigner(alice)
+        });
+
+        const resumableTask: ResumableTask = {
+          name : ResumableTaskName.RecordsDelete,
+          data : {
+            tenant  : alice.did,
+            message : recordsDelete.message
+          }
+        };
+        await resumableTaskStore.register(resumableTask, i === 0 ? 1000 : 0); // 1000 second timeout for the first task, 0 timeout for the rest
+      }
+
+      // 4. Restart the DWN to trigger the resumable task to be resumed.
+      const grabSpy = sinon.spy(resumableTaskStore, 'grab');
+      await dwn.close();
+      await dwn.open();
+
+      // 5. Verify tasks were resumed in 2 batches (2 calls of `ResumableTaskStore.grab()`).
+      expect(grabSpy.calledThrice).to.be.true;
+
+      const resumeTaskBatch1 = await grabSpy.firstCall.returnValue;
+      const resumeTaskBatch2 = await grabSpy.secondCall.returnValue;
+      const resumeTaskBatch3 = await grabSpy.thirdCall.returnValue;
+      expect(resumeTaskBatch1.length).to.equal(2);
+      expect(resumeTaskBatch2.length).to.equal(1);
+      expect(resumeTaskBatch3.length).to.equal(0);
+
+      // 6. Verify that 3 processed resumable tasks are deleted from resumable task store.
+      const [task2, task3] = resumeTaskBatch1;
+      const [task4] = resumeTaskBatch2;
+      expect(await resumableTaskStore.read(task2.id)).to.be.undefined;
+      expect(await resumableTaskStore.read(task3.id)).to.be.undefined;
+      expect(await resumableTaskStore.read(task4.id)).to.be.undefined;
+
+      // 7. Verify that only 1 record remains in the DWN.
+      const recordsQuery = await RecordsQuery.create({
+        signer : Jws.createSigner(alice),
+        filter : { protocol: protocolDefinition.protocol }
+      });
+      const recordsQueryResponse = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(recordsQueryResponse.status.code).equals(200);
+      expect(recordsQueryResponse.entries).to.have.lengthOf(1);
+      expect(recordsQueryResponse.entries![0].recordId).to.equal(recordsWrites[0].message.recordId);
     });
 
     it('should extend long running tasks automatically to prevent it from timing out', async () => {

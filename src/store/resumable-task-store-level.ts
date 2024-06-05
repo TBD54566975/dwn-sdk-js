@@ -57,7 +57,7 @@ export class ResumableTaskStoreLevel implements ResumableTaskStore {
     return managedResumableTask;
   }
 
-  public async grab(count: number): Promise<ManagedResumableTask[] | undefined> {
+  public async grab(count: number): Promise<ManagedResumableTask[]> {
     const tasks: ManagedResumableTask[] = [];
 
     // iterate over the tasks to find unhandled tasks to return to the caller

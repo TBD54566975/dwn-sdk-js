@@ -13,6 +13,12 @@ export type ResumableTask = {
 
 export class ResumableTaskManager {
 
+  /**
+   * The frequency at which the automatic timeout extension is requested for a resumable task.
+   */
+  public static readonly timeoutExtensionFrequencyInSeconds = 30;
+
+  private resumableTaskBatchSize = 100;
   private resumableTaskHandlers: { [key:string]: (taskData: any) => Promise<void> };
 
   public constructor(private resumableTaskStore: ResumableTaskStore, storageController: StorageController) {
@@ -23,11 +29,6 @@ export class ResumableTaskManager {
       [ResumableTaskName.RecordsDelete]: async (task): Promise<void> => await storageController.performRecordsDelete(task),
     };
   }
-
-  /**
-   * The frequency at which the automatic timeout extension is requested for a resumable task.
-   */
-  public static readonly timeoutExtensionFrequencyInSeconds = 30;
 
   /**
    * Runs a new resumable task.
@@ -74,7 +75,7 @@ export class ResumableTaskManager {
    */
   public async resumeTasksAndWaitForCompletion(): Promise<void> {
     while (true) {
-      const resumableTasks = await this.resumableTaskStore.grab(100);
+      const resumableTasks = await this.resumableTaskStore.grab(this.resumableTaskBatchSize);
 
       if (resumableTasks === undefined || resumableTasks.length === 0) {
         break;
