@@ -143,7 +143,7 @@ export class Dwn {
   /**
    * Initializes the DWN instance and opens the connection to it.
    */
-  private async open(): Promise<void> {
+  public async open(): Promise<void> {
     await this.messageStore.open();
     await this.dataStore.open();
     await this.resumableTaskStore.open();
