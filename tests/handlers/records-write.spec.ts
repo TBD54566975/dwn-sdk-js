@@ -3503,57 +3503,6 @@ export function testRecordsWriteHandler(): void {
       });
 
       describe('grant based writes', () => {
-        it('allows external parties to write a record using a grant with unrestricted RecordsWrite scope', async () => {
-          // scenario: Alice gives Bob a grant with unrestricted RecordsWrite scope.
-          //           Bob is able to write both a protocol and a non-protocol record.
-
-          const alice = await TestDataGenerator.generateDidKeyPersona();
-          const bob = await TestDataGenerator.generateDidKeyPersona();
-
-          const protocolDefinition = minimalProtocolDefinition;
-
-          // Alice installs the protocol
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolsConfigureReply.status.code).to.equal(202);
-
-          // Alice issues Bob a permission grant for unrestricted RecordsWrite access
-          const permissionGrant = await PermissionsProtocol.createGrant({
-            signer      : Jws.createSigner(alice),
-            grantedTo   : bob.did,
-            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
-            scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write }
-          });
-          const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-
-          const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream: grantDataStream });
-          expect(grantRecordsWriteReply.status.code).to.equal(202);
-
-          // Bob invokes the grant to write a protocol record to Alice's DWN
-          const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
-          const protocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : bob,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-            permissionGrantId,
-          });
-          const recordsWriteReply =
-            await dwn.processMessage(alice.did, protocolRecordsWrite.message, { dataStream: protocolRecordsWrite.dataStream });
-          expect(recordsWriteReply.status.code).to.equal(202);
-
-          // Bob writes a non-protocol record to Alice's DWN
-          const nonProtocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author: bob,
-            permissionGrantId,
-          });
-          const recordsWriteReply2 =
-            await dwn.processMessage(alice.did, nonProtocolRecordsWrite.message, { dataStream: nonProtocolRecordsWrite.dataStream });
-          expect(recordsWriteReply2.status.code).to.equal(202);
-        });
-
         describe('protocol records', () => {
           it('allows writes of protocol records with matching protocol grant scopes', async () => {
             // scenario: Alice gives Bob a grant to read all records in the protocol
@@ -3648,54 +3597,6 @@ export function testRecordsWriteHandler(): void {
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
             expect(recordsWriteReply.status.code).to.equal(401);
             expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch);
-          });
-
-          it('rejects writes of protocol records with non-protocol grant scopes', async () => {
-            // scenario: Alice issues Bob a grant allowing him to write some non-protocol records.
-            //           Bob invokes the grant to write a protocol record
-
-            const alice = await TestDataGenerator.generateDidKeyPersona();
-            const bob = await TestDataGenerator.generateDidKeyPersona();
-
-            const protocolDefinition = minimalProtocolDefinition;
-
-            // Alice installs the protocol
-            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-              author: alice,
-              protocolDefinition
-            });
-            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolsConfigureReply.status.code).to.equal(202);
-
-            // Alice gives Bob a permission grant with a non-protocol scope
-            const permissionGrant = await PermissionsProtocol.createGrant({
-              signer      : Jws.createSigner(alice),
-              grantedTo   : bob.did,
-              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
-              scope       : {
-                interface : DwnInterfaceName.Records,
-                method    : DwnMethodName.Write,
-                schema    : 'some-schema',
-              }
-            });
-            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-            const permissionGrantWriteReply = await dwn.processMessage(
-              alice.did,
-              permissionGrant.recordsWrite.message,
-              { dataStream: grantDataStream }
-            );
-            expect(permissionGrantWriteReply.status.code).to.equal(202);
-
-            // Bob invokes the grant, failing to write to a different protocol than the grant allows
-            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author            : bob,
-              protocol          : protocolDefinition.protocol,
-              protocolPath      : 'foo',
-              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-            });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-            expect(recordsWriteReply.status.code).to.equal(401);
-            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeMissingProtocol);
           });
 
           it('allows writes of protocol records with matching contextId grant scopes', async () => {
@@ -3925,83 +3826,6 @@ export function testRecordsWriteHandler(): void {
           });
         });
 
-        describe('grant scope schema', () => {
-          it('allows access if the RecordsWrite grant scope schema includes the schema of the record', async () => {
-            // scenario: Alice issues Bob a grant allowing him to write to flat records of a given schema.
-            //           Bob invokes that grant to write a record with matching schema
-
-            const alice = await TestDataGenerator.generateDidKeyPersona();
-            const bob = await TestDataGenerator.generateDidKeyPersona();
-
-            // Alice gives Bob a permission grant for a certain schema
-            const schema = 'http://example.com/schema';
-            const permissionGrant = await PermissionsProtocol.createGrant({
-              signer      : Jws.createSigner(alice),
-              grantedTo   : bob.did,
-              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
-              scope       : {
-                interface : DwnInterfaceName.Records,
-                method    : DwnMethodName.Write,
-                schema,
-              }
-            });
-            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-            const permissionGrantWriteReply = await dwn.processMessage(
-              alice.did,
-              permissionGrant.recordsWrite.message,
-              { dataStream: grantDataStream }
-            );
-            expect(permissionGrantWriteReply.status.code).to.equal(202);
-
-            // Bob invokes the grant to write a record
-            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author            : bob,
-              schema,
-              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-            });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-            expect(recordsWriteReply.status.code).to.equal(202);
-          });
-
-          it('rejects with 401 if RecordsWrite grant scope schema does not have the same schema as the record', async () => {
-            // scenario: Alice issues a grant for Bob to write flat records of a certain schema.
-            //           Bob tries and fails to write records of a different schema
-
-            const alice = await TestDataGenerator.generateDidKeyPersona();
-            const bob = await TestDataGenerator.generateDidKeyPersona();
-
-
-            // Alice gives Bob a permission grant for a certain schema
-            const permissionGrant = await PermissionsProtocol.createGrant({
-              signer      : Jws.createSigner(alice),
-              grantedTo   : bob.did,
-              dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
-              scope       : {
-                interface : DwnInterfaceName.Records,
-                method    : DwnMethodName.Write,
-                schema    : 'some-schema',
-              }
-            });
-            const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-            const permissionGrantWriteReply = await dwn.processMessage(
-              alice.did,
-              permissionGrant.recordsWrite.message,
-              { dataStream: grantDataStream }
-            );
-            expect(permissionGrantWriteReply.status.code).to.equal(202);
-
-            // Bob invokes the grant, failing write a record
-            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author            : bob,
-              schema            : 'some-other-schema',
-              permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-            });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-            expect(recordsWriteReply.status.code).to.equal(401);
-            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeSchema);
-          });
-        });
-
         describe('grant condition published', () => {
           it('Rejects unpublished records if grant condition `published` === required', async () => {
             // scenario: Alice gives Bob a grant with condition `published` === required.
@@ -4009,6 +3833,15 @@ export function testRecordsWriteHandler(): void {
 
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
+
+            // Alice installs a protocol
+            const protocolDefinition = minimalProtocolDefinition;
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice creates a grant for Bob with `published` === required
             const permissionGrant = await PermissionsProtocol.createGrant({
@@ -4018,6 +3851,7 @@ export function testRecordsWriteHandler(): void {
               scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Write,
+                protocol  : protocolDefinition.protocol,
               },
               conditions: {
                 publication: PermissionConditionPublication.Required,
@@ -4035,8 +3869,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : true,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : true,
               permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
@@ -4048,8 +3884,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob is not able to write an unpublished record
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : false,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : false,
               permissionGrantId
             });
             const unpublishedRecordsWriteReply =
@@ -4065,6 +3903,15 @@ export function testRecordsWriteHandler(): void {
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
+            // Alice installs a protocol
+            const protocolDefinition = minimalProtocolDefinition;
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
             // Alice creates a grant for Bob with `published` === prohibited
             const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
@@ -4073,6 +3920,7 @@ export function testRecordsWriteHandler(): void {
               scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Write,
+                protocol  : protocolDefinition.protocol,
               },
               conditions: {
                 publication: PermissionConditionPublication.Prohibited
@@ -4090,8 +3938,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob not is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : true,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : true,
               permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
@@ -4104,8 +3954,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob is able to write an unpublished record
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : false,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : false,
               permissionGrantId
             });
             const unpublishedRecordsWriteReply =
@@ -4120,6 +3972,15 @@ export function testRecordsWriteHandler(): void {
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
 
+            // Alice installs a protocol
+            const protocolDefinition = minimalProtocolDefinition;
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
             // Alice creates a grant for Bob with `published` === prohibited
             const permissionGrant = await PermissionsProtocol.createGrant({
               signer      : Jws.createSigner(alice),
@@ -4128,6 +3989,7 @@ export function testRecordsWriteHandler(): void {
               scope       : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Write,
+                protocol  : protocolDefinition.protocol,
               },
               conditions: {
                 // publication: '', // intentionally undefined
@@ -4145,8 +4007,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob is able to write a published record
             const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : true,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : true,
               permissionGrantId
             });
             const publishedRecordsWriteReply = await dwn.processMessage(
@@ -4158,8 +4022,10 @@ export function testRecordsWriteHandler(): void {
 
             // Bob is able to write an unpublished record
             const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-              author    : bob,
-              published : false,
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              published    : false,
               permissionGrantId
             });
             const unpublishedRecordsWriteReply =

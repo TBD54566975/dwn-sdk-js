@@ -38,11 +38,11 @@ describe('Records', () => {
       const alice = await TestDataGenerator.generatePersona();
       const deviceX = await TestDataGenerator.generatePersona();
 
-      // create a delegation scope from alice to deviceX for writing records with schema `foo/bar`
+      // create a delegation scope from alice to deviceX for writing records with for a protocol
       const scope:PermissionScope = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
-        schema    : 'foo/bar',
+        protocol  : 'https://example.com/protocol/test',
       };
 
       // create the delegated grant message
@@ -60,7 +60,8 @@ describe('Records', () => {
       const { message } = await RecordsWrite.create({
         signer         : Jws.createSigner(deviceX),
         delegatedGrant : bobGrant.dataEncodedMessage,
-        schema         : 'foo/bar',
+        protocol       : 'https://example.com/protocol/test',
+        protocolPath   : 'test/path',
         dataFormat     : 'application/json',
         data           : writeData,
       });
