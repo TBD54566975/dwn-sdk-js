@@ -298,7 +298,7 @@ export class PermissionsProtocol {
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
       validateJsonSchema('PermissionRevocationData', dataObject);
     } else {
-      // defensive programming, should be unreachable externally
+      // defensive programming, should not be unreachable externally
       throw new DwnError(
         DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord,
         `Unexpected permission record: ${recordsWriteMessage.descriptor.protocolPath}`
