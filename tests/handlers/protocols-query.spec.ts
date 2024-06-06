@@ -361,7 +361,7 @@ export function testProtocolsQueryHandler(): void {
             signer      : Jws.createSigner(alice),
             grantedTo   : bob.did,
             dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
-            scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Read }
+            scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Read, protocol: 'https://example.com/protocol/test' }
           });
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
