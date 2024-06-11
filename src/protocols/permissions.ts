@@ -304,6 +304,7 @@ export class PermissionsProtocol {
     const dataObject = JSON.parse(dataString);
     if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
       validateJsonSchema('PermissionRequestData', dataObject);
+      PermissionsProtocol.validateScope(dataObject.scope, recordsWriteMessage);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
       validateJsonSchema('PermissionGrantData', dataObject);
 

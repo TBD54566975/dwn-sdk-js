@@ -257,7 +257,7 @@ export function testPermissions(): void {
     });
 
     describe('validateScope', async () => {
-      it('should be called for a Grant record', async () => {
+      it('should be called for a Request or Grant record', async () => {
         // spy on `validateScope`
         const validateScopeSpy = sinon.spy(PermissionsProtocol as any, 'validateScope');
 
@@ -269,6 +269,21 @@ export function testPermissions(): void {
           method    : DwnMethodName.Write,
           protocol  : 'https://example.com/protocol/test'
         };
+
+        // create a request
+        const requestToAlice = await PermissionsProtocol.createRequest({
+          signer      : Jws.createSigner(bob),
+          description : `Requesting to write to Alice's DWN`,
+          delegated   : false,
+          scope       : permissionScope
+        });
+        const requestToAliceReply = await dwn.processMessage(
+          alice.did,
+          requestToAlice.recordsWrite.message,
+          { dataStream: DataStream.fromBytes(requestToAlice.permissionRequestBytes) }
+        );
+        expect(requestToAliceReply.status.code).to.equal(202);
+        expect(validateScopeSpy.calledOnce).to.be.true;
 
         // create a grant
         const grantedToBob = await PermissionsProtocol.createGrant({
@@ -285,7 +300,7 @@ export function testPermissions(): void {
           { dataStream: DataStream.fromBytes(grantedToBob.permissionGrantBytes) }
         );
         expect(grantWriteReply.status.code).to.equal(202);
-        expect(validateScopeSpy.calledOnce).to.be.true;
+        expect(validateScopeSpy.calledTwice).to.be.true; // called twice, once for the request and once for the grant
       });
 
       it('should throw if the scope is a RecordsPermissionScope and a protocol tag is not defined on the Request and Grant record', async () => {
