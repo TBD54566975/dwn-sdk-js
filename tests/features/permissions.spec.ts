@@ -209,25 +209,7 @@ export function testPermissions(): void {
       expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
     });
 
-    it('should fail if a RecordsPermissionScope request is created without a protocol', async () => {
-      const bob = await TestDataGenerator.generateDidKeyPersona();
-
-      const permissionScope = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      };
-
-      const grantWrite = PermissionsProtocol.createRequest({
-        signer      : Jws.createSigner(bob),
-        description : `Requesting to write to Alice's DWN`,
-        delegated   : false,
-        scope       : permissionScope as any // explicity as any to test the validation
-      });
-
-      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
-    });
-
-    it('should fail if a RecordsPermissionScope grant is created without a protocol', async () => {
+    it('should fail if a RecordsPermissionScope in a Request or Grant record is created without a protocol', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
 
