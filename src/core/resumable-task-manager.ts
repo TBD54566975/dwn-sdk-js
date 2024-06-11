@@ -43,6 +43,7 @@ export class ResumableTaskManager {
 
   /**
    * Runs a resumable task with automatic timeout extension.
+   * Deletes the task from the resumable task store once it is completed.
    */
   private async runWithAutomaticTimeoutExtension(managedTask: ManagedResumableTask): Promise<void> {
     const timeoutInSeconds = ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 2; // give ample time for extension to take place
@@ -100,7 +101,8 @@ export class ResumableTaskManager {
         try {
           await this.runWithAutomaticTimeoutExtension(managedTask);
         } catch (error) {
-          console.error(`Error while running resumable task: ${managedTask}: ${error}`);
+          console.error('Error while running resumable task:', error);
+          console.error('Resumable task:', resumableTasks);
           managedTasks.push(managedTask);
         }
       });

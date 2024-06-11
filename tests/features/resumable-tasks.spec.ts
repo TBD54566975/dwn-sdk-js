@@ -341,7 +341,7 @@ export function testResumableTasks(): void {
       const resumableTaskRegisterSpy = sinon.spy(resumableTaskStore, 'register');
       const clearTimeoutExtensionTimerSpy = sinon.spy(ResumableTaskManager, 'clearTimeoutExtensionTimer');
 
-      // IMPORTANT!!! This is to avoid `RecordsDelete` having the same timestamp as `RecordsWrite` which causes the delete to be disgarded.
+      // IMPORTANT!!! This is to avoid `RecordsDelete` having the same timestamp as `RecordsWrite` which causes the delete to be discarded.
       await clock.tickAsync(1);
       const recordsDelete = await RecordsDelete.create({
         recordId : recordsWrite.message.recordId,

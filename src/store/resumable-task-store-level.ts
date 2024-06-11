@@ -60,7 +60,8 @@ export class ResumableTaskStoreLevel implements ResumableTaskStore {
   public async grab(count: number): Promise<ManagedResumableTask[]> {
     const tasks: ManagedResumableTask[] = [];
 
-    // iterate over the tasks to find unhandled tasks to return to the caller
+    // iterate over the tasks to find unhandled (timed-out) tasks to return to the caller,
+    // tasks that are not timed-out are considered in-flight/under processing
     // NOTE: there is an opportunity here to introduce an additional index where we can query by timed-out tasks,
     // but it requires an additional index thus more complexity
     for await (const [ _, value ] of this.db.iterator()) {

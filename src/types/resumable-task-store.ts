@@ -15,7 +15,7 @@ export type ManagedResumableTask = {
 /**
  * Interface for interacting with the resumable task store.
  *
- * Implementer's Note.
+ * Implementer's Note:
  * The store implementation used in a horizontally scalable deployment, such as in a Kubernetes cluster,
  * must account for concurrent access by multiple `ResumableTaskStore` instances.
  * It would be undesirable to have many kubernetes pods all trying to handle the same resumable task.
@@ -56,9 +56,11 @@ export interface ResumableTaskStore {
   register(task: any, timeoutInSeconds: number): Promise<ManagedResumableTask>;
 
   /**
-   * Grabs a number of unhandled tasks from the store. Unhandled tasks are tasks that are not currently in-flight/under processing.
-   * NOTE: The implementation must make sure that once the tasks are grabbed by a client,
-   * they are considered in-flight/under processing and cannot be grabbed by another client until they are timed out.
+   * Grabs a number of unhandled tasks from the store.
+   * Unhandled tasks are tasks that are not currently in-flight/under processing (ie. tasks that have timed-out).
+   * NOTE: The implementation must make sure that once a task is grabbed by a client,
+   * tis timeout must be updated so that it is considered in-flight/under processing
+   * and cannot be grabbed by another client until it is timed-out.
    * @param count Desired number of tasks to grab.
    * @returns A list of tasks exclusive for the caller to handle; or empty array if there is no tasks, or if all tasks are already grabbed by others.
    */
