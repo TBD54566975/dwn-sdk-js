@@ -2,7 +2,7 @@ import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolver } from '@web5/dids';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, ResumableTaskStore } from '../../src/index.js';
 
 import { DwnConstant, PermissionsProtocol, Time } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
@@ -43,6 +43,7 @@ export function testRecordsReadHandler(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -57,10 +58,11 @@ export function testRecordsReadHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
         eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
       });
 
       beforeEach(async () => {
@@ -69,6 +71,7 @@ export function testRecordsReadHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 

@@ -1,5 +1,5 @@
 import type { DidResolver } from '@web5/dids';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../../src/index.js';
 import type { EventStream, MessageEvent } from '../../src/types/subscriptions.js';
 
 import { Dwn } from '../../src/dwn.js';
@@ -26,6 +26,7 @@ export function testEventsSubscribeHandler(): void {
       let didResolver: DidResolver;
       let messageStore: MessageStore;
       let dataStore: DataStore;
+      let resumableTaskStore: ResumableTaskStore;
       let eventLog: EventLog;
       let dwn: Dwn;
 
@@ -37,12 +38,14 @@ export function testEventsSubscribeHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
 
         dwn = await Dwn.create({
           didResolver,
           messageStore,
           dataStore,
+          resumableTaskStore,
           eventLog,
         });
 
@@ -55,6 +58,7 @@ export function testEventsSubscribeHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 
@@ -64,7 +68,7 @@ export function testEventsSubscribeHandler(): void {
 
       it('should respond with a 501 if subscriptions are not supported', async () => {
         await dwn.close(); // close the original dwn instance
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog }); // leave out eventStream
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, resumableTaskStore }); // leave out eventStream
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         // attempt to subscribe
@@ -79,6 +83,7 @@ export function testEventsSubscribeHandler(): void {
       let didResolver: DidResolver;
       let messageStore: MessageStore;
       let dataStore: DataStore;
+      let resumableTaskStore: ResumableTaskStore;
       let eventLog: EventLog;
       let eventStream: EventStream;
       let dwn: Dwn;
@@ -91,6 +96,7 @@ export function testEventsSubscribeHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
         eventStream = TestEventStream.get();
 
@@ -98,6 +104,7 @@ export function testEventsSubscribeHandler(): void {
           didResolver,
           messageStore,
           dataStore,
+          resumableTaskStore,
           eventLog,
           eventStream,
         });
@@ -110,6 +117,7 @@ export function testEventsSubscribeHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 

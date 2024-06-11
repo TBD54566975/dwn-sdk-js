@@ -9,7 +9,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
 
 type IndexLevelConfig = {
-  location?: string,
+  location: string,
   createLevelDatabase?: typeof createLevelDatabase
 };
 
@@ -35,7 +35,7 @@ export class IndexLevel {
     };
 
     this.db = new LevelWrapper<string>({
-      location            : this.config.location!,
+      location            : this.config.location,
       createLevelDatabase : this.config.createLevelDatabase,
       keyEncoding         : 'utf8'
     });

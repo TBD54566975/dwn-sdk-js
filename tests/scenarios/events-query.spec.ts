@@ -3,7 +3,8 @@ import type {
   DataStore,
   EventLog,
   EventStream,
-  MessageStore
+  MessageStore,
+  ResumableTaskStore,
 } from '../../src/index.js';
 
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
@@ -21,6 +22,7 @@ export function testEventsQueryScenarios(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -33,16 +35,18 @@ export function testEventsQueryScenarios(): void {
       const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
+      resumableTaskStore = stores.resumableTaskStore;
       eventLog = stores.eventLog;
       eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
     });
 
     beforeEach(async () => {
     // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await resumableTaskStore.clear();
       await eventLog.clear();
     });
 

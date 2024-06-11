@@ -1,10 +1,12 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
+import type { ResumableTaskManager } from '../../src/core/resumable-task-manager.js';
 import type {
   DataStore,
   EventLog,
   MessageStore,
-  ProtocolDefinition
+  ProtocolDefinition,
+  ResumableTaskStore,
 } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -39,6 +41,7 @@ export function testRecordsDeleteHandler(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -53,10 +56,11 @@ export function testRecordsDeleteHandler(): void {
         const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
+        resumableTaskStore = stores.resumableTaskStore;
         eventLog = stores.eventLog;
         eventStream = TestEventStream.get();
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
       });
 
       beforeEach(async () => {
@@ -65,6 +69,7 @@ export function testRecordsDeleteHandler(): void {
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
+        await resumableTaskStore.clear();
         await eventLog.clear();
       });
 
@@ -760,9 +765,9 @@ export function testRecordsDeleteHandler(): void {
       const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
       const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const resumableTaskManager = stubInterface<ResumableTaskManager>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
       const reply = await recordsDeleteHandler.handle({ tenant, message });
       expect(reply.status.code).to.equal(401);
     });
@@ -773,9 +778,9 @@ export function testRecordsDeleteHandler(): void {
 
       // setting up a stub method resolver & message store
       const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const resumableTaskManager = stubInterface<ResumableTaskManager>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsDelete, 'parse').throws('anyError');

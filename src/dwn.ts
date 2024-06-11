@@ -6,6 +6,7 @@ import type { EventStream } from './types/subscriptions.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
+import type { ResumableTaskStore } from './types/resumable-task-store.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
 import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
@@ -28,6 +29,8 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
+import { ResumableTaskManager } from './core/resumable-task-manager.js';
+import { StorageController } from './store/storage-controller.js';
 import { DidDht, DidIon, DidKey, DidResolverCacheLevel, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
@@ -36,9 +39,12 @@ export class Dwn {
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
+  private resumableTaskStore: ResumableTaskStore;
   private eventLog: EventLog;
   private tenantGate: TenantGate;
   private eventStream?: EventStream;
+  private storageController: StorageController;
+  private resumableTaskManager: ResumableTaskManager;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
@@ -46,8 +52,19 @@ export class Dwn {
     this.eventStream = config.eventStream!;
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
+    this.resumableTaskStore = config.resumableTaskStore;
     this.eventLog = config.eventLog;
     this.eventStream = config.eventStream;
+    this.storageController = new StorageController({
+      messageStore : this.messageStore,
+      dataStore    : this.dataStore,
+      eventLog     : this.eventLog,
+      eventStream  : this.eventStream
+    });
+    this.resumableTaskManager = new ResumableTaskManager(
+      config.resumableTaskStore,
+      this.storageController
+    );
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]: new EventsGetHandler(
@@ -81,9 +98,7 @@ export class Dwn {
       [DwnInterfaceName.Records + DwnMethodName.Delete]: new RecordsDeleteHandler(
         this.didResolver,
         this.messageStore,
-        this.dataStore,
-        this.eventLog,
-        this.eventStream
+        this.resumableTaskManager
       ),
       [DwnInterfaceName.Records + DwnMethodName.Query]: new RecordsQueryHandler(
         this.didResolver,
@@ -122,21 +137,27 @@ export class Dwn {
 
     const dwn = new Dwn(config);
     await dwn.open();
-
     return dwn;
   }
 
-  private async open(): Promise<void> {
+  /**
+   * Initializes the DWN instance and opens the connection to it.
+   */
+  public async open(): Promise<void> {
     await this.messageStore.open();
     await this.dataStore.open();
+    await this.resumableTaskStore.open();
     await this.eventLog.open();
     await this.eventStream?.open();
+
+    await this.resumableTaskManager.resumeTasksAndWaitForCompletion();
   }
 
   public async close(): Promise<void> {
     await this.eventStream?.close();
     await this.messageStore.close();
     await this.dataStore.close();
+    await this.resumableTaskStore.close();
     await this.eventLog.close();
   }
 
@@ -244,4 +265,5 @@ export type DwnConfig = {
   messageStore: MessageStore;
   dataStore: DataStore;
   eventLog: EventLog;
+  resumableTaskStore: ResumableTaskStore;
 };

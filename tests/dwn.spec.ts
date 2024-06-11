@@ -1,7 +1,7 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../src/types/subscriptions.js';
 import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
-import type { DataStore, EventLog, MessageStore } from '../src/index.js';
+import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -22,6 +22,7 @@ export function testDwnClass(): void {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
+    let resumableTaskStore: ResumableTaskStore;
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
@@ -34,11 +35,12 @@ export function testDwnClass(): void {
       const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
+      resumableTaskStore = stores.resumableTaskStore;
       eventLog = stores.eventLog;
 
       eventStream = TestEventStream.get();
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream, resumableTaskStore });
     });
 
     beforeEach(async () => {
@@ -133,15 +135,17 @@ export function testDwnClass(): void {
 
         const messageStoreStub = stubInterface<MessageStore>();
         const dataStoreStub = stubInterface<DataStore>();
+        const resumableTaskStoreStub = stubInterface<ResumableTaskStore>();
         const eventLogStub = stubInterface<EventLog>();
         const eventStreamStub = stubInterface<EventStream>();
 
         const dwnWithConfig = await Dwn.create({
-          tenantGate   : blockAllTenantGate,
-          messageStore : messageStoreStub,
-          dataStore    : dataStoreStub,
-          eventLog     : eventLogStub,
-          eventStream  : eventStreamStub
+          tenantGate         : blockAllTenantGate,
+          messageStore       : messageStoreStub,
+          dataStore          : dataStoreStub,
+          resumableTaskStore : resumableTaskStoreStub,
+          eventLog           : eventLogStub,
+          eventStream        : eventStreamStub
         });
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -165,15 +169,17 @@ export function testDwnClass(): void {
 
         const messageStoreStub = stubInterface<MessageStore>();
         const dataStoreStub = stubInterface<DataStore>();
+        const resumableTaskStoreStub = stubInterface<ResumableTaskStore>();
         const eventLogStub = stubInterface<EventLog>();
         const eventStreamStub = stubInterface<EventStream>();
 
         const dwnWithConfig = await Dwn.create({
-          tenantGate   : blockAllTenantGate,
-          messageStore : messageStoreStub,
-          dataStore    : dataStoreStub,
-          eventLog     : eventLogStub,
-          eventStream  : eventStreamStub
+          tenantGate         : blockAllTenantGate,
+          messageStore       : messageStoreStub,
+          dataStore          : dataStoreStub,
+          resumableTaskStore : resumableTaskStoreStub,
+          eventLog           : eventLogStub,
+          eventStream        : eventStreamStub
         });
 
         const alice = await TestDataGenerator.generateDidKeyPersona();

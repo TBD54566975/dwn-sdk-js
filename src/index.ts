@@ -14,6 +14,7 @@ export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/
 export { Cid } from './utils/cid.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
 export { DataStore, DataStorePutResult, DataStoreGetResult } from './types/data-store.js';
+export { ResumableTaskStore, ManagedResumableTask } from './types/resumable-task-store.js';
 export { DataStream } from './utils/data-stream.js';
 export { DateSort } from './types/records-types.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
@@ -53,6 +54,7 @@ export { Time } from './utils/time.js';
 export { DataStoreLevel } from './store/data-store-level.js';
 export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
+export { ResumableTaskStoreLevel } from './store/resumable-task-store-level.js';
 export { EventEmitterStream } from './event-log/event-emitter-stream.js';
 
 // test library exports
