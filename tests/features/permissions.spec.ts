@@ -223,7 +223,7 @@ export function testPermissions(): void {
         grantedTo   : bob.did,
         scope       : permissionScope as any // explicity as any to test the validation
       });
-      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGranRecordsScopeMissingProtocol);
+      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
     });
 
     it('should fail if an invalid protocolPath is used during Permissions schema validation', async () => {
