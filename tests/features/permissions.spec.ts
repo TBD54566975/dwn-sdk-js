@@ -209,25 +209,7 @@ export function testPermissions(): void {
       expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
     });
 
-    it('should fail if a RecordsPermissionScope request is created without a protocol', async () => {
-      const bob = await TestDataGenerator.generateDidKeyPersona();
-
-      const permissionScope = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write
-      };
-
-      const grantWrite = PermissionsProtocol.createRequest({
-        signer      : Jws.createSigner(bob),
-        description : `Requesting to write to Alice's DWN`,
-        delegated   : false,
-        scope       : permissionScope as any // explicity as any to test the validation
-      });
-
-      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
-    });
-
-    it('should fail if a RecordsPermissionScope grant is created without a protocol', async () => {
+    it('should fail if a RecordsPermissionScope in a Request or Grant record is created without a protocol', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
 
@@ -235,6 +217,15 @@ export function testPermissions(): void {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       };
+
+      const requestWrite = PermissionsProtocol.createRequest({
+        signer      : Jws.createSigner(bob),
+        description : `Requesting to write to Alice's DWN`,
+        delegated   : false,
+        scope       : permissionScope as any // explicity as any to test the validation
+      });
+      expect(requestWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
+
 
       const grantWrite = PermissionsProtocol.createGrant({
         signer      : Jws.createSigner(alice),
@@ -297,16 +288,32 @@ export function testPermissions(): void {
         expect(validateScopeSpy.calledOnce).to.be.true;
       });
 
-      it('should throw if the scope is a RecordsPermissionScope and a protocol tag is not defined on the grant record', async () => {
+      it('should throw if the scope is a RecordsPermissionScope and a protocol tag is not defined on the Request and Grant record', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        // create a permission grant without a protocol tag
         const permissionScope: PermissionScope = {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
           protocol  : 'https://example.com/protocol/test'
         };
 
+        // create a permission request without a protocol tag
+        const requestWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.requestPath,
+          data         : Encoder.stringToBytes(JSON.stringify({})),
+          tags         : { someTag: 'someValue' } // not a protocol tag
+        });
+
+        try {
+          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
+          expect.fail('Expected to throw');
+        } catch (error:any) {
+          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
+        }
+
+        // create a permission grant without a protocol tag
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
           protocol     : PermissionsProtocol.uri,
@@ -320,16 +327,31 @@ export function testPermissions(): void {
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
-      it('should throw if the scope is a RecordsPermissionScope and the grant record has no tags', async () => {
+      it('should throw if the scope is a RecordsPermissionScope and the Request and Grant record has no tags', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        // create a permission grant without a protocol tag
         const permissionScope: PermissionScope = {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
           protocol  : 'https://example.com/protocol/test'
         };
 
+        // create a permission request without a protocol tag
+        const requestWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.requestPath,
+          data         : Encoder.stringToBytes(JSON.stringify({}))
+        });
+
+        try {
+          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
+          expect.fail('Expected to throw');
+        } catch (error:any) {
+          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
+        }
+
+        // create a permission grant without a protocol tag
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
           protocol     : PermissionsProtocol.uri,
@@ -342,16 +364,33 @@ export function testPermissions(): void {
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
-      it('should throw if the protocol tag in the grant record does not match the protocol defined in the scope', async () => {
+      it('should throw if the protocol tag in the Request and Grant record does not match the protocol defined in the scope', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        // create a permission grant with a protocol tag that does not match the scope
+        // create a permission scope to test against
         const permissionScope: PermissionScope = {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
           protocol  : 'https://example.com/protocol/test'
         };
 
+        // create a permission request with a protocol tag that does not match the scope
+        const requestWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.requestPath,
+          data         : Encoder.stringToBytes(JSON.stringify({ })),
+          tags         : { protocol: 'https://example.com/protocol/invalid' }
+        });
+
+        try {
+          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
+          expect.fail('Expected to throw');
+        } catch (error:any) {
+          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
+        }
+
+        // create a permission grant with a protocol tag that does not match the scope
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
           protocol     : PermissionsProtocol.uri,
@@ -365,10 +404,9 @@ export function testPermissions(): void {
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
       });
 
-      it('should throw if protocolPath and contextId are both defined in the scope', async () => {
+      it('should throw if protocolPath and contextId are both defined in the scope for a Request and Grant record', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        // create a permission grant with a protocol tag that does not match the scope
         const permissionScope: PermissionScope = {
           interface    : DwnInterfaceName.Records,
           method       : DwnMethodName.Write,
@@ -377,6 +415,23 @@ export function testPermissions(): void {
           contextId    : 'test-context'
         };
 
+        // create a permission request with a scope that has both protocolPath and contextId
+        const requestRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.requestPath,
+          data         : Encoder.stringToBytes(JSON.stringify({ })),
+          tags         : { protocol: 'https://example.com/protocol/test' }
+        });
+
+        try {
+          PermissionsProtocol['validateScope'](permissionScope, requestRecordsWrite.message);
+          expect.fail('Expected to throw');
+        } catch (error:any) {
+          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
+        }
+
+        // create a permission grant with a scope that has both protocolPath and contextId
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author       : alice,
           protocol     : PermissionsProtocol.uri,
