@@ -202,7 +202,7 @@ export class PermissionsProtocol {
 
     if (this.isRecordPermissionScope(options.scope) && options.scope.protocol === undefined) {
       throw new DwnError(
-        DwnErrorCode.PermissionsProtocolCreateGranRecordsScopeMissingProtocol,
+        DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol,
         'Permission grants for Records must have a scope with a `protocol` property'
       );
     }

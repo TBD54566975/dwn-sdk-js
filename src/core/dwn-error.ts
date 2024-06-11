@@ -47,7 +47,7 @@ export enum DwnErrorCode {
   MessageGetInvalidCid = 'MessageGetInvalidCid',
   ParseCidCodecNotSupported = 'ParseCidCodecNotSupported',
   ParseCidMultihashNotSupported = 'ParseCidMultihashNotSupported',
-  PermissionsProtocolCreateGranRecordsScopeMissingProtocol = 'PermissionsProtocolCreateGranRecordsScopeMissingProtocol',
+  PermissionsProtocolCreateGrantRecordsScopeMissingProtocol = 'PermissionsProtocolCreateGrantRecordsScopeMissingProtocol',
   PermissionsProtocolValidateSchemaUnexpectedRecord = 'PermissionsProtocolValidateSchemaUnexpectedRecord',
   PermissionsProtocolValidateScopeContextIdProhibitedProperties = 'PermissionsProtocolValidateScopeContextIdProhibitedProperties',
   PermissionsProtocolValidateScopeProtocolMismatch = 'PermissionsProtocolValidateScopeProtocolMismatch',
