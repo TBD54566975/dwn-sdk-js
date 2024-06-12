@@ -66,8 +66,9 @@ export class ResumableTaskManager {
   /**
    * Removes the specified timeout extension loop timer.
    * NOTE: created mainly for testing purposes so we can spy on this specific method without needing to filter out other `clearInterval` calls.
+   * NOTE: using `ReturnType` utility type to avoid using node.js specific type, because `setInterval` returns a `number` in browser environments.
    */
-  public static clearTimeoutExtensionTimer(timer: NodeJS.Timer): void {
+  public static clearTimeoutExtensionTimer(timer: ReturnType<typeof setInterval>): void {
     clearInterval(timer);
   }
 
