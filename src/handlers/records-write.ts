@@ -96,6 +96,8 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
+      await this.validateUserlandRulesForCoreRecordsWrite(tenant, message);
+
       // NOTE: We allow isLatestBaseState to be true ONLY if the incoming message comes with data, or if the incoming message is NOT an initial write
       // This would allow an initial write to be written to the DB without data, but having it not queryable,
       // because query implementation filters on `isLatestBaseState` being `true`
@@ -169,6 +171,26 @@ export class RecordsWriteHandler implements MethodHandler {
 
     return messageReply;
   };
+
+  /**
+   * Performs additional necessary validation if the RecordsWrite handled is a core DWN RecordsWrite that need additional processing.
+   * For instance: a Permission revocation RecordsWrite.
+   */
+  private async validateUserlandRulesForCoreRecordsWrite(tenant: string, recordsWriteMessage: RecordsWriteMessage): Promise<void> {
+    if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri &&
+      recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+      const permissionGrantId = recordsWriteMessage.descriptor.parentId!;
+      const grant = await PermissionsProtocol.fetchGrant(tenant, this.messageStore, permissionGrantId);
+      const revokeTagProtocol = recordsWriteMessage.descriptor.tags?.protocol;
+      const grantProtocol = PermissionsProtocol.isRecordPermissionScope(grant.scope) ? grant.scope.protocol : undefined;
+      if (grantProtocol !== revokeTagProtocol) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateRevocationProtocolTagMismatch,
+          `Revocation protocol ${revokeTagProtocol} does not match grant protocol ${grantProtocol}`
+        );
+      }
+    }
+  }
 
   private static validateSchemaForCoreRecordsWrite(recordsWriteMessage: RecordsWriteMessage, dataBytes: Uint8Array): void {
     if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri) {

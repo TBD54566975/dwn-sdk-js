@@ -1189,8 +1189,9 @@ export function testAuthorDelegatedGrant(): void {
 
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({
-        signer  : Jws.createSigner(alice),
-        grantId : deviceXGrant.recordsWrite.message.recordId
+        signer   : Jws.createSigner(alice),
+        grantId  : deviceXGrant.recordsWrite.message.recordId,
+        protocol : scope.protocol,
       });
       const revocationDataStream = DataStream.fromBytes(permissionRevoke.permissionRevocationBytes);
       const permissionRevokeReply = await dwn.processMessage(alice.did, permissionRevoke.recordsWrite.message, { dataStream: revocationDataStream });

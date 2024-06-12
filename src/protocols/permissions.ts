@@ -66,6 +66,10 @@ export type PermissionRevocationCreateOptions = {
    */
   signer?: Signer;
   grantId: string;
+  /**
+   * If the grant was scoped toa protocol, the protocol must be included in the revocation.
+   */
+  protocol?: string;
   dateRevoked?: string;
 
   // remaining properties are contained within the data payload of the record
@@ -279,6 +283,12 @@ export class PermissionsProtocol {
       description: options.description,
     };
 
+    let permissionTags = undefined;
+    if (options.protocol !== undefined) {
+      const protocol = normalizeProtocolUrl(options.protocol);
+      permissionTags = { protocol };
+    }
+
     const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationData);
     const recordsWrite = await RecordsWrite.create({
       signer          : options.signer,
@@ -287,6 +297,7 @@ export class PermissionsProtocol {
       protocolPath    : PermissionsProtocol.revocationPath,
       dataFormat      : 'application/json',
       data            : permissionRevocationBytes,
+      tags            : permissionTags,
     });
 
     return {
@@ -379,7 +390,7 @@ export class PermissionsProtocol {
   /**
    * Type guard to determine if the scope is a record permission scope.
    */
-  private static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
+  public static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
     return scope.interface === 'Records';
   }
 
