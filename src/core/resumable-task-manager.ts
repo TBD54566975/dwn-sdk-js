@@ -48,7 +48,7 @@ export class ResumableTaskManager {
   private async runWithAutomaticTimeoutExtension(managedTask: ManagedResumableTask): Promise<void> {
     const timeoutInSeconds = ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 2; // give ample time for extension to take place
 
-    let timer!: NodeJS.Timer;
+    let timer!: ReturnType<typeof setInterval>;
     try {
       // start a timer loop to keep extending the timeout of the task until it is completed
       timer = setInterval(() => {
