@@ -7,6 +7,7 @@ import { Message, TestDataGenerator, Time } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
+import { TestTimingUtils } from '../utils/test-timing-utils.js';
 
 chai.use(chaiAsPromised);
 
@@ -57,35 +58,62 @@ describe('EventStream', () => {
     const message3Cid = await Message.getCid(message3.message);
     eventStream.emit('did:alice', { message: message3.message }, {});
 
+    await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+      expect(messageCids1).to.have.members([ message1Cid, message2Cid, message3Cid ]);
+      expect(messageCids2).to.have.members([ message1Cid, message2Cid, message3Cid ]);
+    });
+
     await subscription1.close();
     await subscription2.close();
-
-    await Time.minimalSleep();
-
-    expect(messageCids1).to.have.members([ message1Cid, message2Cid, message3Cid ]);
-    expect(messageCids2).to.have.members([ message1Cid, message2Cid, message3Cid ]);
   });
 
-  it('does not emit messages if subscription is closed', async () => {
-    const messageCids: string[] = [];
-    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+  it('does not receive messages if subscription is closed', async () => {
+    const sub1MessageCids: string[] = [];
+    const handler1 = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
       const { message } = event;
       const messageCid = await Message.getCid(message);
-      messageCids.push(messageCid);
+      sub1MessageCids.push(messageCid);
     };
-    const subscription = await eventStream.subscribe('did:alice', 'sub-1', handler);
+
+    const sub2MessageCids: string[] = [];
+    const handler2 = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
+      const { message } = event;
+      const messageCid = await Message.getCid(message);
+      sub2MessageCids.push(messageCid);
+    };
+
+    const subscription1 = await eventStream.subscribe('did:alice', 'sub-1', handler1);
+    const subscription2 = await eventStream.subscribe('did:alice', 'sub-2', handler2);
 
     const message1 = await TestDataGenerator.generateRecordsWrite({});
     const message1Cid = await Message.getCid(message1.message);
     eventStream.emit('did:alice', { message: message1.message }, {});
-    await subscription.close();
+
+    await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+      expect(sub1MessageCids).to.have.length(1);
+      expect(sub1MessageCids).to.have.members([ message1Cid ]);
+
+      expect(sub2MessageCids).to.have.length(1);
+      expect(sub2MessageCids).to.have.members([ message1Cid ]);
+    });
+
+    await subscription1.close(); // close subscription 1
 
     const message2 = await TestDataGenerator.generateRecordsWrite({});
+    const message2Cid = await Message.getCid(message2.message);
     eventStream.emit('did:alice', { message: message2.message }, {});
 
-    await Time.minimalSleep();
+    await TestTimingUtils.pollUntilSuccessOrTimeout(async() => {
+      // subscription 2 should have received the message
+      expect(sub2MessageCids.length).to.equal(2);
+      expect(sub2MessageCids).to.have.members([ message1Cid, message2Cid]);
 
-    expect(messageCids).to.have.members([ message1Cid ]);
+      // subscription 1 should not have received the message
+      expect(sub1MessageCids).to.have.length(1);
+      expect(sub1MessageCids).to.have.members([ message1Cid ]);
+    });
+
+    await subscription2.close();
   });
 
   it('does not emit messages if event stream is closed', async () => {

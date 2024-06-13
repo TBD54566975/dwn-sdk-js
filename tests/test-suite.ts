@@ -1,4 +1,4 @@
-import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../src/index.js';
+import type { DataStore, EventLog, EventStream, MessageStore, ResumableTaskStore } from '../src/index.js';
 
 import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec.js';
 import { testDwnClass } from './dwn.spec.js';
@@ -29,6 +29,7 @@ import { testRecordsWriteHandler } from './handlers/records-write.spec.js';
 import { testResumableTasks } from './features/resumable-tasks.spec.js';
 import { TestStores } from './test-stores.js';
 import { testSubscriptionScenarios } from './scenarios/subscriptions.spec.js';
+import { TestEventStream } from './test-event-stream.js';
 
 /**
  * Class for running DWN tests from an external repository that depends on this SDK.
@@ -43,10 +44,12 @@ export class TestSuite {
     messageStore?: MessageStore,
     dataStore?: DataStore,
     eventLog?: EventLog,
+    eventStream?: EventStream,
     resumableTaskStore?: ResumableTaskStore,
   }): void {
 
     before(async () => {
+      TestEventStream.override(overrides);
       TestStores.override(overrides);
     });
 

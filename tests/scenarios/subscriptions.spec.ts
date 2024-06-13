@@ -14,6 +14,7 @@ import threadProtocol from '../vectors/protocol-definitions/thread-role.json' as
 
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
+import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
@@ -46,7 +47,7 @@ export function testSubscriptionScenarios(): void {
     });
 
     beforeEach(async () => {
-    // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
       await resumableTaskStore.clear();
@@ -91,28 +92,22 @@ export function testSubscriptionScenarios(): void {
         const deleteWrite1Reply = await dwn.processMessage(alice.did, deleteWrite1.message);
         expect(deleteWrite1Reply.status.code).to.equal(202);
 
-        // unregister the handler
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // test the messageCids array for the appropriate messages
+          expect(messageCids.length).to.equal(3);
+          expect(messageCids).to.eql([ write1MessageCid, protocol1MessageCid, delete1MessageCid ]);
+        });
+
+        // clean up the subscription handler
         await eventsSubscriptionReply.subscription?.close();
-
-        // create a message after
-        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
-        expect(write2Reply.status.code).to.equal(202);
-
-        await Time.minimalSleep();
-
-        // test the messageCids array for the appropriate messages
-        expect(messageCids.length).to.equal(3);
-        expect(messageCids).to.eql([ write1MessageCid, protocol1MessageCid, delete1MessageCid ]);
       });
 
       it('filters by interface type', async () => {
         // scenario:
-        // alice subscribes to 2 different message interfaces (Records, Grants)
-        // alice creates (2) messages, (RecordsWrite and ProtocolsConfigure)
+        // alice subscribes to 2 different message interfaces Records and Protocols
+        // alice creates (2) messages, RecordsWrite and ProtocolsConfigure
         // alice checks that each handler emitted the appropriate message
-        // alice deletes the record, and revokes the grant
-        // alice checks that the Records and Protocols handlers emitted the appropriate message
+        // alice deletes the record
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // subscribe to records
@@ -157,40 +152,46 @@ export function testSubscriptionScenarios(): void {
 
         // create one of each message types
         const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
-
-        // insert data
         const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-        const protocolReply = await dwn.processMessage(alice.did, protocol.message);
         expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
+
+        const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+        const protocolReply = await dwn.processMessage(alice.did, protocol.message);
         expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
-        // check record message
-        expect(recordsMessageCids.length).to.equal(1);
-        expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () =>{
+          // check record message
+          expect(recordsMessageCids.length).to.equal(1);
+          expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
 
-        // check protocols message
-        expect(protocolsMessageCids.length).to.equal(1);
-        expect(protocolsMessageCids).to.have.members([ await Message.getCid(protocol.message) ]);
+          // check protocols message
+          expect(protocolsMessageCids.length).to.equal(1);
+          expect(protocolsMessageCids).to.have.members([ await Message.getCid(protocol.message) ]);
+        });
 
-        // insert additional data to query beyond a cursor
         const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
         const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
         expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
 
-        // check record messages to include the delete message
-        expect(recordsMessageCids.length).to.equal(2);
-        expect(recordsMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
-
-        // protocols remains unchanged
-        expect(protocolsMessageCids.length).to.equal(1);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // check record messages to include the delete message
+          expect(recordsMessageCids.length).to.equal(2);
+          expect(recordsMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
+        });
       });
 
       it('filters by method type', async () => {
         // scenario:
-        // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure)
-        // alice queries for only RecordsWrite messages
-        // alice creates more messages to query beyond a cursor
+        // alice creates a subscription to updates with an interface of Records and method of Write
+        // alice creates a second subscription to updates with an interface of Records and method of Delete
+        // alice creates a RecordsWrite message to create a record
+        // alice then updates that record with a subsequent RecordsWrite
+        // alice checks that the recordsWrite array contains both messages
+        // alice confirms that the recordsDelete array contains no messages 
+        // alice deletes the record with a RecordsDelete
+        // alice writes a new record with a RecordsWrite
+        // alice checks that the recordsWrite array includes the new record, but not the delete
+        // alice checks the recordsDelete array includes the delete message
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -199,11 +200,11 @@ export function testSubscriptionScenarios(): void {
           author  : alice,
           filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
         });
-        const recordsMessageCids:string[] = [];
+        const recordsWriteMessageCids:string[] = [];
         const recordsSubscribeHandler = async (event: MessageEvent):Promise<void> => {
           const { message } = event;
           const messageCid = await Message.getCid(message);
-          recordsMessageCids.push(messageCid);
+          recordsWriteMessageCids.push(messageCid);
         };
 
         const recordsWriteSubscriptionReply = await dwn.processMessage(
@@ -214,27 +215,70 @@ export function testSubscriptionScenarios(): void {
         expect(recordsWriteSubscriptionReply.status.code).to.equal(200);
         expect(recordsWriteSubscriptionReply.subscription).to.exist;
 
+        // subscribe to records delete
+        const recordsDeleteSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Delete }]
+        });
+        const recordsDeleteMessageCids:string[] = [];
+        const recordsDeleteSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+          const { message } = event;
+          const messageCid = await Message.getCid(message);
+          recordsDeleteMessageCids.push(messageCid);
+        };
+
+        const recordsDeleteSubscriptionReply = await dwn.processMessage(
+          alice.did,
+          recordsDeleteSubscription.message,
+          { subscriptionHandler: recordsDeleteSubscribeHandler }
+        );
+        expect(recordsDeleteSubscriptionReply.status.code).to.equal(200);
+        expect(recordsDeleteSubscriptionReply.subscription).to.exist;
+
         // create one of each message types
         const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
-
-        // insert data
         const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
         expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
 
-        // sleep to make sure event was processed and added to array asynchronously
-        await Time.minimalSleep();
+        // update the record
+        const recordUpdate = await TestDataGenerator.generateFromRecordsWrite({ author: alice, existingWrite: record.recordsWrite });
+        const recordUpdateReply = await dwn.processMessage(alice.did, recordUpdate.message, { dataStream: recordUpdate.dataStream });
+        expect(recordUpdateReply.status.code).to.equal(202, 'RecordsUpdate');
 
-        // check record message
-        expect(recordsMessageCids.length).to.equal(1);
-        expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // check the array for both the RecordsWrite messages
+          expect(recordsWriteMessageCids.length).to.equal(2);
+          expect(recordsWriteMessageCids).to.have.members([ await Message.getCid(record.message), await Message.getCid(recordUpdate.message) ]);
+        });
+
+        // confirm that the delete array is empty
+        expect(recordsDeleteMessageCids.length).to.equal(0);
 
         // delete the message
         const recordDelete = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record.message.recordId });
         const recordDeleteReply = await dwn.processMessage(alice.did, recordDelete.message);
         expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
 
-        // check record messages remain unchanged and do not include the delete since we only subscribe to writes
-        expect(recordsMessageCids.length).to.equal(1);
+        // write a second record
+        const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
+        expect(record2Reply.status.code).to.equal(202, 'RecordsWrite');
+
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // ensure the new record is in the recordsWrite array, but not the delete
+          expect(recordsWriteMessageCids.length).to.equal(3);
+          expect(recordsWriteMessageCids).to.include.members([
+            await Message.getCid(record.message),
+            await Message.getCid(recordUpdate.message),
+            await Message.getCid(record2.message)
+          ]);
+        });
+
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // ensure the delete message is in the recordsDelete array
+          expect(recordsDeleteMessageCids.length).to.equal(1);
+          expect(recordsDeleteMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
+        });
       });
 
       it('filters by a protocol across different message types', async () => {
@@ -312,12 +356,14 @@ export function testSubscriptionScenarios(): void {
         expect(write1Proto2Response.status.code).equals(202);
 
         // check for proto1 messages
-        expect(proto1Messages.length).to.equal(2);
-        expect(proto1Messages).to.have.members([ await Message.getCid(protoConf1.message), await Message.getCid(write1proto1.message) ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(proto1Messages.length).to.equal(2);
+          expect(proto1Messages).to.have.members([ await Message.getCid(protoConf1.message), await Message.getCid(write1proto1.message) ]);
 
-        // check for proto2 messages
-        expect(proto2Messages.length).to.equal(2);
-        expect(proto2Messages).to.have.members([ await Message.getCid(protoConf2.message), await Message.getCid(write1proto2.message) ]);
+          // check for proto2 messages
+          expect(proto2Messages.length).to.equal(2);
+          expect(proto2Messages).to.have.members([ await Message.getCid(protoConf2.message), await Message.getCid(write1proto2.message) ]);
+        });
 
         // delete proto1 message
         const deleteProto1Message = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1proto1.message.recordId });
@@ -329,19 +375,21 @@ export function testSubscriptionScenarios(): void {
         const deleteProto2MessageReply = await dwn.processMessage(alice.did, deleteProto2Message.message);
         expect(deleteProto2MessageReply.status.code).to.equal(202);
 
-        // check for the delete in proto1 messages
-        expect(proto1Messages.length).to.equal(3);
-        expect(proto1Messages).to.include.members([ await Message.getCid(deleteProto1Message.message) ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // check for the delete in proto1 messages
+          expect(proto1Messages.length).to.equal(3);
+          expect(proto1Messages).to.include.members([ await Message.getCid(deleteProto1Message.message) ]);
 
-        // check for the delete in proto2 messages
-        expect(proto2Messages.length).to.equal(3);
-        expect(proto2Messages).to.include.members([ await Message.getCid(deleteProto2Message.message) ]);
+          // check for the delete in proto2 messages
+          expect(proto2Messages.length).to.equal(3);
+          expect(proto2Messages).to.include.members([ await Message.getCid(deleteProto2Message.message) ]);
+        });
       });
 
       it('filters by protocol & parentId across multiple protocolPaths', async () => {
         // scenario: subscribe to multiple protocolPaths for a given protocol and parentId
         //    alice installs a protocol and creates a thread
-        //    alice subscribes to update to that thread, it's participant as well as thread chats
+        //    alice subscribes to with 3 filters: the thread itself, the thread/participants as well as thread thread/chats
         //    alice adds bob and carol as participants to the thread
         //    alice, bob, and carol all create messages
         //    alice deletes carol participant message
@@ -391,6 +439,15 @@ export function testSubscriptionScenarios(): void {
         expect(threadSubscriptionReply.status.code).to.equal(200);
         expect(threadSubscriptionReply.subscription).to.exist;
 
+        // add another thread as a control, will not show up in handled events
+        const additionalThread = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol,
+          protocolPath : 'thread'
+        });
+        const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
+        expect(additionalThreadReply.status.code).to.equal(202);
+
         // add bob as participant
         const bobParticipant = await TestDataGenerator.generateRecordsWrite({
           author          : alice,
@@ -413,25 +470,16 @@ export function testSubscriptionScenarios(): void {
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
         expect(carolParticipantReply.status.code).to.equal(202);
 
-        // add another thread as a control, will not show up in handled events
-        const additionalThread = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          protocol     : protocol,
-          protocolPath : 'thread'
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // the messages array should have the two participant messages, not the additional thread
+          expect(messages.length).to.equal(2);
+          expect(messages).to.have.members([
+            await Message.getCid(bobParticipant.message),
+            await Message.getCid(carolParticipant.message),
+          ]);
         });
-        const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
-        expect(additionalThreadReply.status.code).to.equal(202);
 
-        // sleep to allow all messages to be processed by the handler message
-        await Time.minimalSleep();
-
-        expect(messages.length).to.equal(2);
-        expect(messages).to.have.members([
-          await Message.getCid(bobParticipant.message),
-          await Message.getCid(carolParticipant.message),
-        ]);
-
-        // add a message to protocol1
+        // add a chats to the thread
         const message1 = await TestDataGenerator.generateRecordsWrite({
           author          : bob,
           recipient       : alice.did,
@@ -465,14 +513,15 @@ export function testSubscriptionScenarios(): void {
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
 
-        // sleep in order to allow messages to process and check for the added messages
-        await Time.minimalSleep();
-        expect(messages.length).to.equal(5);
-        expect(messages).to.include.members([
-          await Message.getCid(message1.message),
-          await Message.getCid(message2.message),
-          await Message.getCid(message3.message),
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // should have the 3 chat messages
+          expect(messages.length).to.equal(5);
+          expect(messages).to.include.members([
+            await Message.getCid(message1.message),
+            await Message.getCid(message2.message),
+            await Message.getCid(message3.message),
+          ]);
+        });
 
         // delete carol participant
         const deleteCarol = await TestDataGenerator.generateRecordsDelete({
@@ -482,15 +531,24 @@ export function testSubscriptionScenarios(): void {
         const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
         expect(deleteCarolReply.status.code).to.equal(202);
 
-        // sleep in order to allow messages to process and check for the delete message
-        await Time.minimalSleep();
-        expect(messages.length).to.equal(6);
-        expect(messages).to.include.members([
-          await Message.getCid(deleteCarol.message)
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // should have the delete of carol as a participant
+          expect(messages.length).to.equal(6);
+          expect(messages).to.include.members([
+            await Message.getCid(deleteCarol.message)
+          ]);
+        });
       });
 
       it('filters by schema', async () => {
+        //SCENARIO:
+        //  alice creates 2 subscriptions, one for schema1 and one for schema2 
+        //  alice creates a record for schema1 and schema2
+        //  alice checks that the appropriate messages were received by their respective handlers
+        //  alice updates the record for schema1
+        //  alice deletes the record for schema2
+        //  alice checks that the appropriate messages were received by their respective handlers
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // we will add messageCids to these arrays as they are received by their handler to check against later
@@ -538,44 +596,57 @@ export function testSubscriptionScenarios(): void {
         const write1Proto2Response = await dwn.processMessage(alice.did, write1schema2.message, { dataStream: write1schema2.dataStream });
         expect(write1Proto2Response.status.code).equals(202);
 
-        expect(schema1Messages.length).to.equal(1, 'schema1');
-        expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
-        expect(schema2Messages.length).to.equal(1, 'schema2');
-        expect(schema2Messages).to.include(await Message.getCid(write1schema2.message));
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(schema1Messages.length).to.equal(1, 'schema1');
+          expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
+          expect(schema2Messages.length).to.equal(1, 'schema2');
+          expect(schema2Messages).to.include(await Message.getCid(write1schema2.message));
+        });
 
-        // remove listener for schema1
-        schema1SubscriptionReply.subscription?.close();
+        // create update the record for schema1
+        const update1schema1 = await TestDataGenerator.generateFromRecordsWrite({ author: alice, existingWrite: write1schema1.recordsWrite });
+        const update1Response = await dwn.processMessage(alice.did, update1schema1.message, { dataStream: update1schema1.dataStream });
+        expect(update1Response.status.code).equals(202);
 
-        // create another record for schema1
-        const write2proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
-        const write2Response = await dwn.processMessage(alice.did, write2proto1.message, { dataStream: write2proto1.dataStream });
-        expect(write2Response.status.code).equals(202);
+        // delete the record for schema2
+        const deleteschema2 = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1schema2.message.recordId });
+        const deleteSchema2Response = await dwn.processMessage(alice.did, deleteschema2.message);
+        expect(deleteSchema2Response.status.code).equals(202);
 
-        // create another record for schema2
-        const write2schema2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema2' });
-        const write2Schema2Response = await dwn.processMessage(alice.did, write2schema2.message, { dataStream: write2schema2.dataStream });
-        expect(write2Schema2Response.status.code).equals(202);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // schema1 messages from handler has the new message representing the update.
+          expect(schema1Messages.length).to.equal(2, 'schema1');
+          expect(schema1Messages).to.include(await Message.getCid(update1schema1.message));
 
-        // schema1 messages from handler do not change.
-        expect(schema1Messages.length).to.equal(1, 'schema1 after close()');
-        expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
-
-        // schema2 messages from handler have the new message.
-        expect(schema2Messages.length).to.equal(2, 'schema2 after close()');
-        expect(schema2Messages).to.have.members([await Message.getCid(write1schema2.message), await Message.getCid(write2schema2.message)]);
+          // schema2 messages from handler has the new message representing the delete.
+          expect(schema2Messages.length).to.equal(2, 'schema2');
+          expect(schema2Messages).to.include(await Message.getCid(deleteschema2.message));
+        });
       });
 
       it('filters by recordId', async () => {
+        // create a 2 record and don't process them yet.
+        // create a subscription for one of the recordIds
+        // process both records
+        // update the record that was subscribed to
+        // check that the subscription handler has both the write and update messages
+        // delete both records
+        // check that the subscription handler has the delete message for the subscribed recordId
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        const write = await TestDataGenerator.generateRecordsWrite({
+        // create 2 records
+        const write1 = await TestDataGenerator.generateRecordsWrite({
           author : alice,
           schema : 'schema1'
         });
-        const write1Reply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
-        expect(write1Reply.status.code).to.equal(202);
 
-        // create a subscription and capture the messages associated with the record
+        const write2 = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'schema1'
+        });
+
+        // create a subscription and capture the messages associated with the recordId for write1 
         const messages: string[] = [];
         const subscriptionHandler = async (event: MessageEvent):Promise<void> => {
           const { message } = event;
@@ -584,70 +655,74 @@ export function testSubscriptionScenarios(): void {
 
         const recordIdSubscribe = await TestDataGenerator.generateEventsSubscribe({
           author  : alice,
-          filters : [{ recordId: write.message.recordId }]
+          filters : [{ recordId: write1.message.recordId }]
         });
         const recordIdSubscribeReply = await dwn.processMessage(alice.did, recordIdSubscribe.message, {
           subscriptionHandler
         });
         expect(recordIdSubscribeReply.status.code).to.equal(200);
 
-        // a write as a control, will not show up in subscription
-        const controlWrite = await TestDataGenerator.generateRecordsWrite({
-          author : alice,
-          schema : 'schema1'
-        });
-        const write2Reply = await dwn.processMessage(alice.did, controlWrite.message, { dataStream: controlWrite.dataStream });
+        // process both records
+        const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
+        expect(write1Reply.status.code).to.equal(202);
+        const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
         expect(write2Reply.status.code).to.equal(202);
 
-        // update record
+        // update the subscribed record
         const update = await TestDataGenerator.generateFromRecordsWrite({
           author        : alice,
-          existingWrite : write.recordsWrite,
+          existingWrite : write1.recordsWrite,
         });
         const updateReply = await dwn.processMessage(alice.did, update.message, { dataStream: update.dataStream });
         expect(updateReply.status.code).to.equal(202);
 
-
-        // sleep to allow all messages to be processed by the handler message
-        await Time.minimalSleep();
-
-        expect(messages.length).to.equal(1);
-        expect(messages).to.have.members([ await Message.getCid(update.message) ]);
-
-        const deleteRecord = await TestDataGenerator.generateRecordsDelete({
-          author   : alice,
-          recordId : write.message.recordId,
+        // check that the subscription handler has both the write and update messages
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(messages.length).to.equal(2);
+          expect(messages).to.have.members([
+            await Message.getCid(write1.message),
+            await Message.getCid(update.message)
+          ]);
         });
-        const deleteRecordReply = await dwn.processMessage(alice.did, deleteRecord.message);
-        expect(deleteRecordReply.status.code).to.equal(202);
 
-        // sleep to allow all messages to be processed by the handler message
-        await Time.minimalSleep();
+        // delete both records
+        const deleteWrite1 = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : write1.message.recordId,
+        });
+        const deleteWrite1Reply = await dwn.processMessage(alice.did, deleteWrite1.message);
+        expect(deleteWrite1Reply.status.code).to.equal(202);
 
-        expect(messages.length).to.equal(2);
-        expect(messages).to.include.members([ await Message.getCid(deleteRecord.message) ]);
+        const deleteWrite2 = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : write2.message.recordId,
+        });
+        const deleteWrite2Reply = await dwn.processMessage(alice.did, deleteWrite2.message);
+        expect(deleteWrite2Reply.status.code).to.equal(202);
+
+        // check that the subscription handler has the delete message for the subscribed recordId
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(messages.length).to.equal(3); // write1, update, delete
+          expect(messages).to.include(await Message.getCid(deleteWrite1.message));
+          expect(messages).to.not.include(await Message.getCid(deleteWrite2.message));
+        });
       });
 
       it('filters by recipient', async () => {
+        // scenario:
+        // alice subscribes to messages with herself as the recipient
+        // bob sends a message to alice
+        // carol sends a message to alice 
+        // alice sends a message to bob
+        // bob sends a message to carol
+        // alice checks that the receivedMessages array only contains the messages from bob and carol to alice
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
         const carol = await TestDataGenerator.generateDidKeyPersona();
 
-        const receivedMessages:string[] = [];
 
-        const handler = async (event: MessageEvent): Promise<void> => {
-          const { message } = event;
-          const messageCid = await Message.getCid(message);
-          receivedMessages.push(messageCid);
-        };
-
-        const recipientSubscription = await TestDataGenerator.generateEventsSubscribe({
-          author  : alice,
-          filters : [{ recipient: alice.did }]
-        });
-        const authorQueryReply = await dwn.processMessage(alice.did, recipientSubscription.message, { subscriptionHandler: handler });
-        expect(authorQueryReply.status.code).to.equal(200);
-
+        // alice installs a freeForAll protocol
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
           author             : alice,
           protocolDefinition : { ...freeForAll }
@@ -656,6 +731,23 @@ export function testSubscriptionScenarios(): void {
         expect(protocolConfigureReply.status.code).to.equal(202);
         const protocol = protocolConfigure.message.descriptor.definition.protocol;
 
+        const receivedMessages:string[] = [];
+        const handler = async (event: MessageEvent): Promise<void> => {
+          const { message } = event;
+          const messageCid = await Message.getCid(message);
+          receivedMessages.push(messageCid);
+        };
+
+        // alice subscribes to messages with herself as the recipient on her own DWN
+        const recipientSubscription = await TestDataGenerator.generateEventsSubscribe({
+          author  : alice,
+          filters : [{ recipient: alice.did }]
+        });
+        const authorQueryReply = await dwn.processMessage(alice.did, recipientSubscription.message, { subscriptionHandler: handler });
+        expect(authorQueryReply.status.code).to.equal(200);
+
+
+        // common properties for the post messages
         const postProperties = {
           protocol     : protocol,
           protocolPath : 'post',
@@ -663,6 +755,7 @@ export function testSubscriptionScenarios(): void {
           dataFormat   : freeForAll.types.post.dataFormats[0],
         };
 
+        // bob sends a message to alice
         const messageFromBobToAlice = await TestDataGenerator.generateRecordsWrite({
           ...postProperties,
           author    : bob,
@@ -672,6 +765,7 @@ export function testSubscriptionScenarios(): void {
           await dwn.processMessage(alice.did, messageFromBobToAlice.message, { dataStream: messageFromBobToAlice.dataStream });
         expect(messageFromBobToAliceReply.status.code).to.equal(202);
 
+        // carol sends a message to alice
         const messageFromCarolToAlice = await TestDataGenerator.generateRecordsWrite({
           ...postProperties,
           author    : carol,
@@ -681,6 +775,7 @@ export function testSubscriptionScenarios(): void {
           await dwn.processMessage(alice.did, messageFromCarolToAlice.message, { dataStream: messageFromCarolToAlice.dataStream });
         expect(messageFromCarolToAliceReply.status.code).to.equal(202);
 
+        // alice sends a message to bob, this will not show up in the receivedMessages array
         const messageFromAliceToBob = await TestDataGenerator.generateRecordsWrite({
           ...postProperties,
           author    : alice,
@@ -690,31 +785,24 @@ export function testSubscriptionScenarios(): void {
           await dwn.processMessage(alice.did, messageFromAliceToBob.message, { dataStream: messageFromAliceToBob.dataStream });
         expect(messageFromAliceToBobReply.status.code).to.equal(202);
 
-        const messageFromAliceToCarol = await TestDataGenerator.generateRecordsWrite({
+        // bob sends a message to carol, this will not show up in the receivedMessages array
+        const messageFromBobToCarol = await TestDataGenerator.generateRecordsWrite({
           ...postProperties,
-          author    : alice,
+          author    : bob,
           recipient : carol.did,
         });
-        const messageFromAliceToCarolReply =
-          await dwn.processMessage(alice.did, messageFromAliceToCarol.message, { dataStream: messageFromAliceToCarol.dataStream });
-        expect(messageFromAliceToCarolReply.status.code).to.equal(202);
+        const messageFromBobToCarolReply =
+          await dwn.processMessage(alice.did, messageFromBobToCarol.message, { dataStream: messageFromBobToCarol.dataStream });
+        expect(messageFromBobToCarolReply.status.code).to.equal(202);
 
-        expect(receivedMessages).to.have.members([
-          await Message.getCid(messageFromBobToAlice.message),
-          await Message.getCid(messageFromCarolToAlice.message)
-        ]);
-
-        // add another message
-        const messageFromAliceToBob2 = await TestDataGenerator.generateRecordsWrite({
-          ...postProperties,
-          author    : alice,
-          recipient : bob.did,
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // check that the received messages array only contains the messages from bob and carol to alice
+          expect(receivedMessages.length).to.equal(2);
+          expect(receivedMessages).to.have.members([
+            await Message.getCid(messageFromBobToAlice.message),
+            await Message.getCid(messageFromCarolToAlice.message)
+          ]);
         });
-        const messageFromAliceToBob2Reply =
-          await dwn.processMessage(alice.did, messageFromAliceToBob2.message, { dataStream: messageFromAliceToBob2.dataStream });
-        expect(messageFromAliceToBob2Reply.status.code).to.equal(202);
-
-        expect(receivedMessages).to.not.include.members([ await Message.getCid(messageFromAliceToBob2.message)]);
       });
 
       it('filters by dataFormat', async () => {
@@ -767,10 +855,10 @@ export function testSubscriptionScenarios(): void {
         const imageDataReply = await dwn.processMessage(alice.did, imageData.message, { dataStream: imageData.dataStream });
         expect(imageDataReply.status.code).to.equal(202);
 
-        // wait for messages to emit and handler to process
-        await Time.minimalSleep();
-        expect(imageMessages.length).to.equal(1);
-        expect(imageMessages).to.have.members([ await Message.getCid(imageData.message) ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(imageMessages.length).to.equal(1);
+          expect(imageMessages).to.have.members([ await Message.getCid(imageData.message) ]);
+        });
 
         // add another image
         const imageData2 = await TestDataGenerator.generateRecordsWrite({
@@ -779,20 +867,17 @@ export function testSubscriptionScenarios(): void {
         });
         const imageData2Reply = await dwn.processMessage(alice.did, imageData2.message, { dataStream: imageData2.dataStream });
         expect(imageData2Reply.status.code).to.equal(202);
-
-        // wait for messages to emit and handler to process
-        await Time.minimalSleep();
-        expect(imageMessages.length).to.equal(2);
-        // check that the new image and the delete messages were emitted
-        expect(imageMessages).to.include.members([
-          await Message.getCid(imageData2.message)
-        ]);
+        
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(imageMessages.length).to.equal(2);
+          expect(imageMessages).to.include.members([ await Message.getCid(imageData2.message) ]);
+        });
       });;
 
       it('filters by dataSize', async () => {
         // scenario:
         //    alice subscribes to messages with data size under a threshold
-        //    alice inserts both small and large data
+        //    alice inserts both small and large data messages
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -825,17 +910,11 @@ export function testSubscriptionScenarios(): void {
         const largeSizeReply = await dwn.processMessage(alice.did, largeSize.message, { dataStream: largeSize.dataStream });
         expect(largeSizeReply.status.code).to.equal(202);
 
-        // wait for message handler to process and check results
-        await Time.minimalSleep();
-        expect(smallMessages.length).to.equal(1);
-        expect(smallMessages).to.have.members([ await Message.getCid(smallSize1.message) ]);
-
-        // add another small record
-        const smallSize2 = await TestDataGenerator.generateRecordsWrite({
-          author: alice,
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // messages array should only contain the small data size record
+          expect(smallMessages.length).to.equal(1);
+          expect(smallMessages).to.have.members([ await Message.getCid(smallSize1.message) ]);
         });
-        const smallSize2Reply = await dwn.processMessage(alice.did, smallSize2.message, { dataStream: smallSize2.dataStream });
-        expect(smallSize2Reply.status.code).to.equal(202);
 
         // add another large record
         const largeSize2 = await TestDataGenerator.generateRecordsWrite({
@@ -845,52 +924,100 @@ export function testSubscriptionScenarios(): void {
         const largeSize2Reply = await dwn.processMessage(alice.did, largeSize2.message, { dataStream: largeSize2.dataStream });
         expect(largeSize2Reply.status.code).to.equal(202);
 
-        // wait for message handler to process and check results
-        await Time.minimalSleep();
-        expect(smallMessages.length).to.equal(2);
-        expect(smallMessages).to.include.members([ await Message.getCid(smallSize2.message) ]);
+        // add another small record
+        const smallSize2 = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+        });
+        const smallSize2Reply = await dwn.processMessage(alice.did, smallSize2.message, { dataStream: smallSize2.dataStream });
+        expect(smallSize2Reply.status.code).to.equal(202);
+
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // messages array should only contain the two small data size records
+          expect(smallMessages.length).to.equal(2);
+          expect(smallMessages).to.include.members([
+            await Message.getCid(smallSize1.message),
+            await Message.getCid(smallSize2.message)
+          ]);
+        });
       });
 
       it('does not emit events after subscription is closed', async () => {
+        // scenario: create two subscriptions.
+        // write a message, check that both subscriptions receive the message.
+        // close one subscription, write two more messages, check that only the open subscription receives the messages.
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
-        // messageCids of events
-        const messageCids:string[] = [];
-
-        const handler = async (event: MessageEvent): Promise<void> => {
+        // messageCids of subscription 1 events
+        const sub1MessageCids:string[] = [];
+        const handler1 = async (event: MessageEvent): Promise<void> => {
           const { message } = event;
           const messageCid = await Message.getCid(message);
-          messageCids.push(messageCid);
+          sub1MessageCids.push(messageCid);
         };
 
+        // messageCids of subscription 2 events
+        const sub2MessageCids:string[] = [];
+        const handler2 = async (event: MessageEvent): Promise<void> => {
+          const { message } = event;
+          const messageCid = await Message.getCid(message);
+          sub2MessageCids.push(messageCid);
+        };
+
+
         // subscribe to all events
-        const eventsSubscription = await TestDataGenerator.generateEventsSubscribe({ author: alice });
-        const eventsSubscriptionReply = await dwn.processMessage(alice.did, eventsSubscription.message, { subscriptionHandler: handler });
-        expect(eventsSubscriptionReply.status.code).to.equal(200);
+        const eventsSubscription1 = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+        const eventsSubscription1Reply = await dwn.processMessage(alice.did, eventsSubscription1.message, { subscriptionHandler: handler1 });
+        expect(eventsSubscription1Reply.status.code).to.equal(200);
+      
+        const eventsSubscription2 = await TestDataGenerator.generateEventsSubscribe({ author: alice });
+        const eventsSubscription2Reply = await dwn.processMessage(alice.did, eventsSubscription2.message, { subscriptionHandler: handler2 });
+        expect(eventsSubscription2Reply.status.code).to.equal(200);
 
-        expect(messageCids.length).to.equal(0); // no events exist yet
+        // no events exist yet
+        expect(sub1MessageCids.length).to.equal(0);
+        expect(sub2MessageCids.length).to.equal(0);
 
+        // write a record
         const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record1Reply = await dwn.processMessage(alice.did, record1.message, { dataStream: record1.dataStream });
         expect(record1Reply.status.code).to.equal(202);
         const record1MessageCid = await Message.getCid(record1.message);
 
-        expect(messageCids.length).to.equal(1); // message exists
-        expect(messageCids).to.eql([ record1MessageCid ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // both subscriptions should have received the message
+          expect(sub1MessageCids.length).to.equal(1); // message exists
+          expect(sub1MessageCids).to.eql([ record1MessageCid ]);
 
-        // unsubscribe, this should be used as clean up.
-        await eventsSubscriptionReply.subscription!.close();
+          expect(sub2MessageCids.length).to.equal(1); // message exists
+          expect(sub2MessageCids).to.eql([ record1MessageCid ]);
+        });
 
-        // write another message.
+        // unsubscribe from subscription 2
+        await eventsSubscription2Reply.subscription!.close();
+
+        // write two more message.
         const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
         expect(record2Reply.status.code).to.equal(202);
+        const record2MessageCid = await Message.getCid(record2.message);
 
-        // sleep to make sure events have some time to emit.
-        await Time.minimalSleep();
+        const record3 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const record3Reply = await dwn.processMessage(alice.did, record3.message, { dataStream: record3.dataStream });
+        expect(record3Reply.status.code).to.equal(202);
+        const record3MessageCid = await Message.getCid(record3.message);
 
-        expect(messageCids.length).to.equal(1); // same as before
-        expect(messageCids).to.eql([ record1MessageCid ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(sub1MessageCids.length).to.equal(3); // all three messages exist
+          expect(sub1MessageCids).to.eql([ 
+            record1MessageCid,
+            record2MessageCid,
+            record3MessageCid
+          ]);
+
+          expect(sub2MessageCids.length).to.equal(1); // only the first message exists
+          expect(sub2MessageCids).to.eql([ record1MessageCid ]);
+        });
       });
     });
 
@@ -915,6 +1042,11 @@ export function testSubscriptionScenarios(): void {
         expect(anonymousSubscriptionReply.status.code).to.equal(200);
         expect(anonymousSubscriptionReply.subscription).to.exist;
 
+        // will not be emitted as it is not explicitly published
+        const writeNotPublished = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
+        const writeNotPublishedReply = await dwn.processMessage(alice.did, writeNotPublished.message, { dataStream: writeNotPublished.dataStream });
+        expect(writeNotPublishedReply.status.code).to.equal(202);
+
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
         expect(write1Reply.status.code).to.equal(202);
@@ -923,19 +1055,14 @@ export function testSubscriptionScenarios(): void {
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
         expect(write2Reply.status.code).to.equal(202);
 
-        // will not be emitted as it is not explicitly published
-        const writeNotPublished = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
-        const writeNotPublishedReply = await dwn.processMessage(alice.did, writeNotPublished.message, { dataStream: writeNotPublished.dataStream });
-        expect(writeNotPublishedReply.status.code).to.equal(202);
-
-        // await for handler to receive and process the message
-        await Time.minimalSleep();
-
-        expect(messages.length).to.equal(2);
-        expect(messages).to.have.members([
-          await Message.getCid(write1.message),
-          await Message.getCid(write2.message),
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // messages array should only contain the two published messages
+          expect(messages.length).to.equal(2);
+          expect(messages).to.have.members([
+            await Message.getCid(write1.message),
+            await Message.getCid(write2.message),
+          ]);
+        });
       });
 
       it('allows authorized subscriptions to records intended for a recipient', async () => {
@@ -992,19 +1119,20 @@ export function testSubscriptionScenarios(): void {
         const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
         expect(writeForCarolReply.status.code).to.equal(202);
 
-        // await for handler to receive and process the message
-        await Time.minimalSleep();
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // bob should have received the two messages intended for him
+          expect(bobMessages.length).to.equal(2);
+          expect(bobMessages).to.have.members([
+            await Message.getCid(write1.message),
+            await Message.getCid(write2.message),
+          ]);
 
-        expect(bobMessages.length).to.equal(2);
-        expect(bobMessages).to.have.members([
-          await Message.getCid(write1.message),
-          await Message.getCid(write2.message),
-        ]);
-
-        expect(carolMessages.length).to.equal(1);
-        expect(carolMessages).to.have.members([
-          await Message.getCid(writeForCarol.message),
-        ]);
+          // carol should have received the message intended for her
+          expect(carolMessages.length).to.equal(1);
+          expect(carolMessages).to.have.members([
+            await Message.getCid(writeForCarol.message),
+          ]);
+        });
       });
 
       it('filters by protocol & parentId across multiple protocolPaths', async () => {
@@ -1111,14 +1239,13 @@ export function testSubscriptionScenarios(): void {
         const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
         expect(additionalThreadReply.status.code).to.equal(202);
 
-        // sleep to allow all messages to be processed by the handler message
-        await Time.minimalSleep();
-
-        expect(messages.length).to.equal(2);
-        expect(messages).to.have.members([
-          await Message.getCid(bobParticipant.message),
-          await Message.getCid(carolParticipant.message),
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(messages.length).to.equal(2);
+          expect(messages).to.have.members([
+            await Message.getCid(bobParticipant.message),
+            await Message.getCid(carolParticipant.message),
+          ]);
+        });
 
         // add a message to protocol1
         const message1 = await TestDataGenerator.generateRecordsWrite({
@@ -1154,14 +1281,14 @@ export function testSubscriptionScenarios(): void {
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
 
-        // sleep in order to allow messages to process and check for the added messages
-        await Time.minimalSleep();
-        expect(messages.length).to.equal(5);
-        expect(messages).to.include.members([
-          await Message.getCid(message1.message),
-          await Message.getCid(message2.message),
-          await Message.getCid(message3.message),
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(messages.length).to.equal(5);
+          expect(messages).to.include.members([
+            await Message.getCid(message1.message),
+            await Message.getCid(message2.message),
+            await Message.getCid(message3.message),
+          ]);
+        });
 
         // delete carol participant
         const deleteCarol = await TestDataGenerator.generateRecordsDelete({
@@ -1171,17 +1298,17 @@ export function testSubscriptionScenarios(): void {
         const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
         expect(deleteCarolReply.status.code).to.equal(202);
 
-        // sleep in order to allow messages to process and check for the delete message
-        await Time.minimalSleep();
-        expect(messages.length).to.equal(6);
-        expect(messages).to.include.members([
-          await Message.getCid(deleteCarol.message)
-        ]);
+        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          expect(messages.length).to.equal(6);
+          expect(messages).to.include.members([
+            await Message.getCid(deleteCarol.message)
+          ]);
 
-        // check the initial write was included with the delete
-        expect(initialWrites).to.include.members([
-          await Message.getCid(carolParticipant.message)
-        ]);
+          // check the initial write was included with the delete
+          expect(initialWrites).to.include.members([
+            await Message.getCid(carolParticipant.message)
+          ]);
+        });
       });
     });
   });
