@@ -407,12 +407,14 @@ export function testRecordsSubscribeHandler(): void {
             protocolPath : 'chat'
           };
 
-          const noRoleRecords: string[] = [];
+          const noRoleRecords: Set<string> = new Set();
           const addNoRole = async (event: RecordEvent): Promise<void> => {
             const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
-              noRoleRecords.push(recordsWriteMessage.recordId);
+              noRoleRecords.add(recordsWriteMessage.recordId);
+            } else {
+              noRoleRecords.delete(message.descriptor.recordId);
             }
           };
 
@@ -438,12 +440,14 @@ export function testRecordsSubscribeHandler(): void {
           const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
           expect(friendRoleReply.status.code).to.equal(202);
 
-          const recordIds: string[] = [];
+          const recordIds: Set<string> = new Set();
           const addRecord:RecordSubscriptionHandler = async (event) => {
             const { message } = event;
             if (message.descriptor.method === DwnMethodName.Write) {
               const recordsWriteMessage = message as RecordsWriteMessage;
-              recordIds.push(recordsWriteMessage.recordId);
+              recordIds.add(recordsWriteMessage.recordId);
+            } else {
+              recordIds.delete(message.descriptor.recordId);
             }
           };
 
@@ -488,15 +492,41 @@ export function testRecordsSubscribeHandler(): void {
 
           // there should only be the control message for bob in the subscription without a friend role.
           await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
-            expect(noRoleRecords.length).to.equal(1);
-            expect(noRoleRecords).to.have.members([chatRecordForBob.message.recordId]);
+            expect(noRoleRecords.size).to.equal(1);
+            expect([ ...noRoleRecords ]).to.have.members([chatRecordForBob.message.recordId]);
           });
 
           // All chats should be in the subscription with the friend role.
           await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
-            expect(recordIds.length).to.equal(4);
-            expect(recordIds).to.have.members([ chatRecordForBob.message.recordId, ...chatRecordIds ]);
+            expect(recordIds.size).to.equal(4);
+            expect([ ...recordIds ]).to.have.members([ chatRecordForBob.message.recordId, ...chatRecordIds ]);
           });
+
+          // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/759
+          //      When `RecordsSubscribeHandler` builds up the matchFilters there are no matching filters for a delete within a context
+          //      so the delete event is not being captured by the subscription handler. When the issue is resolved, uncomment the code below
+
+          // Delete a chat message for Bob
+          // const chatForBobDelete = await TestDataGenerator.generateRecordsDelete({
+          //   author       : alice,
+          //   recordId     : chatRecordForBob.message.recordId,
+          // });
+          // const chatForBobDeleteReply = await dwn.processMessage(alice.did, chatForBobDelete.message);
+          // expect(chatForBobDeleteReply.status.code).to.equal(202);
+
+          // // Delete one of the other chat messages
+          // const chatForCarolDelete = await TestDataGenerator.generateRecordsDelete({
+          //   author       : alice,
+          //   recordId     : chatRecordIds[0],
+          // });
+          // const chatForCarolDeleteReply = await dwn.processMessage(alice.did, chatForCarolDelete.message);
+          // expect(chatForCarolDeleteReply.status.code).to.equal(202);
+
+          // await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          //   expect(noRoleRecords.size).to.equal(0); // chat record was removed from the set
+          //   expect(recordIds.size).to.equal(2); // both chat records were removed from the set
+          //   expect([ ...recordIds ]).to.have.members([ ...chatRecordIds.slice(1) ]); // only the last two chat records remain
+          // });
         });
 
         it('does not execute protocol subscriptions where protocolPath is missing from the filter', async () => {
