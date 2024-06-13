@@ -164,6 +164,14 @@ export class PermissionsProtocol {
     permissionRequestData: PermissionRequestData,
     permissionRequestBytes: Uint8Array
   }> {
+
+    if (this.isRecordPermissionScope(options.scope) && options.scope.protocol === undefined) {
+      throw new DwnError(
+        DwnErrorCode.PermissionsProtocolCreateRequestRecordsScopeMissingProtocol,
+        'Permission request for Records must have a scope with a `protocol` property'
+      );
+    }
+
     const scope = PermissionsProtocol.normalizePermissionScope(options.scope);
 
     const permissionRequestData: PermissionRequestData = {
@@ -173,6 +181,13 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
+    let permissionTags = undefined;
+    if (this.isRecordPermissionScope(scope)) {
+      permissionTags = {
+        protocol: scope.protocol
+      };
+    }
+
     const permissionRequestBytes = Encoder.objectToBytes(permissionRequestData);
     const recordsWrite = await RecordsWrite.create({
       signer           : options.signer,
@@ -181,6 +196,7 @@ export class PermissionsProtocol {
       protocolPath     : PermissionsProtocol.requestPath,
       dataFormat       : 'application/json',
       data             : permissionRequestBytes,
+      tags             : permissionTags,
     });
 
     return {
@@ -287,7 +303,9 @@ export class PermissionsProtocol {
     const dataString = Encoder.bytesToString(dataBytes);
     const dataObject = JSON.parse(dataString);
     if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
-      validateJsonSchema('PermissionRequestData', dataObject);
+      const permissionRequestData = dataObject as PermissionRequestData;
+      validateJsonSchema('PermissionRequestData', permissionRequestData);
+      PermissionsProtocol.validateScope(permissionRequestData.scope, recordsWriteMessage);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
       validateJsonSchema('PermissionGrantData', dataObject);
 
