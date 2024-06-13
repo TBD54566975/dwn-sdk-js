@@ -224,7 +224,7 @@ export function testPermissions(): void {
         delegated   : false,
         scope       : permissionScope as any // explicity as any to test the validation
       });
-      expect(requestWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
+      await expect(requestWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateRequestRecordsScopeMissingProtocol);
 
 
       const grantWrite = PermissionsProtocol.createGrant({
@@ -234,7 +234,7 @@ export function testPermissions(): void {
         grantedTo   : bob.did,
         scope       : permissionScope as any // explicity as any to test the validation
       });
-      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
+      await expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
     });
 
     it('should fail if an invalid protocolPath is used during Permissions schema validation', async () => {
@@ -316,7 +316,7 @@ export function testPermissions(): void {
           data         : Encoder.stringToBytes(JSON.stringify({})),
           tags         : { someTag: 'someValue' } // not a protocol tag
         });
-        
+
         expect(
           () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);

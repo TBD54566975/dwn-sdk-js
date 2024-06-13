@@ -168,7 +168,7 @@ export class PermissionsProtocol {
     if (this.isRecordPermissionScope(options.scope) && options.scope.protocol === undefined) {
       throw new DwnError(
         DwnErrorCode.PermissionsProtocolCreateRequestRecordsScopeMissingProtocol,
-        'Permission revokes for Records must have a scope with a `protocol` property'
+        'Permission request for Records must have a scope with a `protocol` property'
       );
     }
 

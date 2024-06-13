@@ -155,7 +155,7 @@ export function testRecordsTags(): void {
               protocolDefinition : invalidSchemaProtocol,
             });
 
-            expect(protocolConfigure).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidTagSchema);
+            await expect(protocolConfigure).to.eventually.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidTagSchema);
           });
 
           it('should reject tags that have invalid schema definitions during process', async () => {
