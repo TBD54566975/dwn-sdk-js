@@ -21,11 +21,11 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
+import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName, Encoder, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 
 chai.use(chaiAsPromised);
 
@@ -476,7 +476,7 @@ export function testAuthorDelegatedGrant(): void {
         signer: Jws.createSigner(alice)
       });
 
-      // Create a handler to set or delete the chat record ID in the subscription set depending on the interface method 
+      // Create a handler to set or delete the chat record ID in the subscription set depending on the interface method
       const subscriptionChatRecords:Set<string> = new Set();
       const captureChatRecords = async (event: RecordEvent): Promise<void> => {
         const { message } = event;
@@ -491,9 +491,9 @@ export function testAuthorDelegatedGrant(): void {
 
       // control: verify that device X cannot subscribe to the chat thread without the delegated grant
       const recordsSubscribeByDeviceXWithoutGrant = await RecordsSubscribe.create({
-        signer         : Jws.createSigner(deviceX),
-        protocolRole   : 'thread/participant',
-        filter         : {
+        signer       : Jws.createSigner(deviceX),
+        protocolRole : 'thread/participant',
+        filter       : {
           contextId    : threadRecord.message.contextId,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'thread/chat'
@@ -557,8 +557,10 @@ export function testAuthorDelegatedGrant(): void {
         expect([ ...subscriptionChatRecords ]).to.have.members([ chatRecord1.message.recordId, chatRecord2.message.recordId ]);
       });
 
-      //TODO: When `RecordsSubscribeHandler` builds up the matchFilters there are no matching filters for a delete within a context
-      //      so the delete event is not being captured by the subscription handler. Open an issue to address this.
+      //TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/759
+      //      When `RecordsSubscribeHandler` builds up the matchFilters there are no matching filters for a delete within a context
+      //      so the delete event is not being captured by the subscription handler. When the issue is resolved, uncomment the code below
+
       // Bob deletes one of the chat messages
       // const deleteRecord = await TestDataGenerator.generateRecordsDelete({
       //   author : bob,

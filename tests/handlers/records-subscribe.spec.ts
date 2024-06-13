@@ -19,10 +19,9 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, Time } from '../../src/index.js';
-import { DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 import { TestTimingUtils } from '../utils/test-timing-utils.js';
+import { DidKey, UniversalResolver } from '@web5/dids';
+import { Dwn, DwnErrorCode, DwnMethodName, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -261,7 +260,7 @@ export function testRecordsSubscribeHandler(): void {
 
       describe('protocol based subscriptions', () => {
         it('does not try protocol authorization if protocolRole is not invoked', async () => {
-          // scenario: 
+          // scenario:
           //           Bob and Carol subscribe to a chat protocol without invoking a protocolRole,
           //           they should receive chat messages addressed to them, respectively.
           //           Alice creates a thread and writes some chat messages to Bob and Carol.
@@ -337,6 +336,7 @@ export function testRecordsSubscribeHandler(): void {
           });
           const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
           expect(chatRecordForBobReply.status.code).to.equal(202);
+          const chatRecordForBobCid = await Message.getCid(chatRecordForBob.message);
 
           // Alice writes two 'chat' records addressed to Carol
           const chatRecordForCarol1 = await TestDataGenerator.generateRecordsWrite({
@@ -348,8 +348,13 @@ export function testRecordsSubscribeHandler(): void {
             parentContextId : threadRecord.message.contextId,
             data            : new TextEncoder().encode('Bob cannot read this'),
           });
-          const chatRecordForCarol1Reply = await dwn.processMessage(alice.did, chatRecordForCarol1.message, { dataStream: chatRecordForCarol1.dataStream });
+          const chatRecordForCarol1Reply = await dwn.processMessage(
+            alice.did,
+            chatRecordForCarol1.message,
+            { dataStream: chatRecordForCarol1.dataStream }
+          );
           expect(chatRecordForCarol1Reply.status.code).to.equal(202);
+          const chatRecordForCarol1Cid = await Message.getCid(chatRecordForCarol1.message);
 
           const chatRecordForCarol2 = await TestDataGenerator.generateRecordsWrite({
             author          : alice,
@@ -360,17 +365,22 @@ export function testRecordsSubscribeHandler(): void {
             parentContextId : threadRecord.message.contextId,
             data            : new TextEncoder().encode('Bob cannot read this either'),
           });
-          const chatRecordForCarol2Reply = await dwn.processMessage(alice.did, chatRecordForCarol2.message, { dataStream: chatRecordForCarol2.dataStream });
+          const chatRecordForCarol2Reply = await dwn.processMessage(
+            alice.did,
+            chatRecordForCarol2.message,
+            { dataStream: chatRecordForCarol2.dataStream }
+          );
           expect(chatRecordForCarol2Reply.status.code).to.equal(202);
+          const chatRecordForCarol2Cid = await Message.getCid(chatRecordForCarol2.message);
 
           await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
             expect(bobMessages.length).to.equal(1);
-            expect(bobMessages).to.have.members([ await Message.getCid(chatRecordForBob.message) ]);
+            expect(bobMessages).to.have.members([ chatRecordForBobCid ]);
           });
 
           await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
             expect(carolMessages.length).to.equal(2);
-            expect(carolMessages).to.have.members([ await Message.getCid(chatRecordForCarol1.message), await Message.getCid(chatRecordForCarol2.message) ]);
+            expect(carolMessages).to.have.members([ chatRecordForCarol1Cid, chatRecordForCarol2Cid ]);
           });
         });
 

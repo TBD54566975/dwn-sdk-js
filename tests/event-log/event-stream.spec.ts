@@ -3,11 +3,11 @@ import type { KeyValues } from '../../src/types/query-types.js';
 import type { MessageEvent } from '../../src/types/subscriptions.js';
 
 import { TestEventStream } from '../test-event-stream.js';
+import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { Message, TestDataGenerator, Time } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 
 chai.use(chaiAsPromised);
 

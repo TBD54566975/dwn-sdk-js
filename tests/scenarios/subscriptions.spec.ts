@@ -14,9 +14,8 @@ import threadProtocol from '../vectors/protocol-definitions/thread-role.json' as
 
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { TestStores } from '../test-stores.js';
-import { Time } from '../../src/utils/time.js';
+import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
@@ -187,7 +186,7 @@ export function testSubscriptionScenarios(): void {
         // alice creates a RecordsWrite message to create a record
         // alice then updates that record with a subsequent RecordsWrite
         // alice checks that the recordsWrite array contains both messages
-        // alice confirms that the recordsDelete array contains no messages 
+        // alice confirms that the recordsDelete array contains no messages
         // alice deletes the record with a RecordsDelete
         // alice writes a new record with a RecordsWrite
         // alice checks that the recordsWrite array includes the new record, but not the delete
@@ -542,7 +541,7 @@ export function testSubscriptionScenarios(): void {
 
       it('filters by schema', async () => {
         //SCENARIO:
-        //  alice creates 2 subscriptions, one for schema1 and one for schema2 
+        //  alice creates 2 subscriptions, one for schema1 and one for schema2
         //  alice creates a record for schema1 and schema2
         //  alice checks that the appropriate messages were received by their respective handlers
         //  alice updates the record for schema1
@@ -646,7 +645,7 @@ export function testSubscriptionScenarios(): void {
           schema : 'schema1'
         });
 
-        // create a subscription and capture the messages associated with the recordId for write1 
+        // create a subscription and capture the messages associated with the recordId for write1
         const messages: string[] = [];
         const subscriptionHandler = async (event: MessageEvent):Promise<void> => {
           const { message } = event;
@@ -712,7 +711,7 @@ export function testSubscriptionScenarios(): void {
         // scenario:
         // alice subscribes to messages with herself as the recipient
         // bob sends a message to alice
-        // carol sends a message to alice 
+        // carol sends a message to alice
         // alice sends a message to bob
         // bob sends a message to carol
         // alice checks that the receivedMessages array only contains the messages from bob and carol to alice
@@ -867,7 +866,7 @@ export function testSubscriptionScenarios(): void {
         });
         const imageData2Reply = await dwn.processMessage(alice.did, imageData2.message, { dataStream: imageData2.dataStream });
         expect(imageData2Reply.status.code).to.equal(202);
-        
+
         await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
           expect(imageMessages.length).to.equal(2);
           expect(imageMessages).to.include.members([ await Message.getCid(imageData2.message) ]);
@@ -969,7 +968,7 @@ export function testSubscriptionScenarios(): void {
         const eventsSubscription1 = await TestDataGenerator.generateEventsSubscribe({ author: alice });
         const eventsSubscription1Reply = await dwn.processMessage(alice.did, eventsSubscription1.message, { subscriptionHandler: handler1 });
         expect(eventsSubscription1Reply.status.code).to.equal(200);
-      
+
         const eventsSubscription2 = await TestDataGenerator.generateEventsSubscribe({ author: alice });
         const eventsSubscription2Reply = await dwn.processMessage(alice.did, eventsSubscription2.message, { subscriptionHandler: handler2 });
         expect(eventsSubscription2Reply.status.code).to.equal(200);
@@ -1009,7 +1008,7 @@ export function testSubscriptionScenarios(): void {
 
         await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
           expect(sub1MessageCids.length).to.equal(3); // all three messages exist
-          expect(sub1MessageCids).to.eql([ 
+          expect(sub1MessageCids).to.eql([
             record1MessageCid,
             record2MessageCid,
             record3MessageCid

@@ -1,4 +1,4 @@
-import { Time } from "../../src/utils/time.js";
+import { Time } from '../../src/utils/time.js';
 
 export class TestTimingUtils {
 

@@ -8,6 +8,7 @@ import { testEventsGetHandler } from './handlers/events-get.spec.js';
 import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
 import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
+import { TestEventStream } from './test-event-stream.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
@@ -29,7 +30,6 @@ import { testRecordsWriteHandler } from './handlers/records-write.spec.js';
 import { testResumableTasks } from './features/resumable-tasks.spec.js';
 import { TestStores } from './test-stores.js';
 import { testSubscriptionScenarios } from './scenarios/subscriptions.spec.js';
-import { TestEventStream } from './test-event-stream.js';
 
 /**
  * Class for running DWN tests from an external repository that depends on this SDK.
