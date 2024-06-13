@@ -264,12 +264,9 @@ export function testPermissions(): void {
           tags         : { someTag: 'someValue' } // not a protocol tag
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
       it('should throw if the scope is a RecordsPermissionScope and the grant record has no tags', async () => {
@@ -289,12 +286,9 @@ export function testPermissions(): void {
           data         : Encoder.stringToBytes(JSON.stringify({})),
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
       it('should throw if the protocol tag in the grant record does not match the protocol defined in the scope', async () => {
@@ -315,12 +309,9 @@ export function testPermissions(): void {
           tags         : { protocol: 'https://example.com/protocol/invalid' }
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
       });
 
       it('should throw if protocolPath and contextId are both defined in the scope', async () => {
@@ -343,12 +334,9 @@ export function testPermissions(): void {
           tags         : { protocol: 'https://example.com/protocol/test' }
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
       });
     });
   });

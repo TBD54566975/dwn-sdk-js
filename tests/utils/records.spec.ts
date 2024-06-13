@@ -38,7 +38,7 @@ describe('Records', () => {
       const alice = await TestDataGenerator.generatePersona();
       const deviceX = await TestDataGenerator.generatePersona();
 
-      // create a delegation scope from alice to deviceX for writing records with for a protocol
+      // create a delegation scope from alice to deviceX for writing records in a protocol
       const scope:PermissionScope = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
