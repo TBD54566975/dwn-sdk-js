@@ -182,7 +182,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const permissionGrantId = recordsWriteMessage.descriptor.parentId!;
       const grant = await PermissionsProtocol.fetchGrant(tenant, this.messageStore, permissionGrantId);
       const revokeTagProtocol = recordsWriteMessage.descriptor.tags?.protocol;
-      const grantProtocol = PermissionsProtocol.isRecordPermissionScope(grant.scope) ? grant.scope.protocol : undefined;
+      const grantProtocol = 'protocol' in grant.scope ? grant.scope.protocol : undefined;
       if (grantProtocol !== revokeTagProtocol) {
         throw new DwnError(
           DwnErrorCode.PermissionsProtocolValidateRevocationProtocolTagMismatch,

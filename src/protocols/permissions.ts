@@ -390,7 +390,7 @@ export class PermissionsProtocol {
   /**
    * Type guard to determine if the scope is a record permission scope.
    */
-  public static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
+  private static isRecordPermissionScope(scope: PermissionScope): scope is RecordsPermissionScope {
     return scope.interface === 'Records';
   }
 

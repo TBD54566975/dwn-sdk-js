@@ -31,7 +31,7 @@ export class RecordsGrantAuthorization {
     });
 
     // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
-    RecordsGrantAuthorization.verifyProtocolRecordScope(recordsWriteMessage, permissionGrant.scope as RecordsPermissionScope);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessage, permissionGrant.scope as RecordsPermissionScope);
 
     RecordsGrantAuthorization.verifyConditions(recordsWriteMessage, permissionGrant.conditions);
   }
@@ -61,7 +61,7 @@ export class RecordsGrantAuthorization {
     });
 
     // NOTE: validated the invoked permission is for Records in GrantAuthorization.performBaseValidation()
-    RecordsGrantAuthorization.verifyProtocolRecordScope(recordsWriteMessageToBeRead, permissionGrant.scope as RecordsPermissionScope);
+    RecordsGrantAuthorization.verifyScope(recordsWriteMessageToBeRead, permissionGrant.scope as RecordsPermissionScope);
   }
 
   /**
@@ -138,9 +138,9 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Verifies a protocol record against the scope of the given grant.
+   * Verifies a record against the scope of the given grant.
    */
-  private static verifyProtocolRecordScope(
+  private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {

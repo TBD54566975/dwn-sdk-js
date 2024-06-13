@@ -196,7 +196,7 @@ export function testPermissions(): void {
       const permissionScope: PermissionScope = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
-        protocol  : `any-protocol` // URL will normalize to `http://any-protocol`
+        protocol  : `any-protocol`
       };
 
       const requestToAlice = await PermissionsProtocol.createRequest({
@@ -371,7 +371,7 @@ export function testPermissions(): void {
       ).to.throw(DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord);
     });
 
-    it('performs additional validation to tagged protocol in a Revocation message matches the Grant it is revoking', async () => {
+    it('performs additional validation to the tagged protocol in a Revocation message ensuring it matches the Grant it is revoking', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
 
