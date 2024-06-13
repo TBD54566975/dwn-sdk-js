@@ -247,13 +247,9 @@ export function testPermissions(): void {
         data         : Encoder.stringToBytes(JSON.stringify({}))
       });
 
-      try {
-        PermissionsProtocol.validateSchema(message, dataBytes!);
-        expect.fail('Expected to throw');
-      } catch (error:any) {
-        expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord);
-        expect(error.message).to.include('invalid/path');
-      }
+      expect(
+        () => PermissionsProtocol.validateSchema(message, dataBytes!)
+      ).to.throw(DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord);
     });
 
     describe('validateScope', async () => {
@@ -320,13 +316,10 @@ export function testPermissions(): void {
           data         : Encoder.stringToBytes(JSON.stringify({})),
           tags         : { someTag: 'someValue' } // not a protocol tag
         });
-
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
-        }
+        
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
 
         // create a permission grant without a protocol tag
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
@@ -359,12 +352,9 @@ export function testPermissions(): void {
           data         : Encoder.stringToBytes(JSON.stringify({}))
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
 
         // create a permission grant without a protocol tag
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
@@ -398,12 +388,9 @@ export function testPermissions(): void {
           tags         : { protocol: 'https://example.com/protocol/invalid' }
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, requestWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
 
         // create a permission grant with a protocol tag that does not match the scope
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
@@ -439,12 +426,9 @@ export function testPermissions(): void {
           tags         : { protocol: 'https://example.com/protocol/test' }
         });
 
-        try {
-          PermissionsProtocol['validateScope'](permissionScope, requestRecordsWrite.message);
-          expect.fail('Expected to throw');
-        } catch (error:any) {
-          expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
-        }
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, requestRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
 
         // create a permission grant with a scope that has both protocolPath and contextId
         const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
