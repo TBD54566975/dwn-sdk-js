@@ -138,37 +138,12 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Verifies the given record against the scope of the given grant.
+   * Verifies a record against the scope of the given grant.
    */
   private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
-    grantScope: RecordsPermissionScope,
-  ): void {
-    if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
-      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
-      return;
-    } else if (recordsWriteMessage.descriptor.protocol !== undefined) {
-      // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.verifyProtocolRecordScope(recordsWriteMessage, grantScope);
-    } else {
-      RecordsGrantAuthorization.verifyFlatRecordScope(recordsWriteMessage, grantScope);
-    }
-  }
-
-  /**
-   * Verifies a protocol record against the scope of the given grant.
-   */
-  private static verifyProtocolRecordScope(
-    recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {
-    // Protocol records must have grants specifying the protocol
-    if (grantScope.protocol === undefined) {
-      throw new DwnError(
-        DwnErrorCode.RecordsGrantAuthorizationScopeMissingProtocol,
-        'Grant for protocol record must specify protocol in its scope'
-      );
-    }
 
     // The record's protocol must match the protocol specified in the record
     if (grantScope.protocol !== recordsWriteMessage.descriptor.protocol) {
@@ -198,23 +173,6 @@ export class RecordsGrantAuthorization {
   }
 
   /**
-   * Verifies a non-protocol record against the scope of the given grant.
-   */
-  private static verifyFlatRecordScope(
-    recordsWriteMessage: RecordsWriteMessage,
-    grantScope: RecordsPermissionScope
-  ): void {
-    if (grantScope.schema !== undefined) {
-      if (grantScope.schema !== recordsWriteMessage.descriptor.schema) {
-        throw new DwnError(
-          DwnErrorCode.RecordsGrantAuthorizationScopeSchema,
-          `Record does not have schema in permission grant scope with schema '${grantScope.schema}'`
-        );
-      }
-    }
-  }
-
-  /**
    * Verifies grant `conditions`.
    * Currently the only condition is `published` which only applies to RecordsWrites
    */
@@ -235,14 +193,5 @@ export class RecordsGrantAuthorization {
         'Permission grant prohibits message from being published'
       );
     }
-  }
-
-  /**
-   * Checks if scope has no restrictions beyond interface and method.
-   * Grant-holder is authorized to access any record.
-   */
-  private static isUnrestrictedScope(grantScope: RecordsPermissionScope): boolean {
-    return grantScope.protocol === undefined &&
-           grantScope.schema === undefined;
   }
 }

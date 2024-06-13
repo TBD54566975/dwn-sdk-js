@@ -16,7 +16,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, RecordsQuery, RecordsWrite, Time } from '../../src/index.js';
+import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, RecordsQuery, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -56,6 +56,7 @@ export function testPermissions(): void {
     });
 
     after(async () => {
+      sinon.restore();
       await dwn.close();
     });
 
@@ -207,216 +208,167 @@ export function testPermissions(): void {
       expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
     });
 
-    describe('schema validation', () => {
-      it('should reject with 400 if a permission message fails schema validation', async () => {
-        // Scenario:
-        // 1. Verify that a permission request is rejected with the data payload is invalid
-        // 2. Verify that a permission grant is rejected with the data payload is invalid
-        // 3. Write a valid permission grant
-        // 4. Verify that a permission revocation is rejected with the data payload is invalid
-        // 5. Verify that an unexpected/unknown permission record is rejected
+    it('should fail if a RecordsPermissionScope is provided without a protocol', async () => {
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+
+      const permissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write
+      };
+
+      const grantWrite = PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow Bob to write',
+        grantedTo   : bob.did,
+        scope       : permissionScope as any // explicity as any to test the validation
+      });
+      expect(grantWrite).to.eventually.be.rejectedWith(DwnErrorCode.PermissionsProtocolCreateGrantRecordsScopeMissingProtocol);
+    });
+
+    it('should fail if an invalid protocolPath is used during Permissions schema validation', async () => {
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      const { message, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        protocol     : PermissionsProtocol.uri,
+        protocolPath : 'invalid/path',
+        data         : Encoder.stringToBytes(JSON.stringify({}))
+      });
+
+      try {
+        PermissionsProtocol.validateSchema(message, dataBytes!);
+        expect.fail('Expected to throw');
+      } catch (error:any) {
+        expect(error.message).to.include(DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord);
+        expect(error.message).to.include('invalid/path');
+      }
+    });
+
+    describe('validateScope', async () => {
+      it('should be called for a Grant record', async () => {
+        // spy on `validateScope`
+        const validateScopeSpy = sinon.spy(PermissionsProtocol as any, 'validateScope');
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // 1. Verify that a permission request is rejected with the data payload is invalid
-        const invalidPermissionRequestData = {
-          description: 'missing required properties such as `scope`'
+        const permissionScope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'https://example.com/protocol/test'
         };
 
-        const requestBytes = Encoder.objectToBytes(invalidPermissionRequestData);
-        const requestRecordsWrite = await RecordsWrite.create({
-          signer       : Jws.createSigner(bob),
-          protocol     : PermissionsProtocol.uri,
-          protocolPath : PermissionsProtocol.requestPath,
-          dataFormat   : 'application/json',
-          data         : requestBytes,
-        });
-        const requestWriteReply = await dwn.processMessage(
-          alice.did,
-          requestRecordsWrite.message,
-          { dataStream: DataStream.fromBytes(requestBytes) }
-        );
-
-        expect(requestWriteReply.status.code).to.equal(400);
-        expect(requestWriteReply.status.detail).to.contain(DwnErrorCode.SchemaValidatorFailure);
-
-        // 2. Verify that a permission grant is rejected with the data payload is invalid
-        const invalidPermissionGrantData = {
-          description: 'missing required properties such as `scope`'
-        };
-
-        const grantBytes = Encoder.objectToBytes(invalidPermissionGrantData);
-        const grantRecordsWrite = await RecordsWrite.create({
-          signer       : Jws.createSigner(alice),
-          recipient    : bob.did,
-          protocol     : PermissionsProtocol.uri,
-          protocolPath : PermissionsProtocol.grantPath,
-          dataFormat   : 'application/json',
-          data         : grantBytes,
-        });
-        const invalidGrantWriteReply = await dwn.processMessage(
-          alice.did,
-          grantRecordsWrite.message,
-          { dataStream: DataStream.fromBytes(grantBytes) }
-        );
-
-        expect(invalidGrantWriteReply.status.code).to.equal(400);
-        expect(invalidGrantWriteReply.status.detail).to.contain(DwnErrorCode.SchemaValidatorFailure);
-
-        // 3. Write a valid permission grant
-        const grantWrite = await PermissionsProtocol.createGrant({
+        // create a grant
+        const grantedToBob = await PermissionsProtocol.createGrant({
           signer      : Jws.createSigner(alice),
           dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
           description : 'Allow Bob to write',
           grantedTo   : bob.did,
-          scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write }
+          scope       : permissionScope
         });
 
         const grantWriteReply = await dwn.processMessage(
           alice.did,
-          grantWrite.recordsWrite.message,
-          { dataStream: DataStream.fromBytes(grantWrite.permissionGrantBytes) }
+          grantedToBob.recordsWrite.message,
+          { dataStream: DataStream.fromBytes(grantedToBob.permissionGrantBytes) }
         );
         expect(grantWriteReply.status.code).to.equal(202);
+        expect(validateScopeSpy.calledOnce).to.be.true;
+      });
 
-        // 4. Verify that a permission revocation is rejected with the data payload is invalid
-        const invalidPermissionRevocationData = {
-          unknownProperty: 'unknown property',
+      it('should throw if the scope is a RecordsPermissionScope and a protocol tag is not defined on the grant record', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant without a protocol tag
+        const permissionScope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'https://example.com/protocol/test'
         };
 
-        const revocationBytes = Encoder.objectToBytes(invalidPermissionRevocationData);
-        const revocationRecordsWrite = await RecordsWrite.create({
-          signer          : Jws.createSigner(alice),
-          parentContextId : grantWrite.recordsWrite.message.recordId,
-          protocol        : PermissionsProtocol.uri,
-          protocolPath    : PermissionsProtocol.revocationPath,
-          dataFormat      : 'application/json',
-          data            : revocationBytes,
-        });
-        const revokeWriteReply = await dwn.processMessage(
-          alice.did,
-          revocationRecordsWrite.message,
-          { dataStream: DataStream.fromBytes(revocationBytes) }
-        );
-
-        expect(revokeWriteReply.status.code).to.equal(400);
-        expect(revokeWriteReply.status.detail).to.contain(DwnErrorCode.SchemaValidatorAdditionalPropertyNotAllowed);
-
-        // 5. Verify that an unexpected/unknown permission record is rejected
-        const unknownPermissionRecordData = {
-          unknownProperty: 'unknown property',
-        };
-
-        const unknownRecordBytes = Encoder.objectToBytes(unknownPermissionRecordData);
-        const unknownRecordsWrite = await RecordsWrite.create({
-          signer       : Jws.createSigner(alice),
+        const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
           protocol     : PermissionsProtocol.uri,
-          protocolPath : 'unknown-path',
-          dataFormat   : 'application/json',
-          data         : revocationBytes,
+          protocolPath : PermissionsProtocol.grantPath,
+          data         : Encoder.stringToBytes(JSON.stringify({})),
+          tags         : { someTag: 'someValue' } // not a protocol tag
         });
 
-        expect(() => PermissionsProtocol.validateSchema(unknownRecordsWrite.message, unknownRecordBytes))
-          .to.throw(DwnErrorCode.PermissionsProtocolValidateSchemaUnexpectedRecord);
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
-      it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath` are not both present', async () => {
+      it('should throw if the scope is a RecordsPermissionScope and the grant record has no tags', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
-        const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // `schema` and `protocol` may not both be present in grant `scope`
-        const schemaAndProtocolGrant = await PermissionsProtocol.createGrant({
-          signer      : Jws.createSigner(alice),
-          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-          description : 'Allow Bob to write',
-          grantedTo   : bob.did,
-          scope       : {
-            interface : DwnInterfaceName.Records,
-            method    : DwnMethodName.Write,
-            schema    : 'some-schema',
-            protocol  : 'some-protocol'
-          }
+        // create a permission grant without a protocol tag
+        const permissionScope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'https://example.com/protocol/test'
+        };
+
+        const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.grantPath,
+          data         : Encoder.stringToBytes(JSON.stringify({})),
         });
 
-        const schemaAndProtocolGrantReply = await dwn.processMessage(
-          alice.did,
-          schemaAndProtocolGrant.recordsWrite.message,
-          { dataStream: DataStream.fromBytes(schemaAndProtocolGrant.permissionGrantBytes) }
-        );
-        expect(schemaAndProtocolGrantReply.status.code).to.eq(400);
-        expect(schemaAndProtocolGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateScopeSchemaProhibitedProperties);
-
-        // `schema` and `contextId` may not both be present in grant `scope`
-        const schemaAndContextIdGrant = await PermissionsProtocol.createGrant({
-          signer      : Jws.createSigner(alice),
-          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-          description : 'Allow Bob to write',
-          grantedTo   : bob.did,
-          scope       : {
-            interface : DwnInterfaceName.Records,
-            method    : DwnMethodName.Write,
-            schema    : 'some-schema',
-            contextId : 'some-context-id'
-          }
-        });
-
-        const schemaAndContextIdGrantReply = await dwn.processMessage(
-          alice.did,
-          schemaAndContextIdGrant.recordsWrite.message,
-          { dataStream: DataStream.fromBytes(schemaAndContextIdGrant.permissionGrantBytes) }
-        );
-        expect(schemaAndContextIdGrantReply.status.code).to.eq(400);
-        expect(schemaAndContextIdGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateScopeSchemaProhibitedProperties);
-
-        // `schema` and `protocolPath` may not both be present in grant `scope`
-        const schemaAndProtocolPathGrant = await PermissionsProtocol.createGrant({
-          signer      : Jws.createSigner(alice),
-          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-          description : 'Allow Bob to write',
-          grantedTo   : bob.did,
-          scope       : {
-            interface    : DwnInterfaceName.Records,
-            method       : DwnMethodName.Write,
-            schema       : 'some-schema',
-            protocolPath : 'some-protocol-path'
-          }
-        });
-
-        const schemaAndProtocolPathGrantReply = await dwn.processMessage(
-          alice.did,
-          schemaAndProtocolPathGrant.recordsWrite.message,
-          { dataStream: DataStream.fromBytes(schemaAndProtocolPathGrant.permissionGrantBytes) }
-        );
-        expect(schemaAndProtocolPathGrantReply.status.code).to.eq(400);
-        expect(schemaAndProtocolPathGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateScopeSchemaProhibitedProperties);
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
-      it('ensures that `contextId` and `protocolPath` are not both present in grant scope', async () => {
+      it('should throw if the protocol tag in the grant record does not match the protocol defined in the scope', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
-        const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        const grant = await PermissionsProtocol.createGrant({
-          signer      : Jws.createSigner(alice),
-          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-          description : 'Allow Bob to write',
-          grantedTo   : bob.did,
-          scope       : {
-            interface    : DwnInterfaceName.Records,
-            method       : DwnMethodName.Write,
-            protocol     : 'some-protocol',
-            contextId    : 'some-context-id',
-            protocolPath : 'some-protocol-path'
-          }
+        // create a permission grant with a protocol tag that does not match the scope
+        const permissionScope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'https://example.com/protocol/test'
+        };
+
+        const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.grantPath,
+          data         : Encoder.stringToBytes(JSON.stringify({ })),
+          tags         : { protocol: 'https://example.com/protocol/invalid' }
         });
 
-        const schemaAndProtocolGrantReply = await dwn.processMessage(
-          alice.did,
-          grant.recordsWrite.message,
-          { dataStream: DataStream.fromBytes(grant.permissionGrantBytes) }
-        );
-        expect(schemaAndProtocolGrantReply.status.code).to.eq(400);
-        expect(schemaAndProtocolGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
+      });
+
+      it('should throw if protocolPath and contextId are both defined in the scope', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with a protocol tag that does not match the scope
+        const permissionScope: PermissionScope = {
+          interface    : DwnInterfaceName.Records,
+          method       : DwnMethodName.Write,
+          protocol     : 'https://example.com/protocol/test',
+          protocolPath : 'test/path',
+          contextId    : 'test-context'
+        };
+
+        const grantRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : PermissionsProtocol.uri,
+          protocolPath : PermissionsProtocol.grantPath,
+          data         : Encoder.stringToBytes(JSON.stringify({ })),
+          tags         : { protocol: 'https://example.com/protocol/test' }
+        });
+
+        expect(
+          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+        ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
       });
     });
   });

@@ -68,10 +68,22 @@ export type PermissionRevocationData = {
 /**
  * The data model for a permission scope.
  */
-export type PermissionScope = {
-  interface: DwnInterfaceName;
-  method: DwnMethodName;
-} | RecordsPermissionScope;
+export type PermissionScope = ProtocolPermissionScope | MessagesPermissionScope | EventsPermissionScope | RecordsPermissionScope;
+
+export type ProtocolPermissionScope = {
+  interface: DwnInterfaceName.Protocols;
+  method: DwnMethodName.Configure | DwnMethodName.Query;
+};
+
+export type MessagesPermissionScope = {
+  interface: DwnInterfaceName.Messages;
+  method: DwnMethodName.Get;
+};
+
+export type EventsPermissionScope = {
+  interface: DwnInterfaceName.Events;
+  method: DwnMethodName.Get | DwnMethodName.Query | DwnMethodName.Subscribe;
+};
 
 /**
  * The data model for a permission scope that is specific to the Records interface.
@@ -79,14 +91,11 @@ export type PermissionScope = {
 export type RecordsPermissionScope = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read | DwnMethodName.Write | DwnMethodName.Query | DwnMethodName.Subscribe | DwnMethodName.Delete;
-  /** May only be present when `schema` is undefined */
-  protocol?: string;
+  protocol: string;
   /** May only be present when `protocol` is defined and `protocolPath` is undefined */
   contextId?: string;
   /** May only be present when `protocol` is defined and `contextId` is undefined */
   protocolPath?: string;
-  /** May only be present when `protocol` is undefined */
-  schema?: string;
 };
 
 export enum PermissionConditionPublication {
