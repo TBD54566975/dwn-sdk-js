@@ -96,7 +96,9 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
-      await this.validateUserlandRulesForCoreRecordsWrite(tenant, message);
+      // Preform any necessary validation for a core RecordsWrite
+      // For instance: a Permission revocation RecordsWrite.
+      await this.preProcessingForCoreRecordsWrite(tenant, message);
 
       // NOTE: We allow isLatestBaseState to be true ONLY if the incoming message comes with data, or if the incoming message is NOT an initial write
       // This would allow an initial write to be written to the DB without data, but having it not queryable,
@@ -176,7 +178,7 @@ export class RecordsWriteHandler implements MethodHandler {
    * Performs additional necessary validation if the RecordsWrite handled is a core DWN RecordsWrite that need additional processing.
    * For instance: a Permission revocation RecordsWrite.
    */
-  private async validateUserlandRulesForCoreRecordsWrite(tenant: string, recordsWriteMessage: RecordsWriteMessage): Promise<void> {
+  private async preProcessingForCoreRecordsWrite(tenant: string, recordsWriteMessage: RecordsWriteMessage): Promise<void> {
     if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri &&
       recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
       const permissionGrantId = recordsWriteMessage.descriptor.parentId!;
