@@ -28,7 +28,6 @@ import { base64url } from 'multiformats/bases/base64';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { Dwn } from '../../src/dwn.js';
-import { DwnError, DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Jws } from '../../src/utils/jws.js';
@@ -43,6 +42,7 @@ import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
+import { DwnError, DwnErrorCode } from '../../src/core/dwn-error.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
 import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, PermissionsProtocol, RecordsDelete, RecordsQuery } from '../../src/index.js';
