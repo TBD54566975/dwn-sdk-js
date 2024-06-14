@@ -28,7 +28,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { Dwn } from '../../src/dwn.js';
-import { DwnErrorCode } from '../../src/core/dwn-error.js';
+import { DwnError, DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Jws } from '../../src/utils/jws.js';
@@ -91,17 +91,26 @@ export function testRecordsWriteHandler(): void {
         await dwn.close();
       });
 
-      it('should call preProcessingForCoreRecordsWrite after authorization', async () => {
-        // create a records write message
+      it('should call preProcessingForCoreRecordsWrite after authorization and before storage', async () => {
+        // We create spy and stub the authorization, preProcessingForCoreRecordsWrite and processMessageWithDataStream methods
+        // When we trigger a failure for `preProcessingForCoreRecordsWrite`, we expect the `processMessageWithDataStream` method to not be called
+
+        const authorizationSpy = sinon.spy(RecordsWriteHandler as any, 'authorizeRecordsWrite');
+        const processDataStreamSpy = sinon.spy(RecordsWriteHandler.prototype as any, 'processMessageWithDataStream');
+        const preProcessingForCoreRecordsWriteSpy = sinon.stub(RecordsWriteHandler.prototype as any, 'preProcessingForCoreRecordsWrite')
+          .throws(new DwnError(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch, 'Some Error'));
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const preProcessingForCoreRecordsWriteSpy = sinon.spy(RecordsWriteHandler.prototype as any, 'preProcessingForCoreRecordsWrite');
-
         const reply = await dwn.processMessage(alice.did, message, { dataStream });
-        expect(reply.status.code).to.equal(202);
+        expect(reply.status.code).to.equal(400);
 
-        // confirm that the preProcessingForCoreRecordsWrite method was called
+        // expect that authorization and preProcessingForCoreRecordsWrite are both called once
+        expect(authorizationSpy.calledOnce).to.be.true;
         expect(preProcessingForCoreRecordsWriteSpy.calledOnce).to.be.true;
+
+        // expect that processMessageWithDataStream is NOT called since preProcessingForCoreRecordsWrite failed before reaching it
+        expect(processDataStreamSpy.called).to.be.false;
       });
 
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {

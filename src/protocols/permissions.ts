@@ -67,7 +67,7 @@ export type PermissionRevocationCreateOptions = {
   signer?: Signer;
   grantId: string;
   /**
-   * If the grant was scoped to a protocol, the protocol must be included in the revocation.
+   * If the grant being revoked was scoped to a protocol, the protocol must be included in the revocation.
    */
   protocol?: string;
   dateRevoked?: string;
@@ -186,7 +186,7 @@ export class PermissionsProtocol {
     };
 
     // If the request is scoped to a protocol, the protocol tag must be included with the record.
-    // This is done in order to do a subset message query that includes the requests tied to a specific protocol
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission requests associated with it.
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -241,7 +241,7 @@ export class PermissionsProtocol {
     };
 
     // If the grant is scoped to a protocol, the protocol tag must be included with the record.
-    // This is done in order to do a subset message query that includes grants tied to a specific protocol
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission grants associated with it.
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -288,9 +288,9 @@ export class PermissionsProtocol {
     };
 
     // if the grant was scoped to a protocol, the protocol tag must be included in the revocation
-    // this is done in order to do a subset message query that includes the grant revocations tied to a specific protocol
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission revocations associated with it.
     //
-    // the tag is validated against the original grant when the revocation is processed.
+    // NOTE: the added tag is validated against the original grant when the revocation is processed by the DWN.
     let permissionTags = undefined;
     if (options.protocol !== undefined) {
       const protocol = normalizeProtocolUrl(options.protocol);

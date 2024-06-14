@@ -372,6 +372,12 @@ export function testPermissions(): void {
     });
 
     it('performs additional validation to the tagged protocol in a Revocation message ensuring it matches the Grant it is revoking', async () => {
+      // scenario:
+      //  Alice creates a grant scoped to a protocol.
+      //  Alice then tries to revoke the grant without a protocol set, it should fail.
+      //  Alice then tries to revoke the grant with an invalid protocol, it should fail.
+      //  Alice finally tries to revoke the grant with a valid protocol, it should succeed.
+
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
 
