@@ -24,11 +24,11 @@ import { expect } from 'chai';
 // NOTE: We use `TestTimingUtils.pollUntilSuccessOrTimeout` to poll for the expected results.
 // In some cases, the EventStream is a coordinated pub/sub system and the messages/events are emitted over the network
 // this means that the messages are not processed immediately and we need to wait for the messages to be processed
-// before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll
+// before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll until the expected results are met.
 
 // It is also important to note that in some cases where we are testing a negative case (the message not arriving at the subscriber)
 // we add an alternate subscription to await results within to give the EventStream ample time to process the message.
-// In some of these cases the order in which messages are sent to be processed may matter, and they are noted as such.
+// Additionally inn some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
 
 export function testSubscriptionScenarios(): void {
   describe('subscriptions', () => {
@@ -68,8 +68,8 @@ export function testSubscriptionScenarios(): void {
 
     describe('events subscribe', () => {
       it('all events', async () => {
-        // Scenario: Alice subscribes to all events and creates 3 messages.
-        // Alice expects to receive all 3 messages.
+        // Scenario: Alice subscribes to all events and creates 3 messages. Alice then expects to receive all 3 messages.
+
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // create a handler that adds the messageCid of each message to an array.
@@ -204,16 +204,15 @@ export function testSubscriptionScenarios(): void {
 
       it('filters by method type', async () => {
         // scenario:
-        // alice creates a subscription to an interface of Records and method of Write
-        // alice creates a second subscription with an interface of Records and method of Delete
-        // alice creates a RecordsWrite message to create a record
-        // alice then updates that record with a subsequent RecordsWrite
-        // alice checks that the recordsWrite array contains both messages
-        // alice confirms that the recordsDelete array contains no messages
-        // alice deletes the record with a RecordsDelete
-        // alice writes a new record with a RecordsWrite
-        // alice checks that the recordsWrite array includes the new record, but not the delete
-        // alice checks the recordsDelete array includes the delete message
+        // Alice creates a subscription filtered to RecordsWrite messages
+        // Alice creates a second subscription filtered to RecordsDelete messages
+        // Alice creates a RecordsWrite message, then updates the records with a subsequent RecordsWrite
+        // Alice checks that the subscription handler for RecordsWrite received both messages
+        // Alice checks that the subscription handler for RecordsDelete did not receive any messages
+        // Alice now deletes the record with a RecordsDelete
+        // Alice also writes a new record with a RecordsWrite
+        // Alice checks that the RecordsWrite handler received the new record, but not the delete message
+        // Alice checks the RecordsDelete handler received the delete message
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
@@ -301,9 +300,7 @@ export function testSubscriptionScenarios(): void {
             recordUpdateMessageCid,
             record2MessageCid,
           ]);
-        });
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
           // ensure the delete message is in the recordsDelete array
           expect(recordsDeleteMessageCids.length).to.equal(1);
           expect(recordsDeleteMessageCids).to.include.members([

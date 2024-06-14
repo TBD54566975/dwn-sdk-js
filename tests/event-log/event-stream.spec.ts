@@ -16,11 +16,11 @@ chai.use(chaiAsPromised);
 // NOTE: We use `TestTimingUtils.pollUntilSuccessOrTimeout` to poll for the expected results.
 // In some cases, the EventStream is a coordinated pub/sub system and the messages/events are emitted over the network
 // this means that the messages are not processed immediately and we need to wait for the messages to be processed
-// before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll
+// before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll until the expected results are met.
 
 // It is also important to note that in some cases where we are testing a negative case (the message not arriving at the subscriber)
 // we add an alternate subscription to await results within to give the EventStream ample time to process the message.
-// In some of these cases the order in which messages are sent to be processed may matter, and they are noted as such.
+// Additionally inn some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
 
 describe('EventStream', () => {
   // saving the original `console.error` function to re-assign after tests complete

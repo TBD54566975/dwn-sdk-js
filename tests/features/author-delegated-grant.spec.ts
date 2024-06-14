@@ -417,7 +417,7 @@ export function testAuthorDelegatedGrant(): void {
 
     it('should only allow correct entity invoking an author-delegated grant to subscribe', async () => {
       // scenario:
-      // 1. Bob installs the chat protocol and creates a thread, adding alice as a participant.
+      // 1. Bob installs a chat protocol and creates a thread, adding Alice as a participant.
       // 2. Alice a creates subscribe delegated grant for device X,
       // 3. Carol should not be able to subscribe to the chat using deviceX's delegated grant.
       // 4. deviceX creates a subscription to receive events using the delegated grant.
