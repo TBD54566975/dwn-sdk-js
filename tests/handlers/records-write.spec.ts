@@ -92,7 +92,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should call preProcessingForCoreRecordsWrite after authorization and before storage', async () => {
-        // We create spy and stub the authorization, preProcessingForCoreRecordsWrite and processMessageWithDataStream methods
+        // We create spy or stub for authorization, preProcessingForCoreRecordsWrite and processMessageWithDataStream methods
         // When we trigger a failure for `preProcessingForCoreRecordsWrite`, we expect the `processMessageWithDataStream` method to not be called
 
         const authorizationSpy = sinon.spy(RecordsWriteHandler as any, 'authorizeRecordsWrite');

@@ -10,8 +10,10 @@ import chai, { expect } from 'chai';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { Dwn } from '../../src/dwn.js';
 import { Jws } from '../../src/utils/jws.js';
+import { PermissionGrant } from '../../src/protocols/permission-grant.js';
 import { PermissionsProtocol } from '../../src/protocols/permissions.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
+import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -63,6 +65,8 @@ export function testPermissions(): void {
     it('should include record tags using the createRequest, createGrant and createRevocation if provided', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
+      const testProtocol = 'https://example.com/protocol/test';
+
       // createRequest with a protocol
       const requestWrite = await PermissionsProtocol.createRequest({
         signer      : Jws.createSigner(alice),
@@ -71,10 +75,10 @@ export function testPermissions(): void {
         scope       : {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
-          protocol  : 'https://example.com/protocol/test'
+          protocol  : testProtocol,
         }
       });
-      expect(requestWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'https://example.com/protocol/test' });
+      expect(requestWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: testProtocol });
 
       // createGrant with a protocol
       const grantWrite = await PermissionsProtocol.createGrant({
@@ -85,19 +89,18 @@ export function testPermissions(): void {
         scope       : {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
-          protocol  : 'https://example.com/protocol/test'
+          protocol  : testProtocol,
         }
       });
-      expect(grantWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'https://example.com/protocol/test' });
+      expect(grantWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: testProtocol });
 
-      // createRevocation with a protocol
+      // createRevocation with a protocol derived from the grant
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
-        protocol    : 'https://example.com/protocol/test',
+        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp()
       });
-      expect(revokeWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'https://example.com/protocol/test' });
+      expect(revokeWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: testProtocol });
     });
 
     it('should normalize the protocol URL in the scope of a Request, Grant, and Revocation', async () => {
@@ -157,24 +160,43 @@ export function testPermissions(): void {
         }
       });
       expect(grantWrite2.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'https://any-protocol' });
+    });
 
-      // createRevocation with a protocol that will be normalized to `http://any-protocol`
+    it('should derive the grantId and protocol from the grant record when creating a revocation', async () => {
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
+
+      const grantProtocol = 'https://example.com/protocol/test';
+
+      // alice creates a grant for bob
+      const grantWrite = await PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow Bob to write',
+        grantedTo   : bob.did,
+        scope       : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : grantProtocol,
+        }
+      });
+      const grantWriteReply = await dwn.processMessage(alice.did, grantWrite.recordsWrite.message, {
+        dataStream: DataStream.fromBytes(grantWrite.permissionGrantBytes)
+      });
+      expect(grantWriteReply.status.code).to.equal(202);
+
+      // derive the grantId and protocol from the grant record
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
-        protocol    : 'any-protocol', // URL will normalize to `http://any-protocol`
+        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp()
       });
-      expect(revokeWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'http://any-protocol' });
 
-      // createRevocation with a protocol that is already normalized to `https://any-protocol`
-      const revokeWrite2 = await PermissionsProtocol.createRevocation({
-        signer      : Jws.createSigner(alice),
-        grantId     : grantWrite2.recordsWrite.message.recordId,
-        protocol    : 'https://any-protocol',
-        dateRevoked : Time.getCurrentTimestamp()
-      });
-      expect(revokeWrite2.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: 'https://any-protocol' });
+      // check that the protocol is in the revocation record's tags
+      expect(revokeWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: grantProtocol });
+
+      // check that the revocation's parentId is the grant's recordId
+      expect(revokeWrite.recordsWrite.message.descriptor.parentId).to.equal(grantWrite.recordsWrite.message.recordId);
     });
 
     it('should support permission management through use of Request, Grants, and Revocations', async () => {
@@ -294,9 +316,8 @@ export function testPermissions(): void {
       // 7. Verify that non-owner cannot revoke the grant
       const unauthorizedRevokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(bob),
-        grantId     : grantWrite.recordsWrite.message.recordId,
+        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp(),
-        protocol    : permissionScope.protocol
       });
 
       const unauthorizedRevokeWriteReply = await dwn.processMessage(
@@ -310,9 +331,8 @@ export function testPermissions(): void {
       // 8. Alice revokes the permission grant for Bob
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
+        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp(),
-        protocol    : permissionScope.protocol
       });
 
       const revokeWriteReply = await dwn.processMessage(
@@ -401,15 +421,19 @@ export function testPermissions(): void {
       });
       expect(grantWriteReply.status.code).to.equal(202);
 
-      // revoke the grant without a protocol set
-      const revokeWriteWithoutProtocol = await PermissionsProtocol.createRevocation({
-        signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
-        dateRevoked : Time.getCurrentTimestamp()
+      // attempt to revoke the grant without a protocol set
+      const permissionRevocationBytes = Encoder.objectToBytes({ description: 'Revoking the grant' });
+      const revokeWithoutProtocolRecordsWrite = await RecordsWrite.create({
+        signer          : Jws.createSigner(alice),
+        parentContextId : grantWrite.dataEncodedMessage.recordId,
+        protocol        : PermissionsProtocol.uri,
+        protocolPath    : PermissionsProtocol.revocationPath,
+        dataFormat      : 'application/json',
+        data            : permissionRevocationBytes,
       });
 
-      const revokeWriteWithoutProtocolReply = await dwn.processMessage(alice.did, revokeWriteWithoutProtocol.recordsWrite.message, {
-        dataStream: DataStream.fromBytes(revokeWriteWithoutProtocol.permissionRevocationBytes)
+      const revokeWriteWithoutProtocolReply = await dwn.processMessage(alice.did, revokeWithoutProtocolRecordsWrite.message, {
+        dataStream: DataStream.fromBytes(permissionRevocationBytes)
       });
       expect(revokeWriteWithoutProtocolReply.status.code).to.equal(400);
       expect(revokeWriteWithoutProtocolReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateRevocationProtocolTagMismatch);
@@ -418,15 +442,18 @@ export function testPermissions(): void {
       );
 
       // revoke the grant with an invalid protocol
-      const revokeWriteWithMissMatchedProtocol = await PermissionsProtocol.createRevocation({
-        signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
-        protocol    : invalidProtocol,
-        dateRevoked : Time.getCurrentTimestamp()
+      const revokeWriteWithMissMatchedProtocol = await RecordsWrite.create({
+        signer          : Jws.createSigner(alice),
+        parentContextId : grantWrite.dataEncodedMessage.recordId,
+        protocol        : PermissionsProtocol.uri,
+        protocolPath    : PermissionsProtocol.revocationPath,
+        dataFormat      : 'application/json',
+        data            : permissionRevocationBytes,
+        tags            : { protocol: invalidProtocol }
       });
 
-      const revokeWriteWithMissMatchedProtocolReply = await dwn.processMessage(alice.did, revokeWriteWithMissMatchedProtocol.recordsWrite.message, {
-        dataStream: DataStream.fromBytes(revokeWriteWithMissMatchedProtocol.permissionRevocationBytes)
+      const revokeWriteWithMissMatchedProtocolReply = await dwn.processMessage(alice.did, revokeWriteWithMissMatchedProtocol.message, {
+        dataStream: DataStream.fromBytes(permissionRevocationBytes)
       });
       expect(revokeWriteWithMissMatchedProtocolReply.status.code).to.equal(400);
       expect(revokeWriteWithMissMatchedProtocolReply.status.detail).to.contain(DwnErrorCode.PermissionsProtocolValidateRevocationProtocolTagMismatch);
@@ -435,15 +462,18 @@ export function testPermissions(): void {
       );
 
       // revoke the grant with a valid protocol
-      const revokeWrite = await PermissionsProtocol.createRevocation({
-        signer      : Jws.createSigner(alice),
-        grantId     : grantWrite.recordsWrite.message.recordId,
-        protocol    : grantProtocol,
-        dateRevoked : Time.getCurrentTimestamp()
+      const revokeWrite = await RecordsWrite.create({
+        signer          : Jws.createSigner(alice),
+        parentContextId : grantWrite.dataEncodedMessage.recordId,
+        protocol        : PermissionsProtocol.uri,
+        protocolPath    : PermissionsProtocol.revocationPath,
+        dataFormat      : 'application/json',
+        data            : permissionRevocationBytes,
+        tags            : { protocol: grantProtocol }
       });
 
-      const revokeWriteReply = await dwn.processMessage(alice.did, revokeWrite.recordsWrite.message, {
-        dataStream: DataStream.fromBytes(revokeWrite.permissionRevocationBytes)
+      const revokeWriteReply = await dwn.processMessage(alice.did, revokeWrite.message, {
+        dataStream: DataStream.fromBytes(permissionRevocationBytes)
       });
       expect(revokeWriteReply.status.code).to.equal(202);
     });

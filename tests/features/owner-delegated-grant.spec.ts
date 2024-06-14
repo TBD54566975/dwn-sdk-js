@@ -12,6 +12,7 @@ import { DataStream } from '../../src/utils/data-stream.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
+import { PermissionGrant } from '../../src/protocols/permission-grant.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
@@ -601,9 +602,8 @@ export function testOwnerDelegatedGrant(): void {
 
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({
-        signer   : Jws.createSigner(alice),
-        grantId  : appXGrant.recordsWrite.message.recordId,
-        protocol : scope.protocol,
+        signer : Jws.createSigner(alice),
+        grant  : await PermissionGrant.parse(appXGrant.dataEncodedMessage),
       });
       const revocationDataStream = DataStream.fromBytes(permissionRevoke.permissionRevocationBytes);
       const permissionRevokeReply = await dwn.processMessage(
