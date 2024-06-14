@@ -91,6 +91,19 @@ export function testRecordsWriteHandler(): void {
         await dwn.close();
       });
 
+      it('should call preProcessingForCoreRecordsWrite after authorization', async () => {
+        // create a records write message
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const preProcessingForCoreRecordsWriteSpy = sinon.spy(RecordsWriteHandler.prototype as any, 'preProcessingForCoreRecordsWrite');
+
+        const reply = await dwn.processMessage(alice.did, message, { dataStream });
+        expect(reply.status.code).to.equal(202);
+
+        // confirm that the preProcessingForCoreRecordsWrite method was called
+        expect(preProcessingForCoreRecordsWriteSpy.calledOnce).to.be.true;
+      });
+
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
         const author = await TestDataGenerator.generateDidKeyPersona();
