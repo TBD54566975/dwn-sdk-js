@@ -181,8 +181,18 @@ export class RecordsWriteHandler implements MethodHandler {
   private async preProcessingForCoreRecordsWrite(tenant: string, recordsWriteMessage: RecordsWriteMessage): Promise<void> {
     if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri &&
       recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+
+      // we validate the protocol tag of the revocation message against the grant's scoped protocol
+      // to do this we will fetch the grant, and compare the the scoped protocol value to the protocol tag of the revocation message
+
+      // get the parentId of the revocation message, which is the permissionGrantId
+      // fetch the grant in order to get the grant's protocol
       const permissionGrantId = recordsWriteMessage.descriptor.parentId!;
       const grant = await PermissionsProtocol.fetchGrant(tenant, this.messageStore, permissionGrantId);
+
+      // get the protocol of the revocation message from the protocol tag if it is defined
+      // get the protocol from the grant scope if it is defined
+      // compare the two ensuring they must match
       const revokeTagProtocol = recordsWriteMessage.descriptor.tags?.protocol;
       const grantProtocol = 'protocol' in grant.scope ? grant.scope.protocol : undefined;
       if (grantProtocol !== revokeTagProtocol) {
