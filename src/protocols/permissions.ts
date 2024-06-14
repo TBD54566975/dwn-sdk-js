@@ -67,7 +67,7 @@ export type PermissionRevocationCreateOptions = {
   signer?: Signer;
   grantId: string;
   /**
-   * If the grant was scoped toa protocol, the protocol must be included in the revocation.
+   * If the grant was scoped to a protocol, the protocol must be included in the revocation.
    */
   protocol?: string;
   dateRevoked?: string;
@@ -185,6 +185,8 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
+    // If the request is scoped to a protocol, the protocol tag must be included with the record.
+    // This is done in order to do a subset message query that includes the requests tied to a specific protocol
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -238,6 +240,8 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
+    // If the grant is scoped to a protocol, the protocol tag must be included with the record.
+    // This is done in order to do a subset message query that includes grants tied to a specific protocol
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -283,6 +287,10 @@ export class PermissionsProtocol {
       description: options.description,
     };
 
+    // if the grant was scoped to a protocol, the protocol tag must be included in the revocation
+    // this is done in order to do a subset message query that includes the grant revocations tied to a specific protocol
+    //
+    // the tag is validated against the original grant when the revocation is processed.
     let permissionTags = undefined;
     if (options.protocol !== undefined) {
       const protocol = normalizeProtocolUrl(options.protocol);
