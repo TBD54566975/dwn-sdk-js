@@ -78,8 +78,8 @@ describe('EventEmitterStream', () => {
 
     expect(eventErrorSpy.callCount).to.equal(2);
 
+    // check that all listeners have been removed
     const eventEmitter = eventStream['eventEmitter'];
-
     for (const event of eventEmitter.eventNames()) {
       expect(eventEmitter.listenerCount(event)).to.equal(0);
     }
