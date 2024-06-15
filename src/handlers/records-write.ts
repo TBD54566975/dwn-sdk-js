@@ -96,6 +96,12 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
+      // NOTE: We want to perform additional validation before storing the RecordsWrite.
+      // This is necessary for core DWN RecordsWrite that needs additional processing and allows us to fail before the storing and post processing.
+      //
+      // Example: Ensures that the protocol tag of a permission revocation RecordsWrite and the parent grant's scoped protocol match.
+      await this.preProcessingForCoreRecordsWrite(tenant, message);
+
       // NOTE: We allow isLatestBaseState to be true ONLY if the incoming message comes with data, or if the incoming message is NOT an initial write
       // This would allow an initial write to be written to the DB without data, but having it not queryable,
       // because query implementation filters on `isLatestBaseState` being `true`
@@ -169,6 +175,35 @@ export class RecordsWriteHandler implements MethodHandler {
 
     return messageReply;
   };
+
+  /**
+   * Performs additional necessary validation before storing the RecordsWrite if it is a core DWN RecordsWrite that needs additional processing.
+   * For instance: a Permission revocation RecordsWrite.
+   */
+  private async preProcessingForCoreRecordsWrite(tenant: string, recordsWriteMessage: RecordsWriteMessage): Promise<void> {
+
+    // we validate the protocol tag of the revocation message against the grant's scoped protocol
+    // to do this we will fetch the grant, and compare the the scoped protocol value to the protocol tag of the revocation message
+    if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri &&
+      recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+
+      // get the parentId of the revocation message, which is the permissionGrantId
+      // fetch the grant in order to get the grant's protocol
+      const permissionGrantId = recordsWriteMessage.descriptor.parentId!;
+      const grant = await PermissionsProtocol.fetchGrant(tenant, this.messageStore, permissionGrantId);
+
+      // get the protocol values of the revocation message from the protocol tag and the protocol from the grant scope if they are defined
+      // compare the two values ensuring they must match
+      const revokeTagProtocol = recordsWriteMessage.descriptor.tags?.protocol;
+      const grantProtocol = 'protocol' in grant.scope ? grant.scope.protocol : undefined;
+      if (grantProtocol !== revokeTagProtocol) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateRevocationProtocolTagMismatch,
+          `Revocation protocol ${revokeTagProtocol} does not match grant protocol ${grantProtocol}`
+        );
+      }
+    }
+  }
 
   private static validateSchemaForCoreRecordsWrite(recordsWriteMessage: RecordsWriteMessage, dataBytes: Uint8Array): void {
     if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri) {

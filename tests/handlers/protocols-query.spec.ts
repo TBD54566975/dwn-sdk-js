@@ -14,6 +14,7 @@ import chai, { expect } from 'chai';
 
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Message } from '../../src/core/message.js';
+import { PermissionGrant } from '../../src/protocols/permission-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -271,7 +272,7 @@ export function testProtocolsQueryHandler(): void {
           // 4. Alice revokes Bob's grant
           const revokeWrite = await PermissionsProtocol.createRevocation({
             signer      : Jws.createSigner(alice),
-            grantId     : permissionGrantId,
+            grant       : await PermissionGrant.parse(permissionGrant.dataEncodedMessage),
             dateRevoked : Time.getCurrentTimestamp()
           });
 

@@ -53,6 +53,7 @@ export enum DwnErrorCode {
   PermissionsProtocolValidateScopeContextIdProhibitedProperties = 'PermissionsProtocolValidateScopeContextIdProhibitedProperties',
   PermissionsProtocolValidateScopeProtocolMismatch = 'PermissionsProtocolValidateScopeProtocolMismatch',
   PermissionsProtocolValidateScopeMissingProtocolTag = 'PermissionsProtocolValidateScopeMissingProtocolTag',
+  PermissionsProtocolValidateRevocationProtocolTagMismatch = 'PermissionsProtocolValidateRevocationProtocolTagMismatch',
   PrivateKeySignerUnableToDeduceAlgorithm = 'PrivateKeySignerUnableToDeduceAlgorithm',
   PrivateKeySignerUnableToDeduceKeyId = 'PrivateKeySignerUnableToDeduceKeyId',
   PrivateKeySignerUnsupportedCurve = 'PrivateKeySignerUnsupportedCurve',

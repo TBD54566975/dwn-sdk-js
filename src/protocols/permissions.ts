@@ -65,7 +65,10 @@ export type PermissionRevocationCreateOptions = {
    * The signer of the grant.
    */
   signer?: Signer;
-  grantId: string;
+  /**
+   * The PermissionGrant this revocation is for.
+   */
+  grant: PermissionGrant;
   dateRevoked?: string;
 
   // remaining properties are contained within the data payload of the record
@@ -181,6 +184,8 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
+    // If the request is scoped to a protocol, the protocol tag must be included with the record.
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission requests associated with it.
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -234,6 +239,8 @@ export class PermissionsProtocol {
       conditions  : options.conditions,
     };
 
+    // If the grant is scoped to a protocol, the protocol tag must be included with the record.
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission grants associated with it.
     let permissionTags = undefined;
     if (this.isRecordPermissionScope(scope)) {
       permissionTags = {
@@ -279,14 +286,28 @@ export class PermissionsProtocol {
       description: options.description,
     };
 
+    const grantId = options.grant.id;
+    const grantScopedProtocol = this.isRecordPermissionScope(options.grant.scope) ? options.grant.scope.protocol : undefined;
+
+    // if the grant was scoped to a protocol, the protocol tag must be included in the revocation
+    // This is done in order to ensure a subset message query filtered to a protocol includes the permission revocations associated with it.
+    //
+    // NOTE: the added tag is validated against the original grant when the revocation is processed by the DWN.
+    let permissionTags = undefined;
+    if (grantScopedProtocol !== undefined) {
+      const protocol = normalizeProtocolUrl(grantScopedProtocol);
+      permissionTags = { protocol };
+    }
+
     const permissionRevocationBytes = Encoder.objectToBytes(permissionRevocationData);
     const recordsWrite = await RecordsWrite.create({
       signer          : options.signer,
-      parentContextId : options.grantId, // NOTE: since the grant is the root record, its record ID is also the context ID
+      parentContextId : grantId, // NOTE: since the grant is the root record, its record ID is also the context ID
       protocol        : PermissionsProtocol.uri,
       protocolPath    : PermissionsProtocol.revocationPath,
       dataFormat      : 'application/json',
       data            : permissionRevocationBytes,
+      tags            : permissionTags,
     });
 
     return {
