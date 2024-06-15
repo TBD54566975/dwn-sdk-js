@@ -1,7 +1,7 @@
 import type { MessageStore } from '../types//message-store.js';
 import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
-import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { DataEncodedRecordsWriteMessage, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { DateSort } from '../types/records-types.js';
@@ -26,7 +26,7 @@ export type RecordsQueryOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: RecordsWriteMessage;
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
 };
 
 /**

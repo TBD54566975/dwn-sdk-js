@@ -278,7 +278,7 @@ describe('RecordsWrite', () => {
       });
 
       const createPromise = RecordsWrite.create({
-        delegatedGrant : grantToBob.recordsWrite.message,
+        delegatedGrant : grantToBob.dataEncodedMessage,
         dataFormat     : 'application/octet-stream',
         data           : TestDataGenerator.randomBytes(10),
       });
@@ -452,7 +452,7 @@ describe('RecordsWrite', () => {
         scope
       });
 
-      await expect(recordsWrite.signAsOwnerDelegate(Jws.createSigner(bob), ownerDelegatedGrant.recordsWrite.message))
+      await expect(recordsWrite.signAsOwnerDelegate(Jws.createSigner(bob), ownerDelegatedGrant.dataEncodedMessage))
         .to.be.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor);
 
       expect(recordsWrite.owner).to.be.undefined;

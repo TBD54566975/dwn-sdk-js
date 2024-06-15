@@ -1,4 +1,4 @@
-import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
+import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
 
 import type { PermissionConditions, PermissionGrantData, PermissionScope } from '../types/permission-types.js';
 
@@ -61,7 +61,7 @@ export class PermissionGrant {
    */
   public readonly conditions?: PermissionConditions;
 
-  public static async parse(message: RecordsWriteMessage): Promise<PermissionGrant> {
+  public static async parse(message: DataEncodedRecordsWriteMessage): Promise<PermissionGrant> {
     const permissionGrant = new PermissionGrant(message);
     return permissionGrant;
   }
@@ -69,7 +69,7 @@ export class PermissionGrant {
   /**
    * Creates a Permission Grant abstraction for
    */
-  private constructor(message: RecordsWriteMessage) {
+  private constructor(message: DataEncodedRecordsWriteMessage) {
     // properties derived from the generic DWN message properties
     this.id = message.recordId;
     this.grantor = Message.getSigner(message)!;
@@ -77,7 +77,7 @@ export class PermissionGrant {
     this.dateGranted = message.descriptor.dateCreated;
 
     // properties from the data payload itself.
-    const permissionGrantEncoded = (message as RecordsQueryReplyEntry).encodedData!;
+    const permissionGrantEncoded = message.encodedData;
     const permissionGrant = Encoder.base64UrlToObject(permissionGrantEncoded) as PermissionGrantData;
     this.dateExpires = permissionGrant.dateExpires;
     this.delegated = permissionGrant.delegated;

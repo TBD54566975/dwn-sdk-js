@@ -377,7 +377,7 @@ export class PermissionsProtocol {
       );
     }
 
-    const permissionGrantMessage = possibleGrantMessage as RecordsWriteMessage;
+    const permissionGrantMessage = possibleGrantMessage as DataEncodedRecordsWriteMessage;
     const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
 
     return permissionGrant;

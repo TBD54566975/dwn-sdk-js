@@ -112,7 +112,7 @@ export type DataEncodedRecordsWriteMessage = RecordsWriteMessage & {
   /**
    * The encoded data of the record if the data associated with the record is equal or smaller than `DwnConstant.maxDataSizeAllowedToBeEncoded`.
    */
-  encodedData?: string;
+  encodedData: string;
 };
 
 export type RecordsQueryDescriptor = {
