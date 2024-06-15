@@ -5,6 +5,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
 import type {
+  DataEncodedRecordsWriteMessage,
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
@@ -66,7 +67,7 @@ export type RecordsWriteOptions = {
   /**
    * The delegated grant invoked to sign on behalf of the logical author, which is the grantor of the delegated grant.
    */
-  delegatedGrant?: RecordsWriteMessage;
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -148,7 +149,7 @@ export type CreateFromOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: RecordsWriteMessage;
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
 
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
@@ -491,7 +492,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public async sign(options: {
     signer: Signer,
-    delegatedGrant?: RecordsWriteMessage,
+    delegatedGrant?: DataEncodedRecordsWriteMessage,
     permissionGrantId?: string,
     protocolRole?: string
   }): Promise<void> {
@@ -576,7 +577,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * This is used when a DWN owner-delegate wants to retain a copy of a message that the owner did not author.
    * NOTE: requires the `RecordsWrite` to already have the author's signature.
    */
-  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: RecordsWriteMessage): Promise<void> {
+  public async signAsOwnerDelegate(signer: Signer, delegatedGrant: DataEncodedRecordsWriteMessage): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerDelegateUnknownAuthor,

@@ -1,7 +1,7 @@
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
-import type { RecordsDeleteDescriptor, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { DataEncodedRecordsWriteMessage, RecordsDeleteDescriptor, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
@@ -26,7 +26,7 @@ export type RecordsDeleteOptions = {
   /**
    * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
    */
-  delegatedGrant?: RecordsWriteMessage;
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
 };
 
 export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {

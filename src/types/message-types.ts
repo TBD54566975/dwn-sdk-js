@@ -45,7 +45,7 @@ type DelegatedGrantRecordsWriteMessage = {
   },
   recordId: string,
   contextId?: string;
-  // NOTE: This is a direct copy of `RecordsWriteDescriptor` to avoid circular references.
+  // NOTE: This is a direct expansion and copy of `DataEncodedRecordsWriteMessage` to avoid circular references.
   descriptor: {
     interface: DwnInterfaceName.Records;
     method: DwnMethodName.Write;
@@ -62,6 +62,7 @@ type DelegatedGrantRecordsWriteMessage = {
     datePublished?: string;
     dataFormat: string;
   };
+  encodedData: string;
 };
 
 /**

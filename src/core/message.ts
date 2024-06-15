@@ -1,5 +1,5 @@
+import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
 import type { GeneralJws } from '../types/jws-types.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
@@ -79,7 +79,7 @@ export class Message {
   public static async createAuthorization(input: {
     descriptor: Descriptor,
     signer: Signer,
-    delegatedGrant?: RecordsWriteMessage,
+    delegatedGrant?: DataEncodedRecordsWriteMessage,
     permissionGrantId?: string,
     protocolRole?: string
   }): Promise<AuthorizationModel> {
