@@ -2,6 +2,7 @@ import type { Filter } from '../types/query-types.js';
 import type { EventsFilter, EventsMessageFilter, EventsRecordsFilter } from '../types/events-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { isEmptyObject, removeUndefinedProperties } from './object.js';
 
@@ -54,6 +55,15 @@ export class Events {
     // otherwise it is `EventsMessageFilter` fields for conversion
     for (const filter of filters) {
       if (this.isRecordsFilter(filter)) {
+
+        // extract the protocol tag filter from the incoming event record filter
+        // this filters for permission grants, requests and revocations associated with a targeted protocol
+        // since permissions are their own protocol, we add an additional tag index when writing the permission messages, so we can filter on it here
+        const protocolTagFilter = this.extractProtocolTagFilters(filter);
+        if (protocolTagFilter) {
+          eventsQueryFilters.push(protocolTagFilter);
+        }
+
         eventsQueryFilters.push(Records.convertFilter(filter));
       } else {
         eventsQueryFilters.push(this.convertFilter(filter));
@@ -61,6 +71,17 @@ export class Events {
     }
 
     return eventsQueryFilters;
+  }
+
+  private static extractProtocolTagFilters(filter: EventsRecordsFilter): Filter | undefined {
+    if (filter.protocol !== undefined) {
+      const filterCopy = { ...filter };
+      const protocolFilter = Records.convertTagsFilter({ protocol: filterCopy.protocol! });
+      return {
+        protocol: PermissionsProtocol.uri,
+        ...protocolFilter
+      };
+    }
   }
 
   /**

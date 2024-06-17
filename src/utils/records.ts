@@ -322,7 +322,7 @@ export class Records {
   /**
    * This will create individual keys for each of the tag filters that look like `tag.tag_filter_property`
    */
-  private static convertTagsFilter( tags: { [property: string]: RecordsWriteTagsFilter}): Filter {
+  public static convertTagsFilter( tags: { [property: string]: RecordsWriteTagsFilter}): Filter {
     const tagValues:Filter = {};
     for (const property in tags) {
       const value = tags[property];
