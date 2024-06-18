@@ -3,8 +3,8 @@ import type { MessageEvent } from '../../src/types/subscriptions.js';
 import type { MessageStore } from '../../src/index.js';
 
 import { EventEmitterStream } from '../../src/event-log/event-emitter-stream.js';
+import { TestDataGenerator } from '../../src/index.js';
 import { TestStores } from '../test-stores.js';
-import { Message, TestDataGenerator, Time } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -65,13 +65,8 @@ describe('EventEmitterStream', () => {
 
     const eventStream = new EventEmitterStream({ errorHandler: testHandler.errorHandler });
 
-    const messageCids: string[] = [];
-    const handler = async (_tenant: string, event: MessageEvent, _indexes: KeyValues): Promise<void> => {
-      const { message } = event;
-      const messageCid = await Message.getCid(message);
-      messageCids.push(messageCid);
-    };
-    const subscription = await eventStream.subscribe('did:alice', 'sub-1', handler);
+    const handler = async (_tenant: string, _event: MessageEvent, _indexes: KeyValues): Promise<void> => {};
+    await eventStream.subscribe('did:alice', 'sub-1', handler);
 
     // close eventStream
     await eventStream.close();
@@ -82,10 +77,12 @@ describe('EventEmitterStream', () => {
     eventStream.emit('did:alice', { message: message2.message }, {});
 
     expect(eventErrorSpy.callCount).to.equal(2);
-    await subscription.close();
 
-    await Time.minimalSleep();
-    expect(messageCids).to.have.length(0);
+    // check that all listeners have been removed
+    const eventEmitter = eventStream['eventEmitter'];
+    for (const event of eventEmitter.eventNames()) {
+      expect(eventEmitter.listenerCount(event)).to.equal(0);
+    }
   });
 
   it('sets max listeners to 0 which represents infinity', async () => {
