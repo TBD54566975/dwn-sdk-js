@@ -12,10 +12,10 @@ import type {
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
 import threadProtocol from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
+import { Poller } from '../utils/poller.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
@@ -28,7 +28,7 @@ import { expect } from 'chai';
 
 // It is also important to note that in some cases where we are testing a negative case (the message not arriving at the subscriber)
 // we add an alternate subscription to await results within to give the EventStream ample time to process the message.
-// Additionally inn some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
+// Additionally in some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
 
 export function testSubscriptionScenarios(): void {
   describe('subscriptions', () => {
@@ -103,7 +103,7 @@ export function testSubscriptionScenarios(): void {
         expect(deleteWrite1Reply.status.code).to.equal(202);
 
         // poll until the messages are received by the handler
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messageCids.length).to.equal(3);
           expect(messageCids).to.eql([ write1MessageCid, protocol1MessageCid, delete1MessageCid ]);
         });
@@ -172,7 +172,7 @@ export function testSubscriptionScenarios(): void {
         expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
         // Poll until the messages are received by the handler
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () =>{
+        await Poller.pollUntilSuccessOrTimeout(async () =>{
           // check record message
           expect(recordsMessageCids.length).to.equal(1);
           expect(recordsMessageCids).to.have.members([ await Message.getCid(record.message) ]);
@@ -188,7 +188,7 @@ export function testSubscriptionScenarios(): void {
         expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
 
         // poll until the delete message is received by the handler
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // check record messages to include the delete message
           expect(recordsMessageCids.length).to.equal(2);
           expect(recordsMessageCids).to.include.members([ await Message.getCid(recordDelete.message) ]);
@@ -268,7 +268,7 @@ export function testSubscriptionScenarios(): void {
         const recordUpdateMessageCid = await Message.getCid(recordUpdate.message);
 
         // Poll until the messages are received by the handler
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // check the array for both the RecordsWrite messages
           expect(recordsWriteMessageCids.length).to.equal(2);
           expect(recordsWriteMessageCids).to.have.members([
@@ -292,7 +292,7 @@ export function testSubscriptionScenarios(): void {
         expect(record2Reply.status.code).to.equal(202, 'RecordsWrite');
         const record2MessageCid = await Message.getCid(record2.message);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // ensure the new record is in the recordsWrite array, but not the delete
           expect(recordsWriteMessageCids.length).to.equal(3);
           expect(recordsWriteMessageCids).to.include.members([
@@ -389,7 +389,7 @@ export function testSubscriptionScenarios(): void {
         const write1Proto2MessageCid = await Message.getCid(write1proto2.message);
 
         // poll until the messages are received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // check for proto1 messages
           expect(proto1Messages.length).to.equal(2);
           expect(proto1Messages).to.have.members([ proto1ConfMessageCid, write1Proto1MessageCid ]);
@@ -410,7 +410,7 @@ export function testSubscriptionScenarios(): void {
         expect(deleteProto2MessageReply.status.code).to.equal(202);
 
         // poll until the messages are received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // check for the delete in proto1 messages
           expect(proto1Messages.length).to.equal(3);
           expect(proto1Messages).to.include.members([ await Message.getCid(deleteProto1Message.message) ]);
@@ -506,7 +506,7 @@ export function testSubscriptionScenarios(): void {
         expect(carolParticipantReply.status.code).to.equal(202);
 
         // poll until we have the 2 participant messages
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // the messages array should have the two participant messages
           expect(messages.length).to.equal(2);
           expect(messages).to.have.members([
@@ -549,7 +549,7 @@ export function testSubscriptionScenarios(): void {
         const messageFromCarolReply = await dwn.processMessage(alice.did, messageFromCarol.message, { dataStream: messageFromCarol.dataStream });
         expect(messageFromCarolReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // should have the 3 chat messages
           expect(messages.length).to.equal(5);
           expect(messages).to.include.members([
@@ -567,7 +567,7 @@ export function testSubscriptionScenarios(): void {
         const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
         expect(deleteCarolReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // should have the delete of carol as a participant
           expect(messages.length).to.equal(6);
           expect(messages).to.include.members([
@@ -638,7 +638,7 @@ export function testSubscriptionScenarios(): void {
         expect(write1Proto2Response.status.code).equals(202);
 
         // poll until the messages are received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // schema1 messages from handler has the new message representing the write.
           expect(schema1Messages.length).to.equal(1, 'schema1');
           expect(schema1Messages).to.include(await Message.getCid(write1schema1.message));
@@ -658,7 +658,7 @@ export function testSubscriptionScenarios(): void {
         const deleteSchema2Response = await dwn.processMessage(alice.did, deleteschema2.message);
         expect(deleteSchema2Response.status.code).equals(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // schema1 messages from handler has the new message representing the update.
           expect(schema1Messages.length).to.equal(2, 'schema1');
           expect(schema1Messages).to.include(await Message.getCid(update1schema1.message));
@@ -722,7 +722,7 @@ export function testSubscriptionScenarios(): void {
         expect(updateReply.status.code).to.equal(202);
 
         // check that the subscription handler has both the write and update messages
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(2);
           expect(messages).to.have.members([
             await Message.getCid(write1.message),
@@ -746,7 +746,7 @@ export function testSubscriptionScenarios(): void {
         expect(deleteWrite2Reply.status.code).to.equal(202);
 
         // check that the subscription handler has the delete message for the subscribed recordId
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(3); // write1, update, delete
           expect(messages).to.include(await Message.getCid(deleteWrite1.message));
 
@@ -858,7 +858,7 @@ export function testSubscriptionScenarios(): void {
         expect(messageFromBobToCarolReply.status.code).to.equal(202);
 
         // poll until the messages are received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // check that the aliceMessages array only contains the messages from bob and carol to alice
           expect(aliceMessages.length).to.equal(2);
           expect(aliceMessages).to.have.members([
@@ -931,7 +931,7 @@ export function testSubscriptionScenarios(): void {
         expect(imageDataReply.status.code).to.equal(202);
 
         // poll until the image message is received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(imageMessages.length).to.equal(1);
           expect(imageMessages).to.have.members([ await Message.getCid(imageData.message) ]);
         });
@@ -945,7 +945,7 @@ export function testSubscriptionScenarios(): void {
         expect(imageData2Reply.status.code).to.equal(202);
 
         // poll until the image message is received by the handlers
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(imageMessages.length).to.equal(2);
           expect(imageMessages).to.include.members([ await Message.getCid(imageData2.message) ]);
         });
@@ -1005,7 +1005,7 @@ export function testSubscriptionScenarios(): void {
         const largeSizeReply = await dwn.processMessage(alice.did, largeSize.message, { dataStream: largeSize.dataStream });
         expect(largeSizeReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // smallMessages array should only contain the small data size record
           expect(smallMessages.length).to.equal(1);
           expect(smallMessages).to.have.members([ await Message.getCid(smallSize1.message) ]);
@@ -1030,7 +1030,7 @@ export function testSubscriptionScenarios(): void {
         const smallSize2Reply = await dwn.processMessage(alice.did, smallSize2.message, { dataStream: smallSize2.dataStream });
         expect(smallSize2Reply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // smallMessages array should only contain the two small data size records
           expect(smallMessages.length).to.equal(2);
           expect(smallMessages).to.include.members([
@@ -1091,7 +1091,7 @@ export function testSubscriptionScenarios(): void {
         expect(record1Reply.status.code).to.equal(202);
         const record1MessageCid = await Message.getCid(record1.message);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // both subscriptions should have received the message
           expect(sub1MessageCids.length).to.equal(1); // message exists
           expect(sub1MessageCids).to.eql([ record1MessageCid ]);
@@ -1114,7 +1114,7 @@ export function testSubscriptionScenarios(): void {
         expect(record3Reply.status.code).to.equal(202);
         const record3MessageCid = await Message.getCid(record3.message);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(sub1MessageCids.length).to.equal(3); // all three messages exist
           expect(sub1MessageCids).to.eql([
             record1MessageCid,
@@ -1186,7 +1186,7 @@ export function testSubscriptionScenarios(): void {
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
         expect(write2Reply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // publishedMessages array should only contain the two published messages
           expect(publishedMessages.length).to.equal(2);
           expect(publishedMessages).to.have.members([
@@ -1259,7 +1259,7 @@ export function testSubscriptionScenarios(): void {
         const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
         expect(writeForCarolReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // bob should have received the two messages intended for him
           expect(bobMessages.length).to.equal(2);
           expect(bobMessages).to.have.members([
@@ -1379,7 +1379,7 @@ export function testSubscriptionScenarios(): void {
         const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
         expect(additionalThreadReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(2);
           expect(messages).to.have.members([
             await Message.getCid(bobParticipant.message),
@@ -1421,7 +1421,7 @@ export function testSubscriptionScenarios(): void {
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
         expect(message3Reply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(5);
           expect(messages).to.include.members([
             await Message.getCid(message1.message),
@@ -1438,7 +1438,7 @@ export function testSubscriptionScenarios(): void {
         const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
         expect(deleteCarolReply.status.code).to.equal(202);
 
-        await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(6);
           expect(messages).to.include.members([
             await Message.getCid(deleteCarol.message)

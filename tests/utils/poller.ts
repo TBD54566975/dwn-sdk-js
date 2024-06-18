@@ -1,6 +1,6 @@
 import { Time } from '../../src/utils/time.js';
 
-export class TestTimingUtils {
+export class Poller {
 
   /**
    * The interval in milliseconds to wait before retrying the delegate function.
@@ -21,11 +21,11 @@ export class TestTimingUtils {
    *
    * @throws {Error} `Operation timed out` if the timeout is exceeded.
    */
-  static async pollUntilSuccessOrTimeout(
-    delegate: () => Promise<any>,
-    retrySleep: number = TestTimingUtils.pollRetrySleep,
-    timeout: number = TestTimingUtils.pollTimeout,
-  ): Promise<any> {
+  static async pollUntilSuccessOrTimeout<T>(
+    delegate: () => Promise<T>,
+    retrySleep: number = Poller.pollRetrySleep,
+    timeout: number = Poller.pollTimeout,
+  ): Promise<T> {
     const startTime = Date.now();
 
     while (true) {

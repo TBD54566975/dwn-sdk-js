@@ -12,6 +12,7 @@ import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread
 
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
+import { Poller } from '../utils/poller.js';
 import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { RecordsSubscribeHandler } from '../../src/handlers/records-subscribe.js';
 import { stubInterface } from 'ts-sinon';
@@ -19,7 +20,6 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 import { Dwn, DwnErrorCode, DwnMethodName, Time } from '../../src/index.js';
 
@@ -373,12 +373,12 @@ export function testRecordsSubscribeHandler(): void {
           expect(chatRecordForCarol2Reply.status.code).to.equal(202);
           const chatRecordForCarol2Cid = await Message.getCid(chatRecordForCarol2.message);
 
-          await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          await Poller.pollUntilSuccessOrTimeout(async () => {
             expect(bobMessages.length).to.equal(1);
             expect(bobMessages).to.have.members([ chatRecordForBobCid ]);
           });
 
-          await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          await Poller.pollUntilSuccessOrTimeout(async () => {
             expect(carolMessages.length).to.equal(2);
             expect(carolMessages).to.have.members([ chatRecordForCarol1Cid, chatRecordForCarol2Cid ]);
           });
@@ -402,7 +402,6 @@ export function testRecordsSubscribeHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           const filter: RecordsFilter = {
-            published    : false,
             protocol     : protocolDefinition.protocol,
             protocolPath : 'chat'
           };
@@ -491,20 +490,23 @@ export function testRecordsSubscribeHandler(): void {
           }
 
           // there should only be the control message for bob in the subscription without a friend role.
-          await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          await Poller.pollUntilSuccessOrTimeout(async () => {
             expect(noRoleRecords.size).to.equal(1);
             expect([ ...noRoleRecords ]).to.have.members([chatRecordForBob.message.recordId]);
           });
 
           // All chats should be in the subscription with the friend role.
-          await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          await Poller.pollUntilSuccessOrTimeout(async () => {
             expect(recordIds.size).to.equal(4);
             expect([ ...recordIds ]).to.have.members([ chatRecordForBob.message.recordId, ...chatRecordIds ]);
           });
 
           // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/759
           //      When `RecordsSubscribeHandler` builds up the matchFilters there are no matching filters for a delete within a context
-          //      so the delete event is not being captured by the subscription handler. When the issue is resolved, uncomment the code below
+          //      so the delete event is not being captured by the subscription handler. This is likely due to some of the filters including
+          //      `published: false` which is a mutable property and not included with the delete event
+          //
+          //      When the issue is resolved, uncomment the code below
 
           // Delete a chat message for Bob
           // const chatForBobDelete = await TestDataGenerator.generateRecordsDelete({

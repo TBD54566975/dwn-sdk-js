@@ -40,7 +40,7 @@ export class TestSuite {
    * Runs tests that uses the store implementations passed.
    * Uses default implementation if not given.
    */
-  public static runStoreDependentTests(overrides?: {
+  public static runInjectableDependentTests(overrides?: {
     messageStore?: MessageStore,
     dataStore?: DataStore,
     eventLog?: EventLog,

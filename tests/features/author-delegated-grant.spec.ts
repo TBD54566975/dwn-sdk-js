@@ -17,11 +17,11 @@ import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Jws } from '../../src/utils/jws.js';
 import { PermissionGrant } from '../../src/protocols/permission-grant.js';
+import { Poller } from '../utils/poller.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
@@ -552,28 +552,10 @@ export function testAuthorDelegatedGrant(): void {
       const chatRecord2Reply = await dwn.processMessage(bob.did, chatRecord2.message, { dataStream: chatRecord2.dataStream });
       expect(chatRecord2Reply.status.code).to.equal(202);
 
-      await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+      await Poller.pollUntilSuccessOrTimeout(async () => {
         expect(subscriptionChatRecords.size).to.equal(2);
         expect([ ...subscriptionChatRecords ]).to.have.members([ chatRecord1.message.recordId, chatRecord2.message.recordId ]);
       });
-
-      //TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/759
-      //      When `RecordsSubscribeHandler` builds up the matchFilters there are no matching filters for a delete within a context
-      //      so the delete event is not being captured by the subscription handler. When the issue is resolved, uncomment the code below
-
-      // Bob deletes one of the chat messages
-      // const deleteRecord = await TestDataGenerator.generateRecordsDelete({
-      //   author : bob,
-      //   recordId: chatRecord1.message.recordId
-      // });
-      // const deleteRecordReply = await dwn.processMessage(bob.did, deleteRecord.message);
-      // expect(deleteRecordReply.status.code).to.equal(202);
-
-      // // verify the subscription received the delete event
-      // await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
-      //   expect(subscriptionChatRecords.size).to.equal(1);
-      //   expect([ ...subscriptionChatRecords ]).to.have.members([ chatRecord2.message.recordId ]); // only chatRecord2 should be left
-      // });
 
       await recordsSubscribeByDeviceXReply.subscription?.close();
     });

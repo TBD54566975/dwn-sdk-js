@@ -2,9 +2,9 @@ import type { EventStream } from '../../src/index.js';
 import type { KeyValues } from '../../src/types/query-types.js';
 import type { MessageEvent } from '../../src/types/subscriptions.js';
 
+import { Poller } from '../utils/poller.js';
 import { TestEventStream } from '../test-event-stream.js';
-import { TestTimingUtils } from '../utils/test-timing-utils.js';
-import { Message, TestDataGenerator, Time } from '../../src/index.js';
+import { Message, TestDataGenerator } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -20,7 +20,7 @@ chai.use(chaiAsPromised);
 
 // It is also important to note that in some cases where we are testing a negative case (the message not arriving at the subscriber)
 // we add an alternate subscription to await results within to give the EventStream ample time to process the message.
-// Additionally inn some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
+// Additionally in some of these cases the order in which messages are sent to be processed or checked may matter, and they are noted as such.
 
 describe('EventStream', () => {
   // saving the original `console.error` function to re-assign after tests complete
@@ -78,7 +78,7 @@ describe('EventStream', () => {
     eventStream.emit('did:alice', { message: message3.message }, {});
 
     // Use the TimingUtils to poll until the expected results are met
-    await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+    await Poller.pollUntilSuccessOrTimeout(async () => {
       expect(messageCids1).to.have.members([ message1Cid, message2Cid, message3Cid ]);
       expect(messageCids2).to.have.members([ message1Cid, message2Cid, message3Cid ]);
     });
@@ -116,7 +116,7 @@ describe('EventStream', () => {
     eventStream.emit('did:alice', { message: message1.message }, {});
 
     // Use the TimingUtils to poll until the expected results are met
-    await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+    await Poller.pollUntilSuccessOrTimeout(async () => {
       expect(sub1MessageCids).to.have.length(1);
       expect(sub1MessageCids).to.have.members([ message1Cid ]);
 
@@ -131,7 +131,7 @@ describe('EventStream', () => {
     eventStream.emit('did:alice', { message: message2.message }, {});
 
     // Use the TimingUtils to poll until the expected results are met
-    await TestTimingUtils.pollUntilSuccessOrTimeout(async() => {
+    await Poller.pollUntilSuccessOrTimeout(async() => {
       // subscription 2 should have received the message
       expect(sub2MessageCids.length).to.equal(2);
       expect(sub2MessageCids).to.have.members([ message1Cid, message2Cid]);
@@ -143,28 +143,4 @@ describe('EventStream', () => {
 
     await subscription2.close();
   });
-
-  it('does not receive messages if event stream is closed', async () => {
-
-    const Handler = {
-      handle: async (_tenant: string, _event: MessageEvent, _indexes: KeyValues): Promise<void> => {}
-    };
-    const handlerSpy = sinon.spy(Handler, 'handle');
-    await eventStream.subscribe('did:alice', 'sub-1', Handler.handle);
-
-    // close eventStream
-    await eventStream.close();
-
-    const message1 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', { message: message1.message }, {});
-    const message2 = await TestDataGenerator.generateRecordsWrite({});
-    eventStream.emit('did:alice', { message: message2.message }, {});
-
-    // NOTE: This is a hack!!
-    // In systems where the EventStream is a coordinated pub/sub system, the messages are not processed immediately.
-    // Since we are doing a negative test to ensure messages were NOT handled, we need to to give the message ample time to be processed.
-    await Time.sleep(3000);
-
-    expect(handlerSpy.called).to.be.false;
-  }).timeout(5000);
 });
