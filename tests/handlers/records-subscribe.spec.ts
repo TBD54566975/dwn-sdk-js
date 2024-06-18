@@ -384,7 +384,7 @@ export function testRecordsSubscribeHandler(): void {
           });
         });
 
-        it('should allows role authorized subscriptions', async () => {
+        it('allows root-level role authorized subscriptions', async () => {
           // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
           //           thread member role in order to subscribe to the chat messages.
 
@@ -531,7 +531,7 @@ export function testRecordsSubscribeHandler(): void {
           // });
         });
 
-        it('allows protocol authorized subscriptions', async () => {
+        it('can authorize subscriptions using a context role', async () => {
           // scenario: Alice writes some chat messages.
           //           Bob, having a thread/participant record, can subscribe to the chat.
 
