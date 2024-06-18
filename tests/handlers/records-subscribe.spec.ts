@@ -524,11 +524,122 @@ export function testRecordsSubscribeHandler(): void {
           // const chatForCarolDeleteReply = await dwn.processMessage(alice.did, chatForCarolDelete.message);
           // expect(chatForCarolDeleteReply.status.code).to.equal(202);
 
-          // await TestTimingUtils.pollUntilSuccessOrTimeout(async () => {
+          // await Poller.pollUntilSuccessOrTimeout(async () => {
           //   expect(noRoleRecords.size).to.equal(0); // chat record was removed from the set
           //   expect(recordIds.size).to.equal(2); // both chat records were removed from the set
           //   expect([ ...recordIds ]).to.have.members([ ...chatRecordIds.slice(1) ]); // only the last two chat records remain
           // });
+        });
+
+        it('allows protocol authorized subscriptions', async () => {
+          // scenario: Alice writes some chat messages.
+          //           Bob, having a thread/participant record, can subscribe to the chat.
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+
+          const protocolDefinition = threadRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+
+          // Alice writes a 'thread' record
+          const threadRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',
+          });
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
+          expect(threadRoleReply.status.code).to.equal(202);
+
+          const filter: RecordsFilter = {
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/chat',
+            contextId    : threadRecord.message.contextId,
+          };
+
+          const noRoleRecords: string[] = [];
+          const addNoRole = async (event: RecordEvent): Promise<void> => {
+            const { message } = event;
+            if ( message.descriptor.method === DwnMethodName.Write) {
+              const recordsWriteMessage = message as RecordsWriteMessage;
+              noRoleRecords.push(recordsWriteMessage.recordId);
+            }
+          };
+
+          // subscribe without role, expect no messages
+          const noRoleSubscription = await TestDataGenerator.generateRecordsSubscribe({
+            author: bob,
+            filter
+          });
+
+          const subscriptionReply = await dwn.processMessage(alice.did, noRoleSubscription.message, { subscriptionHandler: addNoRole });
+          expect(subscriptionReply.status.code).to.equal(200);
+          expect(subscriptionReply.subscription).to.exist;
+
+          // Alice writes a 'participant' role record with Bob as recipient
+          const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
+            author          : alice,
+            recipient       : bob.did,
+            protocol        : protocolDefinition.protocol,
+            protocolPath    : 'thread/participant',
+            parentContextId : threadRecord.message.contextId,
+            data            : new TextEncoder().encode('Bob is my friend'),
+          });
+          const participantRoleReply =
+            await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
+          expect(participantRoleReply.status.code).to.equal(202);
+
+          const recordIds: string[] = [];
+          const addRecord:RecordSubscriptionHandler = async (event) => {
+            const { message } = event;
+            if (message.descriptor.method === DwnMethodName.Write) {
+              const recordsWriteMessage = message as RecordsWriteMessage;
+              recordIds.push(recordsWriteMessage.recordId);
+            }
+          };
+
+          // subscribe with the participant role
+          const bobSubscriptionWithRole = await TestDataGenerator.generateRecordsSubscribe({
+            filter,
+            author       : bob,
+            protocolRole : 'thread/participant',
+          });
+
+          const subscriptionWithRoleReply = await dwn.processMessage(alice.did, bobSubscriptionWithRole.message, { subscriptionHandler: addRecord });
+          expect(subscriptionWithRoleReply.status.code).to.equal(200);
+          expect(subscriptionWithRoleReply.subscription).to.exist;
+
+
+          // Alice writes three 'chat' records
+          const chatRecordIds: string[] = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author          : alice,
+              recipient       : alice.did,
+              protocol        : protocolDefinition.protocol,
+              protocolPath    : 'thread/chat',
+              published       : false,
+              parentContextId : threadRecord.message.contextId,
+              data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          await Poller.pollUntilSuccessOrTimeout(async () => {
+            // should have all chat messages.
+            expect(recordIds).to.have.members(chatRecordIds);
+
+            // there should not be any messages in the subscription without a participant role.
+            expect(noRoleRecords.length).to.equal(0);
+          });
         });
 
         it('does not execute protocol subscriptions where protocolPath is missing from the filter', async () => {

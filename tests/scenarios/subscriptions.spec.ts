@@ -21,7 +21,7 @@ import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../.
 
 import { expect } from 'chai';
 
-// NOTE: We use `TestTimingUtils.pollUntilSuccessOrTimeout` to poll for the expected results.
+// NOTE: We use `Poller.pollUntilSuccessOrTimeout` to poll for the expected results.
 // In some cases, the EventStream is a coordinated pub/sub system and the messages/events are emitted over the network
 // this means that the messages are not processed immediately and we need to wait for the messages to be processed
 // before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll until the expected results are met.

@@ -13,7 +13,7 @@ import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
 
-// NOTE: We use `TestTimingUtils.pollUntilSuccessOrTimeout` to poll for the expected results.
+// NOTE: We use `Poller.pollUntilSuccessOrTimeout` to poll for the expected results.
 // In some cases, the EventStream is a coordinated pub/sub system and the messages/events are emitted over the network
 // this means that the messages are not processed immediately and we need to wait for the messages to be processed
 // before we can assert the results. The `pollUntilSuccessOrTimeout` function is a utility function that will poll until the expected results are met.
@@ -78,7 +78,7 @@ export function testEventStream(): void {
       const message3Cid = await Message.getCid(message3.message);
       eventStream.emit('did:alice', { message: message3.message }, {});
 
-      // Use the TimingUtils to poll until the expected results are met
+      // Use the Poller to poll until the expected results are met
       await Poller.pollUntilSuccessOrTimeout(async () => {
         expect(messageCids1).to.have.members([ message1Cid, message2Cid, message3Cid ]);
         expect(messageCids2).to.have.members([ message1Cid, message2Cid, message3Cid ]);
@@ -116,7 +116,7 @@ export function testEventStream(): void {
       const message1Cid = await Message.getCid(message1.message);
       eventStream.emit('did:alice', { message: message1.message }, {});
 
-      // Use the TimingUtils to poll until the expected results are met
+      // Use the Poller to poll until the expected results are met
       await Poller.pollUntilSuccessOrTimeout(async () => {
         expect(sub1MessageCids).to.have.length(1);
         expect(sub1MessageCids).to.have.members([ message1Cid ]);
@@ -131,7 +131,7 @@ export function testEventStream(): void {
       const message2Cid = await Message.getCid(message2.message);
       eventStream.emit('did:alice', { message: message2.message }, {});
 
-      // Use the TimingUtils to poll until the expected results are met
+      // Use the Poller to poll until the expected results are met
       await Poller.pollUntilSuccessOrTimeout(async() => {
         // subscription 2 should have received the message
         expect(sub2MessageCids.length).to.equal(2);
