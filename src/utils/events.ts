@@ -75,12 +75,26 @@ export class Events {
 
   private static extractProtocolTagFilters(filter: EventsRecordsFilter): Filter | undefined {
     if (filter.protocol !== undefined) {
-      const filterCopy = { ...filter };
-      const protocolFilter = Records.convertTagsFilter({ protocol: filterCopy.protocol! });
-      return {
+      const taggedFilter = {
         protocol: PermissionsProtocol.uri,
-        ...protocolFilter
-      };
+        ...Records.convertTagsFilter({ protocol: filter.protocol })
+      } as Filter;
+
+      if (filter.dateUpdated != undefined) {
+        const messageTimestampFilter = filter.dateUpdated ? FilterUtility.convertRangeCriterion(filter.dateUpdated) : undefined;
+        if (messageTimestampFilter) {
+          taggedFilter.messageTimestamp = messageTimestampFilter;
+        }
+      }
+
+      if (filter.dateCreated !== undefined) {
+        const dateCreatedFilter = filter.dateCreated ? FilterUtility.convertRangeCriterion(filter.dateCreated) : undefined;
+        if (dateCreatedFilter) {
+          taggedFilter.dateCreated = dateCreatedFilter;
+        }
+      }
+
+      return taggedFilter;
     }
   }
 

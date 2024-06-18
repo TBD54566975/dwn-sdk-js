@@ -25,6 +25,7 @@ export type EventsRecordsFilter = {
   dataFormat?: string;
   dataSize?: RangeFilter;
   dateCreated?: RangeCriterion;
+  dateUpdated?: RangeCriterion;
 };
 
 
