@@ -8,6 +8,7 @@ import { testEventsGetHandler } from './handlers/events-get.spec.js';
 import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
 import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
+import { testEventStream } from './event-log/event-stream.spec.js';
 import { TestEventStream } from './test-event-stream.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
@@ -56,6 +57,7 @@ export class TestSuite {
     testDwnClass();
     testMessageStore();
     testEventLog();
+    testEventStream();
 
     // handler tests
     testEventsGetHandler();
