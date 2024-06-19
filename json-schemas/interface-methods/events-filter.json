@@ -23,31 +23,7 @@
     "protocol": {
       "type": "string"
     },
-    "protocolPath": {
-      "type": "string"
-    },
-    "recipient": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
-    },
-    "contextId": {
-      "type": "string"
-    },
-    "schema": {
-      "type": "string"
-    },
-    "recordId": {
-      "type": "string"
-    },
-    "parentId": {
-      "type": "string"
-    },
-    "dataFormat": {
-      "type": "string"
-    },
-    "dataSize": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
-    },
-    "dateCreated": {
+    "messageTimestamp": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": false,
@@ -59,57 +35,6 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         }
       }
-    },
-    "datePublished": {
-      "type": "object",
-      "minProperties": 1,
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
-        },
-        "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
-        }
-      }
-    },
-    "dateUpdated": {
-      "type": "object",
-      "minProperties": 1,
-      "additionalProperties": false,
-      "properties": {
-        "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
-        },
-        "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
-        }
-      }
-    }
-  },
-  "dependencies": {
-    "datePublished": {
-      "oneOf": [
-        {
-          "properties": {
-            "published": {
-              "enum": [
-                true
-              ]
-            }
-          },
-          "required": [
-            "published"
-          ]
-        },
-        {
-          "not": {
-            "required": [
-              "published"
-            ]
-          }
-        }
-      ]
     }
   }
 }

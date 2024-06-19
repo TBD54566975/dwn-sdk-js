@@ -24,9 +24,6 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
       if ('protocol' in filter && filter.protocol !== undefined) {
         validateProtocolUrlNormalized(filter.protocol);
       }
-      if ('schema' in filter && filter.schema !== undefined) {
-        validateSchemaUrlNormalized(filter.schema);
-      }
     }
 
     Time.validateTimestamp(message.descriptor.messageTimestamp);

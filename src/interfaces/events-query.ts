@@ -27,9 +27,6 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       if ('protocol' in filter && filter.protocol !== undefined) {
         validateProtocolUrlNormalized(filter.protocol);
       }
-      if ('schema' in filter && filter.schema !== undefined) {
-        validateSchemaUrlNormalized(filter.schema);
-      }
     }
 
     return new EventsQuery(message);

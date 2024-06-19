@@ -63,7 +63,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ schema: 'schema1' }]
+        filters : [{ protocol: 'http://example.org/protocol/v1' }]
       });
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: bob.did, message });
@@ -77,7 +77,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ schema: 'schema1' }]
+        filters : [{ protocol: 'http://example.org/protocol/v1' }]
       });
       (message['descriptor'] as any)['troll'] = 'hehe';
 
@@ -93,7 +93,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ schema: 'schema1' }],
+        filters : [{ protocol: 'http://example.org/protocol/v1' }],
       }); // create with filter to prevent failure on .create()
       message.descriptor.filters = []; // remove filters
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
@@ -108,7 +108,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ schema: 'schema1' }],
+        filters : [{ protocol: 'http://example.org/protocol/v1' }],
       }); // create with filter to prevent failure on .create()
       message.descriptor.filters = [{}]; // empty out filter properties
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
