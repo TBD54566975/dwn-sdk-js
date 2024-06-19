@@ -1,6 +1,5 @@
 import type { EventsQueryMessage } from '../../src/types/events-types.js';
 import type { ProtocolsQueryFilter } from '../../src/types/protocols-types.js';
-import type { RecordsFilter } from '../../src/types/records-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { Jws } from '../../src/utils/jws.js';

@@ -2,10 +2,10 @@ import type { EventsFilter } from '../types/events-types.js';
 import type { Filter } from '../types/query-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
+import { normalizeProtocolUrl } from './url.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { isEmptyObject, removeUndefinedProperties } from './object.js';
-import { normalizeProtocolUrl } from './url.js';
 
 
 /**

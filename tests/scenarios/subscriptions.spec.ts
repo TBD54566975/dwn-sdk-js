@@ -17,7 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
+import { Dwn, DwnInterfaceName, DwnMethodName, Message } from '../../src/index.js';
 
 import { expect } from 'chai';
 
@@ -521,7 +521,7 @@ export function testSubscriptionScenarios(): void {
           allMessages.push(await Message.getCid(message));
         };
         const allSubscription = await TestDataGenerator.generateEventsSubscribe({
-          author  : alice,
+          author: alice,
         });
         const allSubscriptionReply = await dwn.processMessage(alice.did, allSubscription.message, { subscriptionHandler: allHandler });
         expect(allSubscriptionReply.status.code).to.equal(200);

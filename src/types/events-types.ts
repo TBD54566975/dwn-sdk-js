@@ -1,7 +1,7 @@
 import type { MessageEvent } from './subscriptions.js';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply, MessageSubscription } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
+import type { PaginationCursor, RangeCriterion } from './query-types.js';
 /**
  * filters used when filtering for any type of Message across interfaces
  */
