@@ -1,5 +1,4 @@
 import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
-
 import type { PermissionConditions, PermissionGrantData, PermissionScope } from '../types/permission-types.js';
 
 import { Encoder } from '../utils/encoder.js';
@@ -66,9 +65,6 @@ export class PermissionGrant {
     return permissionGrant;
   }
 
-  /**
-   * Creates a Permission Grant abstraction for
-   */
   private constructor(message: DataEncodedRecordsWriteMessage) {
     // properties derived from the generic DWN message properties
     this.id = message.recordId;

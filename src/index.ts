@@ -34,6 +34,8 @@ export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages-get.js';
 export { UnionMessageReply } from './core/message-reply.js';
 export { MessageStore, MessageStoreOptions } from './types/message-store.js';
+export { PermissionGrant } from './protocols/permission-grant.js';
+export { PermissionRequest } from './protocols/permission-request.js';
 export { PermissionsProtocol } from './protocols/permissions.js';
 export { PrivateKeySigner } from './utils/private-key-signer.js';
 export { Protocols } from './utils/protocols.js';
