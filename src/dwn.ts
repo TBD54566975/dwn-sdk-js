@@ -9,14 +9,13 @@ import type { Readable } from 'readable-stream';
 import type { ResumableTaskStore } from './types/resumable-task-store.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
+import type { EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
-import { EventsGetHandler } from './handlers/events-get.js';
 import { EventsQueryHandler } from './handlers/events-query.js';
 import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
 import { Message } from './core/message.js';
@@ -67,10 +66,6 @@ export class Dwn {
     );
 
     this.methodHandlers = {
-      [DwnInterfaceName.Events + DwnMethodName.Get]: new EventsGetHandler(
-        this.didResolver,
-        this.eventLog,
-      ),
       [DwnInterfaceName.Events + DwnMethodName.Query]: new EventsQueryHandler(
         this.didResolver,
         this.eventLog,
@@ -165,7 +160,6 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
   public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
   public async processMessage(
     tenant: string, rawMessage: EventsSubscribeMessage, options?: EventsSubscribeMessageOptions): Promise<EventsSubscribeReply>;

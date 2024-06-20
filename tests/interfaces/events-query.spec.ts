@@ -39,8 +39,8 @@ describe('EventsQuery Message', () => {
       const eventsQuery = await EventsQuery.create(options);
 
       const message = eventsQuery.message as EventsQueryMessage;
-      expect(message.descriptor.filters.length).to.equal(1);
-      expect((message.descriptor.filters[0] as ProtocolsQueryFilter).protocol).to.eq('http://example.com');
+      expect(message.descriptor.filters?.length).to.equal(1);
+      expect((message.descriptor.filters![0] as ProtocolsQueryFilter).protocol).to.eq('http://example.com');
     });
 
     it('should auto-normalize schema URL', async () => {
@@ -55,8 +55,8 @@ describe('EventsQuery Message', () => {
 
       const message = eventsQuery.message as EventsQueryMessage;
 
-      expect(message.descriptor.filters.length).to.equal(1);
-      expect((message.descriptor.filters[0] as RecordsFilter).schema).to.eq('http://example.com');
+      expect(message.descriptor.filters?.length).to.equal(1);
+      expect((message.descriptor.filters![0] as RecordsFilter).schema).to.eq('http://example.com');
     });
 
     it('throws an exception if message has no filters', async () => {
@@ -88,7 +88,7 @@ describe('EventsQuery Message', () => {
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      expect(eventsQuery.message.descriptor.filters.length).to.equal(1);
+      expect(eventsQuery.message.descriptor.filters?.length).to.equal(1);
     });
   });
 
@@ -154,7 +154,7 @@ describe('EventsQuery Message', () => {
       });
 
       const { message } = eventsQuery;
-      message.descriptor.filters.push({ }); // add an empty filter
+      message.descriptor.filters!.push({ }); // add an empty filter
       const eventsQueryPromise = EventsQuery.parse(message);
       await expect(eventsQueryPromise).to.eventually.be.rejectedWith('must NOT have fewer than 1 properties');
     });

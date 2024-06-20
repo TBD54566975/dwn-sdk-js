@@ -34,23 +34,6 @@ export type EventsRecordsFilter = {
  */
 export type EventsFilter = EventsMessageFilter | EventsRecordsFilter;
 
-export type EventsGetDescriptor = {
-  interface: DwnInterfaceName.Events;
-  method: DwnMethodName.Get;
-  cursor?: PaginationCursor;
-  messageTimestamp: string;
-};
-
-export type EventsGetMessage = GenericMessage & {
-  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
-  descriptor: EventsGetDescriptor;
-};
-
-export type EventsGetReply = GenericMessageReply & {
-  entries?: string[];
-  cursor?: PaginationCursor;
-};
-
 export type MessageSubscriptionHandler = (event: MessageEvent) => void;
 
 export type EventsSubscribeMessageOptions = {
@@ -77,7 +60,7 @@ export type EventsQueryDescriptor = {
   interface: DwnInterfaceName.Events;
   method: DwnMethodName.Query;
   messageTimestamp: string;
-  filters: EventsFilter[];
+  filters?: EventsFilter[];
   cursor?: PaginationCursor;
 };
 

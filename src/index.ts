@@ -1,7 +1,7 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler as EventSubscriptionHandler } from './types/events-types.js';
+export type { EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler as EventSubscriptionHandler } from './types/events-types.js';
 export type { EventListener, EventStream, EventSubscription, MessageEvent, SubscriptionReply } from './types/subscriptions.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
@@ -23,7 +23,6 @@ export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
-export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { EventsQuery, EventsQueryOptions } from './interfaces/events-query.js';
 export { EventsSubscribe, EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
