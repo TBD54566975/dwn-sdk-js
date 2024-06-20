@@ -38,7 +38,7 @@ export type EventsQueryDescriptor = {
   interface: DwnInterfaceName.Events;
   method: DwnMethodName.Query;
   messageTimestamp: string;
-  filters?: EventsFilter[];
+  filters: EventsFilter[];
   cursor?: PaginationCursor;
 };
 

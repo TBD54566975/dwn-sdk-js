@@ -45,11 +45,12 @@ describe('EventsQuery Message', () => {
     it('allows query with no filters', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
-      const eventsQueryPromise = await EventsQuery.create({
+      const eventsQuery = await EventsQuery.create({
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      expect(eventsQueryPromise.message.descriptor.filters).to.be.undefined;
+
+      expect(eventsQuery.message.descriptor.filters).to.deep.equal([]); // empty array
     });
 
     it('removes empty filters', async () => {
@@ -57,20 +58,21 @@ describe('EventsQuery Message', () => {
       const currentTime = Time.getCurrentTimestamp();
 
       // single empty filter fails
-      const eventsQueryPromise = EventsQuery.create({
-        filters          : [{}],
+      const eventsQuery1 = await EventsQuery.create({
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
+        filters          : [{}],
       });
-      await expect(eventsQueryPromise).to.eventually.be.rejectedWith('fewer than 1 items');
+      expect(eventsQuery1.message.descriptor.filters).to.deep.equal([]); // empty array
 
       // empty filter gets removed, valid filter remains
-      const eventsQuery = await EventsQuery.create({
+      const eventsQuery2 = await EventsQuery.create({
         filters          : [{ protocol: 'http://example.org/protocol/v1' },{ }], // one empty filter
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      expect(eventsQuery.message.descriptor.filters?.length).to.equal(1);
+      expect(eventsQuery2.message.descriptor.filters?.length).to.equal(1);
+      expect(eventsQuery2.message.descriptor.filters).to.deep.equal([{ protocol: 'http://example.org/protocol/v1' }]);
     });
   });
 
@@ -120,7 +122,7 @@ describe('EventsQuery Message', () => {
 
       const { message } = eventsQuery;
       const parsedQuery = await EventsQuery.parse(message);
-      expect(parsedQuery.message.descriptor.filters).to.be.undefined;
+      expect(parsedQuery.message.descriptor.filters).to.deep.equal([]);
     });
 
     it('throws an exception if message has an empty filter', async () => {

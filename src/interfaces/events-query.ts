@@ -36,7 +36,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     const descriptor: EventsQueryDescriptor = {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
-      filters          : options.filters ? Events.normalizeFilters(options.filters) : undefined,
+      filters          : options.filters ? Events.normalizeFilters(options.filters) : [],
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       cursor           : options.cursor,
     };

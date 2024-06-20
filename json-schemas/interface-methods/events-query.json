@@ -17,7 +17,8 @@
       "required": [
         "interface",
         "method",
-        "messageTimestamp"
+        "messageTimestamp",
+        "filters"
       ],
       "properties": {
         "interface": {
@@ -37,7 +38,6 @@
         },
         "filters": {
           "type": "array",
-          "minItems": 1,
           "items": {
             "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
           }
