@@ -10,11 +10,12 @@ import type {
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
 
 import { expect } from 'chai';
+import { PermissionGrant } from '../../src/protocols/permission-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
+import { DataStream, Dwn, DwnInterfaceName, DwnMethodName, Jws, Message, PermissionsProtocol, Time } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
 
 export function testEventsQueryScenarios(): void {
   describe('events query tests', () => {
@@ -248,24 +249,23 @@ export function testEventsQueryScenarios(): void {
 
     it('filters by a protocol across different message types', async () => {
       // scenario:
-      //    alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, RecordsDelete)
-      //    alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, RecordsDelete)
+      //    alice configures two different protocols (proto1, proto2)
+      //    alice creates records for each protocol
+      //    bob requests permissions for both protocols
+      //    alice grants bob permissions for both protocols
       //    when issuing an EventsQuery for the specific protocol, only Events related to it should be returned.
-      //    alice then creates an additional messages to query after a cursor
+      //    alice then deletes the records for each protocol
+      //    alice revokes bob's permissions for both protocols
+      //    now when issuing an EventsQuery for the specific protocol givin a cursor, only the latest event should be returned.
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
+      const bob = await TestDataGenerator.generateDidKeyPersona();
 
       // create a proto1
       const protoConf1 = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
         protocolDefinition : { ...freeForAll, protocol: 'proto1' }
       });
-
-      const postProperties = {
-        protocolPath : 'post',
-        schema       : freeForAll.types.post.schema,
-        dataFormat   : freeForAll.types.post.dataFormats[0],
-      };
 
       const proto1 = protoConf1.message.descriptor.definition.protocol;
       const protoConf1Response = await dwn.processMessage(alice.did, protoConf1.message);
@@ -280,6 +280,12 @@ export function testEventsQueryScenarios(): void {
       const protoConf2Response = await dwn.processMessage(alice.did, protoConf2.message);
       expect(protoConf2Response.status.code).equals(202);
 
+      const postProperties = {
+        protocolPath : 'post',
+        schema       : freeForAll.types.post.schema,
+        dataFormat   : freeForAll.types.post.dataFormats[0],
+      };
+
       // create a record for proto1
       const write1proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
       const write1Response = await dwn.processMessage(alice.did, write1proto1.message, { dataStream: write1proto1.dataStream });
@@ -290,18 +296,74 @@ export function testEventsQueryScenarios(): void {
       const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, { dataStream: write1proto2.dataStream });
       expect(write1Proto2Response.status.code).equals(202);
 
-      // filter for proto1
+      // bob requests permissions for proto 1
+      const requestProto1 = await PermissionsProtocol.createRequest({
+        signer    : Jws.createSigner(bob),
+        scope     : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write, protocol: proto1 },
+        delegated : false,
+      });
+      const requestProto1Response = await dwn.processMessage(
+        alice.did,
+        requestProto1.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(requestProto1.permissionRequestBytes) }
+      );
+      expect(requestProto1Response.status.code).equals(202);
+
+      // bob requests permissions for proto 2
+      const requestProto2 = await PermissionsProtocol.createRequest({
+        signer    : Jws.createSigner(bob),
+        scope     : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write, protocol: proto2 },
+        delegated : false,
+      });
+      const requestProto2Response = await dwn.processMessage(
+        alice.did,
+        requestProto2.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(requestProto2.permissionRequestBytes) }
+      );
+      expect(requestProto2Response.status.code).equals(202);
+
+      // alice grants bob permissions for proto 1
+      const grantProto1 = await PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
+        scope       : requestProto1.permissionRequestData.scope,
+        dateExpires : Time.createOffsetTimestamp({ seconds: 5 }),
+        grantedTo   : bob.did,
+      });
+      const grantProto1Response = await dwn.processMessage(
+        alice.did,
+        grantProto1.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(grantProto1.permissionGrantBytes) }
+      );
+      expect(grantProto1Response.status.code).equals(202);
+
+      // alice grants bob permissions for proto 2
+      const grantProto2 = await PermissionsProtocol.createGrant({
+        signer      : Jws.createSigner(alice),
+        scope       : requestProto2.permissionRequestData.scope,
+        dateExpires : Time.createOffsetTimestamp({ seconds: 5 }),
+        grantedTo   : bob.did,
+      });
+      const grantProto2Response = await dwn.processMessage(
+        alice.did,
+        grantProto2.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(grantProto2.permissionGrantBytes) }
+      );
+      expect(grantProto2Response.status.code).equals(202);
+
+      // filter for proto1 events
       let proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ protocol: proto1 }]
       });
       let proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
-      expect(proto1EventsReply.entries?.length).equals(2);
-
-      // check order of events returned.
-      expect(proto1EventsReply.entries![0]).to.equal(await Message.getCid(protoConf1.message));
-      expect(proto1EventsReply.entries![1]).to.equal(await Message.getCid(write1proto1.message));
+      expect(proto1EventsReply.entries?.length).equals(4); // configure, write, request, grant
+      expect(proto1EventsReply.entries).to.have.members([
+        await Message.getCid(protoConf1.message),
+        await Message.getCid(write1proto1.message),
+        await Message.getCid(requestProto1.recordsWrite.message),
+        await Message.getCid(grantProto1.recordsWrite.message),
+      ]);
 
       // filter for proto2
       let proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -310,11 +372,13 @@ export function testEventsQueryScenarios(): void {
       });
       let proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
-      expect(proto2EventsReply.entries?.length).equals(2);
-
-      // check order of events returned.
-      expect(proto2EventsReply.entries![0]).to.equal(await Message.getCid(protoConf2.message));
-      expect(proto2EventsReply.entries![1]).to.equal(await Message.getCid(write1proto2.message));
+      expect(proto2EventsReply.entries?.length).equals(4); // configure, write, request, grant
+      expect(proto2EventsReply.entries).to.have.members([
+        await Message.getCid(protoConf2.message),
+        await Message.getCid(write1proto2.message),
+        await Message.getCid(requestProto2.recordsWrite.message),
+        await Message.getCid(grantProto2.recordsWrite.message),
+      ]);
 
       // delete proto1 message
       const deleteProto1Message = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1proto1.message.recordId });
@@ -326,6 +390,30 @@ export function testEventsQueryScenarios(): void {
       const deleteProto2MessageReply = await dwn.processMessage(alice.did, deleteProto2Message.message);
       expect(deleteProto2MessageReply.status.code).to.equal(202);
 
+      // revoke permissions for proto1
+      const revokeProto1 = await PermissionsProtocol.createRevocation({
+        signer : Jws.createSigner(alice),
+        grant  : await PermissionGrant.parse(grantProto1.dataEncodedMessage),
+      });
+      const revokeProto1Response = await dwn.processMessage(
+        alice.did,
+        revokeProto1.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(revokeProto1.permissionRevocationBytes) }
+      );
+      expect(revokeProto1Response.status.code).equals(202);
+
+      // revoke permissions for proto2
+      const revokeProto2 = await PermissionsProtocol.createRevocation({
+        signer : Jws.createSigner(alice),
+        grant  : await PermissionGrant.parse(grantProto2.dataEncodedMessage),
+      });
+      const revokeProto2Response = await dwn.processMessage(
+        alice.did,
+        revokeProto2.recordsWrite.message,
+        { dataStream: DataStream.fromBytes(revokeProto2.permissionRevocationBytes) }
+      );
+      expect(revokeProto2Response.status.code).equals(202);
+
       //query messages beyond the cursor
       proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -334,8 +422,11 @@ export function testEventsQueryScenarios(): void {
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
-      expect(proto1EventsReply.entries?.length).equals(1);
-      expect(proto1EventsReply.entries![0]).to.equal(await Message.getCid(deleteProto1Message.message));
+      expect(proto1EventsReply.entries?.length).equals(2); // delete, revoke
+      expect(proto1EventsReply.entries).to.have.members([
+        await Message.getCid(deleteProto1Message.message),
+        await Message.getCid(revokeProto1.recordsWrite.message),
+      ]);
 
       //query messages beyond the cursor
       proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -345,8 +436,31 @@ export function testEventsQueryScenarios(): void {
       });
       proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
-      expect(proto2EventsReply.entries?.length).equals(1);
-      expect(proto2EventsReply.entries![0]).to.equal(await Message.getCid(deleteProto2Message.message));
+      expect(proto2EventsReply.entries?.length).equals(2); // delete, revoke
+      expect(proto2EventsReply.entries).to.have.members([
+        await Message.getCid(deleteProto2Message.message),
+        await Message.getCid(revokeProto2.recordsWrite.message),
+      ]);
+
+      // query for proto1 events again after the curser, should get nothing
+      proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ protocol: proto1 }],
+        cursor  : proto1EventsReply.cursor,
+      });
+      proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
+      expect(proto1EventsReply.status.code).equals(200);
+      expect(proto1EventsReply.entries?.length).equals(0);
+
+      // query for proto2 events again after the curser, should get nothing
+      proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ protocol: proto2 }],
+        cursor  : proto2EventsReply.cursor,
+      });
+      proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
+      expect(proto2EventsReply.status.code).equals(200);
+      expect(proto2EventsReply.entries?.length).equals(0);
     });
   });
 };
