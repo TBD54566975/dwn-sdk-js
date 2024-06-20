@@ -59,15 +59,14 @@ describe('EventsQuery Message', () => {
       expect((message.descriptor.filters![0] as RecordsFilter).schema).to.eq('http://example.com');
     });
 
-    it('throws an exception if message has no filters', async () => {
+    it('allows query with no filters', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
-      const eventsQueryPromise = EventsQuery.create({
-        filters          : [],
+      const eventsQueryPromise = await EventsQuery.create({
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      await expect(eventsQueryPromise).to.eventually.be.rejectedWith('fewer than 1 items');
+      expect(eventsQueryPromise.message.descriptor.filters).to.be.undefined;
     });
 
     it('removes empty filters', async () => {
@@ -128,20 +127,17 @@ describe('EventsQuery Message', () => {
       await expect(eventsQueryPromise).to.eventually.be.rejectedWith('must NOT have additional properties');
     });
 
-    it('throws an exception if message has no filters', async () => {
+    it('allows query without any filters', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'anything' }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
 
       const { message } = eventsQuery;
-      message.descriptor.filters = []; //empty out the filters
-
-      const eventsQueryPromise = EventsQuery.parse(message);
-      await expect(eventsQueryPromise).to.eventually.be.rejectedWith('fewer than 1 items');
+      const parsedQuery = await EventsQuery.parse(message);
+      expect(parsedQuery.message.descriptor.filters).to.be.undefined;
     });
 
     it('throws an exception if message has an empty filter', async () => {
