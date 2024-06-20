@@ -23,7 +23,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
-    for (const filter of message.descriptor.filters || []) {
+    for (const filter of message.descriptor.filters) {
       if ('protocol' in filter && filter.protocol !== undefined) {
         validateProtocolUrlNormalized(filter.protocol);
       }
