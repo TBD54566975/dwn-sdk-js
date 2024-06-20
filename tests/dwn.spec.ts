@@ -78,7 +78,7 @@ export function testDwnClass(): void {
         expect(reply.entries).to.be.empty;
       });
 
-      it('should process an EventsGet message', async () => {
+      it('should process an EventsQuery message', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateEventsQuery({ author: alice });
 

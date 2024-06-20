@@ -118,7 +118,12 @@ export function testEventsQueryHandler(): void {
       expect(reply.entries).to.not.exist;
     });
 
-    it('returns all events for a tenant if cursor is not provided', async () => {
+    it('returns all events for a tenant beyond a provided cursor', async () => {
+      // scenario: Alice configures a protocol, and writes 5 records.
+      // Alice queries for events without a cursor, and expects to see all 5 records as well as the protocol configuration message.
+      // Alice writes an additional record.
+      // Alice queries for events beyond the cursor, and expects to see only the additional record.
+
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const expectedCids: string[] = [];
 

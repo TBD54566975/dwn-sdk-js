@@ -1,7 +1,7 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler as EventSubscriptionHandler } from './types/events-types.js';
+export type { EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 export type { EventListener, EventStream, EventSubscription, MessageEvent, SubscriptionReply } from './types/subscriptions.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';

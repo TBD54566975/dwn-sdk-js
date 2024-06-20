@@ -190,11 +190,6 @@ export type GenerateRecordsDeleteOutput = {
   message: RecordsDeleteMessage;
 };
 
-export type GenerateEventsGetInput = {
-  author?: Persona;
-  cursor?: PaginationCursor;
-};
-
 export type GenerateEventsQueryInput = {
   author?: Persona;
   filters?: EventsFilter[];
