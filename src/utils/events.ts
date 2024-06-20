@@ -77,6 +77,7 @@ export class Events {
       } as Filter;
 
       if (messageTimestamp != undefined) {
+        // if we filter by message timestamp, we also want to filter the permission messages by the same timestamp range
         const messageTimestampFilter = FilterUtility.convertRangeCriterion(messageTimestamp);
         if (messageTimestampFilter) {
           taggedFilter.messageTimestamp = messageTimestampFilter;
