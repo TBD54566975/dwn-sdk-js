@@ -163,5 +163,17 @@ export function testEventsQueryHandler(): void {
       expect(afterCursorReply.entries!.length).to.equal(1);
       expect(afterCursorReply.entries![0]).to.equal(await Message.getCid(additionalMessage));
     });
+
+    describe('grant based queries', () => {
+      xit('allows query of events with matching interface grant scopes', async () => {});
+      xit('rejects query of events with mismatching interface grant scopes', async () => {});
+      xit('allows query of events with matching method grant scopes', async () => {});
+      xit('rejects query of events with mismatching method grant scopes', async () => {});
+
+      describe('protocol records', () => {
+        xit('allows query of protocol messages with matching protocol grant scopes', async () => {});
+        xit('rejects query of protocol messages with mismatching protocol grant scopes', async () => {});
+      });
+    });
   });
 }

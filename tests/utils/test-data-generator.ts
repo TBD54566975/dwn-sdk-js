@@ -194,6 +194,7 @@ export type GenerateEventsQueryInput = {
   author?: Persona;
   filters?: EventsFilter[];
   cursor?: PaginationCursor;
+  permissionGrantId?: string;
 };
 
 export type GenerateEventsQueryOutput = {
@@ -661,12 +662,11 @@ export class TestDataGenerator {
   }
 
   public static async generateEventsQuery(input: GenerateEventsQueryInput): Promise<GenerateEventsQueryOutput> {
-    const { filters, cursor } = input;
+    const { filters, cursor, permissionGrantId } = input;
     const author = input.author ?? await TestDataGenerator.generatePersona();
     const signer = Jws.createSigner(author);
 
-    const options: EventsQueryOptions = { signer, filters, cursor };
-
+    const options: EventsQueryOptions = { signer, filters, cursor, permissionGrantId };
     const eventsQuery = await EventsQuery.create(options);
 
     return {
