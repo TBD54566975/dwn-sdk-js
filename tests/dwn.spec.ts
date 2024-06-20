@@ -1,6 +1,6 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../src/types/subscriptions.js';
-import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
+import type { ActiveTenantCheckResult, EventsQueryReply, TenantGate } from '../src/index.js';
 import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -78,11 +78,11 @@ export function testDwnClass(): void {
         expect(reply.entries).to.be.empty;
       });
 
-      it('should process an EventsGet message', async () => {
+      it('should process an EventsQuery message', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
-        const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
+        const { message } = await TestDataGenerator.generateEventsQuery({ author: alice });
 
-        const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
+        const reply: EventsQueryReply = await dwn.processMessage(alice.did, message);
 
         expect(reply.status.code).to.equal(200);
         expect(reply.entries).to.be.empty;

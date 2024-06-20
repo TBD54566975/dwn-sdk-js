@@ -4,7 +4,6 @@ import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventLog } from './event-log/event-log.spec.js';
-import { testEventsGetHandler } from './handlers/events-get.spec.js';
 import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
 import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
@@ -60,7 +59,6 @@ export class TestSuite {
     testEventStream();
 
     // handler tests
-    testEventsGetHandler();
     testEventsSubscribeHandler();
     testEventsQueryHandler();
     testMessagesGetHandler();

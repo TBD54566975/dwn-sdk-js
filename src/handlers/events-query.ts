@@ -32,7 +32,10 @@ export class EventsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const eventFilters = Events.convertFilters(message.descriptor.filters);
+    // if no filter is present in the the `EventsQuery` descriptor, we pass an empty array of filters to the `queryEvents` method
+    // this will return all events in the event log for the given tenant beyond the cursor provided.
+    // if no cursor is provided, it will return all events
+    const eventFilters = message.descriptor.filters ? Events.convertFilters(message.descriptor.filters) : [];
     const { events, cursor } = await this.eventLog.queryEvents(tenant, eventFilters, message.descriptor.cursor);
 
     return {

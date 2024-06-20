@@ -12,7 +12,7 @@ import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../u
 
 export type EventsQueryOptions = {
   signer: Signer;
-  filters: EventsFilter[];
+  filters?: EventsFilter[];
   cursor?: PaginationCursor;
   messageTimestamp?: string;
 };
@@ -23,7 +23,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
-    for (const filter of message.descriptor.filters) {
+    for (const filter of message.descriptor.filters || []) {
       if ('protocol' in filter && filter.protocol !== undefined) {
         validateProtocolUrlNormalized(filter.protocol);
       }
@@ -39,7 +39,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     const descriptor: EventsQueryDescriptor = {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
-      filters          : Events.normalizeFilters(options.filters),
+      filters          : options.filters ? Events.normalizeFilters(options.filters) : undefined,
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       cursor           : options.cursor,
     };
