@@ -9,7 +9,6 @@ import type {
   ResumableTaskStore,
 } from '../../src/index.js';
 
-import { Dwn } from '../../src/index.js';
 import { EventsQueryHandler } from '../../src/handlers/events-query.js';
 import { expect } from 'chai';
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
@@ -18,6 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
+import { Dwn, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 
 export function testEventsQueryHandler(): void {
@@ -64,7 +64,7 @@ export function testEventsQueryHandler(): void {
       const { message } = await TestDataGenerator.generateEventsQuery({
         author: alice,
       });
-      const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
+      const eventsQueryHandler = new EventsQueryHandler(didResolver, messageStore, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: bob.did, message });
 
       expect(reply.status.code).to.equal(401);
@@ -79,7 +79,7 @@ export function testEventsQueryHandler(): void {
       });
       (message['descriptor'] as any)['troll'] = 'hehe';
 
-      const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
+      const eventsQueryHandler = new EventsQueryHandler(didResolver, messageStore, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
@@ -94,7 +94,7 @@ export function testEventsQueryHandler(): void {
         filters : [{ protocol: 'http://example.org/protocol/v1' }],
       }); // create with filter to prevent failure on .create()
       message.descriptor.filters = [{}]; // empty out filter properties
-      const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
+      const eventsQueryHandler = new EventsQueryHandler(didResolver, messageStore, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
@@ -165,8 +165,75 @@ export function testEventsQueryHandler(): void {
     });
 
     describe('grant based queries', () => {
-      xit('allows query of events with matching interface grant scopes', async () => {});
-      xit('rejects query of events with mismatching interface grant scopes', async () => {});
+      it('allows query of events with matching interface grant scopes', async () => {
+        // scenario: Alice gives Bob permission to query for all of her events
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create grant
+        const { message: grantMessage, dataStream } = await TestDataGenerator.generateGrantCreate({
+          author    : alice,
+          grantedTo : bob,
+          scope     : {
+            interface : DwnInterfaceName.Events,
+            method    : DwnMethodName.Query
+          }
+        });
+        const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
+        expect(grantReply.status.code).to.equal(202);
+
+        // configure the freeForAll protocol
+        const { message: freeForAllConfigure } = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : freeForAll,
+        });
+        const { status: freeForAllReplyStatus } = await dwn.processMessage(alice.did, freeForAllConfigure);
+        expect(freeForAllReplyStatus.code).to.equal(202);
+
+        // configure a random protocol configuration
+        const { message: protocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+          author: alice,
+        });
+        const { status: configureStatus } = await dwn.processMessage(alice.did, protocolMessage);
+        expect(configureStatus.code).to.equal(202);
+
+        // write a message to the Records free for all interface
+        const { message: recordMessage, dataStream: recordDataStream } = await TestDataGenerator.generateRecordsWrite({
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          author       : alice
+        });
+
+        const recordReply = await dwn.processMessage(alice.did, recordMessage, { dataStream: recordDataStream });
+        expect(recordReply.status.code).to.equal(202);
+
+        // write a random message
+        const { message: randomMessage, dataStream: randomDataStream } = await TestDataGenerator.generateRecordsWrite({
+          author: alice
+        });
+        const randomReply = await dwn.processMessage(alice.did, randomMessage, { dataStream: randomDataStream });
+        expect(randomReply.status.code).to.equal(202);
+
+        // bob uses the grant to query for all of these messages
+        const { message: bobQuery } = await TestDataGenerator.generateEventsQuery({
+          author            : bob,
+          permissionGrantId : grantMessage.recordId // use the grant recordId as the permissionGrantId
+        });
+        const bobReply = await dwn.processMessage(alice.did, bobQuery);
+        expect(bobReply.status.code).to.equal(200);
+        expect(bobReply.entries!.length).to.equal(5);
+        expect(bobReply.entries).to.have.members([
+          await Message.getCid(grantMessage),
+          await Message.getCid(freeForAllConfigure),
+          await Message.getCid(protocolMessage),
+          await Message.getCid(recordMessage),
+          await Message.getCid(randomMessage),
+        ]);
+      });
+
+      it('rejects query of events with mismatching interface grant scopes', async () => {});
       xit('allows query of events with matching method grant scopes', async () => {});
       xit('rejects query of events with mismatching method grant scopes', async () => {});
 

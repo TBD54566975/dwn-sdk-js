@@ -3,6 +3,17 @@
   "$id": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json",
   "type": "object",
   "$defs": {
+    "events-query-scope": {
+      "type": "object",
+      "properties": {
+        "interface": {
+          "const": "Events"
+        },
+        "method": {
+          "const": "Query"
+        }
+      }
+    },
     "protocols-query-scope": {
       "type": "object",
       "properties": {

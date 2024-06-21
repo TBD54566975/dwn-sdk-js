@@ -6,6 +6,9 @@
     "scope": {
       "oneOf": [
         {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/events-query-scope"
+        },
+        {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/protocols-query-scope"
         },
         {
