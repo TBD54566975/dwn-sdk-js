@@ -262,11 +262,36 @@ export function testEventsQueryHandler(): void {
         expect(bobReply.status.detail).to.include(DwnErrorCode.GrantAuthorizationInterfaceMismatch);
       });
 
-      xit('rejects query of events with mismatching method grant scopes', async () => {
+      it('rejects query of events with mismatching method grant scopes', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create grant that is scoped to `RecordsWrite` for bob scoped to the `freeForAll` protocol
+        const { dataEncodedMessage: grantMessage, recordsWrite: grantWrite } = await TestDataGenerator.generateGrantCreate({
+          author    : alice,
+          grantedTo : bob,
+          scope     : {
+            interface : DwnInterfaceName.Events,
+            method    : DwnMethodName.Subscribe,
+          }
+        });
+
+        // write grant directly to the message store to bypass DWN schema validation as `Query` is the only currently supported `Events` method
+        const grantMessageIndexes = await grantWrite.constructIndexes(true);
+        await messageStore.put(alice.did, grantMessage, grantMessageIndexes);
+
+        // bob attempts to use the `RecordsWrite` grant on an `EventsQuery` message
+        const { message: bobQuery } = await TestDataGenerator.generateEventsQuery({
+          author            : bob,
+          permissionGrantId : grantMessage.recordId
+        });
+        const bobReply = await dwn.processMessage(alice.did, bobQuery);
+        expect(bobReply.status.code).to.equal(401);
+        expect(bobReply.status.detail).to.include(DwnErrorCode.GrantAuthorizationMethodMismatch);
       });
 
-      describe('protocol records', () => {
-        it('allows query of protocol messages with matching protocol grant scopes', async () => {
+      describe('protocol filtered messages', () => {
+        it('allows query of protocol filtered messages with matching protocol grant scopes', async () => {
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -319,7 +344,7 @@ export function testEventsQueryHandler(): void {
           ]);
         });
 
-        it('rejects query of protocol messages with mismatching protocol grant scopes', async () => {
+        it('rejects query of protocol filtered messages with mismatching protocol grant scopes', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
 
