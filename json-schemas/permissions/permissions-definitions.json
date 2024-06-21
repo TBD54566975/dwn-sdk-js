@@ -12,6 +12,9 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/events-subscribe-scope"
         },
         {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-get-scope"
+        },
+        {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/protocols-query-scope"
         },
         {

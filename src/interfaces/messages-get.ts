@@ -12,6 +12,7 @@ export type MessagesGetOptions = {
   messageCid: string;
   signer: Signer;
   messageTimestamp?: string;
+  permissionGrantId?: string;
 };
 
 export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
@@ -30,10 +31,15 @@ export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
       interface        : DwnInterfaceName.Messages,
       method           : DwnMethodName.Get,
       messageCid       : options.messageCid,
-      messageTimestamp : options?.messageTimestamp ?? Time.getCurrentTimestamp(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
 
-    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
+    const { signer, permissionGrantId } = options;
+    const authorization = await Message.createAuthorization({
+      descriptor,
+      signer,
+      permissionGrantId,
+    });
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -51,7 +57,7 @@ export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
     try {
       Cid.parseCid(messageCid);
     } catch (_) {
-      throw new DwnError(DwnErrorCode.MessageGetInvalidCid, `${messageCid} is not a valid CID`);
+      throw new DwnError(DwnErrorCode.MessagesGetInvalidCid, `${messageCid} is not a valid CID`);
     }
   }
 }

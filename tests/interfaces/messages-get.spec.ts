@@ -1,27 +1,29 @@
 import type { MessagesGetMessage } from '../../src/index.js';
 
 import { expect } from 'chai';
-import { Jws } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { MessagesGet } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { DwnErrorCode, Jws } from '../../src/index.js';
 
 describe('MessagesGet Message', () => {
   describe('create', () => {
     it('creates a MessagesGet message', async () => {
       const { author, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
+      const messageTimestamp = TestDataGenerator.randomTimestamp();
 
       const messagesGet = await MessagesGet.create({
         signer     : await Jws.createSigner(author),
-        messageCid : messageCid
+        messageCid : messageCid,
+        messageTimestamp,
       });
 
       expect(messagesGet.message.authorization).to.exist;
       expect(messagesGet.message.descriptor).to.exist;
       expect(messagesGet.message.descriptor.messageCid).to.equal(messageCid);
+      expect(messagesGet.message.descriptor.messageTimestamp).to.equal(messageTimestamp);
     });
-
 
     it('throws an error if an invalid CID is provided', async () => {
       const alice = await TestDataGenerator.generatePersona();
@@ -34,7 +36,7 @@ describe('MessagesGet Message', () => {
 
         expect.fail();
       } catch (e: any) {
-        expect(e.message).to.include('is not a valid CID');
+        expect(e.message).to.include(DwnErrorCode.MessagesGetInvalidCid);
       }
     });
   });

@@ -16,8 +16,7 @@ export type MessagesGetMessage = GenericMessage & {
 
 export type MessagesGetReplyEntry = {
   messageCid: string;
-  message?: (GenericMessage & { data?: Readable });
-  error?: string;
+  message: (GenericMessage & { data?: Readable });
 };
 
 export type MessagesGetReply = GenericMessageReply & {

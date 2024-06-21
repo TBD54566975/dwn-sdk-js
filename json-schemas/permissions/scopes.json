@@ -41,6 +41,25 @@
         }
       }
     },
+    "messages-get-scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Messages"
+        },
+        "method": {
+          "const": "Get"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      }
+    },
     "protocols-query-scope": {
       "type": "object",
       "additionalProperties": false,
