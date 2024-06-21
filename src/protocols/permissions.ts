@@ -165,7 +165,8 @@ export class PermissionsProtocol {
   public static async createRequest(options: PermissionRequestCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
     permissionRequestData: PermissionRequestData,
-    permissionRequestBytes: Uint8Array
+    permissionRequestBytes: Uint8Array,
+    dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
 
     if (this.isRecordPermissionScope(options.scope) && options.scope.protocol === undefined) {
@@ -204,10 +205,16 @@ export class PermissionsProtocol {
       tags             : permissionTags,
     });
 
+    const dataEncodedMessage: DataEncodedRecordsWriteMessage = {
+      ...recordsWrite.message,
+      encodedData: Encoder.bytesToBase64Url(permissionRequestBytes)
+    };
+
     return {
       recordsWrite,
       permissionRequestData,
-      permissionRequestBytes
+      permissionRequestBytes,
+      dataEncodedMessage
     };
   }
 
