@@ -28,6 +28,7 @@ export class EventsGrantAuthorization {
       messageStore
     });
 
+    // if the grant is scoped to a specific protocol, ensure that all of the query filters must include that protocol
     if ('protocol' in permissionGrant.scope && permissionGrant.scope.protocol !== undefined) {
       const scopedProtocol = permissionGrant.scope.protocol;
       for (const filter of eventsQueryMessage.descriptor.filters) {

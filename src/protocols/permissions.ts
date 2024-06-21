@@ -249,12 +249,11 @@ export class PermissionsProtocol {
     // If the grant is scoped to a protocol, the protocol tag must be included with the record.
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission grants associated with it.
     let permissionTags = undefined;
-    if (scope)
-    {if (this.hasProtocolScope(scope)) {
+    if (this.hasProtocolScope(scope)) {
       permissionTags = {
         protocol: scope.protocol
       };
-    }}
+    }
 
     const permissionGrantBytes = Encoder.objectToBytes(permissionGrantData);
     const recordsWrite = await RecordsWrite.create({
@@ -411,15 +410,22 @@ export class PermissionsProtocol {
     return scope.interface === 'Records';
   }
 
+  /**
+   * Type guard to determine if the permission is a protocol-scoped
+   */
   private static hasProtocolScope(scope: PermissionScope): scope is PermissionScope & { protocol: string } {
     return 'protocol' in scope && scope.protocol !== undefined;
   }
 
+  /**
+   * Validates protocol scope integrity between the scope and the grant record.
+   */
   private static validateProtocolScope(scope: PermissionScope, grantRecord: RecordsWriteMessage): void {
     if (this.hasProtocolScope(scope)) {
       const scopedProtocol = scope.protocol;
       validateProtocolUrlNormalized(scopedProtocol);
 
+      // If the grant is scoped to a protocol, the protocol tag must be included with the record.
       if (grantRecord.descriptor.tags === undefined || grantRecord.descriptor.tags.protocol === undefined) {
         throw new DwnError(
           DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag,
@@ -429,6 +435,7 @@ export class PermissionsProtocol {
       const taggedProtocol = grantRecord.descriptor.tags.protocol as string;
       validateProtocolUrlNormalized(taggedProtocol);
 
+      // The protocol tag must match the protocol in the scope
       if (scopedProtocol !== taggedProtocol) {
         throw new DwnError(
           DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch,
@@ -445,6 +452,8 @@ export class PermissionsProtocol {
 
     this.validateProtocolScope(scope, grantRecord);
 
+    // if the the scope is a record permission scope, additional validation is required
+    // otherwise the scope is valid
     if (!this.isRecordPermissionScope(scope)) {
       return;
     }
