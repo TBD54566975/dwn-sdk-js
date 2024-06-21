@@ -248,6 +248,13 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('filters by a protocol across different message types', async () => {
+      // NOTE: This test validates the ability to filter by a specific protocol across different message types.
+      //       This will return any of the `RecordsWrite`, `RecordsDelete` and `ProtocolConfigure` messages that are associated with the protocol
+      //       Additionally this will return permission-protocol `RecordsWrite` messages that are associated with the protocol.
+
+      //       `RecordsDelete` messages associated with requests/grants/revocations are not yet indexed.
+      //       TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/768
+
       // scenario:
       //    alice configures two different protocols (proto1, proto2)
       //    alice creates records for each protocol

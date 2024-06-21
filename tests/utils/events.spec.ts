@@ -23,7 +23,7 @@ describe('Events Utils', () => {
     sinon.restore();
   });
 
-  describe('extractProtocolTagFilters', () => {
+  describe('constructPermissionRecordsFilter', () => {
     it('does not apply any tag filters to non-protocol-filtered events', async () => {
       const eventsFilter: EventsFilter = {
         interface : DwnInterfaceName.Records,
@@ -54,11 +54,11 @@ describe('Events Utils', () => {
       const protocolMessageFilter: Filter[] = Events.convertFilters([protocolEventsFilter]);
       expect(protocolMessageFilter.length).to.equal(2);
 
-      const protocolTagFilter = protocolMessageFilter[0];
+      const permissionRecordsFilter = protocolMessageFilter[0];
       // should have two filter properties: protocol tag filter and a protocol filter for the permissions protocol
-      expect(Object.keys(protocolTagFilter).length).to.equal(2);
-      expect(protocolTagFilter['tag.protocol']).to.equal(exampleProtocol);
-      expect(protocolTagFilter.protocol).to.equal(PermissionsProtocol.uri);
+      expect(Object.keys(permissionRecordsFilter).length).to.equal(2);
+      expect(permissionRecordsFilter['tag.protocol']).to.equal(exampleProtocol);
+      expect(permissionRecordsFilter.protocol).to.equal(PermissionsProtocol.uri);
 
       // should only have a protocol filter for the targeted protocol
       const remainingFilter = protocolMessageFilter[1];
@@ -79,8 +79,8 @@ describe('Events Utils', () => {
       const protocolTagFilter2 = messageFilter[0];
       // should have two filter properties: protocol tag filter and a protocol filter for the permissions protocol
       expect(Object.keys(protocolTagFilter2).length).to.equal(2);
-      expect(protocolTagFilter['tag.protocol']).to.equal(exampleProtocol);
-      expect(protocolTagFilter.protocol).to.equal(PermissionsProtocol.uri);
+      expect(permissionRecordsFilter['tag.protocol']).to.equal(exampleProtocol);
+      expect(permissionRecordsFilter.protocol).to.equal(PermissionsProtocol.uri);
 
       const remainingFilter2 = messageFilter[1];
       // should have the remaining filters

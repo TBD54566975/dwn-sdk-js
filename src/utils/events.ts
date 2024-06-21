@@ -19,7 +19,7 @@ export class Events {
 
     const eventsQueryFilters: EventsFilter[] = [];
 
-    // normalize each filter individually by the type of filter it is.
+    // normalize each filter, and only add non-empty filters to the returned array
     for (const filter of filters) {
       // normalize the protocol URL if it exists
       const protocol = filter.protocol !== undefined ? normalizeProtocolUrl(filter.protocol) : undefined;
@@ -56,10 +56,11 @@ export class Events {
     for (const filter of filters) {
       // extract the protocol tag filter from the incoming event record filter
       // this filters for permission grants, requests and revocations associated with a targeted protocol
-      // since permissions are their own protocol, we add an additional tag index when writing the permission messages, so we can filter on it here
-      const protocolTagFilter = this.extractProtocolTagFilters(filter);
-      if (protocolTagFilter) {
-        eventsQueryFilters.push(protocolTagFilter);
+      // since permissions are their own protocol, we added an additional tag index when writing the permission messages
+      // so that we can filter for permission records here
+      const permissionRecordsFilter = this.constructPermissionRecordsFilter(filter);
+      if (permissionRecordsFilter) {
+        eventsQueryFilters.push(permissionRecordsFilter);
       }
 
       eventsQueryFilters.push(this.convertFilter(filter));
@@ -68,7 +69,10 @@ export class Events {
     return eventsQueryFilters;
   }
 
-  private static extractProtocolTagFilters(filter: EventsFilter): Filter | undefined {
+  /**
+   * Constructs a filter that gets associated permission records if protocol is in the given filter.
+   */
+  private static constructPermissionRecordsFilter(filter: EventsFilter): Filter | undefined {
     const { protocol, messageTimestamp } = filter;
     if (protocol !== undefined) {
       const taggedFilter = {
