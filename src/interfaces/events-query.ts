@@ -7,8 +7,8 @@ import { Events } from '../utils/events.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
+import { validateProtocolUrlNormalized } from '../utils/url.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type EventsQueryOptions = {
   signer: Signer;
@@ -23,12 +23,9 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
-    for (const filter of message.descriptor.filters || []) {
+    for (const filter of message.descriptor.filters) {
       if ('protocol' in filter && filter.protocol !== undefined) {
         validateProtocolUrlNormalized(filter.protocol);
-      }
-      if ('schema' in filter && filter.schema !== undefined) {
-        validateSchemaUrlNormalized(filter.schema);
       }
     }
 
@@ -39,7 +36,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     const descriptor: EventsQueryDescriptor = {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
-      filters          : options.filters ? Events.normalizeFilters(options.filters) : undefined,
+      filters          : options.filters ? Events.normalizeFilters(options.filters) : [],
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       cursor           : options.cursor,
     };

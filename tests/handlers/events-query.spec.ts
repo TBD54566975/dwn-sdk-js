@@ -62,8 +62,7 @@ export function testEventsQueryHandler(): void {
       const bob = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ schema: 'schema1' }]
+        author: alice,
       });
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: bob.did, message });
@@ -76,26 +75,10 @@ export function testEventsQueryHandler(): void {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
       const { message } = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ schema: 'schema1' }]
+        author: alice,
       });
       (message['descriptor'] as any)['troll'] = 'hehe';
 
-      const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
-      const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
-
-      expect(reply.status.code).to.equal(400);
-      expect(reply.entries).to.not.exist;
-    });
-
-    it('returns 400 if no filters are provided', async () => {
-      const alice = await TestDataGenerator.generateDidKeyPersona();
-
-      const { message } = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ schema: 'schema1' }],
-      }); // create with filter to prevent failure on .create()
-      message.descriptor.filters = []; // remove filters
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
@@ -108,7 +91,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ schema: 'schema1' }],
+        filters : [{ protocol: 'http://example.org/protocol/v1' }],
       }); // create with filter to prevent failure on .create()
       message.descriptor.filters = [{}]; // empty out filter properties
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);

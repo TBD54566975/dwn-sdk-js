@@ -1,6 +1,5 @@
 import type { EventsQueryMessage } from '../../src/types/events-types.js';
 import type { ProtocolsQueryFilter } from '../../src/types/protocols-types.js';
-import type { RecordsFilter } from '../../src/types/records-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { Jws } from '../../src/utils/jws.js';
@@ -20,7 +19,7 @@ describe('EventsQuery Message', () => {
 
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'anything' }],
+        filters          : [{ protocol: 'http://example.org/protocol/v1' }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -43,30 +42,15 @@ describe('EventsQuery Message', () => {
       expect((message.descriptor.filters![0] as ProtocolsQueryFilter).protocol).to.eq('http://example.com');
     });
 
-    it('should auto-normalize schema URL', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-
-      const options = {
-        recipient : alice.did,
-        signer    : Jws.createSigner(alice),
-        filters   : [{ schema: 'example.com/' }],
-      };
-      const eventsQuery = await EventsQuery.create(options);
-
-      const message = eventsQuery.message as EventsQueryMessage;
-
-      expect(message.descriptor.filters?.length).to.equal(1);
-      expect((message.descriptor.filters![0] as RecordsFilter).schema).to.eq('http://example.com');
-    });
-
     it('allows query with no filters', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
-      const eventsQueryPromise = await EventsQuery.create({
+      const eventsQuery = await EventsQuery.create({
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      expect(eventsQueryPromise.message.descriptor.filters).to.be.undefined;
+
+      expect(eventsQuery.message.descriptor.filters).to.deep.equal([]); // empty array
     });
 
     it('removes empty filters', async () => {
@@ -74,20 +58,21 @@ describe('EventsQuery Message', () => {
       const currentTime = Time.getCurrentTimestamp();
 
       // single empty filter fails
-      const eventsQueryPromise = EventsQuery.create({
-        filters          : [{}],
+      const eventsQuery1 = await EventsQuery.create({
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
+        filters          : [{}],
       });
-      await expect(eventsQueryPromise).to.eventually.be.rejectedWith('fewer than 1 items');
+      expect(eventsQuery1.message.descriptor.filters).to.deep.equal([]); // empty array
 
       // empty filter gets removed, valid filter remains
-      const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'schema' },{ }], // one empty filter
+      const eventsQuery2 = await EventsQuery.create({
+        filters          : [{ protocol: 'http://example.org/protocol/v1' },{ }], // one empty filter
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
-      expect(eventsQuery.message.descriptor.filters?.length).to.equal(1);
+      expect(eventsQuery2.message.descriptor.filters?.length).to.equal(1);
+      expect(eventsQuery2.message.descriptor.filters).to.deep.equal([{ protocol: 'http://example.org/protocol/v1' }]);
     });
   });
 
@@ -98,7 +83,7 @@ describe('EventsQuery Message', () => {
       const currentTime = Time.getCurrentTimestamp();
 
       const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'anything' }],
+        filters          : [{ protocol: 'http://example.org/protocol/v1' }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -116,7 +101,7 @@ describe('EventsQuery Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'anything' }],
+        filters          : [{ protocol: 'http://example.org/protocol/v1' }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -137,14 +122,14 @@ describe('EventsQuery Message', () => {
 
       const { message } = eventsQuery;
       const parsedQuery = await EventsQuery.parse(message);
-      expect(parsedQuery.message.descriptor.filters).to.be.undefined;
+      expect(parsedQuery.message.descriptor.filters).to.deep.equal([]);
     });
 
     it('throws an exception if message has an empty filter', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filters          : [{ schema: 'anything' }],
+        filters          : [{ protocol: 'http://example.org/protocol/v1' }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });

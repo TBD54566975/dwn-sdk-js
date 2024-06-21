@@ -1,7 +1,9 @@
+import type { EventsFilter } from '../types/events-types.js';
 import type { Filter } from '../types/query-types.js';
-import type { EventsFilter, EventsMessageFilter, EventsRecordsFilter } from '../types/events-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
+import { normalizeProtocolUrl } from './url.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { isEmptyObject, removeUndefinedProperties } from './object.js';
 
@@ -17,15 +19,15 @@ export class Events {
 
     const eventsQueryFilters: EventsFilter[] = [];
 
-    // normalize each filter individually by the type of filter it is.
+    // normalize each filter, and only add non-empty filters to the returned array
     for (const filter of filters) {
-      let eventsFilter: EventsFilter;
-      if (this.isRecordsFilter(filter)) {
-        eventsFilter = Records.normalizeFilter(filter);
-      } else {
-        // no normalization needed
-        eventsFilter = filter;
-      }
+      // normalize the protocol URL if it exists
+      const protocol = filter.protocol !== undefined ? normalizeProtocolUrl(filter.protocol) : undefined;
+
+      const eventsFilter = {
+        ...filter,
+        protocol,
+      };
 
       // remove any empty filter properties and do not add if empty
       removeUndefinedProperties(eventsFilter);
@@ -33,7 +35,6 @@ export class Events {
         eventsQueryFilters.push(eventsFilter);
       }
     }
-
 
     return eventsQueryFilters;
   }
@@ -53,43 +54,56 @@ export class Events {
     // first we check for `EventsRecordsFilter` fields for conversion
     // otherwise it is `EventsMessageFilter` fields for conversion
     for (const filter of filters) {
-      if (this.isRecordsFilter(filter)) {
-        eventsQueryFilters.push(Records.convertFilter(filter));
-      } else {
-        eventsQueryFilters.push(this.convertFilter(filter));
+      // extract the protocol tag filter from the incoming event record filter
+      // this filters for permission grants, requests and revocations associated with a targeted protocol
+      // since permissions are their own protocol, we added an additional tag index when writing the permission messages
+      // so that we can filter for permission records here
+      const permissionRecordsFilter = this.constructPermissionRecordsFilter(filter);
+      if (permissionRecordsFilter) {
+        eventsQueryFilters.push(permissionRecordsFilter);
       }
+
+      eventsQueryFilters.push(this.convertFilter(filter));
     }
 
     return eventsQueryFilters;
   }
 
   /**
+   * Constructs a filter that gets associated permission records if protocol is in the given filter.
+   */
+  private static constructPermissionRecordsFilter(filter: EventsFilter): Filter | undefined {
+    const { protocol, messageTimestamp } = filter;
+    if (protocol !== undefined) {
+      const taggedFilter = {
+        protocol: PermissionsProtocol.uri,
+        ...Records.convertTagsFilter({ protocol })
+      } as Filter;
+
+      if (messageTimestamp != undefined) {
+        // if we filter by message timestamp, we also want to filter the permission messages by the same timestamp range
+        const messageTimestampFilter = FilterUtility.convertRangeCriterion(messageTimestamp);
+        if (messageTimestampFilter) {
+          taggedFilter.messageTimestamp = messageTimestampFilter;
+        }
+      }
+
+      return taggedFilter;
+    }
+  }
+
+  /**
    * Converts an external-facing filter model into an internal-facing filer model used by data store.
    */
-  private static convertFilter(filter: EventsMessageFilter): Filter {
+  private static convertFilter(filter: EventsFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 
-    const { dateUpdated } = filter;
-    const messageTimestampFilter = dateUpdated ? FilterUtility.convertRangeCriterion(dateUpdated) : undefined;
+    const { messageTimestamp } = filter;
+    const messageTimestampFilter = messageTimestamp ? FilterUtility.convertRangeCriterion(messageTimestamp) : undefined;
     if (messageTimestampFilter) {
       filterCopy.messageTimestamp = messageTimestampFilter;
       delete filterCopy.dateUpdated;
     }
     return filterCopy as Filter;
-  }
-
-  // we deliberately do not check for `dateUpdated` in this filter.
-  // if it were the only property that matched, it could be handled by `EventsFilter`
-  private static isRecordsFilter(filter: EventsFilter): filter is EventsRecordsFilter {
-    return 'author' in filter ||
-      'dateCreated' in filter ||
-      'dataFormat' in filter ||
-      'dataSize' in filter ||
-      'parentId' in filter ||
-      'recordId' in filter ||
-      'schema' in filter ||
-      'protocol' in filter ||
-      'protocolPath' in filter ||
-      'recipient' in filter;
   }
 }
