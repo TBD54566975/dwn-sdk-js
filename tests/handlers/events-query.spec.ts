@@ -17,7 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
+import { Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 
 export function testEventsQueryHandler(): void {
@@ -165,13 +165,15 @@ export function testEventsQueryHandler(): void {
     });
 
     describe('grant based queries', () => {
-      it('allows query of events with matching interface grant scopes', async () => {
+      it('allows query of events with matching interface and method grant scope', async () => {
         // scenario: Alice gives Bob permission to query for all of her events
+        // Alice writes various messages
+        // When Bob queries for events, he should see all of Alice's messages including his own grant
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // create grant
+        // create grant that is scoped to `EventsQuery` for bob
         const { message: grantMessage, dataStream } = await TestDataGenerator.generateGrantCreate({
           author    : alice,
           grantedTo : bob,
@@ -219,7 +221,7 @@ export function testEventsQueryHandler(): void {
         // bob uses the grant to query for all of these messages
         const { message: bobQuery } = await TestDataGenerator.generateEventsQuery({
           author            : bob,
-          permissionGrantId : grantMessage.recordId // use the grant recordId as the permissionGrantId
+          permissionGrantId : grantMessage.recordId
         });
         const bobReply = await dwn.processMessage(alice.did, bobQuery);
         expect(bobReply.status.code).to.equal(200);
@@ -233,9 +235,35 @@ export function testEventsQueryHandler(): void {
         ]);
       });
 
-      it('rejects query of events with mismatching interface grant scopes', async () => {});
-      xit('allows query of events with matching method grant scopes', async () => {});
-      xit('rejects query of events with mismatching method grant scopes', async () => {});
+      it('rejects query of events with mismatching interface grant scope', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create grant that is scoped to `RecordsWrite` for bob scoped to the `freeForAll` protocol
+        const { message: grantMessage, dataStream } = await TestDataGenerator.generateGrantCreate({
+          author    : alice,
+          grantedTo : bob,
+          scope     : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Write,
+            protocol  : freeForAll.protocol
+          }
+        });
+        const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
+        expect(grantReply.status.code).to.equal(202);
+
+        // bob attempts to use the `RecordsWrite` grant on an `EventsQuery` message
+        const { message: bobQuery } = await TestDataGenerator.generateEventsQuery({
+          author            : bob,
+          permissionGrantId : grantMessage.recordId
+        });
+        const bobReply = await dwn.processMessage(alice.did, bobQuery);
+        expect(bobReply.status.code).to.equal(401);
+        expect(bobReply.status.detail).to.include(DwnErrorCode.GrantAuthorizationInterfaceMismatch);
+      });
+
+      xit('rejects query of events with mismatching method grant scopes', async () => {
+      });
 
       describe('protocol records', () => {
         xit('allows query of protocol messages with matching protocol grant scopes', async () => {});
