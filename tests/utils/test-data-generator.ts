@@ -17,7 +17,7 @@ import type { AuthorizationModel, Pagination } from '../../src/types/message-typ
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DataEncodedRecordsWriteMessage, DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsWriteTags } from '../../src/types/records-types.js';
 import type { EventsFilter, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
-import type { PermissionConditions, PermissionScope } from '../../src/index.js';
+import type { PermissionConditions, PermissionScope } from '../../src/types/permission-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
 import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
@@ -33,6 +33,7 @@ import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
+import { PermissionsProtocol } from '../../src/protocols/permissions.js';
 import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
@@ -45,7 +46,7 @@ import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName, PermissionsProtocol } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { HdKey, KeyDerivationScheme } from '../../src/utils/hd-key.js';
 
 /**
