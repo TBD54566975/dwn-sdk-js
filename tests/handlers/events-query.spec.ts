@@ -266,8 +266,118 @@ export function testEventsQueryHandler(): void {
       });
 
       describe('protocol records', () => {
-        xit('allows query of protocol messages with matching protocol grant scopes', async () => {});
-        xit('rejects query of protocol messages with mismatching protocol grant scopes', async () => {});
+        it('allows query of protocol messages with matching protocol grant scopes', async () => {
+
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+
+          // install protocol 1
+          const protocol1: ProtocolDefinition = { ...freeForAll, published: true, protocol: 'http://protcol1' };
+          const { message: protocol1Configure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : protocol1,
+          });
+          const { status: protocol1ConfigureStatus } = await dwn.processMessage(alice.did, protocol1Configure);
+          expect(protocol1ConfigureStatus.code).to.equal(202);
+
+          // install protocol 2
+          const protocol2: ProtocolDefinition = { ...freeForAll, published: true, protocol: 'http://protcol2' };
+          const { message: protocol2Configure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : protocol2,
+          });
+          const { status: protocol2ConfigureStatus } = await dwn.processMessage(alice.did, protocol2Configure);
+          expect(protocol2ConfigureStatus.code).to.equal(202);
+
+          // grant bob permission to query for protocol 1
+          const { message: grant1Message, dataStream: grant1DataStream } = await TestDataGenerator.generateGrantCreate({
+            author    : alice,
+            grantedTo : bob,
+            scope     : {
+              interface : DwnInterfaceName.Events,
+              method    : DwnMethodName.Query,
+              protocol  : protocol1.protocol
+            }
+          });
+
+          const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
+          expect(grant1Reply.status.code).to.equal(202);
+
+          // bob uses the grant to query for protocol 1 messages
+          const { message: bobQuery1 } = await TestDataGenerator.generateEventsQuery({
+            author            : bob,
+            filters           : [{ protocol: protocol1.protocol }],
+            permissionGrantId : grant1Message.recordId
+          });
+          const bobReply1 = await dwn.processMessage(alice.did, bobQuery1);
+          expect(bobReply1.status.code).to.equal(200);
+
+          expect(bobReply1.entries!.length).to.equal(2); // protocol1Configure, and bob's grant
+          expect(bobReply1.entries).to.have.members([
+            await Message.getCid(protocol1Configure),
+            await Message.getCid(grant1Message)
+          ]);
+        });
+
+        it('rejects query of protocol messages with mismatching protocol grant scopes', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+
+          // install protocol 1
+          const protocol1: ProtocolDefinition = { ...freeForAll, published: true, protocol: 'http://protcol1' };
+          const { message: protocol1Configure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : protocol1,
+          });
+          const { status: protocol1ConfigureStatus } = await dwn.processMessage(alice.did, protocol1Configure);
+          expect(protocol1ConfigureStatus.code).to.equal(202);
+
+          // install protocol 2
+          const protocol2: ProtocolDefinition = { ...freeForAll, published: true, protocol: 'http://protcol2' };
+          const { message: protocol2Configure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : protocol2,
+          });
+          const { status: protocol2ConfigureStatus } = await dwn.processMessage(alice.did, protocol2Configure);
+          expect(protocol2ConfigureStatus.code).to.equal(202);
+
+          // grant bob permission to query for protocol 1
+          const { message: grant1Message, dataStream: grant1DataStream } = await TestDataGenerator.generateGrantCreate({
+            author    : alice,
+            grantedTo : bob,
+            scope     : {
+              interface : DwnInterfaceName.Events,
+              method    : DwnMethodName.Query,
+              protocol  : protocol1.protocol
+            }
+          });
+
+          const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
+          expect(grant1Reply.status.code).to.equal(202);
+
+          // bob uses the grant for protocol 1 to query for protocol 2 messages
+          const { message: bobQuery1 } = await TestDataGenerator.generateEventsQuery({
+            author            : bob,
+            filters           : [{ protocol: protocol2.protocol }],
+            permissionGrantId : grant1Message.recordId
+          });
+          const bobReply1 = await dwn.processMessage(alice.did, bobQuery1);
+          expect(bobReply1.status.code).to.equal(401);
+          expect(bobReply1.status.detail).to.include(DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol);
+          expect(bobReply1.entries).to.not.exist;
+
+          // bob attempts to use the grant for protocol 1 to query for messages in protocol 1 OR protocol 2 given two filters
+          // this should fail because the grant is scoped to protocol 1 only
+          const { message: bobQuery2 } = await TestDataGenerator.generateEventsQuery({
+            author            : bob,
+            filters           : [{ protocol: protocol1.protocol }, { protocol: protocol2.protocol }],
+            permissionGrantId : grant1Message.recordId
+          });
+          const bobReply2 = await dwn.processMessage(alice.did, bobQuery2);
+          expect(bobReply2.status.code).to.equal(401);
+          expect(bobReply2.status.detail).to.include(DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol);
+          expect(bobReply2.entries).to.not.exist;
+        });
       });
     });
   });

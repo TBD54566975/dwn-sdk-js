@@ -188,7 +188,7 @@ export class PermissionsProtocol {
     // If the request is scoped to a protocol, the protocol tag must be included with the record.
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission requests associated with it.
     let permissionTags = undefined;
-    if (this.isRecordPermissionScope(scope)) {
+    if (this.hasProtocolScope(scope)) {
       permissionTags = {
         protocol: scope.protocol
       };
@@ -249,11 +249,12 @@ export class PermissionsProtocol {
     // If the grant is scoped to a protocol, the protocol tag must be included with the record.
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission grants associated with it.
     let permissionTags = undefined;
-    if (this.isRecordPermissionScope(scope)) {
+    if (scope)
+    {if (this.hasProtocolScope(scope)) {
       permissionTags = {
         protocol: scope.protocol
       };
-    }
+    }}
 
     const permissionGrantBytes = Encoder.objectToBytes(permissionGrantData);
     const recordsWrite = await RecordsWrite.create({
@@ -294,15 +295,14 @@ export class PermissionsProtocol {
     };
 
     const grantId = options.grant.id;
-    const grantScopedProtocol = this.isRecordPermissionScope(options.grant.scope) ? options.grant.scope.protocol : undefined;
 
     // if the grant was scoped to a protocol, the protocol tag must be included in the revocation
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission revocations associated with it.
     //
     // NOTE: the added tag is validated against the original grant when the revocation is processed by the DWN.
     let permissionTags = undefined;
-    if (grantScopedProtocol !== undefined) {
-      const protocol = normalizeProtocolUrl(grantScopedProtocol);
+    if (this.hasProtocolScope(options.grant.scope)) {
+      const protocol = normalizeProtocolUrl(options.grant.scope.protocol);
       permissionTags = { protocol };
     }
 
@@ -397,7 +397,7 @@ export class PermissionsProtocol {
   private static normalizePermissionScope(permissionScope: PermissionScope): PermissionScope {
     const scope = { ...permissionScope };
 
-    if (PermissionsProtocol.isRecordPermissionScope(scope)) {
+    if (PermissionsProtocol.hasProtocolScope(scope)) {
       scope.protocol = normalizeProtocolUrl(scope.protocol);
     }
 
@@ -411,30 +411,42 @@ export class PermissionsProtocol {
     return scope.interface === 'Records';
   }
 
+  private static hasProtocolScope(scope: PermissionScope): scope is PermissionScope & { protocol: string } {
+    return 'protocol' in scope && scope.protocol !== undefined;
+  }
+
+  private static validateProtocolScope(scope: PermissionScope, grantRecord: RecordsWriteMessage): void {
+    if (this.hasProtocolScope(scope)) {
+      const scopedProtocol = scope.protocol;
+      validateProtocolUrlNormalized(scopedProtocol);
+
+      if (grantRecord.descriptor.tags === undefined || grantRecord.descriptor.tags.protocol === undefined) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag,
+          'Permission grants must have a `tags` property that contains a protocol tag'
+        );
+      }
+      const taggedProtocol = grantRecord.descriptor.tags.protocol as string;
+      validateProtocolUrlNormalized(taggedProtocol);
+
+      if (scopedProtocol !== taggedProtocol) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch,
+          `Permission grants must have a scope with a protocol that matches the tagged protocol: ${taggedProtocol}`
+        );
+      }
+    }
+  }
+
   /**
    * Validates scope.
    */
   private static validateScope(scope: PermissionScope, grantRecord: RecordsWriteMessage): void {
+
+    this.validateProtocolScope(scope, grantRecord);
+
     if (!this.isRecordPermissionScope(scope)) {
       return;
-    }
-
-    // else we are dealing with a RecordsPermissionScope
-
-    if (grantRecord.descriptor.tags === undefined || grantRecord.descriptor.tags.protocol === undefined) {
-      throw new DwnError(
-        DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag,
-        'Permission grants must have a `tags` property that contains a protocol tag'
-      );
-    }
-    const taggedProtocol = grantRecord.descriptor.tags.protocol as string;
-    validateProtocolUrlNormalized(taggedProtocol);
-
-    if (scope.protocol !== taggedProtocol) {
-      throw new DwnError(
-        DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch,
-        `Permission grants must have a scope with a protocol that matches the tagged protocol: ${taggedProtocol}`
-      );
     }
 
     // `contextId` and `protocolPath` are mutually exclusive

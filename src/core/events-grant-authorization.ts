@@ -3,28 +3,41 @@ import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
+import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class EventsGrantAuthorization {
   /**
    * Authorizes the given EventsQuery in the scope of the DID given.
    */
   public static async authorizeQuery(input: {
-    recordsWriteMessage: EventsQueryMessage,
+    eventsQueryMessage: EventsQueryMessage,
     expectedGrantor: string,
     expectedGrantee: string,
     permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      recordsWriteMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
+      eventsQueryMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
-      incomingMessage: recordsWriteMessage,
+      incomingMessage: eventsQueryMessage,
       expectedGrantor,
       expectedGrantee,
       permissionGrant,
       messageStore
     });
+
+    if ('protocol' in permissionGrant.scope && permissionGrant.scope.protocol !== undefined) {
+      const scopedProtocol = permissionGrant.scope.protocol;
+      for (const filter of eventsQueryMessage.descriptor.filters) {
+        if (filter.protocol !== scopedProtocol) {
+          throw new DwnError(
+            DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol,
+            `The protocol ${filter.protocol} does not match the scoped protocol ${scopedProtocol}`
+          );
+        }
+      }
+    }
   }
 }

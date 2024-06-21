@@ -54,9 +54,9 @@ export class EventsQueryHandler implements MethodHandler {
     } else if (eventsQuery.author !== undefined && eventsQuery.signaturePayload!.permissionGrantId !== undefined) {
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, eventsQuery.signaturePayload!.permissionGrantId);
       await EventsGrantAuthorization.authorizeQuery({
-        recordsWriteMessage : eventsQuery.message,
-        expectedGrantor     : tenant,
-        expectedGrantee     : eventsQuery.author,
+        eventsQueryMessage : eventsQuery.message,
+        expectedGrantor    : tenant,
+        expectedGrantee    : eventsQuery.author,
         permissionGrant,
         messageStore
       });
