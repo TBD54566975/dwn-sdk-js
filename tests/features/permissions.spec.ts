@@ -478,10 +478,10 @@ export function testPermissions(): void {
       expect(revokeWriteReply.status.code).to.equal(202);
     });
 
-    describe('validateScope', async () => {
+    describe('validateScopeAndTags', async () => {
       it('should be called for a Request or Grant record', async () => {
         // spy on `validateScope`
-        const validateScopeSpy = sinon.spy(PermissionsProtocol as any, 'validateScope');
+        const validateScopeSpy = sinon.spy(PermissionsProtocol as any, 'validateScopeAndTags');
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -544,7 +544,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, requestWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
 
         // create a permission grant without a protocol tag
@@ -557,7 +557,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, grantRecordsWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
@@ -579,7 +579,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, requestWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
 
         // create a permission grant without a protocol tag
@@ -591,7 +591,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, grantRecordsWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag);
       });
 
@@ -615,7 +615,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, requestWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, requestWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
 
         // create a permission grant with a protocol tag that does not match the scope
@@ -628,7 +628,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, grantRecordsWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch);
       });
 
@@ -653,7 +653,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, requestRecordsWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, requestRecordsWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
 
         // create a permission grant with a scope that has both protocolPath and contextId
@@ -666,7 +666,7 @@ export function testPermissions(): void {
         });
 
         expect(
-          () => PermissionsProtocol['validateScope'](permissionScope, grantRecordsWrite.message)
+          () => PermissionsProtocol['validateScopeAndTags'](permissionScope, grantRecordsWrite.message)
         ).to.throw(DwnErrorCode.PermissionsProtocolValidateScopeContextIdProhibitedProperties);
       });
     });
