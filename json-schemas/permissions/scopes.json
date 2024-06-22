@@ -5,17 +5,30 @@
   "$defs": {
     "events-query-scope": {
       "type": "object",
+      "additionalProperties": false,
+      "required" : [
+        "interface",
+        "method"
+      ],
       "properties": {
         "interface": {
           "const": "Events"
         },
         "method": {
           "const": "Query"
+        },
+        "protocol": {
+          "type": "string"
         }
       }
     },
     "protocols-query-scope": {
       "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interface",
+        "method"
+      ],
       "properties": {
         "interface": {
           "const": "Protocols"
@@ -27,6 +40,7 @@
     },
     "records-delete-scope": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "interface",
         "method"
@@ -40,14 +54,12 @@
         },
         "protocol": {
           "type": "string"
-        },
-        "schema": {
-          "type": "string"
         }
       }
     },
     "records-read-scope": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "interface",
         "method"
@@ -58,9 +70,6 @@
         },
         "method": {
           "const": "Read"
-        },
-        "schema": {
-          "type": "string"
         },
         "protocol": {
           "type": "string"
@@ -75,6 +84,7 @@
     },
     "records-write-scope": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "interface",
         "method"
@@ -85,9 +95,6 @@
         },
         "method": {
           "const": "Write"
-        },
-        "schema": {
-          "type": "string"
         },
         "protocol": {
           "type": "string"
@@ -102,6 +109,7 @@
     },
     "records-query-scope": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "interface",
         "method"
@@ -110,9 +118,6 @@
         "interface": {
           "const": "Records"
         },
-        "method": {
-          "const": "Query"
-        },
         "protocol": {
           "type": "string"
         }
@@ -120,6 +125,7 @@
     },
     "records-subscribe-scope": {
       "type": "object",
+      "additionalProperties": false,
       "required": [
         "interface",
         "method"
