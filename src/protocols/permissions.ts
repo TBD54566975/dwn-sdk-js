@@ -415,7 +415,7 @@ export class PermissionsProtocol {
   /**
    * Type guard to determine if the permission is a protocol-scoped
    */
-  private static hasProtocolScope(scope: PermissionScope): scope is PermissionScope & { protocol: string } {
+  public static hasProtocolScope(scope: PermissionScope): scope is PermissionScope & { protocol: string } {
     return 'protocol' in scope && scope.protocol !== undefined;
   }
 
