@@ -47,9 +47,7 @@ export class MessagesGetHandler implements MethodHandler {
       return messageReplyFromError(error, 401);
     }
 
-    // Include associated data as `encodedData` IF:
-    //  * its a RecordsWrite
-    //  * `encodedData` exists which means the data size is equal or smaller than the size threshold
+    // If the message is a RecordsWrite, we include the data in the response if it is available
     const entry: MessagesGetReplyEntry = { message: messageResult, messageCid: message.descriptor.messageCid };
     if (Records.isRecordsWrite(messageResult)) {
       const recordsWrite = entry.message as RecordsQueryReplyEntry;
@@ -60,12 +58,13 @@ export class MessagesGetHandler implements MethodHandler {
         entry.message.data = DataStream.fromBytes(dataBytes);
         delete recordsWrite.encodedData;
       } else {
-        // check the data store for the associated data
+        // otherwise check the data store for the associated data
         const result = await this.dataStore.get(tenant, recordsWrite.recordId, recordsWrite.descriptor.dataCid);
         if (result?.dataStream !== undefined) {
           entry.message.data = result.dataStream;
         } else {
           // if there is no data, return with the data property undefined
+          // when records are deleted, their data is removed from the data store but the message remains in the message store
           delete entry.message.data;
         }
       }
@@ -90,10 +89,10 @@ export class MessagesGetHandler implements MethodHandler {
     if (messagesGet.author === tenant) {
       // If the author is the tenant, no further authorization is needed
       return;
-    } if (messagesGet.author !== undefined && messagesGet.signaturePayload!.permissionGrantId !== undefined) {
+    } else if (messagesGet.author !== undefined && messagesGet.signaturePayload!.permissionGrantId !== undefined) {
       // if the author is not the tenant and the message has a permissionGrantId, we need to authorize the grant
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesGet.signaturePayload!.permissionGrantId);
-      await MessagesGrantAuthorization.authorizeMessagesGetGrant({
+      await MessagesGrantAuthorization.authorizeMessagesGet({
         messagesGetMessage : messagesGet.message,
         messageToGet       : matchedMessage,
         expectedGrantor    : tenant,

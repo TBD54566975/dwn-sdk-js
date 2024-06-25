@@ -15,7 +15,7 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
-import { DataStream, Dwn, DwnConstant, DwnErrorCode, DwnInterfaceName, DwnMethodName, Jws, PermissionsProtocol, Time } from '../../src/index.js';
+import { DataStream, Dwn, DwnConstant, DwnErrorCode, DwnInterfaceName, DwnMethodName, Jws, PermissionGrant, PermissionsProtocol, Time } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 
 import sinon from 'sinon';
@@ -60,7 +60,7 @@ export function testMessagesGetHandler(): void {
       await dwn.close();
     });
 
-    it('returns 401 if authentication fails', async () => {
+    it('returns a 401 if authentication fails', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
       sinon.stub(GeneralJwsVerifier, 'verifySignatures').throws(new Error('Invalid signature'));
@@ -129,7 +129,7 @@ export function testMessagesGetHandler(): void {
 
     describe('without a grant', () =>{
       describe('records interface messages', () => {
-        it('returns 401 if the tenant is not the author', async () => {
+        it('returns a 401 if the tenant is not the author', async () => {
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
 
@@ -254,52 +254,113 @@ export function testMessagesGetHandler(): void {
         });
       });
 
-      describe('protocol interface messages', () => {
-        it('returns 401 if the tenant is not the author', async () => {
-          // scenario: Alice creates a non-published protocol, installs it, and writes a record. Bob tries to get the protocol message.
-          //          Bob is unable to get the protocol message because it is not published.
+      describe('Protocol interface messages', () => {
+        it('returns a 401 if the tenant is not the author', async () => {
+          // scenario:  Alice configures both a published and non-published protocol and writes it to her DWN.
+          //            Bob is unable to get either of the ProtocolConfigure messages because he is not the author.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
 
-          const protocolDefinition = { ...minimalProtocolDefinition, published: false };
-          const { message: protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
+          // unpublished protocol configuration
+          const unpublishedProtocolDefinition = {
+            ...minimalProtocolDefinition,
+            protocol  : 'http://example.com/protocol/unpublished',
+            published : false
+          };
+          const { message: unpublishedProtocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : unpublishedProtocolDefinition
           });
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure);
-          expect(protocolsConfigureReply.status.code).to.equal(202);
+          const unpublishedProtocolsConfigureReply = await dwn.processMessage(alice.did, unpublishedProtocolsConfigure);
+          expect(unpublishedProtocolsConfigureReply.status.code).to.equal(202);
 
-          const protocolMessageCid = await Message.getCid(protocolsConfigure);
+          // published protocol configuration
+          const publishedProtocolDefinition = {
+            ...minimalProtocolDefinition,
+            protocol  : 'http://example.com/protocol/published',
+            published : true
+          };
+          const { message: publishedProtocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure({
+            author             : alice,
+            protocolDefinition : publishedProtocolDefinition
+          });
+          const publishedProtocolsConfigureReply = await dwn.processMessage(alice.did, publishedProtocolsConfigure);
+          expect(publishedProtocolsConfigureReply.status.code).to.equal(202);
 
-          // bob attempts to get the message
-          const { message: getProtocolConfigure } = await TestDataGenerator.generateMessagesGet({
+          // get the message CIDs
+          const unpublishedProtocolMessageCid = await Message.getCid(unpublishedProtocolsConfigure);
+          const publishedProtocolMessageCid = await Message.getCid(publishedProtocolsConfigure);
+
+          // bob attempts to get the unpublished protocol configuration
+          const { message: getUnpublishedProtocolConfigure } = await TestDataGenerator.generateMessagesGet({
             author     : bob,
-            messageCid : protocolMessageCid,
+            messageCid : unpublishedProtocolMessageCid,
           });
-          const getProtocolConfigureReply = await dwn.processMessage(alice.did, getProtocolConfigure);
-          expect(getProtocolConfigureReply.status.code).to.equal(401);
-          expect(getProtocolConfigureReply.status.detail).to.include(DwnErrorCode.MessagesGetAuthorizationFailed);
-          expect(getProtocolConfigureReply.entry).to.be.undefined;
+          const getUnpublishedProtocolConfigureReply = await dwn.processMessage(alice.did, getUnpublishedProtocolConfigure);
+          expect(getUnpublishedProtocolConfigureReply.status.code).to.equal(401);
+          expect(getUnpublishedProtocolConfigureReply.status.detail).to.include(DwnErrorCode.MessagesGetAuthorizationFailed);
+          expect(getUnpublishedProtocolConfigureReply.entry).to.be.undefined;
+
+          // bob attempts to get the published protocol configuration
+          const { message: getPublishedProtocolConfigure } = await TestDataGenerator.generateMessagesGet({
+            author     : bob,
+            messageCid : publishedProtocolMessageCid,
+          });
+          const getPublishedProtocolConfigureReply = await dwn.processMessage(alice.did, getPublishedProtocolConfigure);
+          expect(getPublishedProtocolConfigureReply.status.code).to.equal(401);
+          expect(getPublishedProtocolConfigureReply.status.detail).to.include(DwnErrorCode.MessagesGetAuthorizationFailed);
+          expect(getPublishedProtocolConfigureReply.entry).to.be.undefined;
+
+          // control: alice is able to get both the published and unpublished protocol configurations
+          const { message: getUnpublishedProtocolConfigureAlice } = await TestDataGenerator.generateMessagesGet({
+            author     : alice,
+            messageCid : unpublishedProtocolMessageCid,
+          });
+          const getUnpublishedProtocolConfigureAliceReply = await dwn.processMessage(alice.did, getUnpublishedProtocolConfigureAlice);
+          expect(getUnpublishedProtocolConfigureAliceReply.status.code).to.equal(200);
+          expect(getUnpublishedProtocolConfigureAliceReply.entry).to.exist;
+          expect(getUnpublishedProtocolConfigureAliceReply.entry!.messageCid).to.equal(unpublishedProtocolMessageCid);
+          expect(getUnpublishedProtocolConfigureAliceReply.entry!.message).to.deep.equal(unpublishedProtocolsConfigure);
+
+          const { message: getPublishedProtocolConfigureAlice } = await TestDataGenerator.generateMessagesGet({
+            author     : alice,
+            messageCid : publishedProtocolMessageCid,
+          });
+          const getPublishedProtocolConfigureAliceReply = await dwn.processMessage(alice.did, getPublishedProtocolConfigureAlice);
+          expect(getPublishedProtocolConfigureAliceReply.status.code).to.equal(200);
+          expect(getPublishedProtocolConfigureAliceReply.entry).to.exist;
+          expect(getPublishedProtocolConfigureAliceReply.entry!.messageCid).to.equal(publishedProtocolMessageCid);
+          expect(getPublishedProtocolConfigureAliceReply.entry!.message).to.deep.equal(publishedProtocolsConfigure);
         });
       });
     });
 
     describe('with a grant', () => {
-      it('rejects with 401 an external party attempts to MessagesGet if grant has different DWN interface scope', async () => {
+      it('returns a 401 if grant has different DWN interface scope', async () => {
         // scenario: Alice grants Bob access to RecordsWrite, then Bob tries to invoke the grant with MessagesGet
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
+        // alice installs a protocol
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : minimalProtocolDefinition
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
         // Alice writes a record which Bob will later try to read
         const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          author: alice,
+          author       : alice,
+          protocol     : minimalProtocolDefinition.protocol,
+          protocolPath : 'foo',
         });
         const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
         expect(recordsWriteReply.status.code).to.equal(202);
 
-        // Alice gives Bob a permission grant with scope MessagesGet
+        // Alice gives Bob a permission grant scoped to a RecordsWrite and the protocol
         const permissionGrant = await PermissionsProtocol.createGrant({
           signer      : Jws.createSigner(alice),
           grantedTo   : bob.did,
@@ -318,7 +379,7 @@ export function testMessagesGetHandler(): void {
         );
         expect(permissionGrantWriteReply.status.code).to.equal(202);
 
-        // Bob tries to MessagesGet
+        // Bob tries to MessagesGet using the RecordsWrite grant
         const messagesGet = await TestDataGenerator.generateMessagesGet({
           author            : bob,
           messageCid        : await Message.getCid(recordsWrite.message),
@@ -370,28 +431,74 @@ export function testMessagesGetHandler(): void {
         expect(readReply.entry!.messageCid).to.equal(messageCid);
       });
 
-      describe('protocol scoped records', () => {
-        it('allows reads of protocol messages that are RecordsDelete', async () => {
-          // Scenario:  Alice writes a protocol record.
-          //            Alice deletes the record.
-          //            Alice gives Bob a grant to read messages in the protocol.
-          //            Bob invokes that grant to read the delete message.
+      describe('protocol scoped messages', () => {
+        it('allows reads of protocol messages with a protocol restricted grant scope', async () => {
+          // This test will verify that a grant scoped to a specific protocol will allow a user to read messages associated with that protocol.
+          // These messages include the ProtocolConfiguration itself, even if not published,
+          // any RecordsWrite or RecordsDelete messages associated with the protocol,
+          // and any PermissionProtocol RecordsWrite messages associated with the protocol.
+
+          // scenario: Alice configures a protocol that is unpublished and writes it to her DWN.
+          //           Alice then gives Bob a grant to get messages from that protocol.
+          //           Carol requests a grant to RecordsWrite to the protocol, and Alice grants it.
+          //           Alice and Carol write records associated with the protocol.
+          //           Alice also deletes a record associated with the protocol.
+          //           Alice revokes the grant to Carol.
+          //           Bob invokes his grant to read the various messages.
+          //           As a control, Alice writes a record not associated with the protocol and Bob tries to unsuccessfully read it.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
+          const carol = await TestDataGenerator.generateDidKeyPersona();
 
-          const protocolDefinition = minimalProtocolDefinition;
+          const protocolDefinition = { ...minimalProtocolDefinition, published: false };
 
-          // Alice installs the protocol
+          // Alice installs the unpublished protocol
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
-            protocolDefinition,
+            protocolDefinition
           });
-
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
+          const protocolConfigureMessageCid = await Message.getCid(protocolsConfig.message);
 
-          // Alice writes a record which will be deleted
+          // Carol requests a grant to write records to the protocol
+          const permissionRequestCarol = await PermissionsProtocol.createRequest({
+            signer    : Jws.createSigner(alice),
+            delegated : false,
+            scope     : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Write,
+              protocol  : protocolDefinition.protocol,
+            }
+          });
+          const requestDataStreamCarol = DataStream.fromBytes(permissionRequestCarol.permissionRequestBytes);
+          const permissionRequestWriteReplyCarol = await dwn.processMessage(
+            alice.did,
+            permissionRequestCarol.recordsWrite.message,
+            { dataStream: requestDataStreamCarol }
+          );
+          expect(permissionRequestWriteReplyCarol.status.code).to.equal(202);
+
+          // Alice gives Carol a grant to write records to the protocol
+          const permissionGrantCarol = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : carol.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
+            delegated   : permissionRequestCarol.permissionRequestData.delegated,
+            scope       : permissionRequestCarol.permissionRequestData.scope,
+          });
+
+          const grantDataStreamCarol = DataStream.fromBytes(permissionGrantCarol.permissionGrantBytes);
+          const permissionGrantWriteReplyCarol = await dwn.processMessage(
+            alice.did,
+            permissionGrantCarol.recordsWrite.message,
+            { dataStream: grantDataStreamCarol }
+          );
+          expect(permissionGrantWriteReplyCarol.status.code).to.equal(202);
+          const carolGrantMessageCiD = await Message.getCid(permissionGrantCarol.recordsWrite.message);
+
+          // Alice writes a record associated with the protocol
           const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             protocol     : protocolDefinition.protocol,
@@ -399,8 +506,9 @@ export function testMessagesGetHandler(): void {
           });
           const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
           expect(recordsWriteReply.status.code).to.equal(202);
+          const aliceRecordMessageCid = await Message.getCid(recordsWrite.message);
 
-          // Alice deletes the record
+          // Alice deletes a record associated with the protocol
           const recordsDelete = await TestDataGenerator.generateRecordsDelete({
             author   : alice,
             recordId : recordsWrite.message.recordId,
@@ -408,138 +516,29 @@ export function testMessagesGetHandler(): void {
           const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
           expect(recordsDeleteReply.status.code).to.equal(202);
 
-          // Alice grants Bob access to read messages in the protocol
-          const permissionGrant = await PermissionsProtocol.createGrant({
-            signer      : Jws.createSigner(alice),
-            grantedTo   : bob.did,
-            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
-            scope       : {
-              interface : DwnInterfaceName.Messages,
-              method    : DwnMethodName.Get,
-              protocol  : protocolDefinition.protocol,
-            }
+          // Carol writes a record associated with the protocol
+          const { recordsWrite: recordsWriteCarol, dataStream: dataStreamCarol } = await TestDataGenerator.generateRecordsWrite({
+            author            : carol,
+            protocol          : protocolDefinition.protocol,
+            protocolPath      : 'foo',
+            permissionGrantId : permissionGrantCarol.recordsWrite.message.recordId,
           });
-          const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-          const permissionGrantWriteReply = await dwn.processMessage(
+          const recordsWriteReplyCarol = await dwn.processMessage(alice.did, recordsWriteCarol.message, { dataStream: dataStreamCarol });
+          expect(recordsWriteReplyCarol.status.code).to.equal(202);
+          const carolRecordMessageCid = await Message.getCid(recordsWriteCarol.message);
+
+          // Alice revokes Carol's grant
+          const permissionRevocationCarol = await PermissionsProtocol.createRevocation({
+            signer : Jws.createSigner(alice),
+            grant  : await PermissionGrant.parse(permissionGrantCarol.dataEncodedMessage),
+          });
+          const permissionRevocationCarolDataStream = DataStream.fromBytes(permissionRevocationCarol.permissionRevocationBytes);
+          const permissionRevocationCarolReply = await dwn.processMessage(
             alice.did,
-            permissionGrant.recordsWrite.message,
-            { dataStream: grantDataStream }
+            permissionRevocationCarol.recordsWrite.message,
+            { dataStream: permissionRevocationCarolDataStream }
           );
-          expect(permissionGrantWriteReply.status.code).to.equal(202);
-
-          // Bob is able to read the delete message
-          const deleteMessageCid = await Message.getCid(recordsDelete.message);
-          const messagesGet = await TestDataGenerator.generateMessagesGet({
-            author            : bob,
-            messageCid        : deleteMessageCid,
-            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-          });
-          const messagesGetReply = await dwn.processMessage(alice.did, messagesGet.message);
-          expect(messagesGetReply.status.code).to.equal(200);
-          expect(messagesGetReply.entry).to.exist;
-          expect(messagesGetReply.entry!.messageCid).to.equal(deleteMessageCid);
-        });
-
-        it('allows reads of protocol messages with a an unrestricted grant scope', async () => {
-          // scenario: Alice writes a protocol record. Alice gives Bob a grant to read any messages
-          //           Bob invokes that grant to read the protocol messages.
-
-          const alice = await TestDataGenerator.generateDidKeyPersona();
-          const bob = await TestDataGenerator.generateDidKeyPersona();
-
-          const protocolDefinition = minimalProtocolDefinition;
-
-          // Alice installs the protocol
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolsConfigureReply.status.code).to.equal(202);
-
-          // Alice writes a record which Bob will later try to read
-          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-          });
-          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-          expect(recordsWriteReply.status.code).to.equal(202);
-          const recordMessageCid = await Message.getCid(recordsWrite.message);
-
-          // Alice gives Bob a permission grant with scope MessagesGet
-          const permissionGrant = await PermissionsProtocol.createGrant({
-            signer      : Jws.createSigner(alice),
-            grantedTo   : bob.did,
-            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }), // 24 hours
-            scope       : {
-              interface : DwnInterfaceName.Messages,
-              method    : DwnMethodName.Get,
-            }
-          });
-          const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
-          const permissionGrantWriteReply = await dwn.processMessage(
-            alice.did,
-            permissionGrant.recordsWrite.message,
-            { dataStream: grantDataStream }
-          );
-          expect(permissionGrantWriteReply.status.code).to.equal(202);
-
-          // Bob is unable to get the message without using the permission grant
-          const messagesGetWithoutGrant = await TestDataGenerator.generateMessagesGet({
-            author     : bob,
-            messageCid : recordMessageCid,
-          });
-          const messagesGetWithoutGrantReply = await dwn.processMessage(alice.did, messagesGetWithoutGrant.message);
-          expect(messagesGetWithoutGrantReply.status.code).to.equal(401);
-          expect(messagesGetWithoutGrantReply.status.detail).to.contain(DwnErrorCode.MessagesGetAuthorizationFailed);
-
-          // Bob is able to get the message when he uses the permission grant
-          const messagesGetWithGrant = await TestDataGenerator.generateMessagesGet({
-            author            : bob,
-            messageCid        : recordMessageCid,
-            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-          });
-          const messagesGetWithGrantReply = await dwn.processMessage(alice.did, messagesGetWithGrant.message);
-          expect(messagesGetWithGrantReply.status.code).to.equal(200);
-
-          // Bob is able to get the message of the grant associated with the protocol
-          const grantMessageCid = await Message.getCid(permissionGrant.recordsWrite.message);
-          const grantMessageRead = await TestDataGenerator.generateMessagesGet({
-            author            : bob,
-            messageCid        : grantMessageCid,
-            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
-          });
-          const grantMessageReadReply = await dwn.processMessage(alice.did, grantMessageRead.message);
-          expect(grantMessageReadReply.status.code).to.equal(200);
-        });
-
-        it('allows reads of protocol messages with a protocol restricted grant scope', async () => {
-          // scenario: Alice writes a protocol record. Alice gives Bob a grant to read messages in the protocol
-          //           Bob invokes that grant to read the protocol messages.
-
-          const alice = await TestDataGenerator.generateDidKeyPersona();
-          const bob = await TestDataGenerator.generateDidKeyPersona();
-
-          const protocolDefinition = minimalProtocolDefinition;
-
-          // Alice installs the protocol
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolsConfigureReply.status.code).to.equal(202);
-
-          // Alice writes a record which Bob will later try to read
-          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
-          });
-          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-          expect(recordsWriteReply.status.code).to.equal(202);
-          const recordMessageCid = await Message.getCid(recordsWrite.message);
+          expect(permissionRevocationCarolReply.status.code).to.equal(202);
 
           // Alice gives Bob a permission grant with scope MessagesGet
           const permissionGrant = await PermissionsProtocol.createGrant({
@@ -563,20 +562,124 @@ export function testMessagesGetHandler(): void {
           // Bob is unable to get the message without using the permission grant
           const messagesGetWithoutGrant = await TestDataGenerator.generateMessagesGet({
             author     : bob,
-            messageCid : recordMessageCid,
+            messageCid : aliceRecordMessageCid,
           });
           const messagesGetWithoutGrantReply = await dwn.processMessage(alice.did, messagesGetWithoutGrant.message);
           expect(messagesGetWithoutGrantReply.status.code).to.equal(401);
           expect(messagesGetWithoutGrantReply.status.detail).to.contain(DwnErrorCode.MessagesGetAuthorizationFailed);
 
-          // Bob is able to get the message when he uses the permission grant
+          // Bob is able to get all the associated messages when using the permission grant
+          // Expected Messages:
+          // - Protocol Configuration
+          // - Alice's RecordsWrite
+          // - Alice's RecordsDelete
+          // - Carol's Permission Request
+          // - Alice's Permission Grant to Carol
+          // - Carol's RecordsWrite
+          // - Alice's Revocation of Carol's Grant
+
+          // Protocol configuration
+          const messagesGetProtocolConfigure = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : protocolConfigureMessageCid,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetProtocolConfigureReply = await dwn.processMessage(alice.did, messagesGetProtocolConfigure.message);
+          expect(messagesGetProtocolConfigureReply.status.code).to.equal(200);
+          expect(messagesGetProtocolConfigureReply.entry).to.exist;
+          expect(messagesGetProtocolConfigureReply.entry!.message).to.deep.equal(protocolsConfig.message);
+
+          // alice RecordsWrite
           const messagesGetWithGrant = await TestDataGenerator.generateMessagesGet({
             author            : bob,
-            messageCid        : recordMessageCid,
+            messageCid        : aliceRecordMessageCid,
             permissionGrantId : permissionGrant.recordsWrite.message.recordId,
           });
           const messagesGetWithGrantReply = await dwn.processMessage(alice.did, messagesGetWithGrant.message);
           expect(messagesGetWithGrantReply.status.code).to.equal(200);
+          expect(messagesGetWithGrantReply.entry).to.exist;
+          // delete the data field from the message for comparison of the message
+          delete messagesGetWithGrantReply.entry!.message.data;
+          expect(messagesGetWithGrantReply.entry!.message).to.deep.equal(recordsWrite.message);
+
+          // alice RecordsDelete
+          const messagesGetDelete = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : await Message.getCid(recordsDelete.message),
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetDeleteReply = await dwn.processMessage(alice.did, messagesGetDelete.message);
+          expect(messagesGetDeleteReply.status.code).to.equal(200);
+          expect(messagesGetDeleteReply.entry).to.exist;
+          expect(messagesGetDeleteReply.entry!.message).to.deep.equal(recordsDelete.message);
+
+          // carol's Permission Request
+          const messagesGetCarolRequest = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : await Message.getCid(permissionRequestCarol.recordsWrite.message),
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetCarolRequestReply = await dwn.processMessage(alice.did, messagesGetCarolRequest.message);
+          expect(messagesGetCarolRequestReply.status.code).to.equal(200);
+          expect(messagesGetCarolRequestReply.entry).to.exist;
+          // delete the data field from the message for comparison of the message
+          delete messagesGetCarolRequestReply.entry!.message.data;
+          expect(messagesGetCarolRequestReply.entry!.message).to.deep.equal(permissionRequestCarol.recordsWrite.message);
+
+          // carol's Permission Grant
+          const messagesGetCarolGrant = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : carolGrantMessageCiD,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetCarolGrantReply = await dwn.processMessage(alice.did, messagesGetCarolGrant.message);
+          expect(messagesGetCarolGrantReply.status.code).to.equal(200);
+          expect(messagesGetCarolGrantReply.entry).to.exist;
+          // delete the data field from the message for comparison of the message
+          delete messagesGetCarolGrantReply.entry!.message.data;
+          expect(messagesGetCarolGrantReply.entry!.message).to.deep.equal(permissionGrantCarol.recordsWrite.message);
+
+          // carol's RecordsWrite
+          const messagesGetCarolRecord = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : carolRecordMessageCid,
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetCarolRecordReply = await dwn.processMessage(alice.did, messagesGetCarolRecord.message);
+          expect(messagesGetCarolRecordReply.status.code).to.equal(200);
+          expect(messagesGetCarolRecordReply.entry).to.exist;
+          // delete the data field from the message for comparison of the message
+          delete messagesGetCarolRecordReply.entry!.message.data;
+          expect(messagesGetCarolRecordReply.entry!.message).to.deep.equal(recordsWriteCarol.message);
+
+          // carol's Grant Revocation
+          const messagesGetCarolGrantRevocation = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : await Message.getCid(permissionRevocationCarol.recordsWrite.message),
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetCarolGrantRevocationReply = await dwn.processMessage(alice.did, messagesGetCarolGrantRevocation.message);
+          expect(messagesGetCarolGrantRevocationReply.status.code).to.equal(200);
+          expect(messagesGetCarolGrantRevocationReply.entry).to.exist;
+          // delete the data field from the message for comparison of the message
+          delete messagesGetCarolGrantRevocationReply.entry!.message.data;
+          expect(messagesGetCarolGrantRevocationReply.entry!.message).to.deep.equal(permissionRevocationCarol.recordsWrite.message);
+
+          // CONTROL: Alice writes a record not associated with the protocol
+          const { recordsWrite: recordsWriteControl, dataStream: dataStreamControl } = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+          });
+          const recordsWriteControlReply = await dwn.processMessage(alice.did, recordsWriteControl.message, { dataStream: dataStreamControl });
+          expect(recordsWriteControlReply.status.code).to.equal(202);
+
+          // Bob is unable to get the control message
+          const messagesGetControl = await TestDataGenerator.generateMessagesGet({
+            author            : bob,
+            messageCid        : await Message.getCid(recordsWriteControl.message),
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+          const messagesGetControlReply = await dwn.processMessage(alice.did, messagesGetControl.message);
+          expect(messagesGetControlReply.status.code).to.equal(401);
         });
 
         it('rejects message get of protocol messages with mismatching protocol grant scopes', async () => {

@@ -1,12 +1,15 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessagesGetMessage } from '../types/messages-types.js';
-import type { MessagesPermissionScope } from '../types/permission-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { PermissionGrant } from '../protocols/permission-grant.js';
-import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
+import type { DataEncodedRecordsWriteMessage, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { MessagesPermissionScope, PermissionScope } from '../types/permission-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { Message } from './message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
+import { PermissionRequest } from '../protocols/permission-request.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -14,10 +17,10 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 export class MessagesGrantAuthorization {
 
   /**
-   * Authorizes a RecordsReadMessage using the given permission grant.
+   * Authorizes a MessagesGetMessage using the given permission grant.
    * @param messageStore Used to check if the given grant has been revoked.
    */
-  public static async authorizeMessagesGetGrant(input: {
+  public static async authorizeMessagesGet(input: {
     messagesGetMessage: MessagesGetMessage,
     messageToGet: GenericMessage,
     expectedGrantor: string,
@@ -56,12 +59,44 @@ export class MessagesGrantAuthorization {
     }
 
     if (messageToGet.descriptor.interface === DwnInterfaceName.Records) {
+      // if the message is a Records interface message, get the RecordsWrite message associated with the record
       const recordsMessage = messageToGet as RecordsWriteMessage | RecordsDeleteMessage;
       const recordsWriteMessage = Records.isRecordsWrite(recordsMessage) ? recordsMessage :
         await MessagesGrantAuthorization.getRecordsWriteMessageToAuthorize(tenant, recordsMessage, messageStore);
 
       if (recordsWriteMessage.descriptor.protocol === incomingScope.protocol) {
         // the record protocol matches the incoming scope protocol
+        return;
+      }
+
+      // we check if the protocol is the internal PermissionsProtocol for further validation
+      if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri) {
+        // get the permission scope from the permission message
+        // if the permission message is a revocation, the scope is fetched from the grant that is being revoked
+        let permissionScope!: PermissionScope;
+        if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+          const grant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsWriteMessage.descriptor.parentId!);
+          permissionScope = grant.scope;
+          return;
+        } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
+          const grant = await PermissionGrant.parse(recordsWriteMessage as DataEncodedRecordsWriteMessage);
+          permissionScope = grant.scope;
+        } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
+          const request = await PermissionRequest.parse(recordsWriteMessage as DataEncodedRecordsWriteMessage);
+          permissionScope = request.scope;
+        }
+
+        if (PermissionsProtocol.hasProtocolScope(permissionScope) && permissionScope.protocol === incomingScope.protocol) {
+          // the permissions record scoped protocol matches the incoming scope protocol
+          return;
+        }
+      }
+    } else if (messageToGet.descriptor.interface === DwnInterfaceName.Protocols) {
+      // if the message is a protocol message, it must be a `ProtocolConfigure` message
+      const protocolsConfigureMessage = messageToGet as ProtocolsConfigureMessage;
+      const configureProtocol = protocolsConfigureMessage.descriptor.definition.protocol;
+      if (configureProtocol === incomingScope.protocol) {
+        // the configured protocol matches the incoming scope protocol
         return;
       }
     }

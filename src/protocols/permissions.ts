@@ -287,7 +287,8 @@ export class PermissionsProtocol {
   public static async createRevocation(options: PermissionRevocationCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
     permissionRevocationData: PermissionRevocationData,
-    permissionRevocationBytes: Uint8Array
+    permissionRevocationBytes: Uint8Array,
+    dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
     const permissionRevocationData: PermissionRevocationData = {
       description: options.description,
@@ -316,10 +317,16 @@ export class PermissionsProtocol {
       tags            : permissionTags,
     });
 
+    const dataEncodedMessage: DataEncodedRecordsWriteMessage = {
+      ...recordsWrite.message,
+      encodedData: Encoder.bytesToBase64Url(permissionRevocationBytes)
+    };
+
     return {
       recordsWrite,
       permissionRevocationData,
-      permissionRevocationBytes
+      permissionRevocationBytes,
+      dataEncodedMessage
     };
   }
 
