@@ -13,6 +13,7 @@ export type EventsSubscribeOptions = {
   signer: Signer;
   messageTimestamp?: string;
   filters?: EventsFilter[]
+  permissionGrantId?: string;
 };
 
 export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
@@ -48,10 +49,11 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
     };
 
     removeUndefinedProperties(descriptor);
-
+    const { permissionGrantId, signer } = options;
     const authorization = await Message.createAuthorization({
       descriptor,
-      signer: options.signer
+      signer,
+      permissionGrantId
     });
 
     const message: EventsSubscribeMessage = { descriptor, authorization };

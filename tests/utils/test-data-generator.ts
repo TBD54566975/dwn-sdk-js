@@ -231,6 +231,7 @@ export type GenerateEventsSubscribeInput = {
   author: Persona;
   filters?: EventsFilter[];
   messageTimestamp?: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateEventsSubscribeOutput = {
@@ -743,8 +744,9 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: EventsSubscribeOptions = {
-      filters          : input?.filters,
-      messageTimestamp : input?.messageTimestamp,
+      filters           : input?.filters,
+      messageTimestamp  : input?.messageTimestamp,
+      permissionGrantId : input?.permissionGrantId,
       signer,
     };
     removeUndefinedProperties(options);
