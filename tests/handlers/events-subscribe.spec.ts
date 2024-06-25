@@ -132,7 +132,7 @@ export function testEventsSubscribeHandler(): void {
         // add an invalid property to the descriptor
         (message['descriptor'] as any)['invalid'] = 'invalid';
 
-        const eventsSubscribeHandler = new EventsSubscribeHandler(didResolver, eventStream);
+        const eventsSubscribeHandler = new EventsSubscribeHandler(didResolver, messageStore, eventStream);
 
         const reply = await eventsSubscribeHandler.handle({ tenant: alice.did, message, subscriptionHandler: (_) => {} });
         expect(reply.status.code).to.equal(400);

@@ -73,6 +73,7 @@ export class Dwn {
       ),
       [DwnInterfaceName.Events+ DwnMethodName.Subscribe]: new EventsSubscribeHandler(
         this.didResolver,
+        this.messageStore,
         this.eventStream,
       ),
       [DwnInterfaceName.Messages + DwnMethodName.Get]: new MessagesGetHandler(
