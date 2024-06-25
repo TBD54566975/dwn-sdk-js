@@ -104,6 +104,9 @@ export class MessagesGrantAuthorization {
     throw new DwnError(DwnErrorCode.MessagesGetVerifyScopeFailed, 'record message failed scope authorization');
   }
 
+  /**
+   * Get the RecordsWriteMessage associated with the given RecordsDeleteMessage in order to authorize access.
+   */
   private static async getRecordsWriteMessageToAuthorize(
     tenant: string,
     message: RecordsDeleteMessage,
