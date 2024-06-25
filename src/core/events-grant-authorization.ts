@@ -8,7 +8,8 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class EventsGrantAuthorization {
   /**
-   * Authorizes the given EventsQuery in the scope of the DID given.
+   * Authorizes the scope of a permission grant for EventsQuery or EventsSubscribe.
+   * @param messageStore Used to check if the grant has been revoked.
    */
   public static async authorizeQueryOrSubscribe(input: {
     incomingMessage: EventsQueryMessage | EventsSubscribeMessage,
