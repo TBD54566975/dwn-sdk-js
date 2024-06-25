@@ -188,7 +188,7 @@ export class PermissionsProtocol {
     // If the request is scoped to a protocol, the protocol tag must be included with the record.
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission requests associated with it.
     let permissionTags = undefined;
-    if (this.isRecordPermissionScope(scope)) {
+    if (this.hasProtocolScope(scope)) {
       permissionTags = {
         protocol: scope.protocol
       };
@@ -249,7 +249,7 @@ export class PermissionsProtocol {
     // If the grant is scoped to a protocol, the protocol tag must be included with the record.
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission grants associated with it.
     let permissionTags = undefined;
-    if (this.isRecordPermissionScope(scope)) {
+    if (this.hasProtocolScope(scope)) {
       permissionTags = {
         protocol: scope.protocol
       };
@@ -294,15 +294,14 @@ export class PermissionsProtocol {
     };
 
     const grantId = options.grant.id;
-    const grantScopedProtocol = this.isRecordPermissionScope(options.grant.scope) ? options.grant.scope.protocol : undefined;
 
     // if the grant was scoped to a protocol, the protocol tag must be included in the revocation
     // This is done in order to ensure a subset message query filtered to a protocol includes the permission revocations associated with it.
     //
     // NOTE: the added tag is validated against the original grant when the revocation is processed by the DWN.
     let permissionTags = undefined;
-    if (grantScopedProtocol !== undefined) {
-      const protocol = normalizeProtocolUrl(grantScopedProtocol);
+    if (this.hasProtocolScope(options.grant.scope)) {
+      const protocol = normalizeProtocolUrl(options.grant.scope.protocol);
       permissionTags = { protocol };
     }
 
@@ -333,13 +332,15 @@ export class PermissionsProtocol {
     if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
       const permissionRequestData = dataObject as PermissionRequestData;
       validateJsonSchema('PermissionRequestData', permissionRequestData);
-      PermissionsProtocol.validateScope(permissionRequestData.scope, recordsWriteMessage);
+
+      // more nuanced validation that are annoying/difficult to do using JSON schema
+      PermissionsProtocol.validateScopeAndTags(permissionRequestData.scope, recordsWriteMessage);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
       validateJsonSchema('PermissionGrantData', dataObject);
 
       // more nuanced validation that are annoying/difficult to do using JSON schema
       const permissionGrantData = dataObject as PermissionGrantData;
-      PermissionsProtocol.validateScope(permissionGrantData.scope, recordsWriteMessage);
+      PermissionsProtocol.validateScopeAndTags(permissionGrantData.scope, recordsWriteMessage);
       Time.validateTimestamp(permissionGrantData.dateExpires);
     } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
       validateJsonSchema('PermissionRevocationData', dataObject);
@@ -397,7 +398,7 @@ export class PermissionsProtocol {
   private static normalizePermissionScope(permissionScope: PermissionScope): PermissionScope {
     const scope = { ...permissionScope };
 
-    if (PermissionsProtocol.isRecordPermissionScope(scope)) {
+    if (PermissionsProtocol.hasProtocolScope(scope)) {
       scope.protocol = normalizeProtocolUrl(scope.protocol);
     }
 
@@ -412,30 +413,50 @@ export class PermissionsProtocol {
   }
 
   /**
-   * Validates scope.
+   * Type guard to determine if the permission is a protocol-scoped
    */
-  private static validateScope(scope: PermissionScope, grantRecord: RecordsWriteMessage): void {
-    if (!this.isRecordPermissionScope(scope)) {
-      return;
-    }
+  public static hasProtocolScope(scope: PermissionScope): scope is PermissionScope & { protocol: string } {
+    return 'protocol' in scope && scope.protocol !== undefined;
+  }
 
-    // else we are dealing with a RecordsPermissionScope
-
-    if (grantRecord.descriptor.tags === undefined || grantRecord.descriptor.tags.protocol === undefined) {
+  /**
+   * Validates that tags must include a protocol tag that matches the scoped protocol.
+   */
+  private static validateTags(requestOrGrant: RecordsWriteMessage, scopedProtocol: string): void {
+    // the protocol tag must be included with the record.
+    if (requestOrGrant.descriptor.tags === undefined || requestOrGrant.descriptor.tags.protocol === undefined) {
       throw new DwnError(
         DwnErrorCode.PermissionsProtocolValidateScopeMissingProtocolTag,
         'Permission grants must have a `tags` property that contains a protocol tag'
       );
     }
-    const taggedProtocol = grantRecord.descriptor.tags.protocol as string;
-    validateProtocolUrlNormalized(taggedProtocol);
 
-    if (scope.protocol !== taggedProtocol) {
+    // The protocol tag must match the protocol in the scope
+    const taggedProtocol = requestOrGrant.descriptor.tags.protocol as string;
+    if (taggedProtocol !== scopedProtocol) {
       throw new DwnError(
         DwnErrorCode.PermissionsProtocolValidateScopeProtocolMismatch,
         `Permission grants must have a scope with a protocol that matches the tagged protocol: ${taggedProtocol}`
       );
     }
+  }
+
+  /**
+   * Validates scope and tags of the given permission request or grant.
+   */
+  private static validateScopeAndTags(scope: PermissionScope, requestOrGrant: RecordsWriteMessage): void {
+    // scoped protocol validations
+    if (this.hasProtocolScope(scope)) {
+      validateProtocolUrlNormalized(scope.protocol);
+
+      this.validateTags(requestOrGrant, scope.protocol);
+    }
+
+    // if the scope is not a record permission scope, no additional validation is required
+    if (!this.isRecordPermissionScope(scope)) {
+      return;
+    }
+    // otherwise this is a record permission scope, more validation needed below
 
     // `contextId` and `protocolPath` are mutually exclusive
     if (scope.contextId !== undefined && scope.protocolPath !== undefined) {

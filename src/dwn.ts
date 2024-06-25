@@ -68,6 +68,7 @@ export class Dwn {
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Query]: new EventsQueryHandler(
         this.didResolver,
+        this.messageStore,
         this.eventLog,
       ),
       [DwnInterfaceName.Events+ DwnMethodName.Subscribe]: new EventsSubscribeHandler(

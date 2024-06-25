@@ -15,6 +15,7 @@ export type EventsQueryOptions = {
   filters?: EventsFilter[];
   cursor?: PaginationCursor;
   messageTimestamp?: string;
+  permissionGrantId?: string;
 };
 
 export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
@@ -43,7 +44,13 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
+    const { permissionGrantId, signer } = options;
+    const authorization = await Message.createAuthorization({
+      descriptor,
+      signer,
+      permissionGrantId
+    });
+
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
