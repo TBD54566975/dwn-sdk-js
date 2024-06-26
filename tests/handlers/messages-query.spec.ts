@@ -262,16 +262,16 @@ export function testMessagesQueryHandler(): void {
         expect(bobReply.status.detail).to.include(DwnErrorCode.GrantAuthorizationInterfaceMismatch);
       });
 
-      xit('rejects query of messages with mismatching method grant scopes', async () => {
+      it('rejects query of messages with mismatching method grant scopes', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // create grant that is scoped to `EventsSubscribe` for bob scoped to the `freeForAll` protocol
+        // create grant that is scoped to `MessagesSubscribe` for bob scoped to the `freeForAll` protocol
         const { message: grantMessage, dataStream } = await TestDataGenerator.generateGrantCreate({
           author    : alice,
           grantedTo : bob,
           scope     : {
-            interface : DwnInterfaceName.Events,
+            interface : DwnInterfaceName.Messages,
             method    : DwnMethodName.Subscribe,
           }
         });
@@ -279,7 +279,7 @@ export function testMessagesQueryHandler(): void {
         const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
         expect(grantReply.status.code).to.equal(202);
 
-        // bob attempts to use the `EventsSubscribe` grant on an `MessagesQuery` message
+        // bob attempts to use the `MessagesSubscribe` grant on an `MessagesQuery` message
         const { message: bobQuery } = await TestDataGenerator.generateMessagesQuery({
           author            : bob,
           permissionGrantId : grantMessage.recordId
@@ -387,7 +387,7 @@ export function testMessagesQueryHandler(): void {
           });
           const bobReply1 = await dwn.processMessage(alice.did, bobQuery1);
           expect(bobReply1.status.code).to.equal(401);
-          expect(bobReply1.status.detail).to.include(DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol);
+          expect(bobReply1.status.detail).to.include(DwnErrorCode.MessagesGrantAuthorizationMismatchedProtocol);
           expect(bobReply1.entries).to.not.exist;
 
           // bob attempts to use the grant for protocol 1 to query for messages in protocol 1 OR protocol 2 given two filters
@@ -399,7 +399,7 @@ export function testMessagesQueryHandler(): void {
           });
           const bobReply2 = await dwn.processMessage(alice.did, bobQuery2);
           expect(bobReply2.status.code).to.equal(401);
-          expect(bobReply2.status.detail).to.include(DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol);
+          expect(bobReply2.status.detail).to.include(DwnErrorCode.MessagesGrantAuthorizationMismatchedProtocol);
           expect(bobReply2.entries).to.not.exist;
         });
       });

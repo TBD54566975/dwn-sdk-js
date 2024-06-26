@@ -3,8 +3,8 @@ import type { Signer } from '../types/signer.js';
 import type { MessagesFilter, MessagesQueryDescriptor, MessagesQueryMessage } from '../types/messages-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
-import { Events } from '../utils/events.js';
 import { Message } from '../core/message.js';
+import { Messages } from '../utils/messages.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { validateProtocolUrlNormalized } from '../utils/url.js';
@@ -37,7 +37,7 @@ export class MessagesQuery extends AbstractMessage<MessagesQueryMessage>{
     const descriptor: MessagesQueryDescriptor = {
       interface        : DwnInterfaceName.Messages,
       method           : DwnMethodName.Query,
-      filters          : options.filters ? Events.normalizeFilters(options.filters) : [],
+      filters          : options.filters ? Messages.normalizeFilters(options.filters) : [],
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       cursor           : options.cursor,
     };

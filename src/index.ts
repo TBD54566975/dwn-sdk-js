@@ -1,10 +1,9 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 export type { EventListener, EventStream, EventSubscription, MessageEvent, SubscriptionReply } from './types/subscriptions.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, Pagination, QueryResultEntry } from './types/message-types.js';
-export type { MessagesFilter, MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry, MessagesQueryMessage, MessagesQueryReply } from './types/messages-types.js';
+export type { MessagesFilter, MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry, MessagesQueryMessage, MessagesQueryReply, MessagesSubscribeDescriptor, MessagesSubscribeMessage, MessagesSubscribeReply, MessageSubscriptionHandler } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteDescriptor, RecordsWriteTags, RecordsWriteTagValue, RecordsWriteMessage } from './types/records-types.js';
@@ -22,7 +21,7 @@ export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
-export { EventsSubscribe, EventsSubscribeOptions } from './interfaces/events-subscribe.js';
+export { MessagesSubscribe as MessagesSubscribe, MessagesSubscribeOptions as MessagesSubscribeOptions } from './interfaces/messages-subscribe.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
 export { executeUnlessAborted } from './utils/abort.js';

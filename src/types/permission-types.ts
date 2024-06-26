@@ -68,7 +68,7 @@ export type PermissionRevocationData = {
 /**
  * The data model for a permission scope.
  */
-export type PermissionScope = ProtocolPermissionScope | MessagesPermissionScope | EventsPermissionScope | RecordsPermissionScope;
+export type PermissionScope = ProtocolPermissionScope | MessagesPermissionScope | RecordsPermissionScope;
 
 export type ProtocolPermissionScope = {
   interface: DwnInterfaceName.Protocols;
@@ -77,13 +77,7 @@ export type ProtocolPermissionScope = {
 
 export type MessagesPermissionScope = {
   interface: DwnInterfaceName.Messages;
-  method: DwnMethodName.Get | DwnMethodName.Query;
-  protocol?: string;
-};
-
-export type EventsPermissionScope = {
-  interface: DwnInterfaceName.Events;
-  method: DwnMethodName.Subscribe;
+  method: DwnMethodName.Get | DwnMethodName.Query | DwnMethodName.Subscribe;
   protocol?: string;
 };
 

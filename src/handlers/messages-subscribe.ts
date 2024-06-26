@@ -2,19 +2,19 @@ import type { DidResolver } from '@web5/dids';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { EventListener, EventStream } from '../types/subscriptions.js';
-import type { EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from '../types/events-types.js';
+import type { MessagesSubscribeMessage, MessagesSubscribeReply, MessageSubscriptionHandler } from '../types/messages-types.js';
 
 import { authenticate } from '../core/auth.js';
-import { Events } from '../utils/events.js';
-import { EventsGrantAuthorization } from '../core/events-grant-authorization.js';
-import { EventsSubscribe } from '../interfaces/events-subscribe.js';
 import { FilterUtility } from '../utils/filter.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { Messages } from '../utils/messages.js';
+import { MessagesGrantAuthorization } from '../core/messages-grant-authorization.js';
+import { MessagesSubscribe } from '../interfaces/messages-subscribe.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-export class EventsSubscribeHandler implements MethodHandler {
+export class MessagesSubscribeHandler implements MethodHandler {
   constructor(
     private didResolver: DidResolver,
     private messageStore: MessageStore,
@@ -27,36 +27,36 @@ export class EventsSubscribeHandler implements MethodHandler {
     subscriptionHandler
   }: {
     tenant: string;
-    message: EventsSubscribeMessage;
+    message: MessagesSubscribeMessage;
     subscriptionHandler: MessageSubscriptionHandler;
-  }): Promise<EventsSubscribeReply> {
+  }): Promise<MessagesSubscribeReply> {
     if (this.eventStream === undefined) {
       return messageReplyFromError(new DwnError(
-        DwnErrorCode.EventsSubscribeEventStreamUnimplemented,
+        DwnErrorCode.MessagesSubscribeEventStreamUnimplemented,
         'Subscriptions are not supported'
       ), 501);
     }
 
-    let eventsSubscribe: EventsSubscribe;
+    let messagesSubscribe: MessagesSubscribe;
     try {
-      eventsSubscribe = await EventsSubscribe.parse(message);
+      messagesSubscribe = await MessagesSubscribe.parse(message);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await EventsSubscribeHandler.authorizeEventsSubscribe(tenant, eventsSubscribe, this.messageStore);
+      await MessagesSubscribeHandler.authorizeMessagesSubscribe(tenant, messagesSubscribe, this.messageStore);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }
 
     const { filters } = message.descriptor;
-    const eventsFilters = Events.convertFilters(filters);
+    const messagesFilters = Messages.convertFilters(filters);
     const messageCid = await Message.getCid(message);
 
     const listener: EventListener = (eventTenant, event, eventIndexes):void => {
-      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, eventsFilters)) {
+      if (tenant === eventTenant && FilterUtility.matchAnyFilter(eventIndexes, messagesFilters)) {
         subscriptionHandler(event);
       }
     };
@@ -69,21 +69,21 @@ export class EventsSubscribeHandler implements MethodHandler {
     };
   }
 
-  private static async authorizeEventsSubscribe(tenant: string, eventsSubscribe: EventsSubscribe, messageStore: MessageStore): Promise<void> {
-    // if `EventsSubscribe` author is the same as the target tenant, we can directly grant access
-    if (eventsSubscribe.author === tenant) {
+  private static async authorizeMessagesSubscribe(tenant: string, messagesSubscribe: MessagesSubscribe, messageStore: MessageStore): Promise<void> {
+    // if `MessagesSubscribe` author is the same as the target tenant, we can directly grant access
+    if (messagesSubscribe.author === tenant) {
       return;
-    } else if (eventsSubscribe.author !== undefined && eventsSubscribe.signaturePayload!.permissionGrantId !== undefined) {
-      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, eventsSubscribe.signaturePayload!.permissionGrantId);
-      await EventsGrantAuthorization.authorizeQueryOrSubscribe({
-        incomingMessage : eventsSubscribe.message,
+    } else if (messagesSubscribe.author !== undefined && messagesSubscribe.signaturePayload!.permissionGrantId !== undefined) {
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesSubscribe.signaturePayload!.permissionGrantId);
+      await MessagesGrantAuthorization.authorizeQueryOrSubscribe({
+        incomingMessage : messagesSubscribe.message,
         expectedGrantor : tenant,
-        expectedGrantee : eventsSubscribe.author,
+        expectedGrantee : messagesSubscribe.author,
         permissionGrant,
         messageStore
       });
     } else {
-      throw new DwnError(DwnErrorCode.EventsSubscribeAuthorizationFailed, 'message failed authorization');
+      throw new DwnError(DwnErrorCode.MessagesSubscribeAuthorizationFailed, 'message failed authorization');
     }
   }
 }

@@ -21,7 +21,6 @@ import Authorization from '../json-schemas/authorization.json' assert { type: 'j
 import AuthorizationDelegatedGrant from '../json-schemas/authorization-delegated-grant.json' assert { type: 'json' };
 import AuthorizationOwner from '../json-schemas/authorization-owner.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
-import EventsSubscribe from '../json-schemas/interface-methods/events-subscribe.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
 import GenericSignaturePayload from '../json-schemas/signature-payloads/generic-signature-payload.json' assert { type: 'json' };
@@ -29,6 +28,7 @@ import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json'
 import MessagesFilter from '../json-schemas/interface-methods/messages-filter.json' assert { type: 'json' };
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
 import MessagesQuery from '../json-schemas/interface-methods/messages-query.json' assert { type: 'json' };
+import MessagesSubscribe from '../json-schemas/interface-methods/messages-subscribe.json' assert { type: 'json' };
 import NumberRangeFilter from '../json-schemas/interface-methods/number-range-filter.json' assert { type: 'json' };
 import PaginationCursor from '../json-schemas/interface-methods/pagination-cursor.json' assert { type: 'json' };
 import PermissionGrantData from '../json-schemas/permissions/permission-grant-data.json' assert { type: 'json' };
@@ -62,7 +62,6 @@ const schemas = {
   RecordsWrite,
   RecordsWriteDataEncoded,
   RecordsWriteUnidentified,
-  EventsSubscribe,
   Definitions,
   GeneralJwk,
   GeneralJws,
@@ -70,6 +69,7 @@ const schemas = {
   MessagesFilter,
   MessagesGet,
   MessagesQuery,
+  MessagesSubscribe,
   NumberRangeFilter,
   PaginationCursor,
   PermissionGrantData,

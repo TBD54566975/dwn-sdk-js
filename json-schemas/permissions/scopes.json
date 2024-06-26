@@ -22,7 +22,7 @@
         }
       }
     },
-    "events-subscribe-scope": {
+    "messages-subscribe-scope": {
       "type": "object",
       "additionalProperties": false,
       "required" : [
@@ -31,7 +31,7 @@
       ],
       "properties": {
         "interface": {
-          "const": "Events"
+          "const": "Messages"
         },
         "method": {
           "const": "Subscribe"

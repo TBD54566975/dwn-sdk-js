@@ -5,9 +5,9 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { MessagesQueryMessage, MessagesQueryReply } from '../types/messages-types.js';
 
 import { authenticate } from '../core/auth.js';
-import { Events } from '../utils/events.js';
-import { EventsGrantAuthorization } from '../core/events-grant-authorization.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { Messages } from '../utils/messages.js';
+import { MessagesGrantAuthorization } from '../core/messages-grant-authorization.js';
 import { MessagesQuery } from '../interfaces/messages-query.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -37,7 +37,7 @@ export class MessagesQueryHandler implements MethodHandler {
     }
 
     // an empty array of filters means no filtering and all events are returned
-    const eventFilters = Events.convertFilters(message.descriptor.filters);
+    const eventFilters = Messages.convertFilters(message.descriptor.filters);
     const { events, cursor } = await this.eventLog.queryEvents(tenant, eventFilters, message.descriptor.cursor);
 
     return {
@@ -53,7 +53,7 @@ export class MessagesQueryHandler implements MethodHandler {
       return;
     } else if (messagesQuery.author !== undefined && messagesQuery.signaturePayload!.permissionGrantId !== undefined) {
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesQuery.signaturePayload!.permissionGrantId);
-      await EventsGrantAuthorization.authorizeQueryOrSubscribe({
+      await MessagesGrantAuthorization.authorizeQueryOrSubscribe({
         incomingMessage : messagesQuery.message,
         expectedGrantor : tenant,
         expectedGrantee : messagesQuery.author,

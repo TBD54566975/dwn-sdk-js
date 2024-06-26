@@ -1,5 +1,6 @@
+import type { MessageEvent } from './subscriptions.js';
 import type { Readable } from 'readable-stream';
-import type { AuthorizationModel, GenericMessage, GenericMessageReply } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericMessageReply, MessageSubscription } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import type { PaginationCursor, RangeCriterion } from './query-types.js';
 
@@ -50,4 +51,26 @@ export type MessagesQueryMessage = GenericMessage & {
 export type MessagesQueryReply = GenericMessageReply & {
   entries?: string[];
   cursor?: PaginationCursor;
+};
+
+export type MessageSubscriptionHandler = (event: MessageEvent) => void;
+
+export type MessagesSubscribeMessageOptions = {
+  subscriptionHandler: MessageSubscriptionHandler;
+};
+
+export type MessagesSubscribeMessage = {
+  authorization: AuthorizationModel;
+  descriptor: MessagesSubscribeDescriptor;
+};
+
+export type MessagesSubscribeReply = GenericMessageReply & {
+  subscription?: MessageSubscription;
+};
+
+export type MessagesSubscribeDescriptor = {
+  interface: DwnInterfaceName.Messages;
+  method: DwnMethodName.Subscribe;
+  messageTimestamp: string;
+  filters: MessagesFilter[];
 };

@@ -18,7 +18,7 @@ export function messageReplyFromError(e: unknown, code: number): GenericMessageR
 export type UnionMessageReply = GenericMessageReply & {
   /**
    * Resulting message entries or events returned from the invocation of the corresponding message.
-   * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for EventsQuery
+   * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for MessagesQuery
    * Mutually exclusive with `record`.
    */
   entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | MessagesGetReplyEntry[] | string[];
