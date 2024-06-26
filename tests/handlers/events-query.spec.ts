@@ -266,8 +266,8 @@ export function testEventsQueryHandler(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // create grant that is scoped to `RecordsWrite` for bob scoped to the `freeForAll` protocol
-        const { dataEncodedMessage: grantMessage, recordsWrite: grantWrite } = await TestDataGenerator.generateGrantCreate({
+        // create grant that is scoped to `EventsSubscribe` for bob scoped to the `freeForAll` protocol
+        const { message: grantMessage, dataStream } = await TestDataGenerator.generateGrantCreate({
           author    : alice,
           grantedTo : bob,
           scope     : {
@@ -276,11 +276,10 @@ export function testEventsQueryHandler(): void {
           }
         });
 
-        // write grant directly to the message store to bypass DWN schema validation as `Query` is the only currently supported `Events` method
-        const grantMessageIndexes = await grantWrite.constructIndexes(true);
-        await messageStore.put(alice.did, grantMessage, grantMessageIndexes);
+        const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
+        expect(grantReply.status.code).to.equal(202);
 
-        // bob attempts to use the `RecordsWrite` grant on an `EventsQuery` message
+        // bob attempts to use the `EventsSubscribe` grant on an `EventsQuery` message
         const { message: bobQuery } = await TestDataGenerator.generateEventsQuery({
           author            : bob,
           permissionGrantId : grantMessage.recordId

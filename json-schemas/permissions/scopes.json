@@ -22,6 +22,25 @@
         }
       }
     },
+    "events-subscribe-scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required" : [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Events"
+        },
+        "method": {
+          "const": "Subscribe"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      }
+    },
     "protocols-query-scope": {
       "type": "object",
       "additionalProperties": false,

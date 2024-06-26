@@ -1,6 +1,6 @@
-import type { EventsQueryMessage } from '../types/events-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
+import type { EventsQueryMessage, EventsSubscribeMessage } from '../types/events-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
@@ -8,21 +8,22 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class EventsGrantAuthorization {
   /**
-   * Authorizes the given EventsQuery in the scope of the DID given.
+   * Authorizes the scope of a permission grant for EventsQuery or EventsSubscribe.
+   * @param messageStore Used to check if the grant has been revoked.
    */
-  public static async authorizeQuery(input: {
-    eventsQueryMessage: EventsQueryMessage,
+  public static async authorizeQueryOrSubscribe(input: {
+    incomingMessage: EventsQueryMessage | EventsSubscribeMessage,
     expectedGrantor: string,
     expectedGrantee: string,
     permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      eventsQueryMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
+      incomingMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
-      incomingMessage: eventsQueryMessage,
+      incomingMessage,
       expectedGrantor,
       expectedGrantee,
       permissionGrant,
@@ -32,7 +33,7 @@ export class EventsGrantAuthorization {
     // if the grant is scoped to a specific protocol, ensure that all of the query filters must include that protocol
     if (PermissionsProtocol.hasProtocolScope(permissionGrant.scope)) {
       const scopedProtocol = permissionGrant.scope.protocol;
-      for (const filter of eventsQueryMessage.descriptor.filters) {
+      for (const filter of incomingMessage.descriptor.filters) {
         if (filter.protocol !== scopedProtocol) {
           throw new DwnError(
             DwnErrorCode.EventsGrantAuthorizationMismatchedProtocol,
