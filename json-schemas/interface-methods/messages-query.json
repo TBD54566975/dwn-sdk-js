@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://identity.foundation/dwn/json-schemas/events-subscribe.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/messages-query.json",
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "descriptor",
-    "authorization"
+    "authorization",
+    "descriptor"
   ],
   "properties": {
     "authorization": {
@@ -23,24 +23,27 @@
       "properties": {
         "interface": {
           "enum": [
-            "Events"
+            "Messages"
           ],
           "type": "string"
         },
         "method": {
           "enum": [
-            "Subscribe"
+            "Query"
           ],
           "type": "string"
         },
         "messageTimestamp": {
-          "type": "string"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/date-time"
         },
         "filters": {
           "type": "array",
           "items": {
-            "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
+            "$ref": "https://identity.foundation/dwn/json-schemas/messages-filter.json"
           }
+        },
+        "cursor": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/pagination-cursor.json"
         }
       }
     }

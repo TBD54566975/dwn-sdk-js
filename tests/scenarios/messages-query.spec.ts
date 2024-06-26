@@ -17,8 +17,8 @@ import { TestStores } from '../test-stores.js';
 import { DataStream, Dwn, DwnInterfaceName, DwnMethodName, Jws, Message, PermissionsProtocol, Time } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 
-export function testEventsQueryScenarios(): void {
-  describe('events query tests', () => {
+export function testMessagesQueryScenarios(): void {
+  describe('messages query tests', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -65,17 +65,17 @@ export function testEventsQueryScenarios(): void {
       expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
-      const eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
+      const messagesQueryRecords = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [
           { interface: DwnInterfaceName.Records }, // returns the RecordsWrite
           { protocol: protocol.message.descriptor.definition.protocol } // returns the ProtocolConfigure
         ],
       });
-      const recordEventsReply = await dwn.processMessage(alice.did, eventsQueryRecords.message);
-      expect(recordEventsReply.status.code).to.equal(200);
-      expect(recordEventsReply.entries?.length).to.equal(2);
-      expect(recordEventsReply.entries).to.have.members([
+      const recordMessagesReply = await dwn.processMessage(alice.did, messagesQueryRecords.message);
+      expect(recordMessagesReply.status.code).to.equal(200);
+      expect(recordMessagesReply.entries?.length).to.equal(2);
+      expect(recordMessagesReply.entries).to.have.members([
         await Message.getCid(record.message),
         await Message.getCid(protocol.message),
       ]);
@@ -98,23 +98,23 @@ export function testEventsQueryScenarios(): void {
       expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
-      let eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
+      let messagesQueryRecords = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Records }],
       });
-      const recordEventsReply = await dwn.processMessage(alice.did, eventsQueryRecords.message);
-      expect(recordEventsReply.status.code).to.equal(200);
-      expect(recordEventsReply.entries?.length).to.equal(1);
-      expect(recordEventsReply.entries![0]).to.equal(await Message.getCid(record.message!));
+      const recordMessagesReply = await dwn.processMessage(alice.did, messagesQueryRecords.message);
+      expect(recordMessagesReply.status.code).to.equal(200);
+      expect(recordMessagesReply.entries?.length).to.equal(1);
+      expect(recordMessagesReply.entries![0]).to.equal(await Message.getCid(record.message!));
 
-      let eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
+      let messagesQueryProtocols = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Protocols }],
       });
-      const protocolEventsReply = await dwn.processMessage(alice.did, eventsQueryProtocols.message);
-      expect(protocolEventsReply.status.code).to.equal(200);
-      expect(protocolEventsReply.entries?.length).to.equal(1);
-      expect(protocolEventsReply.entries![0]).to.equal(await Message.getCid(protocol.message!));
+      const protocolMessagesReply = await dwn.processMessage(alice.did, messagesQueryProtocols.message);
+      expect(protocolMessagesReply.status.code).to.equal(200);
+      expect(protocolMessagesReply.entries?.length).to.equal(1);
+      expect(protocolMessagesReply.entries![0]).to.equal(await Message.getCid(protocol.message!));
 
 
       // insert additional data to query beyond a cursor
@@ -123,24 +123,24 @@ export function testEventsQueryScenarios(): void {
       expect(recordDeleteReply.status.code).to.equal(202, 'RecordsDelete');
 
       // query after cursor
-      eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
+      messagesQueryRecords = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Records }],
-        cursor  : recordEventsReply.cursor, // the cursor from the prior query
+        cursor  : recordMessagesReply.cursor, // the cursor from the prior query
       });
-      const recordEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryRecords.message);
-      expect(recordEventsReplyAfterCursor.status.code).to.equal(200);
-      expect(recordEventsReplyAfterCursor.entries?.length).to.equal(1);
-      expect(recordEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(recordDelete.message!));
+      const recordMessagesReplyAfterCursor = await dwn.processMessage(alice.did, messagesQueryRecords.message);
+      expect(recordMessagesReplyAfterCursor.status.code).to.equal(200);
+      expect(recordMessagesReplyAfterCursor.entries?.length).to.equal(1);
+      expect(recordMessagesReplyAfterCursor.entries![0]).to.equal(await Message.getCid(recordDelete.message!));
 
-      eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
+      messagesQueryProtocols = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Protocols }],
-        cursor  : protocolEventsReply.cursor, // the cursor from the prior query
+        cursor  : protocolMessagesReply.cursor, // the cursor from the prior query
       });
-      const protocolEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryProtocols.message);
-      expect(protocolEventsReplyAfterCursor.status.code).to.equal(200);
-      expect(protocolEventsReplyAfterCursor.entries?.length).to.equal(0); // no new messages
+      const protocolMessagesReplyAfterCursor = await dwn.processMessage(alice.did, messagesQueryProtocols.message);
+      expect(protocolMessagesReplyAfterCursor.status.code).to.equal(200);
+      expect(protocolMessagesReplyAfterCursor.entries?.length).to.equal(0); // no new messages
     });
 
     it('filters by method type', async () => {
@@ -172,7 +172,7 @@ export function testEventsQueryScenarios(): void {
       expect(delete1Reply.status.code).to.equal(202, 'RecordsDelete');
 
 
-      let recordsWriteEvents = await TestDataGenerator.generateEventsQuery({
+      let recordsWriteEvents = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
       });
@@ -188,7 +188,7 @@ export function testEventsQueryScenarios(): void {
       const record2UpdateReply = await dwn.processMessage(alice.did, record2Update.message, { dataStream: record2Update.dataStream });
       expect(record2UpdateReply.status.code).to.equal(202, 'RecordsDelete');
 
-      recordsWriteEvents = await TestDataGenerator.generateEventsQuery({
+      recordsWriteEvents = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }],
         cursor  : recordsWriteEventsReply.cursor,
@@ -222,11 +222,11 @@ export function testEventsQueryScenarios(): void {
 
       // query from last day of 2021
       const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
-      let eventsQuery1 = await TestDataGenerator.generateEventsQuery({
+      let messagesQuery1 = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ messageTimestamp: { from: lastDayOf2021 } }],
       });
-      let reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
+      let reply1 = await dwn.processMessage(alice.did, messagesQuery1.message);
       expect(reply1.status.code).to.equal(200);
       expect(reply1.entries?.length).to.equal(1);
       expect(reply1.entries![0]).to.equal(await Message.getCid(protocol.message!));
@@ -236,12 +236,12 @@ export function testEventsQueryScenarios(): void {
       const delete1Reply = await dwn.processMessage(alice.did, delete1.message);
       expect(delete1Reply.status.code).to.equal(202);
 
-      eventsQuery1 = await TestDataGenerator.generateEventsQuery({
+      messagesQuery1 = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ messageTimestamp: { from: lastDayOf2021 } }],
         cursor  : reply1.cursor
       });
-      reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
+      reply1 = await dwn.processMessage(alice.did, messagesQuery1.message);
       expect(reply1.status.code).to.equal(200);
       expect(reply1.entries?.length).to.equal(1);
       expect(reply1.entries![0]).to.equal(await Message.getCid(delete1.message!));
@@ -260,10 +260,10 @@ export function testEventsQueryScenarios(): void {
       //    alice creates records for each protocol
       //    bob requests permissions for both protocols
       //    alice grants bob permissions for both protocols
-      //    when issuing an EventsQuery for the specific protocol, only Events related to it should be returned.
+      //    when issuing an MessagesQuery for the specific protocol, only Events related to it should be returned.
       //    alice then deletes the records for each protocol
       //    alice revokes bob's permissions for both protocols
-      //    now when issuing an EventsQuery for the specific protocol givin a cursor, only the latest event should be returned.
+      //    now when issuing an MessagesQuery for the specific protocol givin a cursor, only the latest event should be returned.
 
       const alice = await TestDataGenerator.generateDidKeyPersona();
       const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -357,12 +357,12 @@ export function testEventsQueryScenarios(): void {
       );
       expect(grantProto2Response.status.code).equals(202);
 
-      // filter for proto1 events
-      let proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
+      // filter for proto1 messages
+      let proto1MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto1 }]
       });
-      let proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
+      let proto1EventsReply = await dwn.processMessage(alice.did, proto1MessagesQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
       expect(proto1EventsReply.entries?.length).equals(4); // configure, write, request, grant
       expect(proto1EventsReply.entries).to.have.members([
@@ -373,11 +373,11 @@ export function testEventsQueryScenarios(): void {
       ]);
 
       // filter for proto2
-      let proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
+      let proto2MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto2 }]
       });
-      let proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
+      let proto2EventsReply = await dwn.processMessage(alice.did, proto2MessagesQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
       expect(proto2EventsReply.entries?.length).equals(4); // configure, write, request, grant
       expect(proto2EventsReply.entries).to.have.members([
@@ -422,12 +422,12 @@ export function testEventsQueryScenarios(): void {
       expect(revokeProto2Response.status.code).equals(202);
 
       //query messages beyond the cursor
-      proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
+      proto1MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto1 }],
         cursor  : proto1EventsReply.cursor,
       });
-      proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
+      proto1EventsReply = await dwn.processMessage(alice.did, proto1MessagesQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
       expect(proto1EventsReply.entries?.length).equals(2); // delete, revoke
       expect(proto1EventsReply.entries).to.have.members([
@@ -436,12 +436,12 @@ export function testEventsQueryScenarios(): void {
       ]);
 
       //query messages beyond the cursor
-      proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
+      proto2MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto2 }],
         cursor  : proto2EventsReply.cursor,
       });
-      proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
+      proto2EventsReply = await dwn.processMessage(alice.did, proto2MessagesQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
       expect(proto2EventsReply.entries?.length).equals(2); // delete, revoke
       expect(proto2EventsReply.entries).to.have.members([
@@ -449,23 +449,23 @@ export function testEventsQueryScenarios(): void {
         await Message.getCid(revokeProto2.recordsWrite.message),
       ]);
 
-      // query for proto1 events again after the curser, should get nothing
-      proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
+      // query for proto1 messages again after the curser, should get nothing
+      proto1MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto1 }],
         cursor  : proto1EventsReply.cursor,
       });
-      proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
+      proto1EventsReply = await dwn.processMessage(alice.did, proto1MessagesQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
       expect(proto1EventsReply.entries?.length).equals(0);
 
-      // query for proto2 events again after the curser, should get nothing
-      proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
+      // query for proto2 messages again after the curser, should get nothing
+      proto2MessagesQuery = await TestDataGenerator.generateMessagesQuery({
         author  : alice,
         filters : [{ protocol: proto2 }],
         cursor  : proto2EventsReply.cursor,
       });
-      proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
+      proto2EventsReply = await dwn.processMessage(alice.did, proto2MessagesQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
       expect(proto2EventsReply.entries?.length).equals(0);
     });

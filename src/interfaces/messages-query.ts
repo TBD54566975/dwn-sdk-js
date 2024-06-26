@@ -1,23 +1,26 @@
+import type { PaginationCursor } from '../types/query-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsSubscribeDescriptor, EventsSubscribeMessage } from '../types/events-types.js';
+import type { MessagesFilter, MessagesQueryDescriptor, MessagesQueryMessage } from '../types/messages-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { Messages } from '../utils/messages.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { validateProtocolUrlNormalized } from '../utils/url.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
-
-export type EventsSubscribeOptions = {
+export type MessagesQueryOptions = {
   signer: Signer;
+  filters?: MessagesFilter[];
+  cursor?: PaginationCursor;
   messageTimestamp?: string;
-  filters?: EventsFilter[]
   permissionGrantId?: string;
 };
 
-export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
-  public static async parse(message: EventsSubscribeMessage): Promise<EventsSubscribe> {
+export class MessagesQuery extends AbstractMessage<MessagesQueryMessage>{
+
+  public static async parse(message: MessagesQueryMessage): Promise<MessagesQuery> {
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
@@ -27,28 +30,20 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
       }
     }
 
-    Time.validateTimestamp(message.descriptor.messageTimestamp);
-    return new EventsSubscribe(message);
+    return new MessagesQuery(message);
   }
 
-  /**
-   * Creates a EventsSubscribe message.
-   *
-   * @throws {DwnError} if json schema validation fails.
-   */
-  public static async create(
-    options: EventsSubscribeOptions
-  ): Promise<EventsSubscribe> {
-    const currentTime = Time.getCurrentTimestamp();
-
-    const descriptor: EventsSubscribeDescriptor = {
-      interface        : DwnInterfaceName.Events,
-      method           : DwnMethodName.Subscribe,
-      filters          : options.filters ?? [],
-      messageTimestamp : options.messageTimestamp ?? currentTime,
+  public static async create(options: MessagesQueryOptions): Promise<MessagesQuery> {
+    const descriptor: MessagesQueryDescriptor = {
+      interface        : DwnInterfaceName.Messages,
+      method           : DwnMethodName.Query,
+      filters          : options.filters ? Messages.normalizeFilters(options.filters) : [],
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
+      cursor           : options.cursor,
     };
 
     removeUndefinedProperties(descriptor);
+
     const { permissionGrantId, signer } = options;
     const authorization = await Message.createAuthorization({
       descriptor,
@@ -56,8 +51,10 @@ export class EventsSubscribe extends AbstractMessage<EventsSubscribeMessage> {
       permissionGrantId
     });
 
-    const message: EventsSubscribeMessage = { descriptor, authorization };
+    const message = { descriptor, authorization };
+
     Message.validateJsonSchema(message);
-    return new EventsSubscribe(message);
+
+    return new MessagesQuery(message);
   }
 }

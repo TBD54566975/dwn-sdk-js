@@ -1,10 +1,10 @@
 import type { GenericMessage } from '../types/message-types.js';
-import type { MessagesGetMessage } from '../types/messages-types.js';
 import type { MessagesPermissionScope } from '../types/permission-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataEncodedRecordsWriteMessage, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { MessagesGetMessage, MessagesQueryMessage, MessagesSubscribeMessage } from '../types/messages-types.js';
 
 import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { GrantAuthorization } from './grant-authorization.js';
@@ -41,6 +41,43 @@ export class MessagesGrantAuthorization {
 
     const scope = permissionGrant.scope as MessagesPermissionScope;
     await MessagesGrantAuthorization.verifyScope(expectedGrantor, messageToGet, scope, messageStore);
+  }
+
+  /**
+   * Authorizes the scope of a permission grant for MessagesQuery or MessagesSubscribe.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public static async authorizeQueryOrSubscribe(input: {
+    incomingMessage: MessagesQueryMessage | MessagesSubscribeMessage,
+    expectedGrantor: string,
+    expectedGrantee: string,
+    permissionGrant: PermissionGrant,
+    messageStore: MessageStore,
+  }): Promise<void> {
+    const {
+      incomingMessage, expectedGrantor, expectedGrantee, permissionGrant, messageStore
+    } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage,
+      expectedGrantor,
+      expectedGrantee,
+      permissionGrant,
+      messageStore
+    });
+
+    // if the grant is scoped to a specific protocol, ensure that all of the query filters must include that protocol
+    if (PermissionsProtocol.hasProtocolScope(permissionGrant.scope)) {
+      const scopedProtocol = permissionGrant.scope.protocol;
+      for (const filter of incomingMessage.descriptor.filters) {
+        if (filter.protocol !== scopedProtocol) {
+          throw new DwnError(
+            DwnErrorCode.MessagesGrantAuthorizationMismatchedProtocol,
+            `The protocol ${filter.protocol} does not match the scoped protocol ${scopedProtocol}`
+          );
+        }
+      }
+    }
   }
 
   /**

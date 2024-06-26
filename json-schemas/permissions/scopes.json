@@ -3,7 +3,7 @@
   "$id": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json",
   "type": "object",
   "$defs": {
-    "events-query-scope": {
+    "messages-query-scope": {
       "type": "object",
       "additionalProperties": false,
       "required" : [
@@ -12,7 +12,7 @@
       ],
       "properties": {
         "interface": {
-          "const": "Events"
+          "const": "Messages"
         },
         "method": {
           "const": "Query"
@@ -22,7 +22,7 @@
         }
       }
     },
-    "events-subscribe-scope": {
+    "messages-subscribe-scope": {
       "type": "object",
       "additionalProperties": false,
       "required" : [
@@ -31,7 +31,7 @@
       ],
       "properties": {
         "interface": {
-          "const": "Events"
+          "const": "Messages"
         },
         "method": {
           "const": "Subscribe"

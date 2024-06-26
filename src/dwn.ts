@@ -9,18 +9,17 @@ import type { Readable } from 'readable-stream';
 import type { ResumableTaskStore } from './types/resumable-task-store.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeMessageOptions, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
-import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
+import type { MessagesGetMessage, MessagesGetReply, MessagesQueryMessage, MessagesQueryReply, MessagesSubscribeMessage, MessagesSubscribeMessageOptions, MessagesSubscribeReply, MessageSubscriptionHandler } from './types/messages-types.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsSubscribeMessage, RecordsSubscribeMessageOptions, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteMessage, RecordsWriteMessageOptions } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
-import { EventsQueryHandler } from './handlers/events-query.js';
-import { EventsSubscribeHandler } from './handlers/events-subscribe.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
+import { MessagesQueryHandler } from './handlers/messages-query.js';
+import { MessagesSubscribeHandler } from './handlers/messages-subscribe.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
@@ -66,20 +65,20 @@ export class Dwn {
     );
 
     this.methodHandlers = {
-      [DwnInterfaceName.Events + DwnMethodName.Query]: new EventsQueryHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventLog,
-      ),
-      [DwnInterfaceName.Events+ DwnMethodName.Subscribe]: new EventsSubscribeHandler(
-        this.didResolver,
-        this.messageStore,
-        this.eventStream,
-      ),
       [DwnInterfaceName.Messages + DwnMethodName.Get]: new MessagesGetHandler(
         this.didResolver,
         this.messageStore,
         this.dataStore,
+      ),
+      [DwnInterfaceName.Messages + DwnMethodName.Query]: new MessagesQueryHandler(
+        this.didResolver,
+        this.messageStore,
+        this.eventLog,
+      ),
+      [DwnInterfaceName.Messages + DwnMethodName.Subscribe]: new MessagesSubscribeHandler(
+        this.didResolver,
+        this.messageStore,
+        this.eventStream,
       ),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver,
@@ -162,9 +161,9 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
+  public async processMessage(tenant: string, rawMessage: MessagesQueryMessage): Promise<MessagesQueryReply>;
   public async processMessage(
-    tenant: string, rawMessage: EventsSubscribeMessage, options?: EventsSubscribeMessageOptions): Promise<EventsSubscribeReply>;
+    tenant: string, rawMessage: MessagesSubscribeMessage, options?: MessagesSubscribeMessageOptions): Promise<MessagesSubscribeReply>;
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;

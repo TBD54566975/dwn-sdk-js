@@ -1,4 +1,4 @@
-import type { MessageSubscriptionHandler } from './events-types.js';
+import type { MessageSubscriptionHandler } from './messages-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordSubscriptionHandler } from './records-types.js';
 import type { GenericMessage, GenericMessageReply } from './message-types.js';

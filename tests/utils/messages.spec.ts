@@ -1,8 +1,8 @@
-import type { EventsFilter } from '../../src/types/events-types.js';
 import type { Filter } from '../../src/types/query-types.js';
+import type { MessagesFilter } from '../../src/types/messages-types.js';
 
-import { Events } from '../../src/utils/events.js';
 import { FilterUtility } from '../../src/utils/filter.js';
+import { Messages } from '../../src/utils/messages.js';
 import { DwnInterfaceName, DwnMethodName, PermissionsProtocol, TestDataGenerator } from '../../src/index.js';
 
 import sinon from 'sinon';
@@ -13,7 +13,7 @@ import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
 
-describe('Events Utils', () => {
+describe('Messages Utils', () => {
 
   after(() => {
     sinon.restore();
@@ -24,34 +24,34 @@ describe('Events Utils', () => {
   });
 
   describe('constructPermissionRecordsFilter', () => {
-    it('does not apply any tag filters to non-protocol-filtered events', async () => {
-      const eventsFilter: EventsFilter = {
+    it('does not apply any tag filters to non-protocol-filtered messages', async () => {
+      const messagesFilter: MessagesFilter = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       };
 
-      const messageFilter: Filter[] = Events.convertFilters([eventsFilter]);
+      const messageFilter: Filter[] = Messages.convertFilters([messagesFilter]);
       expect(messageFilter.length).to.equal(1);
       expect(messageFilter[0].interface).to.equal(DwnInterfaceName.Records);
       expect(messageFilter[0].method).to.deep.equal(DwnMethodName.Write);
     });
 
-    it('applies appropriate tag filters to protocol-filtered events', async () => {
+    it('applies appropriate tag filters to protocol-filtered messages', async () => {
       // in order to filter for protocol-specific permission requests, grants and revocations we add a a protocol tag index to the message
       // when we filter for a protocol, we should add the tag filters in to accommodate for the protocol tag index
 
       const exampleProtocol = 'https://example.xyz/protocol/1';
 
       // only a protocol filter is applied
-      const protocolEventsFilter: EventsFilter = {
+      const protocolMessagesFilter: MessagesFilter = {
         protocol: exampleProtocol,
       };
 
-      // here we are testing where only a protocol EventsFilter is applied
-      // we should expect the EventsFilter to be split into two MessageStore Filters
+      // here we are testing where only a protocol MessagesFilter is applied
+      // we should expect the MessagesFilter to be split into two MessageStore Filters
       // the first filter should be the protocol tag filter applied to the permissions protocol uri
       // the second filter should be the remaining filter, only containing a protocol filter to the protocol we are targeting
-      const protocolMessageFilter: Filter[] = Events.convertFilters([protocolEventsFilter]);
+      const protocolMessageFilter: Filter[] = Messages.convertFilters([protocolMessagesFilter]);
       expect(protocolMessageFilter.length).to.equal(2);
 
       const permissionRecordsFilter = protocolMessageFilter[0];
@@ -67,13 +67,13 @@ describe('Events Utils', () => {
 
 
       // with other filters in addition to the filtered protocol
-      const otherEventsFilter: EventsFilter = {
+      const otherMessagesFilter: MessagesFilter = {
         protocol  : exampleProtocol,
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       };
 
-      const messageFilter: Filter[] = Events.convertFilters([otherEventsFilter]);
+      const messageFilter: Filter[] = Messages.convertFilters([otherMessagesFilter]);
       expect(messageFilter.length).to.equal(2);
 
       const protocolTagFilter2 = messageFilter[0];
@@ -90,21 +90,21 @@ describe('Events Utils', () => {
       expect(remainingFilter2.method).to.deep.equal(DwnMethodName.Write);
     });
 
-    it('applies appropriate tag filters to protocol-filtered events with messageTimestamp filter', async () => {
+    it('applies appropriate tag filters to protocol-filtered messages with messageTimestamp filter', async () => {
       // should apply the dateUpdated filter to the protocol tag filter
 
       const exampleProtocol = 'https://example.xyz/protocol/1';
       const dateUpdatedTimestamp = TestDataGenerator.randomTimestamp();
       const messageTimestampFilterResult = FilterUtility.convertRangeCriterion({ from: dateUpdatedTimestamp });
 
-      const withDateUpdatedFilter: EventsFilter = {
+      const withDateUpdatedFilter: MessagesFilter = {
         protocol         : exampleProtocol,
         interface        : DwnInterfaceName.Records,
         method           : DwnMethodName.Write,
         messageTimestamp : { from: dateUpdatedTimestamp }
       };
 
-      const messageFilter: Filter[] = Events.convertFilters([withDateUpdatedFilter]);
+      const messageFilter: Filter[] = Messages.convertFilters([withDateUpdatedFilter]);
       expect(messageFilter.length).to.equal(2);
       expect(messageFilter[0].protocol).to.equal(PermissionsProtocol.uri);
       expect(messageFilter[0]['tag.protocol']).to.equal(exampleProtocol);
