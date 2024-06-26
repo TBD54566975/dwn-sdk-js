@@ -1,6 +1,6 @@
 import type { PaginationCursor } from '../types/query-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/events-types.js';
+import type { MessagesFilter, MessagesQueryDescriptor, MessagesQueryMessage } from '../types/messages-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Events } from '../utils/events.js';
@@ -10,17 +10,17 @@ import { Time } from '../utils/time.js';
 import { validateProtocolUrlNormalized } from '../utils/url.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
-export type EventsQueryOptions = {
+export type MessagesQueryOptions = {
   signer: Signer;
-  filters?: EventsFilter[];
+  filters?: MessagesFilter[];
   cursor?: PaginationCursor;
   messageTimestamp?: string;
   permissionGrantId?: string;
 };
 
-export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
+export class MessagesQuery extends AbstractMessage<MessagesQueryMessage>{
 
-  public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
+  public static async parse(message: MessagesQueryMessage): Promise<MessagesQuery> {
     Message.validateJsonSchema(message);
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
@@ -30,12 +30,12 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       }
     }
 
-    return new EventsQuery(message);
+    return new MessagesQuery(message);
   }
 
-  public static async create(options: EventsQueryOptions): Promise<EventsQuery> {
-    const descriptor: EventsQueryDescriptor = {
-      interface        : DwnInterfaceName.Events,
+  public static async create(options: MessagesQueryOptions): Promise<MessagesQuery> {
+    const descriptor: MessagesQueryDescriptor = {
+      interface        : DwnInterfaceName.Messages,
       method           : DwnMethodName.Query,
       filters          : options.filters ? Events.normalizeFilters(options.filters) : [],
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
@@ -55,6 +55,6 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
     Message.validateJsonSchema(message);
 
-    return new EventsQuery(message);
+    return new MessagesQuery(message);
   }
 }

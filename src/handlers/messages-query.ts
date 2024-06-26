@@ -2,36 +2,36 @@ import type { DidResolver } from '@web5/dids';
 import type { EventLog } from '../types/event-log.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { EventsQueryMessage, EventsQueryReply } from '../types/events-types.js';
+import type { MessagesQueryMessage, MessagesQueryReply } from '../types/messages-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Events } from '../utils/events.js';
 import { EventsGrantAuthorization } from '../core/events-grant-authorization.js';
-import { EventsQuery } from '../interfaces/events-query.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { MessagesQuery } from '../interfaces/messages-query.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 
-export class EventsQueryHandler implements MethodHandler {
+export class MessagesQueryHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
     message
-  }: {tenant: string, message: EventsQueryMessage}): Promise<EventsQueryReply> {
-    let eventsQuery: EventsQuery;
+  }: {tenant: string, message: MessagesQueryMessage}): Promise<MessagesQueryReply> {
+    let messagesQuery: MessagesQuery;
 
     try {
-      eventsQuery = await EventsQuery.parse(message);
+      messagesQuery = await MessagesQuery.parse(message);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await EventsQueryHandler.authorizeEventsQuery(tenant, eventsQuery, this.messageStore);
+      await MessagesQueryHandler.authorizeMessagesQuery(tenant, messagesQuery, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -47,21 +47,21 @@ export class EventsQueryHandler implements MethodHandler {
     };
   }
 
-  private static async authorizeEventsQuery(tenant: string, eventsQuery: EventsQuery, messageStore: MessageStore): Promise<void> {
-    // if `EventsQuery` author is the same as the target tenant, we can directly grant access
-    if (eventsQuery.author === tenant) {
+  private static async authorizeMessagesQuery(tenant: string, messagesQuery: MessagesQuery, messageStore: MessageStore): Promise<void> {
+    // if `MessagesQuery` author is the same as the target tenant, we can directly grant access
+    if (messagesQuery.author === tenant) {
       return;
-    } else if (eventsQuery.author !== undefined && eventsQuery.signaturePayload!.permissionGrantId !== undefined) {
-      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, eventsQuery.signaturePayload!.permissionGrantId);
+    } else if (messagesQuery.author !== undefined && messagesQuery.signaturePayload!.permissionGrantId !== undefined) {
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesQuery.signaturePayload!.permissionGrantId);
       await EventsGrantAuthorization.authorizeQueryOrSubscribe({
-        incomingMessage : eventsQuery.message,
+        incomingMessage : messagesQuery.message,
         expectedGrantor : tenant,
-        expectedGrantee : eventsQuery.author,
+        expectedGrantee : messagesQuery.author,
         permissionGrant,
         messageStore
       });
     } else {
-      throw new DwnError(DwnErrorCode.EventsQueryAuthorizationFailed, 'message failed authorization');
+      throw new DwnError(DwnErrorCode.MessagesQueryAuthorizationFailed, 'message failed authorization');
     }
   }
 }

@@ -77,13 +77,13 @@ export type ProtocolPermissionScope = {
 
 export type MessagesPermissionScope = {
   interface: DwnInterfaceName.Messages;
-  method: DwnMethodName.Get;
+  method: DwnMethodName.Get | DwnMethodName.Query;
   protocol?: string;
 };
 
 export type EventsPermissionScope = {
   interface: DwnInterfaceName.Events;
-  method: DwnMethodName.Query | DwnMethodName.Subscribe;
+  method: DwnMethodName.Subscribe;
   protocol?: string;
 };
 

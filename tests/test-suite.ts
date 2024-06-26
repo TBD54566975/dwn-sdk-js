@@ -4,12 +4,12 @@ import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventLog } from './event-log/event-log.spec.js';
-import { testEventsQueryHandler } from './handlers/events-query.spec.js';
-import { testEventsQueryScenarios } from './scenarios/events-query.spec.js';
 import { testEventsSubscribeHandler } from './handlers/events-subscribe.spec.js';
 import { testEventStream } from './event-log/event-stream.spec.js';
 import { TestEventStream } from './test-event-stream.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
+import { testMessagesQueryHandler } from './handlers/messages-query.spec.js';
+import { testMessagesQueryScenarios } from './scenarios/messages-query.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
 import { testOwnerDelegatedGrant } from './features/owner-delegated-grant.spec.js';
@@ -60,8 +60,8 @@ export class TestSuite {
 
     // handler tests
     testEventsSubscribeHandler();
-    testEventsQueryHandler();
     testMessagesGetHandler();
+    testMessagesQueryHandler();
     testProtocolsConfigureHandler();
     testProtocolsQueryHandler();
     testRecordsDeleteHandler();
@@ -84,7 +84,7 @@ export class TestSuite {
 
     // scenario tests
     testEndToEndScenarios();
-    testEventsQueryScenarios();
+    testMessagesQueryScenarios();
     testNestedRoleScenarios();
     testSubscriptionScenarios();
   }

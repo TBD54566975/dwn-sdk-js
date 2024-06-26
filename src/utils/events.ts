@@ -1,5 +1,5 @@
-import type { EventsFilter } from '../types/events-types.js';
 import type { Filter } from '../types/query-types.js';
+import type { MessagesFilter } from '../types/messages-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
 import { normalizeProtocolUrl } from './url.js';
@@ -15,9 +15,9 @@ export class Events {
   /**
    * Normalizes/fixes the formatting of the given filters (such as URLs) so that they provide a consistent search experience.
    */
-  public static normalizeFilters(filters: EventsFilter[]): EventsFilter[] {
+  public static normalizeFilters(filters: MessagesFilter[]): MessagesFilter[] {
 
-    const eventsQueryFilters: EventsFilter[] = [];
+    const messagesQueryFilters: MessagesFilter[] = [];
 
     // normalize each filter, and only add non-empty filters to the returned array
     for (const filter of filters) {
@@ -32,11 +32,11 @@ export class Events {
       // remove any empty filter properties and do not add if empty
       removeUndefinedProperties(eventsFilter);
       if (!isEmptyObject(eventsFilter)) {
-        eventsQueryFilters.push(eventsFilter);
+        messagesQueryFilters.push(eventsFilter);
       }
     }
 
-    return eventsQueryFilters;
+    return messagesQueryFilters;
   }
 
   /**
@@ -45,9 +45,9 @@ export class Events {
    * @param filters An array of EventsFilter
    * @returns {Filter[]} an array of generic Filter able to be used when querying.
    */
-  public static convertFilters(filters: EventsFilter[]): Filter[] {
+  public static convertFilters(filters: MessagesFilter[]): Filter[] {
 
-    const eventsQueryFilters: Filter[] = [];
+    const messagesQueryFilters: Filter[] = [];
 
     // convert each filter individually by the specific type of filter it is
     // we must check for the type of filter in a specific order to make a reductive decision as to which filters need converting
@@ -60,19 +60,19 @@ export class Events {
       // so that we can filter for permission records here
       const permissionRecordsFilter = this.constructPermissionRecordsFilter(filter);
       if (permissionRecordsFilter) {
-        eventsQueryFilters.push(permissionRecordsFilter);
+        messagesQueryFilters.push(permissionRecordsFilter);
       }
 
-      eventsQueryFilters.push(this.convertFilter(filter));
+      messagesQueryFilters.push(this.convertFilter(filter));
     }
 
-    return eventsQueryFilters;
+    return messagesQueryFilters;
   }
 
   /**
    * Constructs a filter that gets associated permission records if protocol is in the given filter.
    */
-  private static constructPermissionRecordsFilter(filter: EventsFilter): Filter | undefined {
+  private static constructPermissionRecordsFilter(filter: MessagesFilter): Filter | undefined {
     const { protocol, messageTimestamp } = filter;
     if (protocol !== undefined) {
       const taggedFilter = {
@@ -95,7 +95,7 @@ export class Events {
   /**
    * Converts an external-facing filter model into an internal-facing filer model used by data store.
    */
-  private static convertFilter(filter: EventsFilter): Filter {
+  private static convertFilter(filter: MessagesFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 
     const { messageTimestamp } = filter;

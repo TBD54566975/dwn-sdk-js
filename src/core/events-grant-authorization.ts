@@ -1,6 +1,7 @@
+import type { EventsSubscribeMessage } from '../types/events-types.js';
+import type { MessagesQueryMessage } from '../types/messages-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
-import type { EventsQueryMessage, EventsSubscribeMessage } from '../types/events-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
@@ -12,7 +13,7 @@ export class EventsGrantAuthorization {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public static async authorizeQueryOrSubscribe(input: {
-    incomingMessage: EventsQueryMessage | EventsSubscribeMessage,
+    incomingMessage: MessagesQueryMessage | EventsSubscribeMessage,
     expectedGrantor: string,
     expectedGrantee: string,
     permissionGrant: PermissionGrant,

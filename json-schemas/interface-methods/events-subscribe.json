@@ -39,7 +39,7 @@
         "filters": {
           "type": "array",
           "items": {
-            "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
+            "$ref": "https://identity.foundation/dwn/json-schemas/messages-filter.json"
           }
         }
       }

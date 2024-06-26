@@ -1,10 +1,10 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
+export type { EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, MessageSubscriptionHandler } from './types/events-types.js';
 export type { EventListener, EventStream, EventSubscription, MessageEvent, SubscriptionReply } from './types/subscriptions.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscription, Pagination, QueryResultEntry } from './types/message-types.js';
-export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
+export type { MessagesFilter, MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry, MessagesQueryMessage, MessagesQueryReply } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteDescriptor, RecordsWriteTags, RecordsWriteTagValue, RecordsWriteMessage } from './types/records-types.js';
@@ -22,7 +22,6 @@ export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
-export { EventsQuery, EventsQueryOptions } from './interfaces/events-query.js';
 export { EventsSubscribe, EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
@@ -31,6 +30,7 @@ export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
 export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages-get.js';
+export { MessagesQuery, MessagesQueryOptions } from './interfaces/messages-query.js';
 export { UnionMessageReply } from './core/message-reply.js';
 export { MessageStore, MessageStoreOptions } from './types/message-store.js';
 export { PermissionGrant } from './protocols/permission-grant.js';

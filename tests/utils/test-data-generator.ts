@@ -1,10 +1,10 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolutionResult } from '@web5/dids';
-import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
+import type { EventsSubscribeMessage } from '../../src/types/events-types.js';
 import type { EventsSubscribeOptions } from '../../src/interfaces/events-subscribe.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
-import type { MessagesGetMessage } from '../../src/types/messages-types.js';
 import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
+import type { MessagesQueryOptions } from '../../src/interfaces/messages-query.js';
 import type { PaginationCursor } from '../../src/types/query-types.js';
 import type { PermissionGrantCreateOptions } from '../../src/protocols/permissions.js';
 import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-configure.js';
@@ -16,7 +16,7 @@ import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DataEncodedRecordsWriteMessage, DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsWriteTags } from '../../src/types/records-types.js';
-import type { EventsFilter, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
+import type { MessagesFilter, MessagesGetMessage, MessagesQueryMessage } from '../../src/types/messages-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permission-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
@@ -29,10 +29,10 @@ import { DidKey } from '@web5/dids';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/utils/encryption.js';
-import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
+import { MessagesQuery } from '../../src/interfaces/messages-query.js';
 import { PermissionsProtocol } from '../../src/protocols/permissions.js';
 import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
@@ -214,22 +214,22 @@ export type GenerateRecordsDeleteOutput = {
   message: RecordsDeleteMessage;
 };
 
-export type GenerateEventsQueryInput = {
+export type GenerateMessagesQueryInput = {
   author?: Persona;
-  filters?: EventsFilter[];
+  filters?: MessagesFilter[];
   cursor?: PaginationCursor;
   permissionGrantId?: string;
 };
 
-export type GenerateEventsQueryOutput = {
+export type GenerateMessagesQueryOutput = {
   author: Persona;
-  eventsQuery: EventsQuery;
-  message: EventsQueryMessage;
+  messagesQuery: MessagesQuery;
+  message: MessagesQueryMessage;
 };
 
 export type GenerateEventsSubscribeInput = {
   author: Persona;
-  filters?: EventsFilter[];
+  filters?: MessagesFilter[];
   messageTimestamp?: string;
   permissionGrantId?: string;
 };
@@ -365,7 +365,7 @@ export class TestDataGenerator {
     const grantedToPersona = input?.grantedTo ?? await TestDataGenerator.generatePersona();
     const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 10 });
     const scope = input?.scope ?? {
-      interface : DwnInterfaceName.Events,
+      interface : DwnInterfaceName.Messages,
       method    : DwnMethodName.Query
     };
 
@@ -722,18 +722,18 @@ export class TestDataGenerator {
     };
   }
 
-  public static async generateEventsQuery(input: GenerateEventsQueryInput): Promise<GenerateEventsQueryOutput> {
+  public static async generateMessagesQuery(input: GenerateMessagesQueryInput): Promise<GenerateMessagesQueryOutput> {
     const { filters, cursor, permissionGrantId } = input;
     const author = input.author ?? await TestDataGenerator.generatePersona();
     const signer = Jws.createSigner(author);
 
-    const options: EventsQueryOptions = { signer, filters, cursor, permissionGrantId };
-    const eventsQuery = await EventsQuery.create(options);
+    const options: MessagesQueryOptions = { signer, filters, cursor, permissionGrantId };
+    const messagesQuery = await MessagesQuery.create(options);
 
     return {
       author,
-      eventsQuery,
-      message: eventsQuery.message
+      messagesQuery,
+      message: messagesQuery.message
     };
   }
 
