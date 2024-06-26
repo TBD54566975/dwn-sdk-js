@@ -62,10 +62,6 @@ export class MessagesGetHandler implements MethodHandler {
         const result = await this.dataStore.get(tenant, recordsWrite.recordId, recordsWrite.descriptor.dataCid);
         if (result?.dataStream !== undefined) {
           entry.message.data = result.dataStream;
-        } else {
-          // if there is no data, return with the data property undefined
-          // when records are deleted, their data is removed from the data store but the message remains in the message store
-          delete entry.message.data;
         }
       }
     }
@@ -77,7 +73,7 @@ export class MessagesGetHandler implements MethodHandler {
   }
 
   /**
-   * @param messageStore Used to check if the grant has been revoked.
+   * @param messageStore Used to fetch related permission grant, permission revocation, and/or RecordsWrites for permission scope validation.
    */
   private static async authorizeMessagesGet(
     tenant: string,

@@ -1,24 +1,23 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessagesGetMessage } from '../types/messages-types.js';
+import type { MessagesPermissionScope } from '../types/permission-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { PermissionGrant } from '../protocols/permission-grant.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataEncodedRecordsWriteMessage, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { MessagesPermissionScope, PermissionScope } from '../types/permission-types.js';
 
+import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { GrantAuthorization } from './grant-authorization.js';
-import { Message } from './message.js';
-import { PermissionGrant } from '../protocols/permission-grant.js';
-import { PermissionRequest } from '../protocols/permission-request.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class MessagesGrantAuthorization {
 
   /**
    * Authorizes a MessagesGetMessage using the given permission grant.
-   * @param messageStore Used to check if the given grant has been revoked.
+   * @param messageStore Used to check if the given grant has been revoked; and to fetch related RecordsWrites if needed.
    */
   public static async authorizeMessagesGet(input: {
     messagesGetMessage: MessagesGetMessage,
@@ -62,7 +61,7 @@ export class MessagesGrantAuthorization {
       // if the message is a Records interface message, get the RecordsWrite message associated with the record
       const recordsMessage = messageToGet as RecordsWriteMessage | RecordsDeleteMessage;
       const recordsWriteMessage = Records.isRecordsWrite(recordsMessage) ? recordsMessage :
-        await MessagesGrantAuthorization.getRecordsWriteMessageToAuthorize(tenant, recordsMessage, messageStore);
+        await RecordsWrite.fetchNewestRecordsWrite(messageStore, tenant, recordsMessage.descriptor.recordId);
 
       if (recordsWriteMessage.descriptor.protocol === incomingScope.protocol) {
         // the record protocol matches the incoming scope protocol
@@ -72,19 +71,11 @@ export class MessagesGrantAuthorization {
       // we check if the protocol is the internal PermissionsProtocol for further validation
       if (recordsWriteMessage.descriptor.protocol === PermissionsProtocol.uri) {
         // get the permission scope from the permission message
-        // if the permission message is a revocation, the scope is fetched from the grant that is being revoked
-        let permissionScope!: PermissionScope;
-        if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
-          const grant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsWriteMessage.descriptor.parentId!);
-          permissionScope = grant.scope;
-          return;
-        } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
-          const grant = await PermissionGrant.parse(recordsWriteMessage as DataEncodedRecordsWriteMessage);
-          permissionScope = grant.scope;
-        } else if (recordsWriteMessage.descriptor.protocolPath === PermissionsProtocol.requestPath) {
-          const request = await PermissionRequest.parse(recordsWriteMessage as DataEncodedRecordsWriteMessage);
-          permissionScope = request.scope;
-        }
+        const permissionScope = await PermissionsProtocol.getScopeFromPermissionRecord(
+          tenant,
+          messageStore,
+          recordsWriteMessage as DataEncodedRecordsWriteMessage
+        );
 
         if (PermissionsProtocol.hasProtocolScope(permissionScope) && permissionScope.protocol === incomingScope.protocol) {
           // the permissions record scoped protocol matches the incoming scope protocol
@@ -102,31 +93,5 @@ export class MessagesGrantAuthorization {
     }
 
     throw new DwnError(DwnErrorCode.MessagesGetVerifyScopeFailed, 'record message failed scope authorization');
-  }
-
-  /**
-   * Get the RecordsWriteMessage associated with the given RecordsDeleteMessage in order to authorize access.
-   */
-  private static async getRecordsWriteMessageToAuthorize(
-    tenant: string,
-    message: RecordsDeleteMessage,
-    messageStore: MessageStore
-  ): Promise<RecordsWriteMessage> {
-    // get existing RecordsWrite messages matching the `recordId`
-    const query = {
-      interface : DwnInterfaceName.Records,
-      method    : DwnMethodName.Write,
-      recordId  : message.descriptor.recordId
-    };
-
-    const { messages: existingMessages } = await messageStore.query(tenant, [ query ]);
-    const newestWrite = await Message.getNewestMessage(existingMessages);
-    if (newestWrite !== undefined) {
-      return newestWrite as RecordsWriteMessage;
-    }
-
-    // It shouldn't be possible to get here, as the `RecordsDeleteMessage` should always have a corresponding `RecordsWriteMessage`.
-    // But we add this in for defensive programming
-    throw new DwnError(DwnErrorCode.MessagesGetWriteRecordNotFound, 'record not found');
   }
 }

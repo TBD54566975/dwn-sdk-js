@@ -798,7 +798,7 @@ export function testMessagesGetHandler(): void {
           });
           const messagesGetReply = await dwn.processMessage(alice.did, messagesGet.message);
           expect(messagesGetReply.status.code).to.equal(401);
-          expect(messagesGetReply.status.detail).to.contain(DwnErrorCode.MessagesGetWriteRecordNotFound);
+          expect(messagesGetReply.status.detail).to.contain(DwnErrorCode.RecordsWriteGetNewestWriteRecordNotFound);
         });
       });
     });
