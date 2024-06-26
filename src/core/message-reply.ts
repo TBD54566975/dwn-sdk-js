@@ -1,4 +1,4 @@
-import type { MessagesGetReplyEntry } from '../types/messages-types.js';
+import type { MessagesReadReplyEntry } from '../types/messages-types.js';
 import type { PaginationCursor } from '../types/query-types.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { Readable } from 'readable-stream';
@@ -21,7 +21,7 @@ export type UnionMessageReply = GenericMessageReply & {
    * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for MessagesQuery
    * Mutually exclusive with `record`.
    */
-  entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | MessagesGetReplyEntry[] | string[];
+  entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | MessagesReadReplyEntry[] | string[];
 
   /**
    * Record corresponding to the message received if applicable (e.g. RecordsRead).

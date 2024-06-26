@@ -22,6 +22,25 @@
         }
       }
     },
+    "messages-read-scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Messages"
+        },
+        "method": {
+          "const": "Read"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      }
+    },
     "messages-subscribe-scope": {
       "type": "object",
       "additionalProperties": false,
@@ -35,25 +54,6 @@
         },
         "method": {
           "const": "Subscribe"
-        },
-        "protocol": {
-          "type": "string"
-        }
-      }
-    },
-    "messages-get-scope": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "interface",
-        "method"
-      ],
-      "properties": {
-        "interface": {
-          "const": "Messages"
-        },
-        "method": {
-          "const": "Get"
         },
         "protocol": {
           "type": "string"

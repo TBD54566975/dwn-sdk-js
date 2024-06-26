@@ -1,5 +1,5 @@
 import type { Signer } from '../types/signer.js';
-import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
+import type { MessagesReadDescriptor, MessagesReadMessage } from '../types/messages-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Cid } from '../utils/cid.js';
@@ -8,28 +8,28 @@ import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
-export type MessagesGetOptions = {
+export type MessagesReadOptions = {
   messageCid: string;
   signer: Signer;
   messageTimestamp?: string;
   permissionGrantId?: string;
 };
 
-export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
-  public static async parse(message: MessagesGetMessage): Promise<MessagesGet> {
+export class MessagesRead extends AbstractMessage<MessagesReadMessage> {
+  public static async parse(message: MessagesReadMessage): Promise<MessagesRead> {
     Message.validateJsonSchema(message);
     this.validateMessageCid(message.descriptor.messageCid);
 
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
-    return new MessagesGet(message);
+    return new MessagesRead(message);
   }
 
-  public static async create(options: MessagesGetOptions): Promise<MessagesGet> {
-    const descriptor: MessagesGetDescriptor = {
+  public static async create(options: MessagesReadOptions): Promise<MessagesRead> {
+    const descriptor: MessagesReadDescriptor = {
       interface        : DwnInterfaceName.Messages,
-      method           : DwnMethodName.Get,
+      method           : DwnMethodName.Read,
       messageCid       : options.messageCid,
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
@@ -43,9 +43,9 @@ export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
-    MessagesGet.validateMessageCid(options.messageCid);
+    MessagesRead.validateMessageCid(options.messageCid);
 
-    return new MessagesGet(message);
+    return new MessagesRead(message);
   }
 
   /**
@@ -57,7 +57,7 @@ export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
     try {
       Cid.parseCid(messageCid);
     } catch (_) {
-      throw new DwnError(DwnErrorCode.MessagesGetInvalidCid, `${messageCid} is not a valid CID`);
+      throw new DwnError(DwnErrorCode.MessagesReadInvalidCid, `${messageCid} is not a valid CID`);
     }
   }
 }

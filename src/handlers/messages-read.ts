@@ -4,28 +4,28 @@ import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsQueryReplyEntry } from '../types/records-types.js';
-import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
+import type { MessagesReadMessage, MessagesReadReply, MessagesReadReplyEntry } from '../types/messages-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
 import { Encoder } from '../utils/encoder.js';
 import { messageReplyFromError } from '../core/message-reply.js';
-import { MessagesGet } from '../interfaces/messages-get.js';
 import { MessagesGrantAuthorization } from '../core/messages-grant-authorization.js';
+import { MessagesRead } from '../interfaces/messages-read.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
 import { Records } from '../utils/records.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-type HandleArgs = { tenant: string, message: MessagesGetMessage };
+type HandleArgs = { tenant: string, message: MessagesReadMessage };
 
-export class MessagesGetHandler implements MethodHandler {
+export class MessagesReadHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) {}
 
-  public async handle({ tenant, message }: HandleArgs): Promise<MessagesGetReply> {
-    let messagesGet: MessagesGet;
+  public async handle({ tenant, message }: HandleArgs): Promise<MessagesReadReply> {
+    let messagesRead: MessagesRead;
 
     try {
-      messagesGet = await MessagesGet.parse(message);
+      messagesRead = await MessagesRead.parse(message);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
@@ -42,13 +42,13 @@ export class MessagesGetHandler implements MethodHandler {
     }
 
     try {
-      await MessagesGetHandler.authorizeMessagesGet(tenant, messagesGet, messageResult, this.messageStore);
+      await MessagesReadHandler.authorizeMessagesRead(tenant, messagesRead, messageResult, this.messageStore);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }
 
     // If the message is a RecordsWrite, we include the data in the response if it is available
-    const entry: MessagesGetReplyEntry = { message: messageResult, messageCid: message.descriptor.messageCid };
+    const entry: MessagesReadReplyEntry = { message: messageResult, messageCid: message.descriptor.messageCid };
     if (Records.isRecordsWrite(messageResult)) {
       const recordsWrite = entry.message as RecordsQueryReplyEntry;
       // RecordsWrite specific handling, if MessageStore has embedded `encodedData` return it with the entry.
@@ -75,29 +75,29 @@ export class MessagesGetHandler implements MethodHandler {
   /**
    * @param messageStore Used to fetch related permission grant, permission revocation, and/or RecordsWrites for permission scope validation.
    */
-  private static async authorizeMessagesGet(
+  private static async authorizeMessagesRead(
     tenant: string,
-    messagesGet: MessagesGet,
+    messagesRead: MessagesRead,
     matchedMessage: GenericMessage,
     messageStore: MessageStore
   ): Promise<void> {
 
-    if (messagesGet.author === tenant) {
+    if (messagesRead.author === tenant) {
       // If the author is the tenant, no further authorization is needed
       return;
-    } else if (messagesGet.author !== undefined && messagesGet.signaturePayload!.permissionGrantId !== undefined) {
+    } else if (messagesRead.author !== undefined && messagesRead.signaturePayload!.permissionGrantId !== undefined) {
       // if the author is not the tenant and the message has a permissionGrantId, we need to authorize the grant
-      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesGet.signaturePayload!.permissionGrantId);
-      await MessagesGrantAuthorization.authorizeMessagesGet({
-        messagesGetMessage : messagesGet.message,
-        messageToGet       : matchedMessage,
-        expectedGrantor    : tenant,
-        expectedGrantee    : messagesGet.author,
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, messagesRead.signaturePayload!.permissionGrantId);
+      await MessagesGrantAuthorization.authorizeMessagesRead({
+        messagesReadMessage : messagesRead.message,
+        messageToRead       : matchedMessage,
+        expectedGrantor     : tenant,
+        expectedGrantee     : messagesRead.author,
         permissionGrant,
         messageStore
       });
     } else {
-      throw new DwnError(DwnErrorCode.MessagesGetAuthorizationFailed, 'protocol message failed authorization');
+      throw new DwnError(DwnErrorCode.MessagesReadAuthorizationFailed, 'protocol message failed authorization');
     }
   }
 }

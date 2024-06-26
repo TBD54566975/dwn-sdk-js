@@ -6,10 +6,10 @@
     "scope": {
       "oneOf": [
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-get-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-query-scope"
         },
         {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-query-scope"
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-read-scope"
         },
         {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/$defs/messages-subscribe-scope"
