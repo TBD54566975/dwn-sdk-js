@@ -7,6 +7,7 @@ import type { PermissionConditions, PermissionGrantData, PermissionRequestData, 
 
 import { Encoder } from '../utils/encoder.js';
 import { PermissionGrant } from './permission-grant.js';
+import { PermissionRequest } from './permission-request.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { Time } from '../utils/time.js';
 import { validateJsonSchema } from '../schema-validator.js';
@@ -287,7 +288,8 @@ export class PermissionsProtocol {
   public static async createRevocation(options: PermissionRevocationCreateOptions): Promise<{
     recordsWrite: RecordsWrite,
     permissionRevocationData: PermissionRevocationData,
-    permissionRevocationBytes: Uint8Array
+    permissionRevocationBytes: Uint8Array,
+    dataEncodedMessage: DataEncodedRecordsWriteMessage,
   }> {
     const permissionRevocationData: PermissionRevocationData = {
       description: options.description,
@@ -316,10 +318,16 @@ export class PermissionsProtocol {
       tags            : permissionTags,
     });
 
+    const dataEncodedMessage: DataEncodedRecordsWriteMessage = {
+      ...recordsWrite.message,
+      encodedData: Encoder.bytesToBase64Url(permissionRevocationBytes)
+    };
+
     return {
       recordsWrite,
       permissionRevocationData,
-      permissionRevocationBytes
+      permissionRevocationBytes,
+      dataEncodedMessage
     };
   }
 
@@ -389,6 +397,37 @@ export class PermissionsProtocol {
     const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
 
     return permissionGrant;
+  }
+
+  /**
+   * Gets the scope from the given permission record.
+   * If the record is a revocation, the scope is fetched from the grant that is being revoked.
+   *
+   * @param messageStore The message store to fetch the grant for a revocation.
+   */
+  public static async getScopeFromPermissionRecord(
+    tenant: string,
+    messageStore:MessageStore,
+    incomingMessage: DataEncodedRecordsWriteMessage,
+  ): Promise<PermissionScope> {
+    if (incomingMessage.descriptor.protocol !== PermissionsProtocol.uri) {
+      throw new DwnError(
+        DwnErrorCode.PermissionsProtocolGetScopeInvalidProtocol,
+        `Unexpected protocol for permission record: ${incomingMessage.descriptor.protocol}`
+      );
+    }
+
+    if (incomingMessage.descriptor.protocolPath === PermissionsProtocol.revocationPath) {
+      const grant = await PermissionsProtocol.fetchGrant(tenant, messageStore, incomingMessage.descriptor.parentId!);
+      return grant.scope;
+    } else if (incomingMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
+      const grant = await PermissionGrant.parse(incomingMessage);
+      return grant.scope;
+    } else {
+      // if the record is not a grant or revocation, it must be a request
+      const request = await PermissionRequest.parse(incomingMessage);
+      return request.scope;
+    }
   }
 
   /**

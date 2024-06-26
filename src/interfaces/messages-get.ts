@@ -9,15 +9,16 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type MessagesGetOptions = {
-  messageCids: string[];
+  messageCid: string;
   signer: Signer;
   messageTimestamp?: string;
+  permissionGrantId?: string;
 };
 
 export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
   public static async parse(message: MessagesGetMessage): Promise<MessagesGet> {
     Message.validateJsonSchema(message);
-    this.validateMessageCids(message.descriptor.messageCids);
+    this.validateMessageCid(message.descriptor.messageCid);
 
     await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
@@ -29,31 +30,34 @@ export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
     const descriptor: MessagesGetDescriptor = {
       interface        : DwnInterfaceName.Messages,
       method           : DwnMethodName.Get,
-      messageCids      : options.messageCids,
-      messageTimestamp : options?.messageTimestamp ?? Time.getCurrentTimestamp(),
+      messageCid       : options.messageCid,
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
 
-    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
+    const { signer, permissionGrantId } = options;
+    const authorization = await Message.createAuthorization({
+      descriptor,
+      signer,
+      permissionGrantId,
+    });
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
-    MessagesGet.validateMessageCids(options.messageCids);
+    MessagesGet.validateMessageCid(options.messageCid);
 
     return new MessagesGet(message);
   }
 
   /**
-   * validates the provided cids
-   * @param messageCids - the cids in question
+   * validates the provided cid
+   * @param messageCid - the cid in question
    * @throws {DwnError} if an invalid cid is found.
    */
-  private static validateMessageCids(messageCids: string[]): void {
-    for (const cid of messageCids) {
-      try {
-        Cid.parseCid(cid);
-      } catch (_) {
-        throw new DwnError(DwnErrorCode.MessageGetInvalidCid, `${cid} is not a valid CID`);
-      }
+  private static validateMessageCid(messageCid: string): void {
+    try {
+      Cid.parseCid(messageCid);
+    } catch (_) {
+      throw new DwnError(DwnErrorCode.MessagesGetInvalidCid, `${messageCid} is not a valid CID`);
     }
   }
 }

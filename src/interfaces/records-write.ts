@@ -1011,6 +1011,26 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     return attesters;
   }
 
+  public static async fetchNewestRecordsWrite(
+    messageStore: MessageStore,
+    tenant: string,
+    recordId: string,
+  ): Promise<RecordsWriteMessage> {
+    // get existing RecordsWrite messages matching the `recordId`
+    const query = {
+      interface : DwnInterfaceName.Records,
+      method    : DwnMethodName.Write,
+      recordId  : recordId
+    };
+
+    const { messages: existingMessages } = await messageStore.query(tenant, [ query ]);
+    const newestWrite = await Message.getNewestMessage(existingMessages);
+    if (newestWrite !== undefined) {
+      return newestWrite as RecordsWriteMessage;
+    }
+
+    throw new DwnError(DwnErrorCode.RecordsWriteGetNewestWriteRecordNotFound, 'record not found');
+  }
 
   /**
    * Fetches the initial RecordsWrite of a record.

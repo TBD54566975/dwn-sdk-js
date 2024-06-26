@@ -242,7 +242,8 @@ export type GenerateEventsSubscribeOutput = {
 
 export type GenerateMessagesGetInput = {
   author?: Persona;
-  messageCids: string[]
+  messageCid: string;
+  permissionGrantId?: string;
 };
 
 export type GenerateMessagesGetOutput = {
@@ -767,7 +768,8 @@ export class TestDataGenerator {
 
     const options: MessagesGetOptions = {
       signer,
-      messageCids: input.messageCids
+      messageCid        : input.messageCid,
+      permissionGrantId : input.permissionGrantId
     };
 
     const messagesGet = await MessagesGet.create(options);
