@@ -138,7 +138,7 @@ export function testMessagesReadHandler(): void {
           const { status } = await dwn.processMessage(bob.did, recordsWrite, { dataStream });
           expect(status.code).to.equal(202);
 
-          // alice tries to get the message
+          // alice tries to read the message
           const { message } = await TestDataGenerator.generateMessagesRead({
             author     : alice,
             messageCid : await Message.getCid(recordsWrite)
@@ -257,7 +257,7 @@ export function testMessagesReadHandler(): void {
       describe('Protocol interface messages', () => {
         it('returns a 401 if the tenant is not the author', async () => {
           // scenario:  Alice configures both a published and non-published protocol and writes it to her DWN.
-          //            Bob is unable to get either of the ProtocolConfigure messages because he is not the author.
+          //            Bob is unable to read either of the ProtocolConfigure messages because he is not the author.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -292,7 +292,7 @@ export function testMessagesReadHandler(): void {
           const unpublishedProtocolMessageCid = await Message.getCid(unpublishedProtocolsConfigure);
           const publishedProtocolMessageCid = await Message.getCid(publishedProtocolsConfigure);
 
-          // bob attempts to get the unpublished protocol configuration
+          // bob attempts to read the unpublished protocol configuration
           const { message: getUnpublishedProtocolConfigure } = await TestDataGenerator.generateMessagesRead({
             author     : bob,
             messageCid : unpublishedProtocolMessageCid,
@@ -302,7 +302,7 @@ export function testMessagesReadHandler(): void {
           expect(getUnpublishedProtocolConfigureReply.status.detail).to.include(DwnErrorCode.MessagesReadAuthorizationFailed);
           expect(getUnpublishedProtocolConfigureReply.entry).to.be.undefined;
 
-          // bob attempts to get the published protocol configuration
+          // bob attempts to read the published protocol configuration
           const { message: getPublishedProtocolConfigure } = await TestDataGenerator.generateMessagesRead({
             author     : bob,
             messageCid : publishedProtocolMessageCid,
@@ -312,7 +312,7 @@ export function testMessagesReadHandler(): void {
           expect(getPublishedProtocolConfigureReply.status.detail).to.include(DwnErrorCode.MessagesReadAuthorizationFailed);
           expect(getPublishedProtocolConfigureReply.entry).to.be.undefined;
 
-          // control: alice is able to get both the published and unpublished protocol configurations
+          // control: alice is able to read both the published and unpublished protocol configurations
           const { message: getUnpublishedProtocolConfigureAlice } = await TestDataGenerator.generateMessagesRead({
             author     : alice,
             messageCid : unpublishedProtocolMessageCid,
@@ -391,7 +391,7 @@ export function testMessagesReadHandler(): void {
       });
 
       it('allows external parties to read a message using a grant with unrestricted scope', async () => {
-        // scenario: Alice gives Bob a grant allowing him to get any message in her DWN.
+        // scenario: Alice gives Bob a grant allowing him to read any message in her DWN.
         //           Bob invokes that grant to read a message.
 
         const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -559,7 +559,7 @@ export function testMessagesReadHandler(): void {
           );
           expect(permissionGrantWriteReply.status.code).to.equal(202);
 
-          // Bob is unable to get the message without using the permission grant
+          // Bob is unable to read the message without using the permission grant
           const messagesReadWithoutGrant = await TestDataGenerator.generateMessagesRead({
             author     : bob,
             messageCid : aliceRecordMessageCid,
@@ -568,7 +568,7 @@ export function testMessagesReadHandler(): void {
           expect(messagesReadWithoutGrantReply.status.code).to.equal(401);
           expect(messagesReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.MessagesReadAuthorizationFailed);
 
-          // Bob is able to get all the associated messages when using the permission grant
+          // Bob is able to read all the associated messages when using the permission grant
           // Expected Messages:
           // - Protocol Configuration
           // - Alice's RecordsWrite
@@ -672,7 +672,7 @@ export function testMessagesReadHandler(): void {
           const recordsWriteControlReply = await dwn.processMessage(alice.did, recordsWriteControl.message, { dataStream: dataStreamControl });
           expect(recordsWriteControlReply.status.code).to.equal(202);
 
-          // Bob is unable to get the control message
+          // Bob is unable to read the control message
           const messagesReadControl = await TestDataGenerator.generateMessagesRead({
             author            : bob,
             messageCid        : await Message.getCid(recordsWriteControl.message),
@@ -682,9 +682,9 @@ export function testMessagesReadHandler(): void {
           expect(messagesReadControlReply.status.code).to.equal(401);
         });
 
-        it('rejects message get of protocol messages with mismatching protocol grant scopes', async () => {
+        it('rejects message read of protocol messages with mismatching protocol grant scopes', async () => {
           // scenario: Alice writes a protocol record. Alice gives Bob a grant to read messages from a different protocol
-          //           Bob invokes that grant to get the protocol message, but fails.
+          //           Bob invokes that grant to read the protocol message, but fails.
 
           const alice = await TestDataGenerator.generateDidKeyPersona();
           const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -790,7 +790,7 @@ export function testMessagesReadHandler(): void {
           const indexes = recordsDelete.constructIndexes(recordsWrite.message);
           await messageStore.put(alice.did, recordsDelete.message, indexes);
 
-          // Bob tries to get the message
+          // Bob tries to read the message
           const messagesRead = await TestDataGenerator.generateMessagesRead({
             author            : bob,
             messageCid        : recordsDeleteCid,
