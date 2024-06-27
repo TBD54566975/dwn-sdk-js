@@ -1,8 +1,8 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolutionResult } from '@web5/dids';
 import type { GeneralJws } from '../../src/types/jws-types.js';
-import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
 import type { MessagesQueryOptions } from '../../src/interfaces/messages-query.js';
+import type { MessagesReadOptions } from '../../src/interfaces/messages-read.js';
 import type { MessagesSubscribeOptions } from '../../src/interfaces/messages-subscribe.js';
 import type { PaginationCursor } from '../../src/types/query-types.js';
 import type { PermissionGrantCreateOptions } from '../../src/protocols/permissions.js';
@@ -15,7 +15,7 @@ import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DataEncodedRecordsWriteMessage, DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsWriteTags } from '../../src/types/records-types.js';
-import type { MessagesFilter, MessagesGetMessage, MessagesQueryMessage, MessagesSubscribeMessage } from '../../src/types/messages-types.js';
+import type { MessagesFilter, MessagesQueryMessage, MessagesReadMessage, MessagesSubscribeMessage } from '../../src/types/messages-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permission-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
@@ -29,8 +29,8 @@ import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { Jws } from '../../src/utils/jws.js';
-import { MessagesGet } from '../../src/interfaces/messages-get.js';
 import { MessagesQuery } from '../../src/interfaces/messages-query.js';
+import { MessagesRead } from '../../src/interfaces/messages-read.js';
 import { MessagesSubscribe } from '../../src/interfaces/messages-subscribe.js';
 import { PermissionsProtocol } from '../../src/protocols/permissions.js';
 import { PrivateKeySigner } from '../../src/utils/private-key-signer.js';
@@ -239,16 +239,16 @@ export type GenerateMessagesSubscribeOutput = {
   message: MessagesSubscribeMessage;
 };
 
-export type GenerateMessagesGetInput = {
+export type GenerateMessagesReadInput = {
   author?: Persona;
   messageCid: string;
   permissionGrantId?: string;
 };
 
-export type GenerateMessagesGetOutput = {
+export type GenerateMessagesReadOutput = {
   author: Persona;
-  message: MessagesGetMessage;
-  messagesGet: MessagesGet;
+  message: MessagesReadMessage;
+  messagesRead: MessagesRead;
 };
 
 /**
@@ -761,22 +761,22 @@ export class TestDataGenerator {
     };
   }
 
-  public static async generateMessagesGet(input: GenerateMessagesGetInput): Promise<GenerateMessagesGetOutput> {
+  public static async generateMessagesRead(input: GenerateMessagesReadInput): Promise<GenerateMessagesReadOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const signer = Jws.createSigner(author);
 
-    const options: MessagesGetOptions = {
+    const options: MessagesReadOptions = {
       signer,
       messageCid        : input.messageCid,
       permissionGrantId : input.permissionGrantId
     };
 
-    const messagesGet = await MessagesGet.create(options);
+    const messagesRead = await MessagesRead.create(options);
 
     return {
       author,
-      messagesGet,
-      message: messagesGet.message,
+      messagesRead,
+      message: messagesRead.message,
     };
   }
 

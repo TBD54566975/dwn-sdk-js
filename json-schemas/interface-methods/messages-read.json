@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://identity.foundation/dwn/json-schemas/messages-get.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/messages-read.json",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -28,7 +28,7 @@
         },
         "method": {
           "enum": [
-            "Get"
+            "Read"
           ],
           "type": "string"
         },

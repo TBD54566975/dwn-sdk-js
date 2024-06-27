@@ -14,25 +14,25 @@ export type MessagesFilter = {
   messageTimestamp?: RangeCriterion;
 };
 
-export type MessagesGetDescriptor = {
+export type MessagesReadDescriptor = {
   interface : DwnInterfaceName.Messages;
-  method: DwnMethodName.Get;
+  method: DwnMethodName.Read;
   messageCid: string;
   messageTimestamp: string;
 };
 
-export type MessagesGetMessage = GenericMessage & {
+export type MessagesReadMessage = GenericMessage & {
   authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
-  descriptor: MessagesGetDescriptor;
+  descriptor: MessagesReadDescriptor;
 };
 
-export type MessagesGetReplyEntry = {
+export type MessagesReadReplyEntry = {
   messageCid: string;
   message: (GenericMessage & { data?: Readable });
 };
 
-export type MessagesGetReply = GenericMessageReply & {
-  entry?: MessagesGetReplyEntry;
+export type MessagesReadReply = GenericMessageReply & {
+  entry?: MessagesReadReplyEntry;
 };
 
 export type MessagesQueryDescriptor = {

@@ -4,7 +4,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataEncodedRecordsWriteMessage, RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { MessagesGetMessage, MessagesQueryMessage, MessagesSubscribeMessage } from '../types/messages-types.js';
+import type { MessagesQueryMessage, MessagesReadMessage, MessagesSubscribeMessage } from '../types/messages-types.js';
 
 import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { GrantAuthorization } from './grant-authorization.js';
@@ -16,23 +16,23 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 export class MessagesGrantAuthorization {
 
   /**
-   * Authorizes a MessagesGetMessage using the given permission grant.
+   * Authorizes a MessagesReadMessage using the given permission grant.
    * @param messageStore Used to check if the given grant has been revoked; and to fetch related RecordsWrites if needed.
    */
-  public static async authorizeMessagesGet(input: {
-    messagesGetMessage: MessagesGetMessage,
-    messageToGet: GenericMessage,
+  public static async authorizeMessagesRead(input: {
+    messagesReadMessage: MessagesReadMessage,
+    messageToRead: GenericMessage,
     expectedGrantor: string,
     expectedGrantee: string,
     permissionGrant: PermissionGrant,
     messageStore: MessageStore,
   }): Promise<void> {
     const {
-      messagesGetMessage, messageToGet, expectedGrantor, expectedGrantee, permissionGrant, messageStore
+      messagesReadMessage, messageToRead, expectedGrantor, expectedGrantee, permissionGrant, messageStore
     } = input;
 
     await GrantAuthorization.performBaseValidation({
-      incomingMessage: messagesGetMessage,
+      incomingMessage: messagesReadMessage,
       expectedGrantor,
       expectedGrantee,
       permissionGrant,
@@ -40,7 +40,7 @@ export class MessagesGrantAuthorization {
     });
 
     const scope = permissionGrant.scope as MessagesPermissionScope;
-    await MessagesGrantAuthorization.verifyScope(expectedGrantor, messageToGet, scope, messageStore);
+    await MessagesGrantAuthorization.verifyScope(expectedGrantor, messageToRead, scope, messageStore);
   }
 
   /**
@@ -129,6 +129,6 @@ export class MessagesGrantAuthorization {
       }
     }
 
-    throw new DwnError(DwnErrorCode.MessagesGetVerifyScopeFailed, 'record message failed scope authorization');
+    throw new DwnError(DwnErrorCode.MessagesReadVerifyScopeFailed, 'record message failed scope authorization');
   }
 }

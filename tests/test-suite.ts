@@ -6,9 +6,9 @@ import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventLog } from './event-log/event-log.spec.js';
 import { testEventStream } from './event-log/event-stream.spec.js';
 import { TestEventStream } from './test-event-stream.js';
-import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessagesQueryHandler } from './handlers/messages-query.spec.js';
 import { testMessagesQueryScenarios } from './scenarios/messages-query.spec.js';
+import { testMessagesReadHandler } from './handlers/messages-read.spec.js';
 import { testMessagesSubscribeHandler } from './handlers/messages-subscribe.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testNestedRoleScenarios } from './scenarios/nested-roles.spec.js';
@@ -59,8 +59,8 @@ export class TestSuite {
     testEventStream();
 
     // handler tests
-    testMessagesGetHandler();
     testMessagesQueryHandler();
+    testMessagesReadHandler();
     testMessagesSubscribeHandler();
     testProtocolsConfigureHandler();
     testProtocolsQueryHandler();

@@ -26,8 +26,8 @@ import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' 
 import GenericSignaturePayload from '../json-schemas/signature-payloads/generic-signature-payload.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
 import MessagesFilter from '../json-schemas/interface-methods/messages-filter.json' assert { type: 'json' };
-import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
 import MessagesQuery from '../json-schemas/interface-methods/messages-query.json' assert { type: 'json' };
+import MessagesRead from '../json-schemas/interface-methods/messages-read.json' assert { type: 'json' };
 import MessagesSubscribe from '../json-schemas/interface-methods/messages-subscribe.json' assert { type: 'json' };
 import NumberRangeFilter from '../json-schemas/interface-methods/number-range-filter.json' assert { type: 'json' };
 import PaginationCursor from '../json-schemas/interface-methods/pagination-cursor.json' assert { type: 'json' };
@@ -67,8 +67,8 @@ const schemas = {
   GeneralJws,
   JwkVerificationMethod,
   MessagesFilter,
-  MessagesGet,
   MessagesQuery,
+  MessagesRead,
   MessagesSubscribe,
   NumberRangeFilter,
   PaginationCursor,
