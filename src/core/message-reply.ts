@@ -21,7 +21,13 @@ export type UnionMessageReply = GenericMessageReply & {
    * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for MessagesQuery
    * Mutually exclusive with `record`.
    */
-  entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | MessagesReadReplyEntry[] | string[];
+  entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | string[];
+
+  /**
+   * A single message entry if applicable (e.g. MessagesRead).
+   * Mutually exclusive with `record`, `entries` and `cursor`.
+   */
+  entry?: MessagesReadReplyEntry;
 
   /**
    * Record corresponding to the message received if applicable (e.g. RecordsRead).

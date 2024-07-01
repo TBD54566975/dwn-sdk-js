@@ -28,7 +28,8 @@ export type MessagesReadMessage = GenericMessage & {
 
 export type MessagesReadReplyEntry = {
   messageCid: string;
-  message: (GenericMessage & { data?: Readable });
+  message: GenericMessage;
+  data?: Readable;
 };
 
 export type MessagesReadReply = GenericMessageReply & {

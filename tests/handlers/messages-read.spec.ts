@@ -176,8 +176,8 @@ export function testMessagesReadHandler(): void {
             expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
 
             expect(messageReply.message).to.exist.and.not.be.undefined;
-            expect(messageReply.message?.data).to.exist.and.not.be.undefined;
-            const messageData = await DataStream.toBytes(messageReply.message!.data!);
+            expect(messageReply.data).to.exist.and.not.be.undefined;
+            const messageData = await DataStream.toBytes(messageReply.data!);
             expect(messageData).to.eql(dataBytes);
           });
 
@@ -207,8 +207,8 @@ export function testMessagesReadHandler(): void {
             expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
 
             expect(messageReply.message).to.exist.and.not.be.undefined;
-            expect(messageReply.message?.data).to.exist.and.not.be.undefined;
-            const messageData = await DataStream.toBytes(messageReply.message!.data!);
+            expect(messageReply.data).to.exist.and.not.be.undefined;
+            const messageData = await DataStream.toBytes(messageReply.data!);
             expect(messageData).to.eql(dataBytes);
           });
 
@@ -249,7 +249,7 @@ export function testMessagesReadHandler(): void {
             expect(messageReply.messageCid).to.equal(initialMessageCid);
 
             expect(messageReply.message).to.exist.and.not.be.undefined;
-            expect(messageReply.message?.data).to.be.undefined;
+            expect(messageReply.data).to.be.undefined;
           });
         });
       });
@@ -598,8 +598,6 @@ export function testMessagesReadHandler(): void {
           const messagesReadWithGrantReply = await dwn.processMessage(alice.did, messagesReadWithGrant.message);
           expect(messagesReadWithGrantReply.status.code).to.equal(200);
           expect(messagesReadWithGrantReply.entry).to.exist;
-          // delete the data field from the message for comparison of the message
-          delete messagesReadWithGrantReply.entry!.message.data;
           expect(messagesReadWithGrantReply.entry!.message).to.deep.equal(recordsWrite.message);
 
           // alice RecordsDelete
@@ -622,8 +620,6 @@ export function testMessagesReadHandler(): void {
           const messagesReadCarolRequestReply = await dwn.processMessage(alice.did, messagesReadCarolRequest.message);
           expect(messagesReadCarolRequestReply.status.code).to.equal(200);
           expect(messagesReadCarolRequestReply.entry).to.exist;
-          // delete the data field from the message for comparison of the message
-          delete messagesReadCarolRequestReply.entry!.message.data;
           expect(messagesReadCarolRequestReply.entry!.message).to.deep.equal(permissionRequestCarol.recordsWrite.message);
 
           // carol's Permission Grant
@@ -635,8 +631,6 @@ export function testMessagesReadHandler(): void {
           const messagesReadCarolGrantReply = await dwn.processMessage(alice.did, messagesReadCarolGrant.message);
           expect(messagesReadCarolGrantReply.status.code).to.equal(200);
           expect(messagesReadCarolGrantReply.entry).to.exist;
-          // delete the data field from the message for comparison of the message
-          delete messagesReadCarolGrantReply.entry!.message.data;
           expect(messagesReadCarolGrantReply.entry!.message).to.deep.equal(permissionGrantCarol.recordsWrite.message);
 
           // carol's RecordsWrite
@@ -648,8 +642,6 @@ export function testMessagesReadHandler(): void {
           const messagesReadCarolRecordReply = await dwn.processMessage(alice.did, messagesReadCarolRecord.message);
           expect(messagesReadCarolRecordReply.status.code).to.equal(200);
           expect(messagesReadCarolRecordReply.entry).to.exist;
-          // delete the data field from the message for comparison of the message
-          delete messagesReadCarolRecordReply.entry!.message.data;
           expect(messagesReadCarolRecordReply.entry!.message).to.deep.equal(recordsWriteCarol.message);
 
           // carol's Grant Revocation
@@ -661,8 +653,6 @@ export function testMessagesReadHandler(): void {
           const messagesReadCarolGrantRevocationReply = await dwn.processMessage(alice.did, messagesReadCarolGrantRevocation.message);
           expect(messagesReadCarolGrantRevocationReply.status.code).to.equal(200);
           expect(messagesReadCarolGrantRevocationReply.entry).to.exist;
-          // delete the data field from the message for comparison of the message
-          delete messagesReadCarolGrantRevocationReply.entry!.message.data;
           expect(messagesReadCarolGrantRevocationReply.entry!.message).to.deep.equal(permissionRevocationCarol.recordsWrite.message);
 
           // CONTROL: Alice writes a record not associated with the protocol
