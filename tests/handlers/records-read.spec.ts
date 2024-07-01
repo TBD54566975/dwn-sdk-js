@@ -690,7 +690,7 @@ export function testRecordsReadHandler(): void {
               signer : Jws.createSigner(bob),
               filter : {
                 protocolPath : 'thread/participant',
-                recipient    : bob.did,
+                recipient    : [ bob.did ],
                 contextId    : threadRecord.message.contextId
               },
             });

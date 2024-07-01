@@ -135,9 +135,9 @@ export type RecordsFilter = {
   /**
    * The logical author of the record
    */
-  author?: string;
+  author?: string[];
   attester?: string;
-  recipient?: string;
+  recipient?: string[];
   protocol?: string;
   protocolPath?: string;
   published?: boolean;

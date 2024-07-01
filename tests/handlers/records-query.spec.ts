@@ -305,7 +305,7 @@ export function testRecordsQueryHandler(): void {
         recordsQuery = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
-            author       : bob.did,
+            author       : [ bob.did ],
             protocol     : protocolDefinition.protocol,
             schema       : protocolDefinition.types.post.schema,
             dataFormat   : protocolDefinition.types.post.dataFormats[0],
@@ -1566,7 +1566,7 @@ export function testRecordsQueryHandler(): void {
         // filter for public records with carol as recipient
         const bobQueryCarolMessageData = await TestDataGenerator.generateRecordsQuery({
           author : bob,
-          filter : { schema, recipient: carol.did }
+          filter : { schema, recipient: [ carol.did ] }
         });
         const replyToBobCarolQuery = await dwn.processMessage(alice.did, bobQueryCarolMessageData.message);
         expect(replyToBobCarolQuery.status.code).to.equal(200);
@@ -1576,7 +1576,7 @@ export function testRecordsQueryHandler(): void {
         // filter for explicit unpublished public records with carol as recipient, should not return any.
         const bobQueryCarolMessageDataUnpublished = await TestDataGenerator.generateRecordsQuery({
           author : bob,
-          filter : { schema, recipient: carol.did, published: false }
+          filter : { schema, recipient: [ carol.did ], published: false }
         });
         const replyToBobCarolUnpublishedQuery = await dwn.processMessage(alice.did, bobQueryCarolMessageDataUnpublished.message);
         expect(replyToBobCarolUnpublishedQuery.status.code).to.equal(200);
@@ -1759,7 +1759,7 @@ export function testRecordsQueryHandler(): void {
 
         const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
-          filter : { recipient: bob.did } // alice as the DWN owner querying bob's records
+          filter : { recipient: [ bob.did ] } // alice as the DWN owner querying bob's records
         });
 
         const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);

@@ -154,7 +154,7 @@ export class RecordsQueryHandler implements MethodHandler {
       filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
 
       const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
-      if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
+      if (recipientFilter === undefined || recipientFilter.length === 1 && recipientFilter.includes(recordsQuery.author!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
       }
 
