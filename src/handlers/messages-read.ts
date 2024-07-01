@@ -55,13 +55,13 @@ export class MessagesReadHandler implements MethodHandler {
       // we store `encodedData` along with the message if the data is below a certain threshold.
       if (recordsWrite.encodedData !== undefined) {
         const dataBytes = Encoder.base64UrlToBytes(recordsWrite.encodedData);
-        entry.message.data = DataStream.fromBytes(dataBytes);
+        entry.data = DataStream.fromBytes(dataBytes);
         delete recordsWrite.encodedData;
       } else {
         // otherwise check the data store for the associated data
         const result = await this.dataStore.get(tenant, recordsWrite.recordId, recordsWrite.descriptor.dataCid);
         if (result?.dataStream !== undefined) {
-          entry.message.data = result.dataStream;
+          entry.data = result.dataStream;
         }
       }
     }
