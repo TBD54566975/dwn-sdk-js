@@ -391,8 +391,10 @@ export function testResumableTasks(): void {
       expect(clearTimeoutExtensionTimerSpy.calledOnce).to.be.true;
 
       // 7. Verify that the resumable task is deleted.
-      latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
-      expect(latestResumableTaskState).to.be.undefined;
+      await Poller.pollUntilSuccessOrTimeout(async () => {
+        latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
+        expect(latestResumableTaskState).to.be.undefined;
+      });
     });
   });
 }
