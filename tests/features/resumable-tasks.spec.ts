@@ -12,6 +12,7 @@ import chai, { expect } from 'chai';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { Dwn } from '../../src/dwn.js';
 import { Jws } from '../../src/utils/jws.js';
+import { Poller } from '../utils/poller.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -367,14 +368,17 @@ export function testResumableTasks(): void {
       await clock.tickAsync(ResumableTaskManager.timeoutExtensionFrequencyInSeconds * 2 * 1000); // advancing time up to 2 extension cycles
       // IMPORTANT: This call ensures all scheduled timers are executed
       // In theory calling `tickAsync()` or `runToLastAsync()` alone should execute all scheduled timers
-      // but for some reason this behavior does not happen ONLY in Safari. I found 2o workarounds:
+      // but for some reason this behavior does not happen ONLY in Safari. I found 2 workarounds:
       // 1. call BOTH `tickAsync()` and `runToLastAsync()`.
       // 2. call `tickAsync()` with a longer time.
       // Chose the first workaround because it is should be the more reliable of the two.
       await clock.runToLastAsync();
 
-      let latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
-      expect(latestResumableTaskState!.timeout).to.be.greaterThan(initialResumableTaskState.timeout);
+      let latestResumableTaskState;
+      await Poller.pollUntilSuccessOrTimeout(async () => {
+        latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
+        expect(latestResumableTaskState!.timeout).to.be.greaterThan(initialResumableTaskState.timeout);
+      });
 
       // 5. Signal the mocked code to complete the `RecordsDelete`.
       completeDeleteSignal.emit('complete-delete');
@@ -387,8 +391,10 @@ export function testResumableTasks(): void {
       expect(clearTimeoutExtensionTimerSpy.calledOnce).to.be.true;
 
       // 7. Verify that the resumable task is deleted.
-      latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
-      expect(latestResumableTaskState).to.be.undefined;
+      await Poller.pollUntilSuccessOrTimeout(async () => {
+        latestResumableTaskState = await resumableTaskStore.read(initialResumableTaskState.id);
+        expect(latestResumableTaskState).to.be.undefined;
+      });
     });
   });
 }
