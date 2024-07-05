@@ -191,6 +191,36 @@ export function testDwnClass(): void {
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.equal(customMessage);
       });
+
+      it('should allow tenant gate to get change after DWN creation', async () => {
+        // scenario:
+        // 1. DWN is created with a tenant gate that allows everyone
+        // 2. Test a `RecordsQuery` message is allowed
+        // 3. Change the tenant gate to block everyone
+        // 4. Test a `RecordsQuery` message is blocked
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
+
+        const tenant = author!.did;
+        const reply = await dwn.processMessage(tenant, message);
+        expect(reply.status.code).to.equal(200);
+        expect(reply.entries).to.be.empty;
+
+        // tenant gate that blocks everyone with a custom message
+        const customMessage = 'a custom not-an-active-tenant message';
+        const blockAllTenantGate: TenantGate = {
+          async isActiveTenant(): Promise<ActiveTenantCheckResult> {
+            return { isActiveTenant: false, detail: customMessage };
+          }
+        };
+
+        dwn.setTenantGate(blockAllTenantGate);
+
+        const reply2 = await dwn.processMessage(tenant, message);
+        expect(reply2.status.code).to.equal(401);
+        expect(reply2.status.detail).to.equal(customMessage);
+      });
     });
   });
 }

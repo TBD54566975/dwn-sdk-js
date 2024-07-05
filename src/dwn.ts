@@ -209,6 +209,14 @@ export class Dwn {
   }
 
   /**
+   * Uses the given tenant gate for the DWN.
+   * Mainly used for test purposes.
+   */
+  public setTenantGate(tenantGate: TenantGate): void {
+    this.tenantGate = tenantGate;
+  }
+
+  /**
    * Validates structure of DWN message
    * @param tenant The tenant DID to route the given message to.
    * @param dwnMessageInterface The interface of DWN message.
