@@ -59,3 +59,4 @@ export { EventEmitterStream } from './event-log/event-emitter-stream.js';
 
 // test library exports
 export { Persona, TestDataGenerator } from '../tests/utils/test-data-generator.js';
+export { Poller } from '../tests/utils/poller.js';
