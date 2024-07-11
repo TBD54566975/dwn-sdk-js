@@ -55,24 +55,24 @@ export function testMessageStore(): void {
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
 
-        // inserting the message indicating it is the 'latest' in the index
-        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
+        // inserting a message indicating it is the latest in the index
+        await messageStore.put(alice.did, message, { isLatestBaseState: true, messageTimestamp });
 
-        const { messages: results1 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        const { messages: results1 } = await messageStore.query(alice.did, [{ isLatestBaseState: true }]);
         expect(results1.length).to.equal(1);
 
-        const { messages: results2 } = await messageStore.query(alice.did, [{ latest: 'false' }]);
+        const { messages: results2 } = await messageStore.query(alice.did, [{ isLatestBaseState: false }]);
         expect(results2.length).to.equal(0);
 
-        // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
+        // deleting the existing message and and rewriting it indicating it is no longer the latest
         const cid = await Message.getCid(message);
         await messageStore.delete(alice.did, cid);
-        await messageStore.put(alice.did, message, { latest: 'false', messageTimestamp });
+        await messageStore.put(alice.did, message, { isLatestBaseState: false, messageTimestamp });
 
-        const { messages: results3 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        const { messages: results3 } = await messageStore.query(alice.did, [{ isLatestBaseState: true }]);
         expect(results3.length).to.equal(0);
 
-        const { messages: results4 } = await messageStore.query(alice.did, [{ latest: 'false' }]);
+        const { messages: results4 } = await messageStore.query(alice.did, [{ isLatestBaseState: false }]);
         expect(results4.length).to.equal(1);
       });
 
@@ -166,7 +166,7 @@ export function testMessageStore(): void {
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
-        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
+        await messageStore.put(alice.did, message, { isLatestBaseState: true, messageTimestamp });
 
         const messageCid = await Message.getCid(message);
         const resultsAlice1 = await messageStore.get(alice.did, messageCid);
@@ -187,8 +187,8 @@ export function testMessageStore(): void {
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
-        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
-        await messageStore.put(bob.did, message, { latest: 'true', messageTimestamp });
+        await messageStore.put(alice.did, message, { messageTimestamp });
+        await messageStore.put(bob.did, message, { messageTimestamp });
 
         const messageCid = await Message.getCid(message);
         const resultsAlice1 = await messageStore.get(alice.did, messageCid);
@@ -201,7 +201,7 @@ export function testMessageStore(): void {
         const resultsBob2 = await messageStore.get(bob.did, messageCid);
         expect(resultsBob2).to.be.undefined;
 
-        //expect alice to retain the message
+        // expect alice to retain the message
         const resultsAlice2 = await messageStore.get(alice.did, messageCid);
         expect((resultsAlice2 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
       });
@@ -213,22 +213,22 @@ export function testMessageStore(): void {
         const { message } = await TestDataGenerator.generateRecordsWrite();
         const { messageTimestamp } = message.descriptor;
 
-        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
-        await messageStore.put(bob.did, message, { latest: 'true', messageTimestamp });
+        await messageStore.put(alice.did, message, { isLatestBaseState: true, messageTimestamp });
+        await messageStore.put(bob.did, message, { isLatestBaseState: true, messageTimestamp });
 
         const messageCid = await Message.getCid(message);
-        const resultsAlice1 = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        const resultsAlice1 = await messageStore.query(alice.did, [{ isLatestBaseState: true }]);
         expect(resultsAlice1.messages.length).to.equal(1);
-        const resultsBob1 = await messageStore.query(bob.did, [{ latest: 'true' }]);
+        const resultsBob1 = await messageStore.query(bob.did, [{ isLatestBaseState: true }]);
         expect(resultsBob1.messages.length).to.equal(1);
 
         // bob deletes message
         await messageStore.delete(bob.did, messageCid);
-        const resultsBob2 = await messageStore.query(bob.did, [{ latest: 'true' }]);
+        const resultsBob2 = await messageStore.query(bob.did, [{ isLatestBaseState: true }]);
         expect(resultsBob2.messages.length).to.equal(0);
 
         //expect alice to retain the message
-        const resultsAlice2 = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        const resultsAlice2 = await messageStore.query(alice.did, [{ isLatestBaseState: true }]);
         expect(resultsAlice2.messages.length).to.equal(1);
       });
     });
