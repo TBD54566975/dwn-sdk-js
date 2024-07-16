@@ -50,7 +50,7 @@ jobs:
       # builds all bundles
       - run: npm run build
       # run circular dependency check, job will fail if there is an error
-      - run: npm run madge
+      - run: npm run circular-dependency-check
       # runs linter. Job will fail if there are any warnings or errors
       - run: npm run lint
       # runs tests in node environment
