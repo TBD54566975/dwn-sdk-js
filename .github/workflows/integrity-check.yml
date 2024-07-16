@@ -25,10 +25,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.16.0
+      - name: Use Node.js 18.17.0
         uses: actions/setup-node@v4
         with:
-          node-version: 18.16.0
+          node-version: 18.17.0
       - run: npm audit
 
   test-with-node:
@@ -36,7 +36,7 @@ jobs:
     # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
     strategy:
       matrix:
-        node-version: [18.16.0, 20.3.0]
+        node-version: [18.17.0, 20.3.0]
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
@@ -50,7 +50,7 @@ jobs:
       # builds all bundles
       - run: npm run build
       # run circular dependency check, job will fail if there is an error
-      - run: npm run madge
+      - run: npm run circular-dependency-check
       # runs linter. Job will fail if there are any warnings or errors
       - run: npm run lint
       # runs tests in node environment
