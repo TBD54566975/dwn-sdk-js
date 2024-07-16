@@ -478,6 +478,321 @@ export function testPermissions(): void {
       expect(revokeWriteReply.status.code).to.equal(202);
     });
 
+    // These set of tets are primarily to ensure SchemaValidation passes for the various permission request and grant messages and their scopes
+    describe('ensure loaded scope properties for permission requests are processed', () => {
+      it('MessagesQuery', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol
+        const messagesQueryPermissions = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to query from Alice test-context',
+          scope       : {
+            interface : DwnInterfaceName.Messages,
+            method    : DwnMethodName.Query,
+            protocol  : 'https://example.com/protocol/test',
+          }
+        });
+
+        const messagesQueryPermissionsReply = await dwn.processMessage(alice.did, messagesQueryPermissions.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(messagesQueryPermissions.permissionGrantBytes)
+        });
+        expect(messagesQueryPermissionsReply.status.code).to.equal(202);
+      });
+
+      it('MessagesRead', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol
+        const messagesReadPermissions = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to read from Alice test-context',
+          scope       : {
+            interface : DwnInterfaceName.Messages,
+            method    : DwnMethodName.Read,
+            protocol  : 'https://example.com/protocol/test',
+          }
+        });
+
+        const messagesReadPermissionsReply = await dwn.processMessage(alice.did, messagesReadPermissions.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(messagesReadPermissions.permissionGrantBytes)
+        });
+        expect(messagesReadPermissionsReply.status.code).to.equal(202);
+      });
+
+      it('MessagesSubscribe', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol
+        const messagesSubscribePermissions = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to subscribe from Alice test-context',
+          scope       : {
+            interface : DwnInterfaceName.Messages,
+            method    : DwnMethodName.Subscribe,
+            protocol  : 'https://example.com/protocol/test',
+          }
+        });
+
+        const messagesSubscribePermissionsReply = await dwn.processMessage(alice.did, messagesSubscribePermissions.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(messagesSubscribePermissions.permissionGrantBytes)
+        });
+        expect(messagesSubscribePermissionsReply.status.code).to.equal(202);
+      });
+
+      it('RecordsDelete', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol and contextId
+        const withContextId = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to delete from Alice test-context',
+          scope       : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Delete,
+            protocol  : 'https://example.com/protocol/test',
+            contextId : 'test-context'
+          }
+        });
+
+        const withContextIdReply = await dwn.processMessage(alice.did, withContextId.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withContextId.permissionGrantBytes)
+        });
+        expect(withContextIdReply.status.code).to.equal(202);
+
+        // create a permission request with protocol and protocolPath
+        const withProtocolPath = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to delete from Alice foo/bar',
+          scope       : {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Delete,
+            protocol     : 'https://example.com/protocol/test',
+            protocolPath : 'foo/bar'
+          }
+        });
+
+        const withProtocolPathReply = await dwn.processMessage(alice.did, withProtocolPath.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withProtocolPath.permissionGrantBytes)
+        });
+        expect(withProtocolPathReply.status.code).to.equal(202);
+      });
+
+      it('RecordsQuery', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol and contextId scope
+        const withContextId = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to query from Alice test-context',
+          delegated   : true,
+          scope       : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Query,
+            protocol  : 'https://example.com/protocol/test',
+            contextId : 'test-context'
+          }
+        });
+
+        const withContextIdReply = await dwn.processMessage(alice.did, withContextId.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withContextId.permissionGrantBytes)
+        });
+        expect(withContextIdReply.status.code).to.equal(202);
+
+        // create a permission request with protocol and protocolPath scope
+        const withProtocolPath = await PermissionsProtocol.createRequest({
+          signer      : Jws.createSigner(bob),
+          description : 'Requesting to query from Alice foo/bar',
+          delegated   : true,
+          scope       : {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Query,
+            protocol     : 'https://example.com/protocol/test',
+            protocolPath : 'foo/bar'
+          }
+        });
+
+        const withProtocolPathReply = await dwn.processMessage(bob.did, withProtocolPath.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withProtocolPath.permissionRequestBytes)
+        });
+        expect(withProtocolPathReply.status.code).to.equal(202);
+      });
+
+      it('RecordsRead', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol and contextId scope
+        const withContextId = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to read to Alice test-context',
+          delegated   : true,
+          scope       : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Read,
+            protocol  : 'https://example.com/protocol/test',
+            contextId : 'test-context'
+          }
+        });
+
+        const withContextIdReply = await dwn.processMessage(alice.did, withContextId.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withContextId.permissionGrantBytes)
+        });
+        expect(withContextIdReply.status.code).to.equal(202);
+
+        // create a permission request with protocol and protocolPath scope
+        const withProtocolPath = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to read to Alice foo/bar',
+          delegated   : true,
+          scope       : {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Read,
+            protocol     : 'https://example.com/protocol/test',
+            protocolPath : 'foo/bar'
+          }
+        });
+
+        const withProtocolPathReply = await dwn.processMessage(alice.did, withProtocolPath.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withProtocolPath.permissionGrantBytes)
+        });
+        expect(withProtocolPathReply.status.code).to.equal(202);
+      });
+
+      it('RecordsSubscribe', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol and contextId scope
+        const withContextId = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to subscribe to Alice test-context',
+          delegated   : true,
+          scope       : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Subscribe,
+            protocol  : 'https://example.com/protocol/test',
+            contextId : 'test-context'
+          }
+        });
+
+        const withContextIdReply = await dwn.processMessage(alice.did, withContextId.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withContextId.permissionGrantBytes)
+        });
+        expect(withContextIdReply.status.code).to.equal(202);
+
+        // create a permission request with protocol and protocolPath scope
+        const withProtocolPath = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to subscribe to Alice foo/bar',
+          delegated   : true,
+          scope       : {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Subscribe,
+            protocol     : 'https://example.com/protocol/test',
+            protocolPath : 'foo/bar'
+          }
+        });
+
+        const withProtocolPathReply = await dwn.processMessage(alice.did, withProtocolPath.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withProtocolPath.permissionGrantBytes)
+        });
+        expect(withProtocolPathReply.status.code).to.equal(202);
+      });
+
+      it('RecordsWrite', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol and contextId scope
+        const withContextId = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to write to Alice test-context',
+          delegated   : true,
+          scope       : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Write,
+            protocol  : 'https://example.com/protocol/test',
+            contextId : 'test-context'
+          }
+        });
+
+        const withContextIdReply = await dwn.processMessage(alice.did, withContextId.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withContextId.permissionGrantBytes)
+        });
+        expect(withContextIdReply.status.code).to.equal(202);
+
+        // create a permission request with protocol and protocolPath scope
+        const withProtocolPath = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to write to Alice foo/bar',
+          delegated   : true,
+          scope       : {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Write,
+            protocol     : 'https://example.com/protocol/test',
+            protocolPath : 'foo/bar'
+          }
+        });
+
+        const withProtocolPathReply = await dwn.processMessage(alice.did, withProtocolPath.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(withProtocolPath.permissionGrantBytes)
+        });
+        expect(withProtocolPathReply.status.code).to.equal(202);
+      });
+
+      it('ProtocolsQuery', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // create a permission grant with protocol query that is unrestricted
+        const protocolQueryPermissions = await PermissionsProtocol.createGrant({
+          signer      : Jws.createSigner(alice),
+          grantedTo   : bob.did,
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Requesting to query from Alice test-context',
+          scope       : {
+            interface : DwnInterfaceName.Protocols,
+            method    : DwnMethodName.Query,
+          }
+        });
+
+        const protocolQueryPermissionsReply = await dwn.processMessage(alice.did, protocolQueryPermissions.recordsWrite.message, {
+          dataStream: DataStream.fromBytes(protocolQueryPermissions.permissionGrantBytes)
+        });
+        expect(protocolQueryPermissionsReply.status.code).to.equal(202);
+      });
+    });
+
     describe('validateScopeAndTags', async () => {
       it('should be called for a Request or Grant record', async () => {
         // spy on `validateScope`
