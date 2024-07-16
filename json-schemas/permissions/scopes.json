@@ -92,6 +92,12 @@
         },
         "protocol": {
           "type": "string"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
+          "type": "string"
         }
       }
     },
@@ -156,7 +162,13 @@
         "interface": {
           "const": "Records"
         },
-        "protocol": {
+        "method": {
+          "const": "Query"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
           "type": "string"
         }
       }
@@ -175,7 +187,10 @@
         "method": {
           "const": "Subscribe"
         },
-        "protocol": {
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
           "type": "string"
         }
       }
