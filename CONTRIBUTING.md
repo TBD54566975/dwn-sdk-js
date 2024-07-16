@@ -31,7 +31,7 @@ We suggest the following process when picking up one of these issues:
 
 | Requirement | Tested Version | Installation Instructions |
 | ----------- | -------------- | ------------------------- |
-| `Node.js`   | `v18.16.0`     | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
+| `Node.js`   | `v18.17.0`     | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
 
 ### Running tests
 * Running the `npm run test:node` command from the root of the project will run all tests using node. 
