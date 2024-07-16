@@ -165,6 +165,9 @@
         "method": {
           "const": "Query"
         },
+        "protocol": {
+          "type": "string"
+        },
         "contextId": {
           "type": "string"
         },
@@ -186,6 +189,9 @@
         },
         "method": {
           "const": "Subscribe"
+        },
+        "protocol": {
+          "type": "string"
         },
         "contextId": {
           "type": "string"
