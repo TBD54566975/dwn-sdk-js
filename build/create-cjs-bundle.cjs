@@ -9,7 +9,8 @@ const includeList = new Set([
   'blockstore-core',
   'ipfs-unixfs-exporter',
   'ipfs-unixfs-importer',
-  'multiformats'
+  'multiformats',
+  'uint8arrays'
 ]);
 
 // create list of dependencies that we _do not_ want to include in our bundle
