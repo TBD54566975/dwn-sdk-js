@@ -132,7 +132,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   ): void {
     const { ruleSet, ruleSetProtocolPath, recordTypes, roles } = input;
 
-    // Validate $actions in the rule set
+    // Validate $size in the rule set
     if (ruleSet.$size !== undefined) {
       const { min = 0, max } = ruleSet.$size;
 

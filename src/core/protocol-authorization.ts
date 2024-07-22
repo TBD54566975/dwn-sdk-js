@@ -168,6 +168,9 @@ export class ProtocolAuthorization {
       recordChain,
       messageStore,
     );
+
+    // Verify expiry
+    ProtocolAuthorization.verifyExpiration(incomingMessage, ruleSet);
   }
 
   public static async authorizeQueryOrSubscribe(
@@ -788,6 +791,67 @@ export class ProtocolAuthorization {
       }
     }
   }
+
+  /**
+    * Verifies that queries and reads adhere to the $expiration constraint if provided
+    * @throws {Error} if typeof $expiration != number | {}
+    * @throws {Error} if typeof $expiration === {} and amount | unit === undefined
+    *
+    */
+  private static verifyExpiration(
+    incomingMessage: RecordsWrite,
+    ruleSet: ProtocolRuleSet
+  ): void {
+    const ruleExpiration = ruleSet?.$expiration;
+    if (!ruleExpiration) {
+      return;
+    }
+
+    const incomingExpiration = incomingMessage.message.descriptor.expiration;
+    if (!incomingExpiration) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationMissing,
+        `missing expiration descriptor: protocol ruleset requires $expiration`);
+    }
+
+    const { amount, unit } = incomingExpiration || {};
+    if (!(amount && unit)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration descriptor: if set, $expiration must be type object with properties amount and/or unit`);
+    }
+
+    if (!amount) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration descriptor: if set, $expiration.amount ${amount} cannot be null`);
+    }
+
+    if (typeof amount !== 'number') {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} type = ${typeof amount}, must be number`);
+    }
+
+    if (isNaN(amount)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} cannot be NaN`);
+    }
+
+    if (amount <= 0) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationAmountInvalid,
+        `invalid expiration property: $expiration.amount ${amount} must be greater than 0`);
+    }
+
+    if (typeof unit !== 'string') {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationUnitInvalid,
+        `invalid expiration property: $expiration.unit ${unit} type ${typeof unit} must be string`);
+    }
+
+
+    const validUnits = ['s', 'm', 'h', 'd', 'y'];
+    if (!validUnits.some(validUnit => unit === validUnit)) {
+      throw new DwnError(DwnErrorCode.ProtocolsAuthorizationExpirationUnitInvalid,
+        `invalid property: expiration.unit ${unit} must be one of ${validUnits.join()}`);
+    }
+
+  };
 
   /**
    * If the given RecordsWrite is not a role record, this method does nothing and succeeds immediately.
