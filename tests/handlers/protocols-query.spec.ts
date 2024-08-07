@@ -249,7 +249,7 @@ export function testProtocolsQueryHandler(): void {
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
           const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(grantRecordsWriteReply.status.code).to.equal(202);
+          expect(grantRecordsWriteReply.status.code).to.equal(204);
 
           // 2. Verify Bob can perform a ProtocolsQuery
           const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
@@ -281,7 +281,7 @@ export function testProtocolsQueryHandler(): void {
             revokeWrite.recordsWrite.message,
             { dataStream: DataStream.fromBytes(revokeWrite.permissionRevocationBytes) }
           );
-          expect(revokeWriteReply.status.code).to.equal(202);
+          expect(revokeWriteReply.status.code).to.equal(204);
 
           // 5. Verify Bob cannot perform ProtocolsQuery with the revoked grant
           const unauthorizedProtocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -309,7 +309,7 @@ export function testProtocolsQueryHandler(): void {
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
           const permissionGrantWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(permissionGrantWriteReply.status.code).to.equal(202);
+          expect(permissionGrantWriteReply.status.code).to.equal(204);
 
           // Bob does ProtocolsQuery after the grant has expired
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -342,7 +342,7 @@ export function testProtocolsQueryHandler(): void {
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
           const permissionGrantWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(permissionGrantWriteReply.status.code).to.equal(202);
+          expect(permissionGrantWriteReply.status.code).to.equal(204);
 
           // Bob does ProtocolsQuery but his message has timestamp before the grant is active
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -371,7 +371,7 @@ export function testProtocolsQueryHandler(): void {
           const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
 
           const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
-          expect(grantRecordsWriteReply.status.code).to.equal(202);
+          expect(grantRecordsWriteReply.status.code).to.equal(204);
 
           // Bob tries to ProtocolsQuery
           const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
@@ -422,7 +422,7 @@ export function testProtocolsQueryHandler(): void {
           await bobWrappedGrant.signAsOwner(Jws.createSigner(bob));
 
           const grantRecordsWriteReply = await dwn.processMessage(bob.did, bobWrappedGrant.message, { dataStream });
-          expect(grantRecordsWriteReply.status.code).to.equal(202);
+          expect(grantRecordsWriteReply.status.code).to.equal(204);
 
           // 3. Verify that Carol cannot use permission grant to gain access to Bob's DWN
           const permissionGrantId = permissionGrant.recordsWrite.message.recordId;

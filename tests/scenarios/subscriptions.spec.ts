@@ -90,7 +90,7 @@ export function testSubscriptionScenarios(): void {
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const write1MessageCid = await Message.getCid(write1.message);
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
-        expect(write1Reply.status.code).to.equal(202);
+        expect(write1Reply.status.code).to.equal(204);
 
         const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
         const protocol1MessageCid = await Message.getCid(protocol1.message);
@@ -165,7 +165,7 @@ export function testSubscriptionScenarios(): void {
         // create one of each message types a RecordsWrite and a ProtocolsConfigure
         const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-        expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
+        expect(recordReply.status.code).to.equal(204, 'RecordsWrite');
 
         const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
         const protocolReply = await dwn.processMessage(alice.did, protocol.message);
@@ -259,7 +259,7 @@ export function testSubscriptionScenarios(): void {
         // create and updates the record, this creates two RecordsWrite messages
         const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
-        expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
+        expect(recordReply.status.code).to.equal(204, 'RecordsWrite');
         const record1MessageCid = await Message.getCid(record.message);
 
         const recordUpdate = await TestDataGenerator.generateFromRecordsWrite({ author: alice, existingWrite: record.recordsWrite });
@@ -289,7 +289,7 @@ export function testSubscriptionScenarios(): void {
         // write a second record
         const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
-        expect(record2Reply.status.code).to.equal(202, 'RecordsWrite');
+        expect(record2Reply.status.code).to.equal(204, 'RecordsWrite');
         const record2MessageCid = await Message.getCid(record2.message);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -388,12 +388,12 @@ export function testSubscriptionScenarios(): void {
         // create a record for proto1
         const write1proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
         const write1Response = await dwn.processMessage(alice.did, write1proto1.message, { dataStream: write1proto1.dataStream });
-        expect(write1Response.status.code).equals(202);
+        expect(write1Response.status.code).equals(204);
 
         // create a record for proto2
         const write1proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
         const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, { dataStream: write1proto2.dataStream });
-        expect(write1Proto2Response.status.code).equals(202);
+        expect(write1Proto2Response.status.code).equals(204);
 
         // bob requests permissions for proto1
         const requestProto1 = await PermissionsProtocol.createRequest({
@@ -406,7 +406,7 @@ export function testSubscriptionScenarios(): void {
           requestProto1.recordsWrite.message,
           { dataStream: DataStream.fromBytes(requestProto1.permissionRequestBytes) }
         );
-        expect(requestProto1Response.status.code).equals(202);
+        expect(requestProto1Response.status.code).equals(204);
 
         // bob requests permissions for proto2
         const requestProto2 = await PermissionsProtocol.createRequest({
@@ -419,7 +419,7 @@ export function testSubscriptionScenarios(): void {
           requestProto2.recordsWrite.message,
           { dataStream: DataStream.fromBytes(requestProto2.permissionRequestBytes) }
         );
-        expect(requestProto2Response.status.code).equals(202);
+        expect(requestProto2Response.status.code).equals(204);
 
         // alice grants permissions for proto1
         const grantProto1 = await PermissionsProtocol.createGrant({
@@ -433,7 +433,7 @@ export function testSubscriptionScenarios(): void {
           grantProto1.recordsWrite.message,
           { dataStream: DataStream.fromBytes(grantProto1.permissionGrantBytes) }
         );
-        expect(grantProto1Response.status.code).equals(202);
+        expect(grantProto1Response.status.code).equals(204);
 
         // alice grants permissions for proto2
         const grantProto2 = await PermissionsProtocol.createGrant({
@@ -447,7 +447,7 @@ export function testSubscriptionScenarios(): void {
           grantProto2.recordsWrite.message,
           { dataStream: DataStream.fromBytes(grantProto2.permissionGrantBytes) }
         );
-        expect(grantProto2Response.status.code).equals(202);
+        expect(grantProto2Response.status.code).equals(204);
 
         // poll until the messages are received by the handlers
         await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -490,7 +490,7 @@ export function testSubscriptionScenarios(): void {
           revokeProto1.recordsWrite.message,
           { dataStream: DataStream.fromBytes(revokeProto1.permissionRevocationBytes) }
         );
-        expect(revokeProto1Response.status.code).equals(202);
+        expect(revokeProto1Response.status.code).equals(204);
 
         // revoke permissions for proto2
         const revokeProto2 = await PermissionsProtocol.createRevocation({
@@ -502,7 +502,7 @@ export function testSubscriptionScenarios(): void {
           revokeProto2.recordsWrite.message,
           { dataStream: DataStream.fromBytes(revokeProto2.permissionRevocationBytes) }
         );
-        expect(revokeProto2Response.status.code).equals(202);
+        expect(revokeProto2Response.status.code).equals(204);
 
         // poll until the messages are received by the handlers
         await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -563,7 +563,7 @@ export function testSubscriptionScenarios(): void {
         // write a record
         const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record1Reply = await dwn.processMessage(alice.did, record1.message, { dataStream: record1.dataStream });
-        expect(record1Reply.status.code).to.equal(202);
+        expect(record1Reply.status.code).to.equal(204);
         const record1MessageCid = await Message.getCid(record1.message);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -581,12 +581,12 @@ export function testSubscriptionScenarios(): void {
         // write two more message.
         const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
-        expect(record2Reply.status.code).to.equal(202);
+        expect(record2Reply.status.code).to.equal(204);
         const record2MessageCid = await Message.getCid(record2.message);
 
         const record3 = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const record3Reply = await dwn.processMessage(alice.did, record3.message, { dataStream: record3.dataStream });
-        expect(record3Reply.status.code).to.equal(202);
+        expect(record3Reply.status.code).to.equal(204);
         const record3MessageCid = await Message.getCid(record3.message);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -648,17 +648,17 @@ export function testSubscriptionScenarios(): void {
         // we create a non published record, this will only show up in the control subscription
         const writeNotPublished = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1' });
         const writeNotPublishedReply = await dwn.processMessage(alice.did, writeNotPublished.message, { dataStream: writeNotPublished.dataStream });
-        expect(writeNotPublishedReply.status.code).to.equal(202);
+        expect(writeNotPublishedReply.status.code).to.equal(204);
 
         // we create a published record, this will show up in both the control and anonymous subscription
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
-        expect(write1Reply.status.code).to.equal(202);
+        expect(write1Reply.status.code).to.equal(204);
 
         // we create another published record, this will show up in both the control and anonymous subscription
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', published: true });
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
-        expect(write2Reply.status.code).to.equal(202);
+        expect(write2Reply.status.code).to.equal(204);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
           // publishedMessages array should only contain the two published messages
@@ -722,16 +722,16 @@ export function testSubscriptionScenarios(): void {
         // write two messages for bob
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
         const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
-        expect(write1Reply.status.code).to.equal(202);
+        expect(write1Reply.status.code).to.equal(204);
 
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
         const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
-        expect(write2Reply.status.code).to.equal(202);
+        expect(write2Reply.status.code).to.equal(204);
 
         // write one message for carol
         const writeForCarol = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: carol.did });
         const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
-        expect(writeForCarolReply.status.code).to.equal(202);
+        expect(writeForCarolReply.status.code).to.equal(204);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
           // bob should have received the two messages intended for him
@@ -778,7 +778,7 @@ export function testSubscriptionScenarios(): void {
           protocolPath : 'thread'
         });
         const threadReply = await dwn.processMessage(alice.did, thread.message, { dataStream: thread.dataStream });
-        expect(threadReply.status.code).to.equal(202);
+        expect(threadReply.status.code).to.equal(204);
 
 
         // subscribe to this thread's messages
@@ -831,7 +831,7 @@ export function testSubscriptionScenarios(): void {
           protocolPath    : 'thread/participant'
         });
         const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, { dataStream: bobParticipant.dataStream });
-        expect(bobParticipantReply.status.code).to.equal(202);
+        expect(bobParticipantReply.status.code).to.equal(204);
 
         // add carol as participant
         const carolParticipant = await TestDataGenerator.generateRecordsWrite({
@@ -842,7 +842,7 @@ export function testSubscriptionScenarios(): void {
           protocolPath    : 'thread/participant'
         });
         const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, { dataStream: carolParticipant.dataStream });
-        expect(carolParticipantReply.status.code).to.equal(202);
+        expect(carolParticipantReply.status.code).to.equal(204);
 
         // add another thread as a control, will not show up in handled message events
         const additionalThread = await TestDataGenerator.generateRecordsWrite({
@@ -851,7 +851,7 @@ export function testSubscriptionScenarios(): void {
           protocolPath : 'thread'
         });
         const additionalThreadReply = await dwn.processMessage(alice.did, additionalThread.message, { dataStream: additionalThread.dataStream });
-        expect(additionalThreadReply.status.code).to.equal(202);
+        expect(additionalThreadReply.status.code).to.equal(204);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(2);
@@ -871,7 +871,7 @@ export function testSubscriptionScenarios(): void {
           protocolRole    : 'thread/participant',
         });
         const message1Reply = await dwn.processMessage(alice.did, message1.message, { dataStream: message1.dataStream });
-        expect(message1Reply.status.code).to.equal(202);
+        expect(message1Reply.status.code).to.equal(204);
 
         const message2 = await TestDataGenerator.generateRecordsWrite({
           author          : bob,
@@ -882,7 +882,7 @@ export function testSubscriptionScenarios(): void {
           protocolRole    : 'thread/participant',
         });
         const message2Reply = await dwn.processMessage(alice.did, message2.message, { dataStream: message2.dataStream });
-        expect(message2Reply.status.code).to.equal(202);
+        expect(message2Reply.status.code).to.equal(204);
 
         const message3 = await TestDataGenerator.generateRecordsWrite({
           author          : carol,
@@ -893,7 +893,7 @@ export function testSubscriptionScenarios(): void {
           protocolRole    : 'thread/participant',
         });
         const message3Reply = await dwn.processMessage(alice.did, message3.message, { dataStream: message3.dataStream });
-        expect(message3Reply.status.code).to.equal(202);
+        expect(message3Reply.status.code).to.equal(204);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
           expect(messages.length).to.equal(5);

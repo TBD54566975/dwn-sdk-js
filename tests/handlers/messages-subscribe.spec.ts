@@ -165,7 +165,7 @@ export function testMessagesSubscribeHandler(): void {
 
         const messageWrite = await TestDataGenerator.generateRecordsWrite({ author: alice });
         const writeReply = await dwn.processMessage(alice.did, messageWrite.message, { dataStream: messageWrite.dataStream });
-        expect(writeReply.status.code).to.equal(202);
+        expect(writeReply.status.code).to.equal(204);
         const messageCid = await Message.getCid(messageWrite.message);
 
         // control: ensure that the event exists
@@ -219,7 +219,7 @@ export function testMessagesSubscribeHandler(): void {
             }
           });
           const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
-          expect(grantReply.status.code).to.equal(202);
+          expect(grantReply.status.code).to.equal(204);
 
           // create a handler to capture the emitted messageCids
           const messageCids: string[] = [];
@@ -262,14 +262,14 @@ export function testMessagesSubscribeHandler(): void {
           });
 
           const recordReply = await dwn.processMessage(alice.did, recordMessage, { dataStream: recordDataStream });
-          expect(recordReply.status.code).to.equal(202);
+          expect(recordReply.status.code).to.equal(204);
 
           // write a random message
           const { message: randomMessage, dataStream: randomDataStream } = await TestDataGenerator.generateRecordsWrite({
             author: alice
           });
           const randomReply = await dwn.processMessage(alice.did, randomMessage, { dataStream: randomDataStream });
-          expect(randomReply.status.code).to.equal(202);
+          expect(randomReply.status.code).to.equal(204);
 
           // ensure that all messages have been received
           await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -298,7 +298,7 @@ export function testMessagesSubscribeHandler(): void {
             }
           });
           const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
-          expect(grantReply.status.code).to.equal(202);
+          expect(grantReply.status.code).to.equal(204);
 
           // bob attempts to use the `RecordsWrite` grant on an `MessagesSubscribe` message
           const { message: bobSubscribe } = await TestDataGenerator.generateMessagesSubscribe({
@@ -324,7 +324,7 @@ export function testMessagesSubscribeHandler(): void {
             }
           });
           const grantWriteReply = await dwn.processMessage(alice.did, grantWrite.message, { dataStream });
-          expect(grantWriteReply.status.code).to.equal(202);
+          expect(grantWriteReply.status.code).to.equal(204);
 
 
           // bob attempts to use the `MessagesQuery` grant on an `MessagesSubscribe` message
@@ -373,7 +373,7 @@ export function testMessagesSubscribeHandler(): void {
             });
 
             const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
-            expect(grant1Reply.status.code).to.equal(202);
+            expect(grant1Reply.status.code).to.equal(204);
 
             // bob uses the grant to subscribe to protocol 1 messages
             const proto1MessageCids: string[] = [];
@@ -412,7 +412,7 @@ export function testMessagesSubscribeHandler(): void {
               author       : alice
             });
             const proto1Reply = await dwn.processMessage(alice.did, proto1Message, { dataStream: proto1DataStream });
-            expect(proto1Reply.status.code).to.equal(202);
+            expect(proto1Reply.status.code).to.equal(204);
 
             // alice writes a message to protocol 2
             const { message: proto2Message, dataStream: proto2DataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -422,7 +422,7 @@ export function testMessagesSubscribeHandler(): void {
               author       : alice
             });
             const proto2Reply = await dwn.processMessage(alice.did, proto2Message, { dataStream: proto2DataStream });
-            expect(proto2Reply.status.code).to.equal(202);
+            expect(proto2Reply.status.code).to.equal(204);
 
             // ensure that all messages have been received as a control
             await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -473,7 +473,7 @@ export function testMessagesSubscribeHandler(): void {
             });
 
             const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
-            expect(grant1Reply.status.code).to.equal(202);
+            expect(grant1Reply.status.code).to.equal(204);
 
             // bob uses the grant for protocol 1 to subscribe for protocol 2 messages
             const { message: bobSubscribe1 } = await TestDataGenerator.generateMessagesSubscribe({

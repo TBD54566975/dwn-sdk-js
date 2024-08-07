@@ -101,7 +101,7 @@ export function testNestedRoleScenarios(): void {
         protocolPath : 'community'
       });
       const communityRecordReply = await dwn.processMessage(alice.did, communityRecord.message, { dataStream: communityRecord.dataStream });
-      expect(communityRecordReply.status.code).to.equal(202);
+      expect(communityRecordReply.status.code).to.equal(204);
 
       // 3. Alice can assign Bob as an 'admin' in the community
       const communityAdminBobRecord = await TestDataGenerator.generateRecordsWrite({
@@ -113,7 +113,7 @@ export function testNestedRoleScenarios(): void {
       });
       const communityAdminBobRecordReply
         = await dwn.processMessage(alice.did, communityAdminBobRecord.message, { dataStream: communityAdminBobRecord.dataStream });
-      expect(communityAdminBobRecordReply.status.code).to.equal(202);
+      expect(communityAdminBobRecordReply.status.code).to.equal(204);
 
       // 4. Bob can invoke his `admin` role to perform actions:
       //   4a. Bob can read the community record
@@ -139,7 +139,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : communityRecord.message.contextId
       });
       const channel1RecordReply = await dwn.processMessage(alice.did, channel1Record.message, { dataStream: channel1Record.dataStream });
-      expect(channel1RecordReply.status.code).to.equal(202);
+      expect(channel1RecordReply.status.code).to.equal(204);
 
       const channel2Record = await TestDataGenerator.generateRecordsWrite({
         author          : bob,
@@ -149,7 +149,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : communityRecord.message.contextId
       });
       const channel2RecordReply = await dwn.processMessage(alice.did, channel2Record.message, { dataStream: channel2Record.dataStream });
-      expect(channel2RecordReply.status.code).to.equal(202);
+      expect(channel2RecordReply.status.code).to.equal(204);
 
       // 5. Bob as the creator/author of the channels can  add participants in the gated-channels
       // 5a. Bob can add himself and Carol as participants in the gated-channel 1
@@ -162,7 +162,7 @@ export function testNestedRoleScenarios(): void {
       });
       const channel1ParticipantBobRecordReply
         = await dwn.processMessage(alice.did, channel1ParticipantBobRecord.message, { dataStream: channel1ParticipantBobRecord.dataStream });
-      expect(channel1ParticipantBobRecordReply.status.code).to.equal(202);
+      expect(channel1ParticipantBobRecordReply.status.code).to.equal(204);
 
       const channel1ParticipantCarolRecord = await TestDataGenerator.generateRecordsWrite({
         author          : bob,
@@ -173,7 +173,7 @@ export function testNestedRoleScenarios(): void {
       });
       const channel1ParticipantCarolRecordReply
         = await dwn.processMessage(alice.did, channel1ParticipantCarolRecord.message, { dataStream: channel1ParticipantCarolRecord.dataStream });
-      expect(channel1ParticipantCarolRecordReply.status.code).to.equal(202);
+      expect(channel1ParticipantCarolRecordReply.status.code).to.equal(204);
 
       // 5b. Bob can add himself and Daniel as participants in the gated-channel 2
       const channel2ParticipantBobRecord = await TestDataGenerator.generateRecordsWrite({
@@ -185,7 +185,7 @@ export function testNestedRoleScenarios(): void {
       });
       const channel2ParticipantBobRecordReply
               = await dwn.processMessage(alice.did, channel2ParticipantBobRecord.message, { dataStream: channel2ParticipantBobRecord.dataStream });
-      expect(channel2ParticipantBobRecordReply.status.code).to.equal(202);
+      expect(channel2ParticipantBobRecordReply.status.code).to.equal(204);
 
       const channel2ParticipantDanielRecord = await TestDataGenerator.generateRecordsWrite({
         author          : bob,
@@ -196,7 +196,7 @@ export function testNestedRoleScenarios(): void {
       });
       const channel2ParticipantDanielRecordReply
         = await dwn.processMessage(alice.did, channel2ParticipantDanielRecord.message, { dataStream: channel2ParticipantDanielRecord.dataStream });
-      expect(channel2ParticipantDanielRecordReply.status.code).to.equal(202);
+      expect(channel2ParticipantDanielRecordReply.status.code).to.equal(204);
 
       // 6. Carol can read the gated channel 1 record by invoking her child participant role to the gated channel 1
       const carolRead = await RecordsRead.create({
@@ -250,7 +250,7 @@ export function testNestedRoleScenarios(): void {
       });
       const participantDanielRecordAttempt2Reply
         = await dwn.processMessage(alice.did, participantDanielRecordAttempt2.message, { dataStream: participantDanielRecordAttempt2.dataStream });
-      expect(participantDanielRecordAttempt2Reply.status.code).to.equal(202);
+      expect(participantDanielRecordAttempt2Reply.status.code).to.equal(204);
 
       // 10. Bob can invoke the participant role to write a chat message in the channel
       const bobChatMessage = await TestDataGenerator.generateRecordsWrite({
@@ -261,7 +261,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : channel1Record.message.contextId
       });
       const bobChatMessageReply = await dwn.processMessage(alice.did, bobChatMessage.message, { dataStream: bobChatMessage.dataStream });
-      expect(bobChatMessageReply.status.code).to.equal(202);
+      expect(bobChatMessageReply.status.code).to.equal(204);
 
       // 11. Carol can invoke the participant role to read chat messages in the channel
       const carolQuery = await RecordsQuery.create({
@@ -286,7 +286,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : bobChatMessage.message.contextId
       });
       const carolReactionReply = await dwn.processMessage(alice.did, carolReaction.message, { dataStream: carolReaction.dataStream });
-      expect(carolReactionReply.status.code).to.equal(202);
+      expect(carolReactionReply.status.code).to.equal(204);
 
       // 13. Mallory CANNOT invoke the participant role (which she is not given) to read the chat messages in the channel
       const malloryQuery = await RecordsQuery.create({

@@ -198,7 +198,7 @@ export function testAuthorDelegatedGrant(): void {
       });
 
       const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, { dataStream: deviceXDataStream });
-      expect(deviceXWriteReply.status.code).to.equal(202);
+      expect(deviceXWriteReply.status.code).to.equal(204);
 
       // verify the message by device X got written to Bob's DWN, AND Alice is the logical author
       const recordsQueryByBob = await TestDataGenerator.generateRecordsQuery({
@@ -285,7 +285,7 @@ export function testAuthorDelegatedGrant(): void {
         protocolPath : 'thread',
       });
       const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRoleReply.status.code).to.equal(202);
+      expect(threadRoleReply.status.code).to.equal(204);
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -297,7 +297,7 @@ export function testAuthorDelegatedGrant(): void {
         data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-      expect(participantRoleReply.status.code).to.equal(202);
+      expect(participantRoleReply.status.code).to.equal(204);
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -307,7 +307,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId,
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-      expect(chatRecordReply.status.code).to.equal(202);
+      expect(chatRecordReply.status.code).to.equal(204);
 
       // Alice creates a delegated query grant for device X to act as Alice.
       const queryGrantForDeviceX = await PermissionsProtocol.createGrant({
@@ -449,7 +449,7 @@ export function testAuthorDelegatedGrant(): void {
         protocolPath : 'thread',
       });
       const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRoleReply.status.code).to.equal(202);
+      expect(threadRoleReply.status.code).to.equal(204);
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -461,7 +461,7 @@ export function testAuthorDelegatedGrant(): void {
         data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-      expect(participantRoleReply.status.code).to.equal(202);
+      expect(participantRoleReply.status.code).to.equal(204);
 
       // Alice creates a delegated subscribe grant for device X to act as Alice.
       const subscribeGrantForDeviceX = await PermissionsProtocol.createGrant({
@@ -541,7 +541,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId,
       });
       const chatRecord1Reply = await dwn.processMessage(bob.did, chatRecord1.message, { dataStream: chatRecord1.dataStream });
-      expect(chatRecord1Reply.status.code).to.equal(202);
+      expect(chatRecord1Reply.status.code).to.equal(204);
 
       const chatRecord2 = await TestDataGenerator.generateRecordsWrite({
         author          : bob,
@@ -550,7 +550,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId,
       });
       const chatRecord2Reply = await dwn.processMessage(bob.did, chatRecord2.message, { dataStream: chatRecord2.dataStream });
-      expect(chatRecord2Reply.status.code).to.equal(202);
+      expect(chatRecord2Reply.status.code).to.equal(204);
 
       await Poller.pollUntilSuccessOrTimeout(async () => {
         expect(subscriptionChatRecords.size).to.equal(2);
@@ -591,7 +591,7 @@ export function testAuthorDelegatedGrant(): void {
         data         : new TextEncoder().encode('I trust Alice to manage my chat thread'),
       });
       const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, { dataStream: globalAdminRecord.dataStream });
-      expect(globalAdminRecordReply.status.code).to.equal(202);
+      expect(globalAdminRecordReply.status.code).to.equal(204);
 
       // Bob starts a chat thread
       const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -600,7 +600,7 @@ export function testAuthorDelegatedGrant(): void {
         protocolPath : 'thread',
       });
       const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRoleReply.status.code).to.equal(202);
+      expect(threadRoleReply.status.code).to.equal(204);
 
       // Bob adds Carol as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -611,7 +611,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-      expect(participantRoleReply.status.code).to.equal(202);
+      expect(participantRoleReply.status.code).to.equal(204);
 
       // Carol writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -623,7 +623,7 @@ export function testAuthorDelegatedGrant(): void {
         data            : new TextEncoder().encode('A rude message'),
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-      expect(chatRecordReply.status.code).to.equal(202);
+      expect(chatRecordReply.status.code).to.equal(204);
 
       // Alice creates a delegated delete grant for device X to act as Alice.
       const deleteGrantForDeviceX = await PermissionsProtocol.createGrant({
@@ -826,7 +826,7 @@ export function testAuthorDelegatedGrant(): void {
         protocolPath : 'thread',
       });
       const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRoleReply.status.code).to.equal(202);
+      expect(threadRoleReply.status.code).to.equal(204);
 
       // Bob adds Alice as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -838,7 +838,7 @@ export function testAuthorDelegatedGrant(): void {
         data            : new TextEncoder().encode('Alice is my friend'),
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-      expect(participantRoleReply.status.code).to.equal(202);
+      expect(participantRoleReply.status.code).to.equal(204);
 
       // Bob writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -848,7 +848,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId,
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-      expect(chatRecordReply.status.code).to.equal(202);
+      expect(chatRecordReply.status.code).to.equal(204);
 
 
       // 2. Alice creates a delegated grant for device X to act as her for a protocol that is NOT chat protocol
@@ -968,7 +968,7 @@ export function testAuthorDelegatedGrant(): void {
         data         : new TextEncoder().encode('I trust Alice to manage my chat thread'),
       });
       const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, { dataStream: globalAdminRecord.dataStream });
-      expect(globalAdminRecordReply.status.code).to.equal(202);
+      expect(globalAdminRecordReply.status.code).to.equal(204);
 
       // Bob starts a chat thread
       const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -977,7 +977,7 @@ export function testAuthorDelegatedGrant(): void {
         protocolPath : 'thread',
       });
       const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRoleReply.status.code).to.equal(202);
+      expect(threadRoleReply.status.code).to.equal(204);
 
       // Bob adds Carol as a participant in the thread
       const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -988,7 +988,7 @@ export function testAuthorDelegatedGrant(): void {
         parentContextId : threadRecord.message.contextId
       });
       const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-      expect(participantRoleReply.status.code).to.equal(202);
+      expect(participantRoleReply.status.code).to.equal(204);
 
       // Carol writes a chat message in the thread
       const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1000,7 +1000,7 @@ export function testAuthorDelegatedGrant(): void {
         data            : new TextEncoder().encode('A rude message'),
       });
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-      expect(chatRecordReply.status.code).to.equal(202);
+      expect(chatRecordReply.status.code).to.equal(204);
 
       // Alice creates a delegated delete grant for Device X to act as her for a protocol that is NOT chat protocol
       const delegatedGrantForDeviceX = await PermissionsProtocol.createGrant({
@@ -1216,7 +1216,7 @@ export function testAuthorDelegatedGrant(): void {
         deviceXGrant.recordsWrite.message,
         { dataStream: deviceXGrantDataStream }
       );
-      expect(permissionGrantWriteReply.status.code).to.equal(202);
+      expect(permissionGrantWriteReply.status.code).to.equal(204);
 
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({
@@ -1225,7 +1225,7 @@ export function testAuthorDelegatedGrant(): void {
       });
       const revocationDataStream = DataStream.fromBytes(permissionRevoke.permissionRevocationBytes);
       const permissionRevokeReply = await dwn.processMessage(alice.did, permissionRevoke.recordsWrite.message, { dataStream: revocationDataStream });
-      expect(permissionRevokeReply.status.code).to.equal(202);
+      expect(permissionRevokeReply.status.code).to.equal(204);
 
       // 3. Verify that device X cannot write a `RecordsWrite` message to Bob's DWN as Alice using a mismatching delegated grant ID
       const deviceXData = new TextEncoder().encode('message from device X');

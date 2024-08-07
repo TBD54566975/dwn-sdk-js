@@ -130,7 +130,7 @@ export function testMessagesQueryHandler(): void {
         });
         const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
-        expect(reply.status.code).to.equal(202);
+        expect(reply.status.code).to.equal(204);
         const messageCid = await Message.getCid(message);
         expectedCids.push(messageCid);
       }
@@ -154,7 +154,7 @@ export function testMessagesQueryHandler(): void {
         author       : alice
       });
       const additionalReply = await dwn.processMessage(alice.did, additionalMessage, { dataStream: additionalDataStream });
-      expect(additionalReply.status.code).to.equal(202);
+      expect(additionalReply.status.code).to.equal(204);
 
       // query for messages beyond the cursor
       const { message: messagesAfterCursor } = await TestDataGenerator.generateMessagesQuery({ author: alice, cursor: reply.cursor });
@@ -183,7 +183,7 @@ export function testMessagesQueryHandler(): void {
           }
         });
         const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
-        expect(grantReply.status.code).to.equal(202);
+        expect(grantReply.status.code).to.equal(204);
 
         // configure the freeForAll protocol
         const { message: freeForAllConfigure } = await TestDataGenerator.generateProtocolsConfigure({
@@ -209,14 +209,14 @@ export function testMessagesQueryHandler(): void {
         });
 
         const recordReply = await dwn.processMessage(alice.did, recordMessage, { dataStream: recordDataStream });
-        expect(recordReply.status.code).to.equal(202);
+        expect(recordReply.status.code).to.equal(204);
 
         // write a random message
         const { message: randomMessage, dataStream: randomDataStream } = await TestDataGenerator.generateRecordsWrite({
           author: alice
         });
         const randomReply = await dwn.processMessage(alice.did, randomMessage, { dataStream: randomDataStream });
-        expect(randomReply.status.code).to.equal(202);
+        expect(randomReply.status.code).to.equal(204);
 
         // bob uses the grant to query for all of these messages
         const { message: bobQuery } = await TestDataGenerator.generateMessagesQuery({
@@ -250,7 +250,7 @@ export function testMessagesQueryHandler(): void {
           }
         });
         const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
-        expect(grantReply.status.code).to.equal(202);
+        expect(grantReply.status.code).to.equal(204);
 
         // bob attempts to use the `RecordsWrite` grant on an `MessagesQuery` message
         const { message: bobQuery } = await TestDataGenerator.generateMessagesQuery({
@@ -277,7 +277,7 @@ export function testMessagesQueryHandler(): void {
         });
 
         const grantReply = await dwn.processMessage(alice.did, grantMessage, { dataStream });
-        expect(grantReply.status.code).to.equal(202);
+        expect(grantReply.status.code).to.equal(204);
 
         // bob attempts to use the `MessagesSubscribe` grant on an `MessagesQuery` message
         const { message: bobQuery } = await TestDataGenerator.generateMessagesQuery({
@@ -325,7 +325,7 @@ export function testMessagesQueryHandler(): void {
           });
 
           const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
-          expect(grant1Reply.status.code).to.equal(202);
+          expect(grant1Reply.status.code).to.equal(204);
 
           // bob uses the grant to query for protocol 1 messages
           const { message: bobQuery1 } = await TestDataGenerator.generateMessagesQuery({
@@ -377,7 +377,7 @@ export function testMessagesQueryHandler(): void {
           });
 
           const grant1Reply = await dwn.processMessage(alice.did, grant1Message, { dataStream: grant1DataStream });
-          expect(grant1Reply.status.code).to.equal(202);
+          expect(grant1Reply.status.code).to.equal(204);
 
           // bob uses the grant for protocol 1 to query for protocol 2 messages
           const { message: bobQuery1 } = await TestDataGenerator.generateMessagesQuery({

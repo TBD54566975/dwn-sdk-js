@@ -114,7 +114,7 @@ export function testProtocolDeleteAction(): void {
       });
       const userBobRecordsWriteReply
         = await dwn.processMessage(alice.did, userBobRecordsWrite.message, { dataStream: userBobRecordsWrite.dataStream });
-      expect(userBobRecordsWriteReply.status.code).to.equal(202);
+      expect(userBobRecordsWriteReply.status.code).to.equal(204);
 
       const userCarolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
         author       : alice,
@@ -124,7 +124,7 @@ export function testProtocolDeleteAction(): void {
       });
       const userCarolRecordsWriteReply
         = await dwn.processMessage(alice.did, userCarolRecordsWrite.message, { dataStream: userCarolRecordsWrite.dataStream });
-      expect(userCarolRecordsWriteReply.status.code).to.equal(202);
+      expect(userCarolRecordsWriteReply.status.code).to.equal(204);
 
       // 3. Bob creates a `foo` by invoking the user role.
       const bobFooBytes = TestDataGenerator.randomBytes(100);
@@ -141,7 +141,7 @@ export function testProtocolDeleteAction(): void {
       );
       const bobRoleAuthorizedCreateReply
         = await dwn.processMessage(alice.did, bobRoleAuthorizedFoo.message, { dataStream: DataStream.fromBytes(bobFooBytes) });
-      expect(bobRoleAuthorizedCreateReply.status.code).to.equal(202);
+      expect(bobRoleAuthorizedCreateReply.status.code).to.equal(204);
 
       // 4. Verify that Bob can delete his `foo`
       const bobAuthorizedFooDelete = await RecordsDelete.create(
@@ -180,7 +180,7 @@ export function testProtocolDeleteAction(): void {
       );
       const carolRoleAuthorizedCreateReply
         = await dwn.processMessage(alice.did, carolRoleAuthorizedFoo.message, { dataStream: DataStream.fromBytes(carolFooBytes) });
-      expect(carolRoleAuthorizedCreateReply.status.code).to.equal(202);
+      expect(carolRoleAuthorizedCreateReply.status.code).to.equal(204);
 
       // 6. Verify that Bob cannot delete Carol's `foo`
       const bobUnauthorizedFooDelete = await RecordsDelete.create(
@@ -263,7 +263,7 @@ export function testProtocolDeleteAction(): void {
         protocolPath : 'foo'
       });
       const fooForBobReply = await dwn.processMessage(alice.did, fooForBob.message, { dataStream: fooForBob.dataStream });
-      expect(fooForBobReply.status.code).to.equal(202);
+      expect(fooForBobReply.status.code).to.equal(204);
 
       // 3. Alice creates a `foo` with Carol being the recipient, so that Carol can create `bar`.
       const fooForCarol = await TestDataGenerator.generateRecordsWrite({
@@ -273,7 +273,7 @@ export function testProtocolDeleteAction(): void {
         protocolPath : 'foo'
       });
       const fooForCarolReply = await dwn.processMessage(alice.did, fooForCarol.message, { dataStream: fooForCarol.dataStream });
-      expect(fooForCarolReply.status.code).to.equal(202);
+      expect(fooForCarolReply.status.code).to.equal(204);
 
       // 4. Bob creates a recipient-authorized `bar`.
       const bobBarBytes = TestDataGenerator.randomBytes(100);
@@ -290,7 +290,7 @@ export function testProtocolDeleteAction(): void {
       );
       const bobRecipientAuthorizedBarReply
         = await dwn.processMessage(alice.did, bobRecipientAuthorizedBar.message, { dataStream: DataStream.fromBytes(bobBarBytes) });
-      expect(bobRecipientAuthorizedBarReply.status.code).to.equal(202);
+      expect(bobRecipientAuthorizedBarReply.status.code).to.equal(204);
 
       // 5. Bob creates a author-authorized `baz` after his `bar`.
       const bobBazBytes = TestDataGenerator.randomBytes(100);
@@ -307,7 +307,7 @@ export function testProtocolDeleteAction(): void {
       );
       const bobAuthorAuthorizedBazReply
         = await dwn.processMessage(alice.did, bobAuthorAuthorizedBaz.message, { dataStream: DataStream.fromBytes(bobBazBytes) });
-      expect(bobAuthorAuthorizedBazReply.status.code).to.equal(202);
+      expect(bobAuthorAuthorizedBazReply.status.code).to.equal(204);
 
       // 6. Carol creates a recipient-authorized `bar`.
       const carolBarBytes = TestDataGenerator.randomBytes(100);
@@ -324,7 +324,7 @@ export function testProtocolDeleteAction(): void {
       );
       const carolRecipientAuthorizedBarReply
         = await dwn.processMessage(alice.did, carolRecipientAuthorizedBar.message, { dataStream: DataStream.fromBytes(carolBarBytes) });
-      expect(carolRecipientAuthorizedBarReply.status.code).to.equal(202);
+      expect(carolRecipientAuthorizedBarReply.status.code).to.equal(204);
 
       // 7. Carol creates a author-authorized `baz` after her `bar`.
       const carolBazBytes = TestDataGenerator.randomBytes(100);
@@ -341,7 +341,7 @@ export function testProtocolDeleteAction(): void {
       );
       const carolAuthorAuthorizedBazReply
         = await dwn.processMessage(alice.did, carolAuthorAuthorizedBaz.message, { dataStream: DataStream.fromBytes(carolBazBytes) });
-      expect(carolAuthorAuthorizedBazReply.status.code).to.equal(202);
+      expect(carolAuthorAuthorizedBazReply.status.code).to.equal(204);
 
       // 8. Verify that Bob can delete his `baz`
       const bobAuthorizedBazDelete = await RecordsDelete.create(
@@ -453,7 +453,7 @@ export function testProtocolDeleteAction(): void {
       );
       const bobAnyoneAuthorizedFooReply
         = await dwn.processMessage(alice.did, bobAnyoneAuthorizedFoo.message, { dataStream: DataStream.fromBytes(bobFooBytes) });
-      expect(bobAnyoneAuthorizedFooReply.status.code).to.equal(202);
+      expect(bobAnyoneAuthorizedFooReply.status.code).to.equal(204);
 
       // 3. Carol creates a anyone-authorized `foo`.
       const carolFooBytes = TestDataGenerator.randomBytes(100);
@@ -469,7 +469,7 @@ export function testProtocolDeleteAction(): void {
       );
       const carolAnyoneAuthorizedFooReply
         = await dwn.processMessage(alice.did, carolAnyoneAuthorizedFoo.message, { dataStream: DataStream.fromBytes(carolFooBytes) });
-      expect(carolAnyoneAuthorizedFooReply.status.code).to.equal(202);
+      expect(carolAnyoneAuthorizedFooReply.status.code).to.equal(204);
 
       // 4. Verify that Bob can delete his `foo`.
       const bobAuthorizedFooDelete = await RecordsDelete.create(

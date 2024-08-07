@@ -208,7 +208,7 @@ export function testRecordsSubscribeHandler(): void {
         // create an unpublished record
         const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
         const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, { dataStream: draftWrite.dataStream });
-        expect(draftWriteReply.status.code).to.equal(202);
+        expect(draftWriteReply.status.code).to.equal(204);
 
         // validate that alice can subscribe
         const unpublishedPostSubscribe = await TestDataGenerator.generateRecordsSubscribe({ author: alice, filter: { schema: 'post', published: false } });
@@ -322,7 +322,7 @@ export function testRecordsSubscribeHandler(): void {
             protocolPath : 'thread',
           });
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-          expect(threadRoleReply.status.code).to.equal(202);
+          expect(threadRoleReply.status.code).to.equal(204);
 
           // Alice writes one 'chat' record addressed to Bob
           const chatRecordForBob = await TestDataGenerator.generateRecordsWrite({
@@ -335,7 +335,7 @@ export function testRecordsSubscribeHandler(): void {
             data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
           const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
-          expect(chatRecordForBobReply.status.code).to.equal(202);
+          expect(chatRecordForBobReply.status.code).to.equal(204);
           const chatRecordForBobCid = await Message.getCid(chatRecordForBob.message);
 
           // Alice writes two 'chat' records addressed to Carol
@@ -353,7 +353,7 @@ export function testRecordsSubscribeHandler(): void {
             chatRecordForCarol1.message,
             { dataStream: chatRecordForCarol1.dataStream }
           );
-          expect(chatRecordForCarol1Reply.status.code).to.equal(202);
+          expect(chatRecordForCarol1Reply.status.code).to.equal(204);
           const chatRecordForCarol1Cid = await Message.getCid(chatRecordForCarol1.message);
 
           const chatRecordForCarol2 = await TestDataGenerator.generateRecordsWrite({
@@ -370,7 +370,7 @@ export function testRecordsSubscribeHandler(): void {
             chatRecordForCarol2.message,
             { dataStream: chatRecordForCarol2.dataStream }
           );
-          expect(chatRecordForCarol2Reply.status.code).to.equal(202);
+          expect(chatRecordForCarol2Reply.status.code).to.equal(204);
           const chatRecordForCarol2Cid = await Message.getCid(chatRecordForCarol2.message);
 
           await Poller.pollUntilSuccessOrTimeout(async () => {
@@ -437,7 +437,7 @@ export function testRecordsSubscribeHandler(): void {
             data         : new TextEncoder().encode('Bob is my friend'),
           });
           const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
-          expect(friendRoleReply.status.code).to.equal(202);
+          expect(friendRoleReply.status.code).to.equal(204);
 
           const recordIds: Set<string> = new Set();
           const addRecord:RecordSubscriptionHandler = async (event) => {
@@ -471,7 +471,7 @@ export function testRecordsSubscribeHandler(): void {
             data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
           const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, { dataStream: chatRecordForBob.dataStream });
-          expect(chatRecordForBobReply.status.code).to.equal(202);
+          expect(chatRecordForBobReply.status.code).to.equal(204);
 
           // Alice writes three more 'chat' records for carol, Bob's friend role should allow him to see these messages.
           const chatRecordIds: string[] = [];
@@ -485,7 +485,7 @@ export function testRecordsSubscribeHandler(): void {
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
+            expect(chatReply.status.code).to.equal(204);
             chatRecordIds.push(chatRecord.message.recordId);
           }
 
@@ -555,7 +555,7 @@ export function testRecordsSubscribeHandler(): void {
             protocolPath : 'thread',
           });
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-          expect(threadRoleReply.status.code).to.equal(202);
+          expect(threadRoleReply.status.code).to.equal(204);
 
           const filter: RecordsFilter = {
             protocol     : protocolDefinition.protocol,
@@ -593,7 +593,7 @@ export function testRecordsSubscribeHandler(): void {
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-          expect(participantRoleReply.status.code).to.equal(202);
+          expect(participantRoleReply.status.code).to.equal(204);
 
           const recordIds: string[] = [];
           const addRecord:RecordSubscriptionHandler = async (event) => {
@@ -629,7 +629,7 @@ export function testRecordsSubscribeHandler(): void {
               data            : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
             const chatReply = await dwn.processMessage(alice.did, chatRecord.message, { dataStream: chatRecord.dataStream });
-            expect(chatReply.status.code).to.equal(202);
+            expect(chatReply.status.code).to.equal(204);
             chatRecordIds.push(chatRecord.message.recordId);
           }
 
@@ -667,7 +667,7 @@ export function testRecordsSubscribeHandler(): void {
             data         : new TextEncoder().encode('Bob is my friend'),
           });
           const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, { dataStream: friendRoleRecord.dataStream });
-          expect(friendRoleReply.status.code).to.equal(202);
+          expect(friendRoleReply.status.code).to.equal(204);
 
           // Bob invokes his friendRole to subscribe but does not have `protocolPath` in the filter
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
@@ -706,7 +706,7 @@ export function testRecordsSubscribeHandler(): void {
             protocolPath : 'thread',
           });
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-          expect(threadRoleReply.status.code).to.equal(202);
+          expect(threadRoleReply.status.code).to.equal(204);
 
           // Alice writes a 'friend' root-level role record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -719,7 +719,7 @@ export function testRecordsSubscribeHandler(): void {
           });
           const participantRoleReply =
             await dwn.processMessage(alice.did, participantRoleRecord.message, { dataStream: participantRoleRecord.dataStream });
-          expect(participantRoleReply.status.code).to.equal(202);
+          expect(participantRoleReply.status.code).to.equal(204);
 
           // Bob invokes his thread participant role to subscribe but omits the contextId
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
@@ -789,7 +789,7 @@ export function testRecordsSubscribeHandler(): void {
             protocolPath : 'thread',
           });
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-          expect(threadRoleReply.status.code).to.equal(202);
+          expect(threadRoleReply.status.code).to.equal(204);
 
           // Bob invokes his a `thread/participant` role which he does not have to subscribe to the records
           const chatSubscribe = await TestDataGenerator.generateRecordsSubscribe({
