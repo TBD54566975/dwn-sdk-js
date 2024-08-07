@@ -261,7 +261,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : channel1Record.message.contextId
       });
       const bobChatMessageReply = await dwn.processMessage(alice.did, bobChatMessage.message, { dataStream: bobChatMessage.dataStream });
-      expect(bobChatMessageReply.status.code).to.equal(204);
+      expect(bobChatMessageReply.status.code).to.equal(202);
 
       // 11. Carol can invoke the participant role to read chat messages in the channel
       const carolQuery = await RecordsQuery.create({
@@ -286,7 +286,7 @@ export function testNestedRoleScenarios(): void {
         parentContextId : bobChatMessage.message.contextId
       });
       const carolReactionReply = await dwn.processMessage(alice.did, carolReaction.message, { dataStream: carolReaction.dataStream });
-      expect(carolReactionReply.status.code).to.equal(204);
+      expect(carolReactionReply.status.code).to.equal(202);
 
       // 13. Mallory CANNOT invoke the participant role (which she is not given) to read the chat messages in the channel
       const malloryQuery = await RecordsQuery.create({
