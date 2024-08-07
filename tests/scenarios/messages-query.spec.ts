@@ -62,7 +62,7 @@ export function testMessagesQueryScenarios(): void {
       // insert data
       const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
-      expect(recordReply.status.code).to.equal(204, 'RecordsWrite');
+      expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       const messagesQueryRecords = await TestDataGenerator.generateMessagesQuery({
@@ -95,7 +95,7 @@ export function testMessagesQueryScenarios(): void {
       // insert data
       const recordReply = await dwn.processMessage(alice.did, record.message, { dataStream: record.dataStream });
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
-      expect(recordReply.status.code).to.equal(204, 'RecordsWrite');
+      expect(recordReply.status.code).to.equal(202, 'RecordsWrite');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       let messagesQueryRecords = await TestDataGenerator.generateMessagesQuery({
@@ -154,7 +154,7 @@ export function testMessagesQueryScenarios(): void {
       // write 1
       const record1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const record1Reply = await dwn.processMessage(alice.did, record1.message, { dataStream: record1.dataStream });
-      expect(record1Reply.status.code).to.equal(204, 'RecordsWrite');
+      expect(record1Reply.status.code).to.equal(202, 'RecordsWrite');
 
       // other messages
       const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
@@ -164,7 +164,7 @@ export function testMessagesQueryScenarios(): void {
       // write 2
       const record2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const record2Reply = await dwn.processMessage(alice.did, record2.message, { dataStream: record2.dataStream });
-      expect(record2Reply.status.code).to.equal(204, 'RecordsWrite');
+      expect(record2Reply.status.code).to.equal(202, 'RecordsWrite');
 
       // delete write 1
       const delete1 = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: record1.message.recordId });
@@ -217,7 +217,7 @@ export function testMessagesQueryScenarios(): void {
       // insert data
       const writeReply = await dwn.processMessage(alice.did, write.message, { dataStream: write.dataStream });
       const protocolReply = await dwn.processMessage(alice.did, protocol.message);
-      expect(writeReply.status.code).to.equal(204, 'RecordsWrite');
+      expect(writeReply.status.code).to.equal(202, 'RecordsWrite');
       expect(protocolReply.status.code).to.equal(202, 'ProtocolConfigure');
 
       // query from last day of 2021
@@ -296,12 +296,12 @@ export function testMessagesQueryScenarios(): void {
       // create a record for proto1
       const write1proto1 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto1, ...postProperties });
       const write1Response = await dwn.processMessage(alice.did, write1proto1.message, { dataStream: write1proto1.dataStream });
-      expect(write1Response.status.code).equals(204);
+      expect(write1Response.status.code).equals(202);
 
       // create a record for proto2
       const write1proto2 = await TestDataGenerator.generateRecordsWrite({ author: alice, protocol: proto2, ...postProperties });
       const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, { dataStream: write1proto2.dataStream });
-      expect(write1Proto2Response.status.code).equals(204);
+      expect(write1Proto2Response.status.code).equals(202);
 
       // bob requests permissions for proto 1
       const requestProto1 = await PermissionsProtocol.createRequest({
@@ -314,7 +314,7 @@ export function testMessagesQueryScenarios(): void {
         requestProto1.recordsWrite.message,
         { dataStream: DataStream.fromBytes(requestProto1.permissionRequestBytes) }
       );
-      expect(requestProto1Response.status.code).equals(204);
+      expect(requestProto1Response.status.code).equals(202);
 
       // bob requests permissions for proto 2
       const requestProto2 = await PermissionsProtocol.createRequest({
@@ -327,7 +327,7 @@ export function testMessagesQueryScenarios(): void {
         requestProto2.recordsWrite.message,
         { dataStream: DataStream.fromBytes(requestProto2.permissionRequestBytes) }
       );
-      expect(requestProto2Response.status.code).equals(204);
+      expect(requestProto2Response.status.code).equals(202);
 
       // alice grants bob permissions for proto 1
       const grantProto1 = await PermissionsProtocol.createGrant({
@@ -341,7 +341,7 @@ export function testMessagesQueryScenarios(): void {
         grantProto1.recordsWrite.message,
         { dataStream: DataStream.fromBytes(grantProto1.permissionGrantBytes) }
       );
-      expect(grantProto1Response.status.code).equals(204);
+      expect(grantProto1Response.status.code).equals(202);
 
       // alice grants bob permissions for proto 2
       const grantProto2 = await PermissionsProtocol.createGrant({
@@ -355,7 +355,7 @@ export function testMessagesQueryScenarios(): void {
         grantProto2.recordsWrite.message,
         { dataStream: DataStream.fromBytes(grantProto2.permissionGrantBytes) }
       );
-      expect(grantProto2Response.status.code).equals(204);
+      expect(grantProto2Response.status.code).equals(202);
 
       // filter for proto1 messages
       let proto1MessagesQuery = await TestDataGenerator.generateMessagesQuery({
@@ -407,7 +407,7 @@ export function testMessagesQueryScenarios(): void {
         revokeProto1.recordsWrite.message,
         { dataStream: DataStream.fromBytes(revokeProto1.permissionRevocationBytes) }
       );
-      expect(revokeProto1Response.status.code).equals(204);
+      expect(revokeProto1Response.status.code).equals(202);
 
       // revoke permissions for proto2
       const revokeProto2 = await PermissionsProtocol.createRevocation({
@@ -419,7 +419,7 @@ export function testMessagesQueryScenarios(): void {
         revokeProto2.recordsWrite.message,
         { dataStream: DataStream.fromBytes(revokeProto2.permissionRevocationBytes) }
       );
-      expect(revokeProto2Response.status.code).equals(204);
+      expect(revokeProto2Response.status.code).equals(202);
 
       //query messages beyond the cursor
       proto1MessagesQuery = await TestDataGenerator.generateMessagesQuery({

@@ -156,7 +156,7 @@ export function testProtocolCreateAction(): void {
       });
       const adminBobRecordsWriteReply
         = await dwn.processMessage(alice.did, adminBobRecordsWrite.message, { dataStream: adminBobRecordsWrite.dataStream });
-      expect(adminBobRecordsWriteReply.status.code).to.equal(204);
+      expect(adminBobRecordsWriteReply.status.code).to.equal(202);
 
       // Verify that Bob can create `foo` by invoking the admin role.
       const bobRoleAuthorizedFoo = await RecordsWrite.create(
@@ -173,7 +173,7 @@ export function testProtocolCreateAction(): void {
       );
       const bobRoleAuthorizedCreateReply
         = await dwn.processMessage(alice.did, bobRoleAuthorizedFoo.message, { dataStream: DataStream.fromBytes(bobFooBytes) });
-      expect(bobRoleAuthorizedCreateReply.status.code).to.equal(204);
+      expect(bobRoleAuthorizedCreateReply.status.code).to.equal(202);
 
       // Verify that Bob cannot update `foo`
       const bobUnauthorizedFooUpdate = await RecordsWrite.createFrom(
@@ -203,7 +203,7 @@ export function testProtocolCreateAction(): void {
       );
       const bobBarCreateReply
         = await dwn.processMessage(alice.did, bobAuthorAuthorizedBar.message, { dataStream: DataStream.fromBytes(bobBarBytes) });
-      expect(bobBarCreateReply.status.code).to.equal(204);
+      expect(bobBarCreateReply.status.code).to.equal(202);
 
       // Verify that Bob cannot update `bar`
       const bobUnauthorizedBarUpdate = await RecordsWrite.createFrom(
@@ -233,7 +233,7 @@ export function testProtocolCreateAction(): void {
       );
       const carolBarCreateReply
         = await dwn.processMessage(alice.did, carolRecipientAuthorizedBar.message, { dataStream: DataStream.fromBytes(carolBarBytes) });
-      expect(carolBarCreateReply.status.code).to.equal(204);
+      expect(carolBarCreateReply.status.code).to.equal(202);
 
       // Verify that Carol cannot update `bar`
       const carolUnauthorizedBarUpdate = await RecordsWrite.createFrom(
@@ -281,7 +281,7 @@ export function testProtocolCreateAction(): void {
       );
       const danielBazCreateReply
         = await dwn.processMessage(alice.did, danielAnyoneAuthorizedBar.message, { dataStream: DataStream.fromBytes(danielBazBytes) });
-      expect(danielBazCreateReply.status.code).to.equal(204);
+      expect(danielBazCreateReply.status.code).to.equal(202);
 
       // Verify that Daniel cannot update `baz`
       const danielUnauthorizedBazUpdate = await RecordsWrite.createFrom(

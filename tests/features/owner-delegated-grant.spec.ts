@@ -217,7 +217,7 @@ export function testOwnerDelegatedGrant(): void {
         appXAugmentedWrite.message,
         { dataStream: DataStream.fromBytes(bobRecordsWriteBytes) }
       );
-      expect(appXWriteReply.status.code).to.equal(204);
+      expect(appXWriteReply.status.code).to.equal(202);
 
       // 7. Sanity verify the RecordsWrite written by App X
       const recordsQuery = await TestDataGenerator.generateRecordsQuery({
@@ -598,7 +598,7 @@ export function testOwnerDelegatedGrant(): void {
       });
       const grantDataStream = DataStream.fromBytes(appXGrant.permissionGrantBytes);
       const permissionGrantWriteReply = await dwn.processMessage(alice.did, appXGrant.recordsWrite.message, { dataStream: grantDataStream });
-      expect(permissionGrantWriteReply.status.code).to.equal(204);
+      expect(permissionGrantWriteReply.status.code).to.equal(202);
 
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({
@@ -611,7 +611,7 @@ export function testOwnerDelegatedGrant(): void {
         permissionRevoke.recordsWrite.message,
         { dataStream: revocationDataStream }
       );
-      expect(permissionRevokeReply.status.code).to.equal(204);
+      expect(permissionRevokeReply.status.code).to.equal(202);
 
       // 4. A third party (Bob) authors a RecordsWrite
       const bobRecordsWriteBytes = new TextEncoder().encode('message from Bob');

@@ -136,7 +136,7 @@ export function testMessagesReadHandler(): void {
           // bob creates a record that alice will try and get
           const { message: recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob });
           const { status } = await dwn.processMessage(bob.did, recordsWrite, { dataStream });
-          expect(status.code).to.equal(204);
+          expect(status.code).to.equal(202);
 
           // alice tries to read the message
           const { message } = await TestDataGenerator.generateMessagesRead({
@@ -159,7 +159,7 @@ export function testMessagesReadHandler(): void {
             });
 
             const reply = await dwn.processMessage(alice.did, recordsWrite, { dataStream });
-            expect(reply.status.code).to.equal(204);
+            expect(reply.status.code).to.equal(202);
 
             const recordsWriteMessageCid = await Message.getCid(recordsWrite);
             const { message } = await TestDataGenerator.generateMessagesRead({
@@ -190,7 +190,7 @@ export function testMessagesReadHandler(): void {
             });
 
             const reply = await dwn.processMessage(alice.did, recordsWrite, { dataStream });
-            expect(reply.status.code).to.equal(204);
+            expect(reply.status.code).to.equal(202);
 
             const recordsWriteMessageCid = await Message.getCid(recordsWrite);
             const { message } = await TestDataGenerator.generateMessagesRead({
@@ -224,7 +224,7 @@ export function testMessagesReadHandler(): void {
             const initialMessageCid = await Message.getCid(recordsWriteMessage);
 
             let reply = await dwn.processMessage(alice.did, recordsWriteMessage, { dataStream });
-            expect(reply.status.code).to.equal(204);
+            expect(reply.status.code).to.equal(202);
 
             const { recordsWrite: updateMessage, dataStream: updateDataStream } = await TestDataGenerator.generateFromRecordsWrite({
               author        : alice,
@@ -358,7 +358,7 @@ export function testMessagesReadHandler(): void {
           protocolPath : 'foo',
         });
         const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-        expect(recordsWriteReply.status.code).to.equal(204);
+        expect(recordsWriteReply.status.code).to.equal(202);
 
         // Alice gives Bob a permission grant scoped to a RecordsWrite and the protocol
         const permissionGrant = await PermissionsProtocol.createGrant({
@@ -377,7 +377,7 @@ export function testMessagesReadHandler(): void {
           permissionGrant.recordsWrite.message,
           { dataStream: grantDataStream }
         );
-        expect(permissionGrantWriteReply.status.code).to.equal(204);
+        expect(permissionGrantWriteReply.status.code).to.equal(202);
 
         // Bob tries to MessagesRead using the RecordsWrite grant
         const messagesRead = await TestDataGenerator.generateMessagesRead({
@@ -402,7 +402,7 @@ export function testMessagesReadHandler(): void {
           author: alice,
         });
         const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
-        expect(writeReply.status.code).to.equal(204);
+        expect(writeReply.status.code).to.equal(202);
         const messageCid = await Message.getCid(message);
 
         // Alice issues a permission grant allowing Bob to read any record in her DWN
@@ -417,7 +417,7 @@ export function testMessagesReadHandler(): void {
         });
         const grantDataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
         const grantReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream: grantDataStream });
-        expect(grantReply.status.code).to.equal(204);
+        expect(grantReply.status.code).to.equal(202);
 
         // Bob invokes that grant to read a record from Alice's DWN
         const messagesRead = await TestDataGenerator.generateMessagesRead({
@@ -478,7 +478,7 @@ export function testMessagesReadHandler(): void {
             permissionRequestCarol.recordsWrite.message,
             { dataStream: requestDataStreamCarol }
           );
-          expect(permissionRequestWriteReplyCarol.status.code).to.equal(204);
+          expect(permissionRequestWriteReplyCarol.status.code).to.equal(202);
 
           // Alice gives Carol a grant to write records to the protocol
           const permissionGrantCarol = await PermissionsProtocol.createGrant({
@@ -495,7 +495,7 @@ export function testMessagesReadHandler(): void {
             permissionGrantCarol.recordsWrite.message,
             { dataStream: grantDataStreamCarol }
           );
-          expect(permissionGrantWriteReplyCarol.status.code).to.equal(204);
+          expect(permissionGrantWriteReplyCarol.status.code).to.equal(202);
           const carolGrantMessageCiD = await Message.getCid(permissionGrantCarol.recordsWrite.message);
 
           // Alice writes a record associated with the protocol
@@ -505,7 +505,7 @@ export function testMessagesReadHandler(): void {
             protocolPath : 'foo',
           });
           const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-          expect(recordsWriteReply.status.code).to.equal(204);
+          expect(recordsWriteReply.status.code).to.equal(202);
           const aliceRecordMessageCid = await Message.getCid(recordsWrite.message);
 
           // Alice deletes a record associated with the protocol
@@ -524,7 +524,7 @@ export function testMessagesReadHandler(): void {
             permissionGrantId : permissionGrantCarol.recordsWrite.message.recordId,
           });
           const recordsWriteReplyCarol = await dwn.processMessage(alice.did, recordsWriteCarol.message, { dataStream: dataStreamCarol });
-          expect(recordsWriteReplyCarol.status.code).to.equal(204);
+          expect(recordsWriteReplyCarol.status.code).to.equal(202);
           const carolRecordMessageCid = await Message.getCid(recordsWriteCarol.message);
 
           // Alice revokes Carol's grant
@@ -538,7 +538,7 @@ export function testMessagesReadHandler(): void {
             permissionRevocationCarol.recordsWrite.message,
             { dataStream: permissionRevocationCarolDataStream }
           );
-          expect(permissionRevocationCarolReply.status.code).to.equal(204);
+          expect(permissionRevocationCarolReply.status.code).to.equal(202);
 
           // Alice gives Bob a permission grant with scope MessagesRead
           const permissionGrant = await PermissionsProtocol.createGrant({
@@ -557,7 +557,7 @@ export function testMessagesReadHandler(): void {
             permissionGrant.recordsWrite.message,
             { dataStream: grantDataStream }
           );
-          expect(permissionGrantWriteReply.status.code).to.equal(204);
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Bob is unable to read the message without using the permission grant
           const messagesReadWithoutGrant = await TestDataGenerator.generateMessagesRead({
@@ -660,7 +660,7 @@ export function testMessagesReadHandler(): void {
             author: alice,
           });
           const recordsWriteControlReply = await dwn.processMessage(alice.did, recordsWriteControl.message, { dataStream: dataStreamControl });
-          expect(recordsWriteControlReply.status.code).to.equal(204);
+          expect(recordsWriteControlReply.status.code).to.equal(202);
 
           // Bob is unable to read the control message
           const messagesReadControl = await TestDataGenerator.generateMessagesRead({
@@ -696,7 +696,7 @@ export function testMessagesReadHandler(): void {
             protocolPath : 'foo',
           });
           const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream });
-          expect(recordsWriteReply.status.code).to.equal(204);
+          expect(recordsWriteReply.status.code).to.equal(202);
 
           // Alice gives Bob a permission grant with scope MessagesRead
           const permissionGrant = await PermissionsProtocol.createGrant({
@@ -715,7 +715,7 @@ export function testMessagesReadHandler(): void {
             permissionGrant.recordsWrite.message,
             { dataStream: grantDataStream }
           );
-          expect(permissionGrantWriteReply.status.code).to.equal(204);
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Bob is unable to read the record using the mismatched permission grant
           const messagesReadWithoutGrant = await TestDataGenerator.generateMessagesRead({
@@ -761,7 +761,7 @@ export function testMessagesReadHandler(): void {
             permissionGrant.recordsWrite.message,
             { dataStream: grantDataStream }
           );
-          expect(permissionGrantWriteReply.status.code).to.equal(204);
+          expect(permissionGrantWriteReply.status.code).to.equal(202);
 
           // Alice creates the records write and records delete messages
           const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({

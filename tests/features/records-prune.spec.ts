@@ -90,11 +90,11 @@ export function testRecordsPrune(): void {
 
       const foo1 = await RecordsWrite.create(fooOptions);
       const foo1WriteResponse = await dwn.processMessage(alice.did, foo1.message, { dataStream: DataStream.fromBytes(fooData) });
-      expect(foo1WriteResponse.status.code).equals(204);
+      expect(foo1WriteResponse.status.code).equals(202);
 
       const foo2 = await RecordsWrite.create(fooOptions);
       const foo2WriteResponse = await dwn.processMessage(alice.did, foo2.message, { dataStream: DataStream.fromBytes(fooData) });
-      expect(foo2WriteResponse.status.code).equals(204);
+      expect(foo2WriteResponse.status.code).equals(202);
 
       // write 2 bars under foo1 with data large enough to be required to be stored in the data store so we can test purge in data store
       const barData = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
@@ -110,11 +110,11 @@ export function testRecordsPrune(): void {
 
       const bar1 = await RecordsWrite.create({ ...barOptions });
       const bar1WriteResponse = await dwn.processMessage(alice.did, bar1.message, { dataStream: DataStream.fromBytes(barData) });
-      expect(bar1WriteResponse.status.code).equals(204);
+      expect(bar1WriteResponse.status.code).equals(202);
 
       const bar2 = await RecordsWrite.create({ ...barOptions });
       const bar2WriteResponse = await dwn.processMessage(alice.did, bar2.message, { dataStream: DataStream.fromBytes(barData) });
-      expect(bar2WriteResponse.status.code).equals(204);
+      expect(bar2WriteResponse.status.code).equals(202);
 
       // write 2 bazes under bar1, each has more than 1 message associated with the record so we can test multi-message purge
       const bazData = TestDataGenerator.randomBytes(100);
@@ -130,11 +130,11 @@ export function testRecordsPrune(): void {
 
       const baz1 = await RecordsWrite.create({ ...bazOptions });
       const baz1WriteResponse = await dwn.processMessage(alice.did, baz1.message, { dataStream: DataStream.fromBytes(bazData) });
-      expect(baz1WriteResponse.status.code).equals(204);
+      expect(baz1WriteResponse.status.code).equals(202);
 
       const baz2 = await RecordsWrite.create({ ...bazOptions });
       const baz2WriteResponse = await dwn.processMessage(alice.did, baz2.message, { dataStream: DataStream.fromBytes(bazData) });
-      expect(baz2WriteResponse.status.code).equals(204);
+      expect(baz2WriteResponse.status.code).equals(202);
 
       // make latest state of baz1 a `RecordsWrite`
       const newBaz1Data = TestDataGenerator.randomBytes(100);
@@ -280,7 +280,7 @@ export function testRecordsPrune(): void {
 
         const post = await RecordsWrite.create(postOptions);
         const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
-        expect(postWriteResponse.status.code).equals(204);
+        expect(postWriteResponse.status.code).equals(202);
 
         const attachmentData = TestDataGenerator.randomBytes(100);
         const attachmentOptions = {
@@ -294,7 +294,7 @@ export function testRecordsPrune(): void {
 
         const attachment = await RecordsWrite.create(attachmentOptions);
         const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
-        expect(attachmentWriteResponse.status.code).equals(204);
+        expect(attachmentWriteResponse.status.code).equals(202);
 
         // 3. Verify Bob cannot prune the records if `prune` is not set to `true` in RecordsDelete.
         const unauthorizedPostPrune = await RecordsDelete.create({
@@ -358,7 +358,7 @@ export function testRecordsPrune(): void {
 
         const message = await RecordsWrite.create(messageOptions);
         const messageWriteResponse = await dwn.processMessage(alice.did, message.message, { dataStream: DataStream.fromBytes(messageData) });
-        expect(messageWriteResponse.status.code).equals(204);
+        expect(messageWriteResponse.status.code).equals(202);
 
         const attachmentData = TestDataGenerator.randomBytes(100);
         const attachmentOptions = {
@@ -372,7 +372,7 @@ export function testRecordsPrune(): void {
 
         const attachment = await RecordsWrite.create(attachmentOptions);
         const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
-        expect(attachmentWriteResponse.status.code).equals(204);
+        expect(attachmentWriteResponse.status.code).equals(202);
 
         // 3. Verify Bob cannot prune the records.
         const messagePrune = await RecordsDelete.create({
@@ -459,7 +459,7 @@ export function testRecordsPrune(): void {
 
         const post = await RecordsWrite.create(postOptions);
         const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
-        expect(postWriteResponse.status.code).equals(204);
+        expect(postWriteResponse.status.code).equals(202);
 
         const attachmentData = TestDataGenerator.randomBytes(100);
         const attachmentOptions = {
@@ -473,7 +473,7 @@ export function testRecordsPrune(): void {
 
         const attachment = await RecordsWrite.create(attachmentOptions);
         const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
-        expect(attachmentWriteResponse.status.code).equals(204);
+        expect(attachmentWriteResponse.status.code).equals(202);
 
         // 3. Verify Carol cannot prune the records if `prune` is not set to `true` in RecordsDelete.
         const unauthorizedPostPrune = await RecordsDelete.create({
@@ -571,7 +571,7 @@ export function testRecordsPrune(): void {
 
         const post = await RecordsWrite.create(postOptions);
         const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
-        expect(postWriteResponse.status.code).equals(204);
+        expect(postWriteResponse.status.code).equals(202);
 
         const attachmentData = TestDataGenerator.randomBytes(100);
         const attachmentOptions = {
@@ -585,7 +585,7 @@ export function testRecordsPrune(): void {
 
         const attachment = await RecordsWrite.create(attachmentOptions);
         const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
-        expect(attachmentWriteResponse.status.code).equals(204);
+        expect(attachmentWriteResponse.status.code).equals(202);
 
         // 3. Verify Carol cannot prune the records.
         const postPrune = await RecordsDelete.create({
@@ -670,7 +670,7 @@ export function testRecordsPrune(): void {
 
         const post = await RecordsWrite.create(postOptions);
         const postWriteResponse = await dwn.processMessage(alice.did, post.message, { dataStream: DataStream.fromBytes(postData) });
-        expect(postWriteResponse.status.code).equals(204);
+        expect(postWriteResponse.status.code).equals(202);
 
         const attachmentData = TestDataGenerator.randomBytes(100);
         const attachmentOptions = {
@@ -684,7 +684,7 @@ export function testRecordsPrune(): void {
 
         const attachment = await RecordsWrite.create(attachmentOptions);
         const attachmentWriteResponse = await dwn.processMessage(alice.did, attachment.message, { dataStream: DataStream.fromBytes(attachmentData) });
-        expect(attachmentWriteResponse.status.code).equals(204);
+        expect(attachmentWriteResponse.status.code).equals(202);
 
         // 3. Verify Bob cannot prune the records.
         const unauthorizedPostPrune = await RecordsDelete.create({

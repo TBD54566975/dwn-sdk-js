@@ -64,7 +64,7 @@ export function testDwnClass(): void {
 
         const reply = await dwn.processMessage(alice.did, message, { dataStream });
 
-        expect(reply.status.code).to.equal(204);
+        expect(reply.status.code).to.equal(202);
       });
 
       it('should process RecordsQuery message', async () => {

@@ -68,7 +68,7 @@ export function testOwnerSignature(): void {
       // Bob writes a message to his DWN
       const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
       const writeReply = await dwn.processMessage(bob.did, message, { dataStream });
-      expect(writeReply.status.code).to.equal(204);
+      expect(writeReply.status.code).to.equal(202);
 
       // Alice fetches the message from Bob's DWN
       const recordsRead = await RecordsRead.create({
@@ -89,7 +89,7 @@ export function testOwnerSignature(): void {
       // Test that Alice can successfully retain/write Bob's message to her DWN
       const aliceDataStream = readReply.record!.data;
       const aliceWriteReply = await dwn.processMessage(alice.did, ownerSignedMessage.message, { dataStream: aliceDataStream });
-      expect(aliceWriteReply.status.code).to.equal(204);
+      expect(aliceWriteReply.status.code).to.equal(202);
 
       // Test that Bob's message can be read from Alice's DWN
       const readReply2 = await dwn.processMessage(alice.did, recordsRead.message);
@@ -135,7 +135,7 @@ export function testOwnerSignature(): void {
       // Test that Alice can successfully retain/write Bob's message to her DWN
       const aliceDataStream = DataStream.fromBytes(bobRecordsWrite.dataBytes!);
       const aliceWriteReply = await dwn.processMessage(alice.did, ownerSignedMessage.message, { dataStream: aliceDataStream });
-      expect(aliceWriteReply.status.code).to.equal(204);
+      expect(aliceWriteReply.status.code).to.equal(202);
 
       // Test that Bob's message can be read from Alice's DWN
       const recordsRead = await RecordsRead.create({

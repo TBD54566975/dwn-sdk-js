@@ -114,7 +114,7 @@ export function testEndToEndScenarios(): void {
         encryptSymmetricKeyWithProtocolContextDerivedKey : true
       });
       const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord.message, { dataStream: threadRecord.dataStream });
-      expect(threadRecordReply1.status.code).to.equal(204);
+      expect(threadRecordReply1.status.code).to.equal(202);
 
       // 2. Alice adds Bob as a participant giving him the [context-derived private key] encrypted using [Bob's participant-level public key]
 
@@ -153,7 +153,7 @@ export function testEndToEndScenarios(): void {
       });
       const participantRecordReply =
         await dwn.processMessage(alice.did, participantBobRecord.message, { dataStream: participantBobRecord.dataStream });
-      expect(participantRecordReply.status.code).to.equal(204);
+      expect(participantRecordReply.status.code).to.equal(202);
 
       // 3. Alice writes a chat message(s) in the thread
       const messageByAlice = 'Message from Alice';
@@ -170,7 +170,7 @@ export function testEndToEndScenarios(): void {
         encryptSymmetricKeyWithProtocolContextDerivedKey : true
       });
       const chatMessageReply = await dwn.processMessage(alice.did, chatMessageByAlice.message, { dataStream: chatMessageByAlice.dataStream });
-      expect(chatMessageReply.status.code).to.equal(204);
+      expect(chatMessageReply.status.code).to.equal(202);
 
       // Assume the below steps can be done since it is a common DWN usage pattern
       // 4. Alice sends an invite to Bob's DWN with the [context/thread ID]

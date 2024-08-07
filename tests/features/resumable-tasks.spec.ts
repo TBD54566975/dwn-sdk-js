@@ -102,7 +102,7 @@ export function testResumableTasks(): void {
 
       const recordsWrite = await RecordsWrite.create(messageOptions);
       const recordsWriteResponse = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: DataStream.fromBytes(data) });
-      expect(recordsWriteResponse.status.code).equals(204);
+      expect(recordsWriteResponse.status.code).equals(202);
 
       // 2. Insert a resumable `RecordDelete` task into the resumable task store bypassing message handler to avoid it being processed.
 
@@ -186,7 +186,7 @@ export function testResumableTasks(): void {
 
         const recordsWrite = await RecordsWrite.create(messageOptions);
         const recordsWriteResponse = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: DataStream.fromBytes(data) });
-        expect(recordsWriteResponse.status.code).equals(204);
+        expect(recordsWriteResponse.status.code).equals(202);
 
         recordsWrites.push(recordsWrite);
       }
@@ -336,7 +336,7 @@ export function testResumableTasks(): void {
 
       const recordsWrite = await RecordsWrite.create(messageOptions);
       const recordsWriteResponse = await dwn.processMessage(alice.did, recordsWrite.message, { dataStream: DataStream.fromBytes(data) });
-      expect(recordsWriteResponse.status.code).equals(204);
+      expect(recordsWriteResponse.status.code).equals(202);
 
       // 3. Submit a `RecordsDelete` without awaiting on its completion.
       const resumableTaskRegisterSpy = sinon.spy(resumableTaskStore, 'register');
