@@ -3009,6 +3009,7 @@ export function testRecordsWriteHandler(): void {
 
           // bob learns of metadata (ie. dataCid) of alice's secret data,
           // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+          // which he is allowed to do, the DWN will treat the operation as an initial-write or a record that has a later and different state.
           const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol,
@@ -3019,7 +3020,7 @@ export function testRecordsWriteHandler(): void {
             dataSize,
             recipient    : alice.did
           });
-          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
+          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message);
           expect(imageReply.status.code).to.equal(204); // allows write but is not readable or queryable
 
           // verify the record is not able to be read
@@ -3101,6 +3102,7 @@ export function testRecordsWriteHandler(): void {
 
           // bob learns of metadata (ie. dataCid) of alice's secret data,
           // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+          // which he is allowed to do, the DWN will treat the operation as an initial-write or a record that has a later and different state.
           const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol,
@@ -3111,7 +3113,7 @@ export function testRecordsWriteHandler(): void {
             dataSize,
             recipient    : alice.did
           });
-          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
+          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message);
           expect(imageReply.status.code).to.equal(204); // allows write but is not readable or queryable
 
           // verify the record is not able to be read
