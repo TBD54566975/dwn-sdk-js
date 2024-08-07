@@ -163,7 +163,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const messageReply = {
-      status: (newMessageIsInitialWrite && dataStream !== undefined) ?
+      status: (newMessageIsInitialWrite && dataStream === undefined) ?
         { code: 204, detail: 'No Content' } :
         { code: 202, detail: 'Accepted' }
     };
