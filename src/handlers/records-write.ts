@@ -162,10 +162,10 @@ export class RecordsWriteHandler implements MethodHandler {
       throw error;
     }
 
-    const messageReply =  {
+    const messageReply = {
       status: (newMessageIsInitialWrite && dataStream !== undefined) ?
-          { code: 204, detail: 'No Content' } :
-          { code: 202, detail: 'Accepted' }
+        { code: 204, detail: 'No Content' } :
+        { code: 202, detail: 'Accepted' }
     };
 
     // delete all existing messages of the same record that are not newest, except for the initial write
