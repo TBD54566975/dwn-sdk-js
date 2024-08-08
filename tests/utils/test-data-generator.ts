@@ -396,6 +396,7 @@ export class TestDataGenerator {
 
   /**
    * Generates a RecordsWrite message for testing.
+   * `dataBytes` & `dataStream` returned will be `undefined` as long as `dataCid` or `dataSize` is given.
    * Implementation currently uses `RecordsWrite.create()`.
    * @param input.attesters Attesters of the message. Will NOT be generated if not given.
    * @param input.data Data that belongs to the record. Generated when not given only if `dataCid` and `dataSize` are also not given.

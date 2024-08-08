@@ -324,7 +324,7 @@ export function testMessagesSubscribeHandler(): void {
             }
           });
           const grantWriteReply = await dwn.processMessage(alice.did, grantWrite.message, { dataStream });
-          expect(grantWriteReply.status.code).to.equal(202);
+          expect(grantWriteReply.status.code).to.equal(204);
 
 
           // bob attempts to use the `MessagesQuery` grant on an `MessagesSubscribe` message

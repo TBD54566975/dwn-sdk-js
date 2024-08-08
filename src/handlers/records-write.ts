@@ -163,7 +163,12 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const messageReply = {
-      status: { code: 202, detail: 'Accepted' }
+      // In order to discern between something that was accepted as a queryable write and something that was accepted
+      // as an initial state we use separate response codes. See https://github.com/TBD54566975/dwn-sdk-js/issues/695
+      // for more details.
+      status: (newMessageIsInitialWrite && dataStream === undefined) ?
+        { code: 204, detail: 'No Content' } :
+        { code: 202, detail: 'Accepted' }
     };
 
     // delete all existing messages of the same record that are not newest, except for the initial write

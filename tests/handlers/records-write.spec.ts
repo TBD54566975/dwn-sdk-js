@@ -373,7 +373,7 @@ export function testRecordsWriteHandler(): void {
 
         // simulate synchronize of pruned initial `RecordsWrite`
         const reply = await dwn.processMessage(alice.did, recordsWrite.message);
-        expect(reply.status.code).to.equal(202);
+        expect(reply.status.code).to.equal(204);
 
         // verify `RecordsWrite` inserted is not returned with a query
         const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -3009,6 +3009,7 @@ export function testRecordsWriteHandler(): void {
 
           // bob learns of metadata (ie. dataCid) of alice's secret data,
           // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+          // which he is allowed to do, the DWN will treat the operation as an initial-write or a record that has a later and different state.
           const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol,
@@ -3019,8 +3020,8 @@ export function testRecordsWriteHandler(): void {
             dataSize,
             recipient    : alice.did
           });
-          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
-          expect(imageReply.status.code).to.equal(202); // allows write but is not readable or queryable
+          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message);
+          expect(imageReply.status.code).to.equal(204); // allows write but is not readable or queryable
 
           // verify the record is not able to be read
           const bobRecordsReadData = await RecordsRead.create({
@@ -3101,6 +3102,7 @@ export function testRecordsWriteHandler(): void {
 
           // bob learns of metadata (ie. dataCid) of alice's secret data,
           // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+          // which he is allowed to do, the DWN will treat the operation as an initial-write or a record that has a later and different state.
           const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
             author       : bob,
             protocol,
@@ -3111,8 +3113,8 @@ export function testRecordsWriteHandler(): void {
             dataSize,
             recipient    : alice.did
           });
-          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, { dataStream: imageRecordsWrite.dataStream });
-          expect(imageReply.status.code).to.equal(202); // allows write but is not readable or queryable
+          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message);
+          expect(imageReply.status.code).to.equal(204); // allows write but is not readable or queryable
 
           // verify the record is not able to be read
           const bobRecordsReadData = await RecordsRead.create({
@@ -4071,7 +4073,7 @@ export function testRecordsWriteHandler(): void {
           data,
         });
         const prunedRecordsWriteReply = await dwn.processMessage(alice.did, prunedRecordsWrite.message);
-        expect(prunedRecordsWriteReply.status.code).to.equal(202);
+        expect(prunedRecordsWriteReply.status.code).to.equal(204);
 
         // Update record to published, omitting dataStream
         const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
@@ -4099,7 +4101,7 @@ export function testRecordsWriteHandler(): void {
           data,
         });
         const prunedRecordsWriteReply = await dwn.processMessage(alice.did, prunedRecordsWrite.message);
-        expect(prunedRecordsWriteReply.status.code).to.equal(202);
+        expect(prunedRecordsWriteReply.status.code).to.equal(204);
 
         // Update record to published, omitting dataStream
         const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
@@ -4144,7 +4146,7 @@ export function testRecordsWriteHandler(): void {
           dataSize : 4
         });
         const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message); // intentionally missing data stream
-        expect(bobWriteReply.status.code).to.equal(202); // NOTE: allows write here but does not allow read or query later
+        expect(bobWriteReply.status.code).to.equal(204); // NOTE: allows write here but does not allow read or query later
 
         const aliceQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
