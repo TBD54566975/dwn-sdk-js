@@ -130,7 +130,7 @@ export class RecordsSubscribeHandler implements MethodHandler {
       filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsBySubscribeAuthorFilter(recordsSubscribe));
 
       const recipientFilter = recordsSubscribe.message.descriptor.filter.recipient;
-      if (recipientFilter === undefined || recipientFilter === recordsSubscribe.author) {
+      if (recipientFilter === undefined || recipientFilter.length === 1 && recipientFilter.includes(recordsSubscribe.author!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
       }
 
