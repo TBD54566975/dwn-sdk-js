@@ -483,7 +483,7 @@ export function testSubscriptionScenarios(): void {
         // revoke permissions for proto1
         const revokeProto1 = await PermissionsProtocol.createRevocation({
           signer : Jws.createSigner(alice),
-          grant  : await PermissionGrant.parse(grantProto1.dataEncodedMessage),
+          grant  : new PermissionGrant(grantProto1.dataEncodedMessage),
         });
         const revokeProto1Response = await dwn.processMessage(
           alice.did,
@@ -495,7 +495,7 @@ export function testSubscriptionScenarios(): void {
         // revoke permissions for proto2
         const revokeProto2 = await PermissionsProtocol.createRevocation({
           signer : Jws.createSigner(alice),
-          grant  : await PermissionGrant.parse(grantProto2.dataEncodedMessage),
+          grant  : new PermissionGrant(grantProto2.dataEncodedMessage),
         });
         const revokeProto2Response = await dwn.processMessage(
           alice.did,

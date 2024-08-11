@@ -41,12 +41,7 @@ export class PermissionRequest {
    */
   public readonly conditions?: PermissionConditions;
 
-  public static async parse(message: DataEncodedRecordsWriteMessage): Promise<PermissionRequest> {
-    const permissionRequest = new PermissionRequest(message);
-    return permissionRequest;
-  }
-
-  private constructor(message: DataEncodedRecordsWriteMessage) {
+  constructor(message: DataEncodedRecordsWriteMessage) {
     // properties derived from the generic DWN message properties
     this.id = message.recordId;
     this.requester = Message.getSigner(message)!;

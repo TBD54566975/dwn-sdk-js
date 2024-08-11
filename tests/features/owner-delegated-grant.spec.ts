@@ -603,7 +603,7 @@ export function testOwnerDelegatedGrant(): void {
       // 3. Alice revokes the grant
       const permissionRevoke = await PermissionsProtocol.createRevocation({
         signer : Jws.createSigner(alice),
-        grant  : await PermissionGrant.parse(appXGrant.dataEncodedMessage),
+        grant  : new PermissionGrant(appXGrant.dataEncodedMessage),
       });
       const revocationDataStream = DataStream.fromBytes(permissionRevoke.permissionRevocationBytes);
       const permissionRevokeReply = await dwn.processMessage(

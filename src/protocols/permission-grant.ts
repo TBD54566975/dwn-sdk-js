@@ -60,12 +60,7 @@ export class PermissionGrant {
    */
   public readonly conditions?: PermissionConditions;
 
-  public static async parse(message: DataEncodedRecordsWriteMessage): Promise<PermissionGrant> {
-    const permissionGrant = new PermissionGrant(message);
-    return permissionGrant;
-  }
-
-  private constructor(message: DataEncodedRecordsWriteMessage) {
+  constructor(message: DataEncodedRecordsWriteMessage) {
     // properties derived from the generic DWN message properties
     this.id = message.recordId;
     this.grantor = Message.getSigner(message)!;

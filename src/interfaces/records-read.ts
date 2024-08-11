@@ -87,7 +87,7 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeDelegate(matchedRecordsWrite: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = await PermissionGrant.parse(this.message.authorization!.authorDelegatedGrant!);
+    const delegatedGrant = new PermissionGrant(this.message.authorization!.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeRead({
       recordsReadMessage          : this.message,
       recordsWriteMessageToBeRead : matchedRecordsWrite,

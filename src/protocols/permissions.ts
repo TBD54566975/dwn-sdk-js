@@ -394,7 +394,7 @@ export class PermissionsProtocol {
     }
 
     const permissionGrantMessage = possibleGrantMessage as DataEncodedRecordsWriteMessage;
-    const permissionGrant = await PermissionGrant.parse(permissionGrantMessage);
+    const permissionGrant = new PermissionGrant(permissionGrantMessage);
 
     return permissionGrant;
   }
@@ -421,11 +421,11 @@ export class PermissionsProtocol {
       const grant = await PermissionsProtocol.fetchGrant(tenant, messageStore, incomingMessage.descriptor.parentId!);
       return grant.scope;
     } else if (incomingMessage.descriptor.protocolPath === PermissionsProtocol.grantPath) {
-      const grant = await PermissionGrant.parse(incomingMessage);
+      const grant = new PermissionGrant(incomingMessage);
       return grant.scope;
     } else {
       // if the record is not a grant or revocation, it must be a request
-      const request = await PermissionRequest.parse(incomingMessage);
+      const request = new PermissionRequest(incomingMessage);
       return request.scope;
     }
   }

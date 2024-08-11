@@ -795,7 +795,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.authorDelegatedGrant!);
+    const delegatedGrant = new PermissionGrant(this.message.authorization.authorDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
       recordsWriteMessage : this.message,
       expectedGrantor     : this.author!,
@@ -810,7 +810,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeOwnerDelegate(messageStore: MessageStore): Promise<void> {
-    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.ownerDelegatedGrant!);
+    const delegatedGrant = new PermissionGrant(this.message.authorization.ownerDelegatedGrant!);
     await RecordsGrantAuthorization.authorizeWrite({
       recordsWriteMessage : this.message,
       expectedGrantor     : this.owner!,

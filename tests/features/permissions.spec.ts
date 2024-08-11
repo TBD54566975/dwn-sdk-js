@@ -97,7 +97,7 @@ export function testPermissions(): void {
       // createRevocation with a protocol derived from the grant
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
+        grant       : new PermissionGrant(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp()
       });
       expect(revokeWrite.recordsWrite.message.descriptor.tags).to.deep.equal({ protocol: testProtocol });
@@ -188,7 +188,7 @@ export function testPermissions(): void {
       // derive the grantId and protocol from the grant record
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
+        grant       : new PermissionGrant(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp()
       });
 
@@ -316,7 +316,7 @@ export function testPermissions(): void {
       // 7. Verify that non-owner cannot revoke the grant
       const unauthorizedRevokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(bob),
-        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
+        grant       : new PermissionGrant(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp(),
       });
 
@@ -331,7 +331,7 @@ export function testPermissions(): void {
       // 8. Alice revokes the permission grant for Bob
       const revokeWrite = await PermissionsProtocol.createRevocation({
         signer      : Jws.createSigner(alice),
-        grant       : await PermissionGrant.parse(grantWrite.dataEncodedMessage),
+        grant       : new PermissionGrant(grantWrite.dataEncodedMessage),
         dateRevoked : Time.getCurrentTimestamp(),
       });
 

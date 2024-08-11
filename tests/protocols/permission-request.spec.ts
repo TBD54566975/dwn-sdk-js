@@ -30,7 +30,7 @@ describe('PermissionRequest', () => {
       scope
     });
 
-    const parsedPermissionRequest = await PermissionRequest.parse(permissionRequest.dataEncodedMessage);
+    const parsedPermissionRequest = new PermissionRequest(permissionRequest.dataEncodedMessage);
     expect (parsedPermissionRequest.id).to.equal(permissionRequest.dataEncodedMessage.recordId);
     expect (parsedPermissionRequest.delegated).to.equal(true);
     expect (parsedPermissionRequest.scope).to.deep.equal(scope);
