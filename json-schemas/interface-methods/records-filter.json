@@ -12,19 +12,27 @@
       "type": "string"
     },
     "author": {
-      "type": "array",
-      "items": {
+      "oneOf": [{
         "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
-      }
+      },{
+        "type": "array",
+        "items": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
+        }
+      }]
     },
     "attester": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
     },
     "recipient": {
-      "type": "array",
-      "items": {
+      "oneOf": [{
         "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
-      }
+      },{
+        "type": "array",
+        "items": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/$defs/did"
+        }
+      }]
     },
     "contextId": {
       "type": "string"

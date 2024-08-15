@@ -531,4 +531,20 @@ export class Records {
 
     return true;
   }
+
+  static shouldBuildUnpublishedRecipientFilter(filter: RecordsFilter, recipient: string): boolean {
+    const { recipient: recipientFilter } = filter;
+
+    return Array.isArray(recipientFilter) ?
+      recipientFilter.length === 0 || recipientFilter.includes(recipient) :
+      recipientFilter === undefined || recipientFilter === recipient;
+  }
+
+  static shouldBuildUnpublishedAuthorFilter(filter: RecordsFilter, author: string): boolean {
+    const { author: authorFilter } = filter;
+
+    return Array.isArray(authorFilter) ?
+      authorFilter.length === 0 || authorFilter.includes(author) :
+      authorFilter === undefined || authorFilter === author;
+  }
 }

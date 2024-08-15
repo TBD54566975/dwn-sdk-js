@@ -129,13 +129,10 @@ export class RecordsSubscribeHandler implements MethodHandler {
     if (Records.filterIncludesUnpublishedRecords(filter)) {
       filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsBySubscribeAuthorFilter(recordsSubscribe));
 
-      const recipientFilter = recordsSubscribe.message.descriptor.filter.recipient;
-      if (recipientFilter === undefined || recipientFilter.length === 1 && recipientFilter.includes(recordsSubscribe.author!)) {
-        filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
-      }
-
       if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsSubscribe));
+      } else if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsSubscribe.author!)) {
+        filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
       }
     }
     return filters;
