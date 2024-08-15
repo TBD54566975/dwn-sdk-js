@@ -4052,7 +4052,7 @@ export function testRecordsWriteHandler(): void {
       });
 
       it('should return 400 for if attempting a write after a delete', async () => {
-        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+        const { message, author, dataStream } = await TestDataGenerator.generateRecordsWrite({
           data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
           published : false
         });
@@ -4074,10 +4074,10 @@ export function testRecordsWriteHandler(): void {
         const newInvalidWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : message,
           signer              : Jws.createSigner(author),
-          data: newDataBytes
+          data                : newDataBytes
         });
 
-        const newInvalidWriteReply = await dwn.processMessage(tenant, newInvalidWrite.message, { dataStream: DataStream.fromBytes(newDataBytes)});
+        const newInvalidWriteReply = await dwn.processMessage(tenant, newInvalidWrite.message, { dataStream: DataStream.fromBytes(newDataBytes) });
         expect(newInvalidWriteReply.status.code).to.equal(400);
         expect(newInvalidWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteNotAllowedAfterDelete);
       });
