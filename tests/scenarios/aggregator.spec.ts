@@ -18,6 +18,11 @@ import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
 
+// This is a test suite that demonstrates how to use the DWN to create aggregators
+// Aggregators allows multiple authors to write records to the aggregator's DID based on a role
+//
+// NOTE: This will be more evident when we introduce `signWithRole`.
+// This would allow writing to your local DWN without any role field, but when writing to an aggregator, you could conform to their own roles.
 describe('Aggregator Model', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStore;
@@ -44,7 +49,8 @@ describe('Aggregator Model', () => {
     }
   };
 
-  // A simple aggregator protocol that allows members of the aggregator to write notes to the aggregator and allow anyone to read or query
+  // A simple protocol that allows members of an aggregator to write notes to the aggregator
+  // Anyone can query or read public notes, the rest of the notes are enforced by `recipient/author` rules.
   const aggregatorProtocolDefinition:ProtocolDefinition = {
     protocol,
     published : true,
@@ -100,7 +106,17 @@ describe('Aggregator Model', () => {
     await dwn.close();
   });
 
-  it('should support aggregation of records from multiple authors', async () => {
+  it('should support querying from multiple authors', async () => {
+    // scenario: Alice, Bob, Carol are members of an aggregator.
+    // Alice writes a note to Carol, Bob writes a note to Alice, Carol writes a note to Bob.
+    // Daniel is not a member of the aggregator and tries to unsuccessfully write a note to Alice.
+    // Daniel can query public notes from multiple authors in a single query.
+    // Alice and Bob create private notes with Carol as the recipient.
+    // Bob creates a private note to Alice.
+    // Daniel does not see the private notes in his query.
+    // Carol can see all notes from Alice and Bob in her query, including the private notes intended for her.
+    // Alice can see all notes from Bob and Carol in her query, including the private notes intended for her.
+
     // create aggregator DID and install aggregator note protocol
     const aggregator = await TestDataGenerator.generateDidKeyPersona();
     const aggregatorProtocolConfigure = await ProtocolsConfigure.create({
@@ -142,7 +158,6 @@ describe('Aggregator Model', () => {
     });
     const danielProtocolReply = await dwn.processMessage(daniel.did, danielProtocolConfigure.message);
     expect(danielProtocolReply.status.code).to.equal(202, 'daniel configure');
-
 
 
     // The aggregator creates member records for alice, bob and carol
@@ -292,7 +307,7 @@ describe('Aggregator Model', () => {
     expect(danielReadReply.entries![0].recordId).to.equal(aliceNoteToCarol.message.recordId, 'daniel read alice note');
     expect(danielReadReply.entries![1].recordId).to.equal(bobNoteToAlice.message.recordId, 'daniel read bob note');
 
-    // create  private notes to crol from alice and bob
+    // create  private notes to carol from alice and bob
     const alicePrivateNoteToCarol = TestDataGenerator.randomBytes(256);
     const aliceNoteToCarolPrivate = await RecordsWrite.create({
       signer       : Jws.createSigner(alice),

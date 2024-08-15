@@ -382,6 +382,16 @@ export class Records {
       filterCopy.contextId = contextIdPrefixFilter;
     }
 
+    // if the author filter is an array and it's empty, we should remove it from the filter as it will always return no results.
+    if (Array.isArray(filterCopy.author) && filterCopy.author.length === 0) {
+      delete filterCopy.author;
+    }
+
+    // if the recipient filter is an array and it's empty, we should remove it from the filter as it will always return no results.
+    if (Array.isArray(filterCopy.recipient) && filterCopy.recipient.length === 0) {
+      delete filterCopy.recipient;
+    }
+
     return filterCopy as Filter;
   }
 

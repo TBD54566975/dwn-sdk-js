@@ -157,7 +157,9 @@ export class RecordsQueryHandler implements MethodHandler {
 
       if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
-      } else if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsQuery.author!)) {
+      }
+
+      if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsQuery.author!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
       }
     }

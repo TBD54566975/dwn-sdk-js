@@ -127,11 +127,15 @@ export class RecordsSubscribeHandler implements MethodHandler {
     }
 
     if (Records.filterIncludesUnpublishedRecords(filter)) {
-      filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsBySubscribeAuthorFilter(recordsSubscribe));
+      if (Records.shouldBuildUnpublishedAuthorFilter(filter, recordsSubscribe.author!)) {
+        filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsBySubscribeAuthorFilter(recordsSubscribe));
+      }
 
       if (Records.shouldProtocolAuthorize(recordsSubscribe.signaturePayload!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsSubscribe));
-      } else if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsSubscribe.author!)) {
+      }
+
+      if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsSubscribe.author!)) {
         filters.push(RecordsSubscribeHandler.buildUnpublishedRecordsForSubscribeAuthorFilter(recordsSubscribe));
       }
     }

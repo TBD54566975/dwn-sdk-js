@@ -710,7 +710,7 @@ export function testSubscriptionScenarios(): void {
 
         const carolSubscribe = await TestDataGenerator.generateRecordsSubscribe({
           author : carol,
-          filter : { schema: 'http://schema1', recipient: [ carol.did ] }
+          filter : { schema: 'http://schema1', recipient: carol.did }
         });
 
         const carolSubscribeReply = await dwn.processMessage(alice.did, carolSubscribe.message, {
