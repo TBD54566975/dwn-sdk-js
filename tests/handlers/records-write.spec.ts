@@ -629,70 +629,6 @@ export function testRecordsWriteHandler(): void {
         });
       });
 
-      it('should return 400 for if dataStream is not present for a write after a delete', async () => {
-        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
-          data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
-          published : false
-        });
-        const tenant = author.did;
-
-        TestStubGenerator.stubDidResolver(didResolver, [author]);
-
-        const initialWriteReply = await dwn.processMessage(tenant, message, { dataStream });
-        expect(initialWriteReply.status.code).to.equal(202);
-
-        const recordsDelete = await RecordsDelete.create({
-          recordId : message.recordId,
-          signer   : Jws.createSigner(author),
-        });
-        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
-        expect(deleteReply.status.code).to.equal(202);
-
-        const write = await RecordsWrite.createFrom({
-          recordsWriteMessage : message,
-          signer              : Jws.createSigner(author),
-        });
-
-        const withoutDataReply = await dwn.processMessage(tenant, write.message);
-        expect(withoutDataReply.status.code).to.equal(400);
-        expect(withoutDataReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
-        const updatedWriteData = DataStream.fromBytes(dataBytes!);
-        const withoutDataReply2 = await dwn.processMessage(tenant, write.message, { dataStream: updatedWriteData });
-        expect(withoutDataReply2.status.code).to.equal(202);
-      });
-
-      it('should return 400 for if dataStream is not present for a write after a delete with data above the threshold', async () => {
-        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
-          data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1),
-          published : false
-        });
-        const tenant = author.did;
-
-        TestStubGenerator.stubDidResolver(didResolver, [author]);
-
-        const initialWriteReply = await dwn.processMessage(tenant, message, { dataStream });
-        expect(initialWriteReply.status.code).to.equal(202);
-
-        const recordsDelete = await RecordsDelete.create({
-          recordId : message.recordId,
-          signer   : Jws.createSigner(author),
-        });
-        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
-        expect(deleteReply.status.code).to.equal(202);
-
-        const write = await RecordsWrite.createFrom({
-          recordsWriteMessage : message,
-          signer              : Jws.createSigner(author),
-        });
-
-        const withoutDataReply = await dwn.processMessage(tenant, write.message);
-        expect(withoutDataReply.status.code).to.equal(400);
-        expect(withoutDataReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
-        const updatedWriteData = DataStream.fromBytes(dataBytes!);
-        const withoutDataReply2 = await dwn.processMessage(tenant, write.message, { dataStream: updatedWriteData });
-        expect(withoutDataReply2.status.code).to.equal(202);
-      });
-
       it('should return 400 for data CID mismatch with both dataStream and `dataSize` larger than encodedData threshold', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const { message } = await TestDataGenerator.generateRecordsWrite({
@@ -4059,9 +3995,9 @@ export function testRecordsWriteHandler(): void {
         });
       });
 
-      it('should 400 if dataStream is not provided and dataStore does not contain dataCid', async () => {
-      // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
-      // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
+      it('should return 400 if dataStream is not provided and dataStore does not contain dataCid', async () => {
+        // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
+        // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
 
         // Pruned RecordsWrite
         // Data large enough to use the DataStore
@@ -4087,7 +4023,7 @@ export function testRecordsWriteHandler(): void {
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
       });
 
-      it('should 400 if dataStream is not provided and previous message does not contain encodedData', async () => {
+      it('should return 400 if dataStream is not provided and previous message does not contain encodedData', async () => {
         // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
         // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
 
@@ -4113,6 +4049,37 @@ export function testRecordsWriteHandler(): void {
         const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
         expect(recordsWriteReply.status.code).to.equal(400);
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious);
+      });
+
+      it('should return 400 if attempting a write after a delete', async () => {
+        const { message, author, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
+          published : false
+        });
+        const tenant = author.did;
+
+        TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+        const initialWriteReply = await dwn.processMessage(tenant, message, { dataStream });
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await RecordsDelete.create({
+          recordId : message.recordId,
+          signer   : Jws.createSigner(author),
+        });
+        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const newDataBytes = TestDataGenerator.randomBytes(100);
+        const newInvalidWrite = await RecordsWrite.createFrom({
+          recordsWriteMessage : message,
+          signer              : Jws.createSigner(author),
+          data                : newDataBytes
+        });
+
+        const newInvalidWriteReply = await dwn.processMessage(tenant, newInvalidWrite.message, { dataStream: DataStream.fromBytes(newDataBytes) });
+        expect(newInvalidWriteReply.status.code).to.equal(400);
+        expect(newInvalidWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteNotAllowedAfterDelete);
       });
 
       it('should not allow referencing data across tenants', async () => {

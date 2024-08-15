@@ -96,6 +96,13 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
+      if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteNotAllowedAfterDelete,
+          'RecordsWrite is not allowed after a RecordsDelete.'
+        );
+      }
+
       // NOTE: We want to perform additional validation before storing the RecordsWrite.
       // This is necessary for core DWN RecordsWrite that needs additional processing and allows us to fail before the storing and post processing.
       //
@@ -115,15 +122,6 @@ export class RecordsWriteHandler implements MethodHandler {
         isLatestBaseState = true;
       } else {
         // else data stream is NOT provided
-
-        if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
-          throw new DwnError(
-            DwnErrorCode.RecordsWriteMissingDataStream,
-            'No data stream was provided with the previous message being a delete'
-          );
-        }
-
-        // at this point we know that newestExistingMessage exists is not a Delete
 
         // if the incoming message is not an initial write, and no dataStream is provided, we would allow it provided it passes validation
         // processMessageWithoutDataStream() abstracts that logic
@@ -149,7 +147,7 @@ export class RecordsWriteHandler implements MethodHandler {
       if (e.code !== undefined) {
         if (e.code === DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious ||
           e.code === DwnErrorCode.RecordsWriteMissingDataInPrevious ||
-          e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
+          e.code === DwnErrorCode.RecordsWriteNotAllowedAfterDelete ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
           e.code === DwnErrorCode.RecordsWriteDataSizeMismatch ||
           e.code.startsWith('PermissionsProtocolValidate') ||
