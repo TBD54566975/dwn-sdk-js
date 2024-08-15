@@ -4051,7 +4051,7 @@ export function testRecordsWriteHandler(): void {
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious);
       });
 
-      it('should return 400 for if attempting a write after a delete', async () => {
+      it('should return 400 if attempting a write after a delete', async () => {
         const { message, author, dataStream } = await TestDataGenerator.generateRecordsWrite({
           data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
           published : false
