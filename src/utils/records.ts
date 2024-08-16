@@ -542,6 +542,13 @@ export class Records {
     return true;
   }
 
+  /**
+   * Checks whether or not the incoming records query filter should build an unpublished recipient MessageStore filter.
+   *
+   * @param filter The incoming RecordsFilter to evaluate against.
+   * @param recipient The recipient to check against the filter, typically the query/subscribe message author.
+   * @returns {boolean} True if the filter contains the recipient, or if the recipient filter is undefined/empty.
+   */
   static shouldBuildUnpublishedRecipientFilter(filter: RecordsFilter, recipient: string): boolean {
     const { recipient: recipientFilter } = filter;
 
@@ -550,6 +557,13 @@ export class Records {
       recipientFilter === undefined || recipientFilter === recipient;
   }
 
+  /**
+   * Checks whether or not the incoming records query filter should build an unpublished author MessageStore filter.
+   *
+   * @param filter The incoming RecordsFilter to evaluate against.
+   * @param author The author to check against the filter, typically the query/subscribe message author.
+   * @returns {boolean} True if the filter contains the author, or if the author filter is undefined/empty.
+   */
   static shouldBuildUnpublishedAuthorFilter(filter: RecordsFilter, author: string): boolean {
     const { author: authorFilter } = filter;
 
