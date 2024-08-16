@@ -316,6 +316,36 @@ export function testRecordsQueryHandler(): void {
         expect(queryReply.status.code).to.equal(200);
         expect(queryReply.entries?.length).to.equal(1);
         expect(queryReply.entries![0].recordId).to.equal(bobAuthorWrite.message.recordId);
+
+        // empty array for author should return all same as undefined author field
+        recordsQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            author       : [],
+            protocol     : protocolDefinition.protocol,
+            schema       : protocolDefinition.types.post.schema,
+            dataFormat   : protocolDefinition.types.post.dataFormats[0],
+            protocolPath : 'post'
+          }
+        });
+        queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(2);
+
+        // query for both authors explicitly
+        recordsQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            author       : [alice.did, bob.did],
+            protocol     : protocolDefinition.protocol,
+            schema       : protocolDefinition.types.post.schema,
+            dataFormat   : protocolDefinition.types.post.dataFormats[0],
+            protocolPath : 'post'
+          }
+        });
+        queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(2);
       });
 
       it('should be able to query by recipient', async () => {
@@ -401,95 +431,12 @@ export function testRecordsQueryHandler(): void {
         expect(queryReply.status.code).to.equal(200);
         expect(queryReply.entries?.length).to.equal(1);
         expect(queryReply.entries![0].recordId).to.equal(aliceToCarol.message.recordId);
-      });
 
-      it('should be able to query by multiple recipients', async () => {
-        // scenario: alice, bob and carol author records for various recipients into alice's DWN.
-        // alice is able to filter based on multiple recipients
-
-        const alice = await TestDataGenerator.generateDidKeyPersona();
-        const bob = await TestDataGenerator.generateDidKeyPersona();
-        const carol = await TestDataGenerator.generateDidKeyPersona();
-
-        const protocolDefinition = freeForAll;
-
-        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          author: alice,
-          protocolDefinition
-        });
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-        expect(protocolsConfigureReply.status.code).to.equal(202);
-
-        const bobToAliceWrite = await TestDataGenerator.generateRecordsWrite({
-          author       : bob,
-          recipient    : alice.did,
-          protocol     : protocolDefinition.protocol,
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
-          protocolPath : 'post'
-        });
-        const bobToAliceReply = await dwn.processMessage(alice.did, bobToAliceWrite.message, { dataStream: bobToAliceWrite.dataStream });
-        expect(bobToAliceReply.status.code).to.equal(202);
-
-        const aliceToBobWrite = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : bob.did,
-          protocol     : protocolDefinition.protocol,
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
-          protocolPath : 'post'
-        });
-        const aliceToBobReply = await dwn.processMessage(alice.did, aliceToBobWrite.message, { dataStream: aliceToBobWrite.dataStream });
-        expect(aliceToBobReply.status.code).to.equal(202);
-
-        const carolToBobWrite = await TestDataGenerator.generateRecordsWrite({
-          author       : carol,
-          recipient    : bob.did,
-          protocol     : protocolDefinition.protocol,
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
-          protocolPath : 'post'
-        });
-        const carolToBobReply = await dwn.processMessage(alice.did, carolToBobWrite.message, { dataStream: carolToBobWrite.dataStream });
-        expect(carolToBobReply.status.code).to.equal(202);
-
-        const aliceToCarolWrite = await TestDataGenerator.generateRecordsWrite({
-          author       : alice,
-          recipient    : carol.did,
-          protocol     : protocolDefinition.protocol,
-          schema       : protocolDefinition.types.post.schema,
-          dataFormat   : protocolDefinition.types.post.dataFormats[0],
-          protocolPath : 'post'
-        });
-        const aliceToCarolReply = await dwn.processMessage(alice.did, aliceToCarolWrite.message, { dataStream: aliceToCarolWrite.dataStream });
-        expect(aliceToCarolReply.status.code).to.equal(202);
-
-        // alice queries with an empty array, gets all
-        let recordsQuery = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : {
-            protocol     : protocolDefinition.protocol,
-            schema       : protocolDefinition.types.post.schema,
-            dataFormat   : protocolDefinition.types.post.dataFormats[0],
-            protocolPath : 'post',
-            recipient    : []
-          }
-        });
-        let queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
-        expect(queryReply.status.code).to.equal(200);
-        expect(queryReply.entries?.length).to.equal(4);
-        expect(queryReply.entries?.map(e => e.recordId)).to.have.members([
-          bobToAliceWrite.message.recordId,
-          aliceToBobWrite.message.recordId,
-          carolToBobWrite.message.recordId,
-          aliceToCarolWrite.message.recordId
-        ]);
-
-        // filter for alice and bob as authors
+        // empty array for recipient should return all same as undefined recipient field
         recordsQuery = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
-            recipient    : [alice.did, bob.did],
+            recipient    : [],
             protocol     : protocolDefinition.protocol,
             schema       : protocolDefinition.types.post.schema,
             dataFormat   : protocolDefinition.types.post.dataFormats[0],
@@ -498,12 +445,22 @@ export function testRecordsQueryHandler(): void {
         });
         queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
         expect(queryReply.status.code).to.equal(200);
-        expect(queryReply.entries?.length).to.equal(3);
-        expect(queryReply.entries?.map(e => e.recordId)).to.have.members([
-          bobToAliceWrite.message.recordId,
-          aliceToBobWrite.message.recordId,
-          carolToBobWrite.message.recordId
-        ]);
+        expect(queryReply.entries?.length).to.equal(2);
+
+        // query for both recipients explicitly
+        recordsQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            recipient    : [bob.did, carol.did],
+            protocol     : protocolDefinition.protocol,
+            schema       : protocolDefinition.types.post.schema,
+            dataFormat   : protocolDefinition.types.post.dataFormats[0],
+            protocolPath : 'post'
+          }
+        });
+        queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(2);
       });
 
       it('should be able to query for published records', async () => {
@@ -1654,7 +1611,7 @@ export function testRecordsQueryHandler(): void {
         expect((publishedReply.entries![0].descriptor as RecordsWriteDescriptor).schema).to.equal('https://schema2');
       });
 
-      it('should only return published records and unpublished records that is meant for specific recipient(s)', async () => {
+      it('should only return published records and unpublished records that are meant for specific recipient(s)', async () => {
         // scenario: Alice installs a free-for-all protocol on her DWN
         // She writes both private and public messages for bob and carol, carol and bob also write public and privet messages for alice and each other
         // Bob, Alice and Carol should only be able to see private messages pertaining to themselves, and any public messages filtered by a recipient
@@ -1908,11 +1865,269 @@ export function testRecordsQueryHandler(): void {
         const carolQueryPrivateReply = await dwn.processMessage(alice.did, carolQueryPrivate.message);
         expect(carolQueryPrivateReply.status.code).to.equal(200);
         expect(carolQueryPrivateReply.entries?.length).to.equal(3);
-        // Carol can private messages she authored to alice, and her own private messages with herself as the recipient
+        // Carol can query for private messages she authored to alice, and her own private messages with herself as the recipient
         expect(carolQueryPrivateReply.entries!.map(e => e.recordId)).to.have.members([
           alicePrivateToCarol.message.recordId,
           bobPrivateToCarol.message.recordId,
           carolPrivateToAlice.message.recordId,
+        ]);
+      });
+
+      it('should only return published records and unpublished records that are authored by specific author(s)', async () => {
+        // scenario: Alice installs a free-for-all protocol on her DWN
+        // She writes both private and public messages for bob and carol, carol and bob also write public and privet messages for alice and each other
+        // Bob, Alice and Carol should only be able to see private messages pertaining to themselves, and any public messages filtered by an author
+        // Bob, Alice and Carol should be able to filter for ONLY public messages or ONLY private messages
+
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // install the free-for-all protocol on Alice's DWN
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : freeForAll
+        });
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // write private records for bob and carol
+        const alicePrivateToBob = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+
+        const alicePrivateToBobReply = await dwn.processMessage(alice.did, alicePrivateToBob.message, { dataStream: alicePrivateToBob.dataStream });
+        expect(alicePrivateToBobReply.status.code).to.equal(202);
+
+        const alicePrivateToCarol = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : carol.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+        const alicePrivateToCarolReply = await dwn.processMessage(alice.did, alicePrivateToCarol.message, {
+          dataStream: alicePrivateToCarol.dataStream
+        });
+        expect(alicePrivateToCarolReply.status.code).to.equal(202);
+
+        // write private records from carol to alice and bob
+        const carolPrivateToAlice = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : alice.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+        const carolPrivateToAliceReply = await dwn.processMessage(alice.did, carolPrivateToAlice.message, {
+          dataStream: carolPrivateToAlice.dataStream
+        });
+        expect(carolPrivateToAliceReply.status.code).to.equal(202);
+
+        const carolPrivateToBob = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : bob.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+        const carolPrivateToBobReply = await dwn.processMessage(alice.did, carolPrivateToBob.message, {
+          dataStream: carolPrivateToBob.dataStream
+        });
+        expect(carolPrivateToBobReply.status.code).to.equal(202);
+
+        // write private records from bob to alice and carol
+        const bobPrivateToAlice = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+
+        const bobPrivateToAliceReply = await dwn.processMessage(alice.did, bobPrivateToAlice.message, {
+          dataStream: bobPrivateToAlice.dataStream
+        });
+        expect(bobPrivateToAliceReply.status.code).to.equal(202);
+
+        const bobPrivateToCarol = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : carol.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        });
+        const bobPrivateToCarolReply = await dwn.processMessage(alice.did, bobPrivateToCarol.message, {
+          dataStream: bobPrivateToCarol.dataStream
+        });
+        expect(bobPrivateToCarolReply.status.code).to.equal(202);
+
+        // write public records from alice to bob and carol
+        const alicePublicToBob = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const alicePublicToBobReply = await dwn.processMessage(alice.did, alicePublicToBob.message, {
+          dataStream: alicePublicToBob.dataStream
+        });
+        expect(alicePublicToBobReply.status.code).to.equal(202);
+
+        const alicePublicToCarol = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : carol.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const alicePublicToCarolReply = await dwn.processMessage(alice.did, alicePublicToCarol.message, {
+          dataStream: alicePublicToCarol.dataStream
+        });
+        expect(alicePublicToCarolReply.status.code).to.equal(202);
+
+        // write public records from bob to alice and carol
+        const bobPublicToAlice = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const bobPublicToAliceReply = await dwn.processMessage(alice.did, bobPublicToAlice.message, {
+          dataStream: bobPublicToAlice.dataStream
+        });
+        expect(bobPublicToAliceReply.status.code).to.equal(202);
+
+        const bobPublicToCarol = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : carol.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const bobPublicToCarolReply = await dwn.processMessage(alice.did, bobPublicToCarol.message, {
+          dataStream: bobPublicToCarol.dataStream
+        });
+        expect(bobPublicToCarolReply.status.code).to.equal(202);
+
+        // write public records from carol to alice and bob
+        const carolPublicToAlice = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : alice.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const carolPublicToAliceReply = await dwn.processMessage(alice.did, carolPublicToAlice.message, {
+          dataStream: carolPublicToAlice.dataStream
+        });
+        expect(carolPublicToAliceReply.status.code).to.equal(202);
+
+        const carolPublicToBob = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : bob.did,
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+          published    : true
+        });
+        const carolPublicToBobReply = await dwn.processMessage(alice.did, carolPublicToBob.message, {
+          dataStream: carolPublicToBob.dataStream
+        });
+        expect(carolPublicToBobReply.status.code).to.equal(202);
+
+        // bob queries for records with himself and alice as authors
+        const bobQueryMessagesForBobAlice = await TestDataGenerator.generateRecordsQuery({
+          author : bob,
+          filter : { protocol: freeForAll.protocol, protocolPath: 'post', author: [bob.did, alice.did] }
+        });
+        const bobQueryMessagesForBobAliceReply = await dwn.processMessage(alice.did, bobQueryMessagesForBobAlice.message);
+        expect(bobQueryMessagesForBobAliceReply.status.code).to.equal(200);
+        expect(bobQueryMessagesForBobAliceReply.entries?.length).to.equal(7);
+
+        // Since Bob is the author if the query, we expect for him to be able to see:
+        // Private Messages Bob authored TO ANYONE
+        // Private Messages Alice authored To Bob
+        // Public Messages Alice authored
+        // Public Messages Bob authored
+        expect(bobQueryMessagesForBobAliceReply.entries!.map(e => e.recordId)).to.have.members([
+          alicePrivateToBob.message.recordId,
+          bobPrivateToAlice.message.recordId,
+          bobPrivateToCarol.message.recordId,
+          alicePublicToBob.message.recordId,
+          alicePublicToCarol.message.recordId,
+          bobPublicToAlice.message.recordId,
+          bobPublicToCarol.message.recordId
+        ]);
+
+        // carol queries for records with herself as the author
+        const carolQueryMessagesForCarolAlice = await TestDataGenerator.generateRecordsQuery({
+          author : carol,
+          filter : { protocol: freeForAll.protocol, protocolPath: 'post', author: carol.did }
+        });
+        const carolQueryMessagesForCarolAliceReply = await dwn.processMessage(alice.did, carolQueryMessagesForCarolAlice.message);
+        expect(carolQueryMessagesForCarolAliceReply.status.code).to.equal(200);
+        expect(carolQueryMessagesForCarolAliceReply.entries?.length).to.equal(4);
+
+        // Since Carol is the author if the query, we expect for her to be able to see:
+        // All messages that Carol sent to anyone, private or public
+        expect(carolQueryMessagesForCarolAliceReply.entries!.map(e => e.recordId)).to.have.members([
+          carolPrivateToAlice.message.recordId,
+          carolPrivateToBob.message.recordId,
+          carolPublicToAlice.message.recordId,
+          carolPublicToBob.message.recordId
+        ]);
+
+        // alice queries for ONLY published records with herself and bob as authors
+        const aliceQueryPublished = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { protocol: freeForAll.protocol, protocolPath: 'post', author: [alice.did, bob.did], published: true }
+        });
+        const aliceQueryPublishedReply = await dwn.processMessage(alice.did, aliceQueryPublished.message);
+        expect(aliceQueryPublishedReply.status.code).to.equal(200);
+        expect(aliceQueryPublishedReply.entries?.length).to.equal(4);
+        expect(aliceQueryPublishedReply.entries!.map(e => e.recordId)).to.have.members([
+          alicePublicToBob.message.recordId,
+          alicePublicToCarol.message.recordId,
+          bobPublicToAlice.message.recordId,
+          bobPublicToCarol.message.recordId
+        ]);
+
+        // carol queries for ONLY private records with herself and alice as the authors
+        const carolQueryPrivate = await TestDataGenerator.generateRecordsQuery({
+          author : carol,
+          filter : { protocol: freeForAll.protocol, protocolPath: 'post', author: [carol.did, alice.did], published: false }
+        });
+        const carolQueryPrivateReply = await dwn.processMessage(alice.did, carolQueryPrivate.message);
+        expect(carolQueryPrivateReply.status.code).to.equal(200);
+        expect(carolQueryPrivateReply.entries?.length).to.equal(3);
+        expect(carolQueryPrivateReply.entries!.map(e => e.recordId)).to.have.members([
+          alicePrivateToCarol.message.recordId,
+          carolPrivateToAlice.message.recordId,
+          carolPrivateToBob.message.recordId
         ]);
       });
 
