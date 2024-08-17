@@ -63,7 +63,7 @@ export function testRecordsPrune(): void {
       await dwn.close();
     });
 
-    it('should purge all descendants when given RecordsDelete with `prune` set to `true`', async () => {
+    it('should prune all descendants when given RecordsDelete with `prune` set to `true`', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
 
       // install a protocol with foo <- bar <- baz structure
@@ -212,6 +212,228 @@ export function testRecordsPrune(): void {
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only foo2 is left
       expect(reply2.entries![0]).to.deep.include(foo2.message);
+    });
+
+    it('should allow pruning against a deleted record that is not already pruned', async () => {
+      // Scenario:
+      // 1. Alice has a record `foo` with a descendent chain
+      // 2. Alice deletes the record `foo` WITHOUT prune, leaving the descendants intact
+      // 3. Verify that Alice is able to perform a prune on `foo` to delete all its descendants
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      // install a protocol with foo <- bar <- baz structure
+      const nestedProtocol = nestedProtocolDefinition;
+      const protocolsConfig = await ProtocolsConfigure.create({
+        definition : nestedProtocol,
+        signer     : Jws.createSigner(alice)
+      });
+      const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(protocolsConfigureReply.status.code).to.equal(202);
+
+      // 1. Alice has a record `foo` with a descendent chain
+      // write foo <- bar <- baz records
+
+      const fooData = TestDataGenerator.randomBytes(100);
+      const fooOptions = {
+        signer       : Jws.createSigner(alice),
+        protocol     : nestedProtocol.protocol,
+        protocolPath : 'foo',
+        schema       : nestedProtocol.types.foo.schema,
+        dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+        data         : fooData
+      };
+      const foo = await RecordsWrite.create(fooOptions);
+      const fooWriteResponse = await dwn.processMessage(alice.did, foo.message, { dataStream: DataStream.fromBytes(fooData) });
+      expect(fooWriteResponse.status.code).equals(202);
+
+      const barData = TestDataGenerator.randomBytes(100);
+      const barOptions = {
+        signer          : Jws.createSigner(alice),
+        protocol        : nestedProtocol.protocol,
+        protocolPath    : 'foo/bar',
+        schema          : nestedProtocol.types.bar.schema,
+        dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+        parentContextId : foo.message.contextId,
+        data            : barData
+      };
+      const bar = await RecordsWrite.create({ ...barOptions });
+      const barWriteResponse = await dwn.processMessage(alice.did, bar.message, { dataStream: DataStream.fromBytes(barData) });
+      expect(barWriteResponse.status.code).equals(202);
+
+      const bazData = TestDataGenerator.randomBytes(100);
+      const bazOptions = {
+        signer          : Jws.createSigner(alice),
+        protocol        : nestedProtocol.protocol,
+        protocolPath    : 'foo/bar/baz',
+        schema          : nestedProtocol.types.baz.schema,
+        dataFormat      : nestedProtocol.types.baz.dataFormats[0],
+        parentContextId : bar.message.contextId,
+        data            : bazData
+      };
+
+      const baz = await RecordsWrite.create({ ...bazOptions });
+      const bazWriteResponse = await dwn.processMessage(alice.did, baz.message, { dataStream: DataStream.fromBytes(bazData) });
+      expect(bazWriteResponse.status.code).equals(202);
+
+      // sanity records are inserted in message store
+      const queryFilter = [{
+        interface : DwnInterfaceName.Records,
+        protocol  : nestedProtocol.protocol
+      }];
+      const messagesBeforeDelete = await messageStore.query(alice.did, queryFilter);
+      expect(messagesBeforeDelete.messages.length).to.equal(3);
+
+      // sanity verify RecordsQuery returns no records
+      const recordsQuery = await RecordsQuery.create({
+        signer : Jws.createSigner(alice),
+        filter : { protocol: nestedProtocol.protocol }
+      });
+      const recordsQueryBeforeDeleteReply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(recordsQueryBeforeDeleteReply.status.code).to.equal(200);
+      expect(recordsQueryBeforeDeleteReply.entries?.length).to.equal(3);
+
+
+      // 2. Alice deletes the record `foo` WITHOUT prune, leaving the descendants intact
+      const fooDelete = await RecordsDelete.create({
+        recordId : foo.message.recordId,
+        // prune    : true, // intentionally showing that this is a RecordsDelete WITHOUT pruning
+        signer   : Jws.createSigner(alice)
+      });
+
+      const deleteReply = await dwn.processMessage(alice.did, fooDelete.message);
+      expect(deleteReply.status.code).to.equal(202);
+
+      // verify bar and baz messages still exists
+      const messagesAfterDelete = await messageStore.query(alice.did, queryFilter, { messageTimestamp: SortDirection.Ascending });
+      expect(messagesAfterDelete.messages.length).to.equal(4); // RecordsWrite for foo, bar, baz, and RecordsDelete for foo
+
+      // sanity verify RecordsQuery returns the descendants
+      const recordsQueryAfterDeleteReply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(recordsQueryAfterDeleteReply.status.code).to.equal(200);
+      expect(recordsQueryAfterDeleteReply.entries?.length).to.equal(2);
+
+      // 3. Verify that Alice is able to perform a prune on `foo` to delete all its descendants
+      const fooPrune = await RecordsDelete.create({
+        recordId : foo.message.recordId,
+        prune    : true,
+        signer   : Jws.createSigner(alice)
+      });
+
+      const pruneReply = await dwn.processMessage(alice.did, fooPrune.message);
+      expect(pruneReply.status.code).to.equal(202);
+
+      // verify bar and baz messages are permanently deleted
+      const messagesAfterPrune = await messageStore.query(alice.did, queryFilter, { messageTimestamp: SortDirection.Ascending });
+      expect(messagesAfterPrune.messages.length).to.equal(2); // just RecordsWrite and RecordsDelete for foo
+      expect(messagesAfterPrune.messages[0]).to.deep.include(foo.message);
+      expect(messagesAfterPrune.messages[1]).to.deep.include(fooPrune.message);
+
+      // sanity verify RecordsQuery returns no records
+      const recordsQueryAfterPruneReply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(recordsQueryAfterPruneReply.status.code).to.equal(200);
+      expect(recordsQueryAfterPruneReply.entries?.length).to.equal(0);
+    });
+
+    it('should return 404 when attempting to prune against a record that is already pruned', async () => {
+      // Scenario:
+      // 1. Alice has a record `foo` with a descendent chain
+      // 2. Alice prunes the record `foo`
+      // 3. Verify that Alice is unable to perform a prune on `foo` again
+
+      const alice = await TestDataGenerator.generateDidKeyPersona();
+
+      // install a protocol with foo <- bar <- baz structure
+      const nestedProtocol = nestedProtocolDefinition;
+      const protocolsConfig = await ProtocolsConfigure.create({
+        definition : nestedProtocol,
+        signer     : Jws.createSigner(alice)
+      });
+      const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(protocolsConfigureReply.status.code).to.equal(202);
+
+      // 1. Alice has a record `foo` with a descendent chain
+      // write foo <- bar <- baz records
+
+      const fooData = TestDataGenerator.randomBytes(100);
+      const fooOptions = {
+        signer       : Jws.createSigner(alice),
+        protocol     : nestedProtocol.protocol,
+        protocolPath : 'foo',
+        schema       : nestedProtocol.types.foo.schema,
+        dataFormat   : nestedProtocol.types.foo.dataFormats[0],
+        data         : fooData
+      };
+      const foo = await RecordsWrite.create(fooOptions);
+      const fooWriteResponse = await dwn.processMessage(alice.did, foo.message, { dataStream: DataStream.fromBytes(fooData) });
+      expect(fooWriteResponse.status.code).equals(202);
+
+      const barData = TestDataGenerator.randomBytes(100);
+      const barOptions = {
+        signer          : Jws.createSigner(alice),
+        protocol        : nestedProtocol.protocol,
+        protocolPath    : 'foo/bar',
+        schema          : nestedProtocol.types.bar.schema,
+        dataFormat      : nestedProtocol.types.bar.dataFormats[0],
+        parentContextId : foo.message.contextId,
+        data            : barData
+      };
+      const bar = await RecordsWrite.create({ ...barOptions });
+      const barWriteResponse = await dwn.processMessage(alice.did, bar.message, { dataStream: DataStream.fromBytes(barData) });
+      expect(barWriteResponse.status.code).equals(202);
+
+      const bazData = TestDataGenerator.randomBytes(100);
+      const bazOptions = {
+        signer          : Jws.createSigner(alice),
+        protocol        : nestedProtocol.protocol,
+        protocolPath    : 'foo/bar/baz',
+        schema          : nestedProtocol.types.baz.schema,
+        dataFormat      : nestedProtocol.types.baz.dataFormats[0],
+        parentContextId : bar.message.contextId,
+        data            : bazData
+      };
+
+      const baz = await RecordsWrite.create({ ...bazOptions });
+      const bazWriteResponse = await dwn.processMessage(alice.did, baz.message, { dataStream: DataStream.fromBytes(bazData) });
+      expect(bazWriteResponse.status.code).equals(202);
+
+      // sanity records are inserted in message store
+      const queryFilter = [{
+        interface : DwnInterfaceName.Records,
+        protocol  : nestedProtocol.protocol
+      }];
+      const queryResult = await messageStore.query(alice.did, queryFilter);
+      expect(queryResult.messages.length).to.equal(3);
+
+      // sanity verify RecordsQuery returns no records
+      const recordsQuery = await RecordsQuery.create({
+        signer : Jws.createSigner(alice),
+        filter : { protocol: nestedProtocol.protocol }
+      });
+      const recordsQueryBeforeDeleteReply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(recordsQueryBeforeDeleteReply.status.code).to.equal(200);
+      expect(recordsQueryBeforeDeleteReply.entries?.length).to.equal(3);
+
+
+      // 2. Alice prunes the record `foo`
+      const fooPrune1 = await RecordsDelete.create({
+        recordId : foo.message.recordId,
+        prune    : true,
+        signer   : Jws.createSigner(alice)
+      });
+
+      const prune1Reply = await dwn.processMessage(alice.did, fooPrune1.message);
+      expect(prune1Reply.status.code).to.equal(202);
+
+      // 3. Verify that Alice is unable to perform a prune on `foo` again
+      const fooPrune2 = await RecordsDelete.create({
+        recordId : foo.message.recordId,
+        prune    : true,
+        signer   : Jws.createSigner(alice)
+      });
+
+      const prune2Reply = await dwn.processMessage(alice.did, fooPrune2.message);
+      expect(prune2Reply.status.code).to.equal(404);
     });
 
     describe('prune and co-prune protocol action', () => {

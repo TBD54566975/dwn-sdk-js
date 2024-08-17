@@ -487,14 +487,14 @@ export class Records {
   /**
    * Determines if signature payload contains a protocolRole and should be authorized as such.
    */
-  static shouldProtocolAuthorize(signaturePayload: GenericSignaturePayload): boolean {
+  public static shouldProtocolAuthorize(signaturePayload: GenericSignaturePayload): boolean {
     return signaturePayload.protocolRole !== undefined;
   }
 
   /**
    * Checks if the filter supports returning published records.
    */
-  static filterIncludesPublishedRecords(filter: RecordsFilter): boolean {
+  public static filterIncludesPublishedRecords(filter: RecordsFilter): boolean {
     // NOTE: published records should still be returned when `published` and `datePublished` range are both undefined.
     return filter.datePublished !== undefined || filter.published !== false;
   }
@@ -502,11 +502,33 @@ export class Records {
   /**
    * Checks if the filter supports returning unpublished records.
    */
-  static filterIncludesUnpublishedRecords(filter: RecordsFilter): boolean {
+  public static filterIncludesUnpublishedRecords(filter: RecordsFilter): boolean {
     // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
     if (filter.datePublished === undefined && filter.published === undefined) {
       return true;
     }
     return filter.published === false;
+  }
+
+  /**
+   * Checks if the given RecordsDelete message can be performed against a record with the given newest existing state.
+   */
+  public static canPerformDeleteAgainstRecord(deleteToBePerformed: RecordsDeleteMessage, newestExistingMessage: GenericMessage | undefined): boolean {
+    if (newestExistingMessage === undefined) {
+      return false;
+    }
+
+    // can't perform delete if:
+    // attempting to delete on an already deleted record; or
+    // attempting to prune on an already pruned record;
+    if (newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+      if (deleteToBePerformed.descriptor.prune !== true) {
+        return false;
+      } else if ((newestExistingMessage as RecordsDeleteMessage).descriptor.prune === true) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

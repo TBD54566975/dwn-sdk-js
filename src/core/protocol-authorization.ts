@@ -212,12 +212,12 @@ export class ProtocolAuthorization {
 
   /**
    * Performs protocol-based authorization against the incoming `RecordsDelete` message.
-   * @param newestRecordsWrite The latest `RecordsWrite` associated with the recordId being deleted.
+   * @param recordsWrite A `RecordsWrite` of the record being deleted.
    */
   public static async authorizeDelete(
     tenant: string,
     incomingMessage: RecordsDelete,
-    newestRecordsWrite: RecordsWrite,
+    recordsWrite: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
 
@@ -228,13 +228,13 @@ export class ProtocolAuthorization {
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      newestRecordsWrite.message.descriptor.protocol!,
+      recordsWrite.message.descriptor.protocol!,
       messageStore,
     );
 
     // get the rule set for the inbound message
     const ruleSet = ProtocolAuthorization.getRuleSet(
-      newestRecordsWrite.message.descriptor.protocolPath!,
+      recordsWrite.message.descriptor.protocolPath!,
       protocolDefinition,
     );
 
@@ -242,8 +242,8 @@ export class ProtocolAuthorization {
     await ProtocolAuthorization.verifyInvokedRole(
       tenant,
       incomingMessage,
-      newestRecordsWrite.message.descriptor.protocol!,
-      newestRecordsWrite.message.contextId!,
+      recordsWrite.message.descriptor.protocol!,
+      recordsWrite.message.contextId!,
       protocolDefinition,
       messageStore,
     );
