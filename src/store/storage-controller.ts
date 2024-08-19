@@ -51,8 +51,7 @@ export class StorageController {
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
-    // if no messages found for the record, nothing to do
-    if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+    if (!Records.canPerformDeleteAgainstRecord(message, newestExistingMessage)) {
       return;
     }
 
