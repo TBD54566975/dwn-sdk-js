@@ -382,6 +382,16 @@ export class Records {
       filterCopy.contextId = contextIdPrefixFilter;
     }
 
+    // if the author filter is an array and it's empty, we should remove it from the filter as it will always return no results.
+    if (Array.isArray(filterCopy.author) && filterCopy.author.length === 0) {
+      delete filterCopy.author;
+    }
+
+    // if the recipient filter is an array and it's empty, we should remove it from the filter as it will always return no results.
+    if (Array.isArray(filterCopy.recipient) && filterCopy.recipient.length === 0) {
+      delete filterCopy.recipient;
+    }
+
     return filterCopy as Filter;
   }
 
@@ -530,5 +540,35 @@ export class Records {
     }
 
     return true;
+  }
+
+  /**
+   * Checks whether or not the incoming records query filter should build an unpublished recipient MessageStore filter.
+   *
+   * @param filter The incoming RecordsFilter to evaluate against.
+   * @param recipient The recipient to check against the filter, typically the query/subscribe message author.
+   * @returns {boolean} True if the filter contains the recipient, or if the recipient filter is undefined/empty.
+   */
+  static shouldBuildUnpublishedRecipientFilter(filter: RecordsFilter, recipient: string): boolean {
+    const { recipient: recipientFilter } = filter;
+
+    return Array.isArray(recipientFilter) ?
+      recipientFilter.length === 0 || recipientFilter.includes(recipient) :
+      recipientFilter === undefined || recipientFilter === recipient;
+  }
+
+  /**
+   * Checks whether or not the incoming records query filter should build an unpublished author MessageStore filter.
+   *
+   * @param filter The incoming RecordsFilter to evaluate against.
+   * @param author The author to check against the filter, typically the query/subscribe message author.
+   * @returns {boolean} True if the filter contains the author, or if the author filter is undefined/empty.
+   */
+  static shouldBuildUnpublishedAuthorFilter(filter: RecordsFilter, author: string): boolean {
+    const { author: authorFilter } = filter;
+
+    return Array.isArray(authorFilter) ?
+      authorFilter.length === 0 || authorFilter.includes(author) :
+      authorFilter === undefined || authorFilter === author;
   }
 }

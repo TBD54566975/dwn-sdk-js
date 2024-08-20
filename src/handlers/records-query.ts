@@ -151,15 +151,16 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     if (Records.filterIncludesUnpublishedRecords(filter)) {
-      filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
-
-      const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
-      if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
-        filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
+      if (Records.shouldBuildUnpublishedAuthorFilter(filter, recordsQuery.author!)) {
+        filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
       }
 
       if (Records.shouldProtocolAuthorize(recordsQuery.signaturePayload!)) {
         filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
+      }
+
+      if (Records.shouldBuildUnpublishedRecipientFilter(filter, recordsQuery.author!)) {
+        filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
       }
     }
 

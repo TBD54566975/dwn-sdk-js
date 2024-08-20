@@ -680,71 +680,276 @@ export function testSubscriptionScenarios(): void {
 
       it('allows authorized subscriptions to records intended for a recipient', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // alice installs a freeForAll protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...freeForAll }
+        });
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
         const bob = await TestDataGenerator.generateDidKeyPersona();
         const carol = await TestDataGenerator.generateDidKeyPersona();
 
-        // bob subscribes to any messages he's authorized to see
-        const bobMessages:string[] = [];
-        const bobSubscribeHandler = async (event: MessageEvent):Promise<void> => {
+        // bob subscribes to all records he's authorized to see, with alice as the recipient
+        const bobSubscribeAlice:string[] = [];
+        const bobSubscribeHandler = async (event: RecordEvent):Promise<void> => {
           const { message } = event;
-          bobMessages.push(await Message.getCid(message));
+          bobSubscribeAlice.push(await Message.getCid(message));
         };
 
-        const bobSubscribe = await TestDataGenerator.generateRecordsSubscribe({
+        const bobSubscribeToAlice = await TestDataGenerator.generateRecordsSubscribe({
           author : bob,
-          filter : { schema: 'http://schema1' }
+          filter : { protocol: freeForAll.protocol, recipient: alice.did }
         });
 
-        const bobSubscribeReply = await dwn.processMessage(alice.did, bobSubscribe.message, {
+        const bobSubscribeReply = await dwn.processMessage(alice.did, bobSubscribeToAlice.message, {
           subscriptionHandler: bobSubscribeHandler
         });
         expect(bobSubscribeReply.status.code).to.equal(200);
         expect(bobSubscribeReply.subscription).to.exist;
 
-        // carol subscribes to any messages she's the recipient of.
-        const carolMessages:string[] = [];
+        // carol subscribes to any messages that she or alice are the recipients of
+        const carolSubscribeCarolAndAlice:string[] = [];
         const carolSubscribeHandler = async (event: RecordEvent):Promise<void> => {
           const { message } = event;
-          carolMessages.push(await Message.getCid(message));
+          carolSubscribeCarolAndAlice.push(await Message.getCid(message));
         };
 
-        const carolSubscribe = await TestDataGenerator.generateRecordsSubscribe({
+        const carolSubscribeToCarolAndAlice = await TestDataGenerator.generateRecordsSubscribe({
           author : carol,
-          filter : { schema: 'http://schema1', recipient: carol.did }
+          filter : { protocol: freeForAll.protocol, recipient: [ alice.did, carol.did ] }
         });
 
-        const carolSubscribeReply = await dwn.processMessage(alice.did, carolSubscribe.message, {
+        const carolSubscribeReply = await dwn.processMessage(alice.did, carolSubscribeToCarolAndAlice.message, {
           subscriptionHandler: carolSubscribeHandler
         });
         expect(carolSubscribeReply.status.code).to.equal(200);
         expect(carolSubscribeReply.subscription).to.exist;
 
-        // write two messages for bob
-        const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
-        const write1Reply = await dwn.processMessage(alice.did, write1.message, { dataStream: write1.dataStream });
-        expect(write1Reply.status.code).to.equal(202);
+        const recordParams = {
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        };
 
-        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: bob.did });
-        const write2Reply = await dwn.processMessage(alice.did, write2.message, { dataStream: write2.dataStream });
-        expect(write2Reply.status.code).to.equal(202);
+        // write a private and public message for alice from bob
+        const publicBobToAlice = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : alice.did,
+          published : true
+        });
+        const publicBobToAliceReply = await dwn.processMessage(alice.did, publicBobToAlice.message, { dataStream: publicBobToAlice.dataStream });
+        expect(publicBobToAliceReply.status.code).to.equal(202);
 
-        // write one message for carol
-        const writeForCarol = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'http://schema1', recipient: carol.did });
-        const writeForCarolReply = await dwn.processMessage(alice.did, writeForCarol.message, { dataStream: writeForCarol.dataStream });
-        expect(writeForCarolReply.status.code).to.equal(202);
+        const privateBobToAlice = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : alice.did,
+          published : false
+        });
+        const privateBobToAliceReply = await dwn.processMessage(alice.did, privateBobToAlice.message, { dataStream: privateBobToAlice.dataStream });
+        expect(privateBobToAliceReply.status.code).to.equal(202);
+
+        // write a private message for alice from carol
+        const privateCarolToAlice = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : carol,
+          recipient : alice.did,
+          published : false
+        });
+        const privateCarolToAliceReply = await dwn.processMessage(alice.did, privateCarolToAlice.message, {
+          dataStream: privateCarolToAlice.dataStream
+        });
+        expect(privateCarolToAliceReply.status.code).to.equal(202);
+
+        // write a public and private message from bob to carol
+        const publicBobToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : carol.did,
+          published : true
+        });
+        const publicBobToCarolReply = await dwn.processMessage(alice.did, publicBobToCarol.message, {
+          dataStream: publicBobToCarol.dataStream
+        });
+        expect(publicBobToCarolReply.status.code).to.equal(202);
+
+        const privateBobToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : carol.did,
+          published : false
+        });
+        const privateBobToCarolReply = await dwn.processMessage(alice.did, privateBobToCarol.message, {
+          dataStream: privateBobToCarol.dataStream
+        });
+        expect(privateBobToCarolReply.status.code).to.equal(202);
 
         await Poller.pollUntilSuccessOrTimeout(async () => {
-          // bob should have received the two messages intended for him
-          expect(bobMessages.length).to.equal(2);
-          expect(bobMessages).to.have.members([
-            await Message.getCid(write1.message),
-            await Message.getCid(write2.message),
+          // carol should have received the message intended for her
+          expect(carolSubscribeCarolAndAlice.length).to.equal(4);
+          expect(carolSubscribeCarolAndAlice).to.have.members([
+            await Message.getCid(publicBobToAlice.message),
+            await Message.getCid(privateCarolToAlice.message),
+            await Message.getCid(publicBobToCarol.message),
+            await Message.getCid(privateBobToCarol.message),
           ]);
 
+          // bob should have received the two messages intended for him
+          expect(bobSubscribeAlice.length).to.equal(2);
+          expect(bobSubscribeAlice).to.have.members([
+            await Message.getCid(privateBobToAlice.message),
+            await Message.getCid(publicBobToAlice.message),
+          ]);
+        });
+      });
+
+      it('allows for authorized subscriptions to records authored by an author(s)', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // alice installs a freeForAll protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...freeForAll }
+        });
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // bob subscribes to all records he's authorized to see, with alice as the author
+        const bobSubscribeAlice:string[] = [];
+        const bobSubscribeHandler = async (event: RecordEvent):Promise<void> => {
+          const { message } = event;
+          bobSubscribeAlice.push(await Message.getCid(message));
+        };
+
+        const bobSubscribeToAlice = await TestDataGenerator.generateRecordsSubscribe({
+          author : bob,
+          filter : { protocol: freeForAll.protocol, author: alice.did }
+        });
+
+        const bobSubscribeReply = await dwn.processMessage(alice.did, bobSubscribeToAlice.message, {
+          subscriptionHandler: bobSubscribeHandler
+        });
+        expect(bobSubscribeReply.status.code).to.equal(200);
+        expect(bobSubscribeReply.subscription).to.exist;
+
+        // carol subscribes to any messages that she or alice are the authors of
+        const carolSubscribeCarolAndAlice:string[] = [];
+        const carolSubscribeHandler = async (event: RecordEvent):Promise<void> => {
+          const { message } = event;
+          carolSubscribeCarolAndAlice.push(await Message.getCid(message));
+        };
+
+        const carolSubscribeToCarolAndAlice = await TestDataGenerator.generateRecordsSubscribe({
+          author : carol,
+          filter : { protocol: freeForAll.protocol, author: [ alice.did, carol.did ] }
+        });
+
+        const carolSubscribeReply = await dwn.processMessage(alice.did, carolSubscribeToCarolAndAlice.message, {
+          subscriptionHandler: carolSubscribeHandler
+        });
+        expect(carolSubscribeReply.status.code).to.equal(200);
+        expect(carolSubscribeReply.subscription).to.exist;
+
+        const recordParams = {
+          protocol     : freeForAll.protocol,
+          protocolPath : 'post',
+          schema       : freeForAll.types.post.schema,
+          dataFormat   : freeForAll.types.post.dataFormats[0],
+        };
+
+        //control: write a public message to bob (will not show up)
+        const publicAliceToBob = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : alice,
+          recipient : bob.did,
+          published : true
+        });
+        const publicAliceToBobReply = await dwn.processMessage(alice.did, publicAliceToBob.message, {
+          dataStream: publicAliceToBob.dataStream
+        });
+        expect(publicAliceToBobReply.status.code).to.equal(202);
+
+        // write a private and public message from alice to carol
+        const publicAliceToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : alice,
+          recipient : carol.did,
+          published : true
+        });
+        const publicAliceToCarolReply = await dwn.processMessage(alice.did, publicAliceToCarol.message, {
+          dataStream: publicAliceToCarol.dataStream
+        });
+        expect(publicAliceToCarolReply.status.code).to.equal(202);
+
+        const privateAliceToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : alice,
+          recipient : carol.did,
+          published : false
+        });
+        const privateAliceToCarolReply = await dwn.processMessage(alice.did, privateAliceToCarol.message, {
+          dataStream: privateAliceToCarol.dataStream
+        });
+        expect(privateAliceToCarolReply.status.code).to.equal(202);
+
+        // write a private message for alice from carol
+        const privateCarolToAlice = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : carol,
+          recipient : alice.did,
+          published : false
+        });
+        const privateCarolToAliceReply = await dwn.processMessage(alice.did, privateCarolToAlice.message, {
+          dataStream: privateCarolToAlice.dataStream
+        });
+        expect(privateCarolToAliceReply.status.code).to.equal(202);
+
+        // write a public and private message from bob to carol
+        const publicBobToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : carol.did,
+          published : true
+        });
+        const publicBobToCarolReply = await dwn.processMessage(alice.did, publicBobToCarol.message, {
+          dataStream: publicBobToCarol.dataStream
+        });
+        expect(publicBobToCarolReply.status.code).to.equal(202);
+
+        const privateBobToCarol = await TestDataGenerator.generateRecordsWrite({
+          ...recordParams,
+          author    : bob,
+          recipient : carol.did,
+          published : false
+        });
+        const privateBobToCarolReply = await dwn.processMessage(alice.did, privateBobToCarol.message, {
+          dataStream: privateBobToCarol.dataStream
+        });
+        expect(privateBobToCarolReply.status.code).to.equal(202);
+
+        await Poller.pollUntilSuccessOrTimeout(async () => {
           // carol should have received the message intended for her
-          expect(carolMessages.length).to.equal(1);
-          expect(carolMessages).to.have.members([
-            await Message.getCid(writeForCarol.message),
+          expect(carolSubscribeCarolAndAlice.length).to.equal(4);
+          expect(carolSubscribeCarolAndAlice).to.have.members([
+            await Message.getCid(publicAliceToCarol.message),
+            await Message.getCid(privateAliceToCarol.message),
+            await Message.getCid(publicAliceToBob.message),
+            await Message.getCid(privateCarolToAlice.message),
+          ]);
+
+          // bob should have received the two messages intended for him
+          expect(bobSubscribeAlice.length).to.equal(2);
+          expect(bobSubscribeAlice).to.have.members([
+            await Message.getCid(publicAliceToBob.message),
+            await Message.getCid(publicAliceToCarol.message)
           ]);
         });
       });
