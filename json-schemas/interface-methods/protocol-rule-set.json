@@ -118,13 +118,13 @@
       "minProperties": 1,
       "properties": {
         "$requiredTags": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "$allowUndefinedTags": {
-            "type": "boolean"
+          "type": "boolean"
         }
       },
       "patternProperties": {
@@ -133,13 +133,23 @@
           "additionalProperties": false,
           "properties": {
             "type": {
-              "enum": ["string", "number", "integer", "boolean", "array"]
+              "enum": [
+                "string",
+                "number",
+                "integer",
+                "boolean",
+                "array"
+              ]
             },
             "items": {
               "type": "object",
               "properties": {
                 "type": {
-                  "enum": ["string", "number", "integer"]
+                  "enum": [
+                    "string",
+                    "number",
+                    "integer"
+                  ]
                 }
               },
               "patternProperties": {
@@ -150,7 +160,11 @@
               "type": "object",
               "properties": {
                 "type": {
-                  "enum": ["string", "number", "integer"]
+                  "enum": [
+                    "string",
+                    "number",
+                    "integer"
+                  ]
                 }
               },
               "patternProperties": {
@@ -159,10 +173,38 @@
             }
           },
           "patternProperties": {
-            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {
-            }
+            "^(enum|minimum|maximum|exclusiveMinimum|exclusiveMaximum|minLength|maxLength|minItems|maxItems|uniqueItems|minContains|maxContains)$": {}
           }
         }
+      }
+    },
+    "$expiration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "oneOf": [
+          {
+            "required": [
+              "amount"
+            ],
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "minimum": 1,
+                "$comment": "If only amount is set without unit, represents amount of milliseconds to wait from the record.dateCreated before records expire."
+              },
+              "unit": {
+                "type": "string",
+                "$comment": "Single character signaling how to interpret the given 'amount'. If present, must be one of: s (seconds), m (minutes), h (hours), d (days), y (years). E.g. 100s, 75m, 2d, 4y",
+                "patternProperties": {
+                  "^(s|m|d|y)$": {}
+                }
+              }
+            },
+            "$comment": "Amount is used to calculate an expiration date. Amount and unit are used to calculate a millisecond duration, which is then used to calculate an expiration date. Expiration is relative to `record.dateCreated`."
+          }
+        ]
       }
     }
   },
