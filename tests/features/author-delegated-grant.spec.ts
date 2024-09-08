@@ -25,7 +25,7 @@ import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName, Encoder, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -72,7 +72,6 @@ export function testAuthorDelegatedGrant(): void {
       it('should allow author-delegated grant to configure a protocol', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
-        const carol = await TestDataGenerator.generateDidKeyPersona();
 
         // Alice grants Bob to configure the email protocol
         const scope: PermissionScope = {
@@ -100,14 +99,25 @@ export function testAuthorDelegatedGrant(): void {
         const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
-        // Carol attempts to configure a protocol without a grant
-        const protocolConfigureByCarol = await TestDataGenerator.generateProtocolsConfigure({
-          author             : carol,
-          protocolDefinition : emailProtocolDefinition,
+        // verify the protocol configure message was processed
+        const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
+          author : alice,
+          filter : { protocol: emailProtocolDefinition.protocol }
         });
 
-        const protocolConfigureByCarolReply = await dwn.processMessage(alice.did, protocolConfigureByCarol.message);
-        expect(protocolConfigureByCarolReply.status.code).to.equal(401);
+        const { status, entries } = await dwn.processMessage(alice.did, protocolsQuery.message);
+        expect(status.code).to.equal(200);
+        expect(entries?.length).to.equal(1);
+
+        const fetchedProtocolConfigure = entries![0];
+        expect(fetchedProtocolConfigure.descriptor.definition).to.deep.equal(emailProtocolDefinition);
+
+        // author should be alice
+        const author = Message.getAuthor(fetchedProtocolConfigure);
+        expect(author).to.equal(alice.did);
+
+        const signer = Message.getSigner(fetchedProtocolConfigure);
+        expect(signer).to.equal(bob.did);
       });
     });
 

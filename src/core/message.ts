@@ -16,6 +16,22 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
  * A class containing utility methods for working with DWN messages.
  */
 export class Message {
+
+  /**
+   * Gets the DID of the author of the given message.
+   */
+  public static getAuthor(message: GenericMessage): string | undefined {
+    let author;
+
+    if (message.authorization?.authorDelegatedGrant !== undefined) {
+      author = Message.getSigner(message.authorization.authorDelegatedGrant);
+    } else if (message.authorization !== undefined) {
+      author = Message.getSigner(message);
+    }
+
+    return author;
+  }
+
   /**
    * Validates the given message against the corresponding JSON schema.
    * @throws {Error} if fails validation.
