@@ -1,6 +1,5 @@
+import type { AuthorizationModel } from '../types/message-types.js';
 import type { DidResolver } from '@web5/dids';
-import type { MessageInterface } from '../types/message-interface.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
