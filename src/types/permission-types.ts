@@ -73,6 +73,7 @@ export type PermissionScope = ProtocolPermissionScope | MessagesPermissionScope 
 export type ProtocolPermissionScope = {
   interface: DwnInterfaceName.Protocols;
   method: DwnMethodName.Configure | DwnMethodName.Query;
+  protocol?: string;
 };
 
 export type MessagesPermissionScope = {

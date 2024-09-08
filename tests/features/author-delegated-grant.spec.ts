@@ -68,6 +68,49 @@ export function testAuthorDelegatedGrant(): void {
       await dwn.close();
     });
 
+    describe('ProtocolsConfigure', () => {
+      it('should allow author-delegated grant to configure a protocol', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // Alice grants Bob to configure the email protocol
+        const scope: PermissionScope = {
+          interface : DwnInterfaceName.Protocols,
+          method    : DwnMethodName.Configure,
+        };
+
+        const grantToBob = await PermissionsProtocol.createGrant({
+          delegated   : true, // this is a delegated grant
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Allow Bob to configure the email protocol',
+          grantedTo   : bob.did,
+          scope,
+          signer      : Jws.createSigner(alice)
+        });
+
+        // Bob attempts to configure a protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          delegatedGrant     : grantToBob.dataEncodedMessage,
+          author             : bob,
+          protocolDefinition : emailProtocolDefinition,
+        });
+
+        // Bob should be abel to configure a protocol on behalf of alice
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // Carol attempts to configure a protocol without a grant
+        const protocolConfigureByCarol = await TestDataGenerator.generateProtocolsConfigure({
+          author             : carol,
+          protocolDefinition : emailProtocolDefinition,
+        });
+
+        const protocolConfigureByCarolReply = await dwn.processMessage(alice.did, protocolConfigureByCarol.message);
+        expect(protocolConfigureByCarolReply.status.code).to.equal(401);
+      });
+    });
+
     describe('RecordsWrite.parse()', async () => {
       it('should throw if a message invokes a author-delegated grant (ID) but the author-delegated grant is not given', async () => {
         const alice = await TestDataGenerator.generatePersona();

@@ -72,6 +72,7 @@ export type GenerateProtocolsConfigureInput = {
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
   permissionGrantId?: string;
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
 };
 
 export type GenerateProtocolsConfigureOutput = {
@@ -321,7 +322,8 @@ export class TestDataGenerator {
       messageTimestamp  : input?.messageTimestamp,
       definition,
       signer,
-      permissionGrantId : input?.permissionGrantId
+      permissionGrantId : input?.permissionGrantId,
+      delegatedGrant    : input?.delegatedGrant
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);

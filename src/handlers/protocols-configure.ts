@@ -6,10 +6,13 @@ import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
+import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { PermissionsProtocol } from '../protocols/permissions.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
-import { authenticate, authorizeOwner } from '../core/auth.js';
+import { ProtocolsGrantAuthorization } from '../core/protocols-grant-authorization.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class ProtocolsConfigureHandler implements MethodHandler {
@@ -35,7 +38,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorizeOwner(tenant, protocolsConfigure);
+      await ProtocolsConfigureHandler.authorizeProtocolsConfigure(tenant, protocolsConfigure, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -108,5 +111,28 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     };
 
     return indexes;
+  }
+
+  private static async authorizeProtocolsConfigure(tenant: string, protocolConfigure: ProtocolsConfigure, messageStore: MessageStore): Promise<void> {
+    if (protocolConfigure.author === tenant) {
+      return;
+    }
+
+    if (protocolConfigure.isSignedByAuthorDelegate) {
+      await protocolConfigure.authorizeAuthorDelegate(messageStore);
+    }
+
+    if (protocolConfigure.author !== undefined && protocolConfigure.signaturePayload!.permissionGrantId !== undefined) {
+      const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, protocolConfigure.signaturePayload!.permissionGrantId);
+      await ProtocolsGrantAuthorization.authorizeConfigure({
+        protocolsConfigureMessage : protocolConfigure.message,
+        expectedGrantor           : tenant,
+        expectedGrantee           : protocolConfigure.author,
+        permissionGrant,
+        messageStore
+      });
+    } else {
+      throw new DwnError(DwnErrorCode.ProtocolsConfigureAuthorizationFailed, 'message failed authorization');
+    }
   }
 }
