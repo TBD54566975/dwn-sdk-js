@@ -1,4 +1,3 @@
-import { authorizeOwner } from '../../src/core/auth.js';
 import { MessagesSubscribe } from '../../src/interfaces/messages-subscribe.js';
 import { DwnInterfaceName, DwnMethodName, Jws, TestDataGenerator, Time } from '../../src/index.js';
 
@@ -19,9 +18,6 @@ describe('MessagesSubscribe', () => {
       expect(message.descriptor.method).to.eql(DwnMethodName.Subscribe);
       expect(message.authorization).to.exist;
       expect(message.descriptor.messageTimestamp).to.equal(timestamp);
-
-      // MessagesSubscribe authorizes against owner
-      await authorizeOwner(alice.did, messagesSubscribe);
     });
   });
 });

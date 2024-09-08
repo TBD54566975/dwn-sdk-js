@@ -35,19 +35,3 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
     await GeneralJwsVerifier.verifySignatures(ownerDelegatedGrant.message.authorization.signature, didResolver);
   }
 }
-
-/**
- * Authorizes owner authored message.
- * @throws {DwnError} if fails authorization.
- */
-export async function authorizeOwner(tenant: string, incomingMessage: MessageInterface<GenericMessage>): Promise<void> {
-  // if author is the same as the target tenant, we can directly grant access
-  if (incomingMessage.author === tenant) {
-    return;
-  } else {
-    throw new DwnError(
-      DwnErrorCode.AuthorizationAuthorNotOwner,
-      `Message authored by ${incomingMessage.author}, not authored by expected owner ${tenant}.`
-    );
-  }
-}

@@ -16,7 +16,6 @@ export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
   AuthenticateDescriptorCidMismatch = 'AuthenticateDescriptorCidMismatch',
   AuthenticationMoreThanOneSignatureNotSupported = 'AuthenticationMoreThanOneSignatureNotSupported',
-  AuthorizationAuthorNotOwner = 'AuthorizationAuthorNotOwner',
   AuthorizationNotGrantedToAuthor = 'AuthorizationNotGrantedToAuthor',
   ComputeCidCodecNotSupported = 'ComputeCidCodecNotSupported',
   ComputeCidMultihashNotSupported = 'ComputeCidMultihashNotSupported',
