@@ -72,6 +72,17 @@ describe('Message', () => {
       const signer = Message.getSigner(message);
       expect(signer).to.equal(deviceX.did);
     });
+
+    it('returns undefined for an unsigned message', async () => {
+      const { message } = await RecordsRead.create({
+        filter: {
+          recordId: await TestDataGenerator.randomCborSha256Cid()
+        }
+      });
+
+      const author = Message.getAuthor(message);
+      expect(author).to.be.undefined;
+    });
   });
 
   describe('getSigner()', () => {
