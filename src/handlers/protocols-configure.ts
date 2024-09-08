@@ -114,15 +114,14 @@ export class ProtocolsConfigureHandler implements MethodHandler {
   }
 
   private static async authorizeProtocolsConfigure(tenant: string, protocolConfigure: ProtocolsConfigure, messageStore: MessageStore): Promise<void> {
-    if (protocolConfigure.author === tenant) {
-      return;
-    }
 
     if (protocolConfigure.isSignedByAuthorDelegate) {
       await protocolConfigure.authorizeAuthorDelegate(messageStore);
     }
 
-    if (protocolConfigure.author !== undefined && protocolConfigure.signaturePayload!.permissionGrantId !== undefined) {
+    if (protocolConfigure.author === tenant) {
+      return;
+    } else if (protocolConfigure.author !== undefined && protocolConfigure.signaturePayload!.permissionGrantId !== undefined) {
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, protocolConfigure.signaturePayload!.permissionGrantId);
       await ProtocolsGrantAuthorization.authorizeConfigure({
         protocolsConfigureMessage : protocolConfigure.message,
