@@ -35,10 +35,15 @@ export function testResumableTasks(): void {
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
+    let consoleError: (message?: any, ...optionalParams: any[]) => void;;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
     before(async () => {
+      // suppress console.error output during tests
+      consoleError = console.error;
+      console.error = ():void => { };
+
       didResolver = new UniversalResolver({ didResolvers: [DidKey] });
 
       const stores = TestStores.get();
@@ -69,6 +74,8 @@ export function testResumableTasks(): void {
     });
 
     after(async () => {
+      // restore console.error
+      console.error = consoleError;
       await dwn.close();
     });
 
