@@ -21,11 +21,14 @@ export class Message {
    * Gets the DID of the author of the given message.
    */
   public static getAuthor(message: GenericMessage): string | undefined {
-    let author;
+    if (message.authorization === undefined) {
+      return undefined;
+    }
 
-    if (message.authorization?.authorDelegatedGrant !== undefined) {
+    let author;
+    if (message.authorization.authorDelegatedGrant !== undefined) {
       author = Message.getSigner(message.authorization.authorDelegatedGrant);
-    } else if (message.authorization !== undefined) {
+    } else {
       author = Message.getSigner(message);
     }
 

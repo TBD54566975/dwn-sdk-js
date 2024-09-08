@@ -13,7 +13,7 @@ import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-m
 
 describe('Message', () => {
   describe('getAuthor()', () => {
-    it('should return the author of RecordsWrite, RecordsDelete types', async () => {
+    it('should return the author of a message', async () => {
       const bob = await TestDataGenerator.generatePersona();
 
       // create a record message
@@ -25,6 +25,11 @@ describe('Message', () => {
       const { message: recordsDeleteMessage } = await TestDataGenerator.generateRecordsDelete({ author: bob });
       const recordsDeleteAuthor = Message.getAuthor(recordsDeleteMessage);
       expect(recordsDeleteAuthor).to.equal(bob.did);
+
+      // create a protocol configure message
+      const { message: protocolsConfigureMessage } = await TestDataGenerator.generateProtocolsConfigure({ author: bob });
+      const protocolsConfigureAuthor = Message.getAuthor(protocolsConfigureMessage);
+      expect(protocolsConfigureAuthor).to.equal(bob.did);
     });
 
     it('should get the author of a delegated message', async () => {
@@ -62,6 +67,10 @@ describe('Message', () => {
       // expect message author to be alice
       const author = Message.getAuthor(message);
       expect(author).to.equal(alice.did);
+
+      // expect message signer to be deviceX
+      const signer = Message.getSigner(message);
+      expect(signer).to.equal(deviceX.did);
     });
   });
 
