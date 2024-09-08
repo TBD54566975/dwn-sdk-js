@@ -27,8 +27,8 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
+import { DataStream, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, PermissionGrant, PermissionsProtocol } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -435,6 +435,122 @@ export function testProtocolsConfigureHandler(): void {
         const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigureMessage);
         expect(protocolsConfigureReply.status.code).to.equal(400);
         expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureDuplicateRoleInRuleSet);
+      });
+
+      describe('Grant authorization', () => {
+        it('allows an external party to ProtocolsConfigure only if they have a valid grant', async () => {
+          // scenario:
+          // 1. Alice grants Bob the access to ProtocolsConfigure on her DWN
+          // 2. Verify Bob can perform a ProtocolsConfigure
+          // 3. Verify that Mallory cannot to use Bob's permission grant to gain access to Alice's DWN
+          // 4. Alice revokes Bob's grant
+          // 5. Verify Bob cannot perform ProtocolsConfigure with the revoked grant
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+          const mallory = await TestDataGenerator.generateDidKeyPersona();
+
+          // 1. Alice grants Bob the access to ProtocolsConfigure on her DWN
+          const permissionGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
+            scope       : { interface: DwnInterfaceName.Protocols, method: DwnMethodName.Configure }
+          });
+          const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+
+          const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
+          expect(grantRecordsWriteReply.status.code).to.equal(202);
+
+          // 2. Verify Bob can perform a ProtocolsConfigure
+          const permissionGrantId = permissionGrant.recordsWrite.message.recordId;
+          const protocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            permissionGrantId,
+            author             : bob,
+            protocolDefinition : minimalProtocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+          // 3. Verify that Mallory cannot to use Bob's permission grant to gain access to Alice's DWN
+          const malloryProtocolsQuery = await TestDataGenerator.generateProtocolsConfigure({
+            permissionGrantId,
+            author             : mallory,
+            protocolDefinition : minimalProtocolDefinition
+          });
+          const malloryProtocolsQueryReply = await dwn.processMessage(alice.did, malloryProtocolsQuery.message);
+          expect(malloryProtocolsQueryReply.status.code).to.equal(401);
+          expect(malloryProtocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationNotGrantedToAuthor);
+
+          // 4. Alice revokes Bob's grant
+          const revokeWrite = await PermissionsProtocol.createRevocation({
+            signer      : Jws.createSigner(alice),
+            grant       : await PermissionGrant.parse(permissionGrant.dataEncodedMessage),
+            dateRevoked : Time.getCurrentTimestamp()
+          });
+
+          const revokeWriteReply = await dwn.processMessage(
+            alice.did,
+            revokeWrite.recordsWrite.message,
+            { dataStream: DataStream.fromBytes(revokeWrite.permissionRevocationBytes) }
+          );
+          expect(revokeWriteReply.status.code).to.equal(202);
+
+          // 5. Verify Bob cannot perform ProtocolsQuery with the revoked grant
+          const unauthorizedProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
+            permissionGrantId,
+            author             : bob,
+            protocolDefinition : {
+              ...minimalProtocolDefinition,
+              protocol: 'https://example.com/protocol/another-protocol'
+            }
+          });
+          const unauthorizedProtocolsConfigureReply = await dwn.processMessage(alice.did, unauthorizedProtocolsConfigure.message);
+          expect(unauthorizedProtocolsConfigureReply.status.code).to.equal(401);
+          expect(unauthorizedProtocolsConfigureReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantRevoked);
+        });
+
+        it('should allow to scope a ProtocolsConfigure to a specific protocol', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+
+          // Alice grants Bob the access to ProtocolsConfigure on her DWN for a specific protocol
+          const permissionGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
+            scope       : { interface: DwnInterfaceName.Protocols, method: DwnMethodName.Configure, protocol: 'https://example.com/protocol/allowed' }
+          });
+
+          const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+          const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
+          expect(grantRecordsWriteReply.status.code).to.equal(202);
+
+          // Bob tries to ProtocolsConfigure to Alice's DWN for the allowed protocol
+          const protocolConfigureAllowed = await TestDataGenerator.generateProtocolsConfigure({
+            author             : bob,
+            protocolDefinition : {
+              ...minimalProtocolDefinition,
+              protocol: 'https://example.com/protocol/allowed'
+            },
+            permissionGrantId: permissionGrant.recordsWrite.message.recordId
+          });
+
+          const protocolConfigureAllowedReply = await dwn.processMessage(alice.did, protocolConfigureAllowed.message);
+          expect(protocolConfigureAllowedReply.status.code).to.equal(202);
+
+          // Bob tries to ProtocolsConfigure to Alice's DWN for a different protocol
+          const protocolConfigureNotAllowed = await TestDataGenerator.generateProtocolsConfigure({
+            author             : bob,
+            protocolDefinition : {
+              ...minimalProtocolDefinition,
+              protocol: 'https://example.com/protocol/not-allowed'
+            },
+            permissionGrantId: permissionGrant.recordsWrite.message.recordId
+          });
+
+          const protocolConfigureNotAllowedReply = await dwn.processMessage(alice.did, protocolConfigureNotAllowed.message);
+          expect(protocolConfigureNotAllowedReply.status.code).to.equal(401);
+        });
       });
 
       describe('event log', () => {

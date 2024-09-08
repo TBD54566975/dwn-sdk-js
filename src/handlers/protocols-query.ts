@@ -36,7 +36,9 @@ export class ProtocolsQueryHandler implements MethodHandler {
 
       // return public ProtocolsConfigures if query fails with a certain authentication or authorization code
       if (error.code === DwnErrorCode.AuthenticateJwsMissing || // unauthenticated
-          error.code === DwnErrorCode.ProtocolsQueryUnauthorized) {
+        error.code === DwnErrorCode.ProtocolsQueryUnauthorized ||
+        error.code === DwnErrorCode.ProtocolsGrantAuthorizationQueryProtocolScopeMismatch
+      ) {
 
         const entries: ProtocolsConfigureMessage[] = await this.fetchPublishedProtocolsConfigure(tenant, protocolsQuery);
         return {

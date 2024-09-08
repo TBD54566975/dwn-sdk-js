@@ -4,15 +4,14 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
-import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { PermissionsProtocol } from '../protocols/permissions.js';
+import { ProtocolsGrantAuthorization } from '../core/protocols-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
-
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
@@ -80,10 +79,10 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionGrantId) {
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionGrantId);
-      await GrantAuthorization.performBaseValidation({
-        incomingMessage : this.message,
+      await ProtocolsGrantAuthorization.authorizeQuery({
         expectedGrantor : tenant,
         expectedGrantee : this.author,
+        incomingMessage : this.message,
         permissionGrant,
         messageStore
       });

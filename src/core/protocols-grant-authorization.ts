@@ -1,7 +1,7 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionGrant } from '../protocols/permission-grant.js';
 import type { ProtocolPermissionScope } from '../types/permission-types.js';
-import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
+import type { ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -30,6 +30,35 @@ export class ProtocolsGrantAuthorization {
     });
 
     ProtocolsGrantAuthorization.verifyScope(protocolsConfigureMessage, permissionGrant.scope as ProtocolPermissionScope);
+  }
+
+  public static async authorizeQuery(input: {
+    expectedGrantor: string,
+    expectedGrantee: string,
+    incomingMessage: ProtocolsQueryMessage;
+    permissionGrant: PermissionGrant;
+    messageStore: MessageStore;
+  }): Promise<void> {
+    const { expectedGrantee, expectedGrantor, incomingMessage, permissionGrant, messageStore } = input;
+
+    await GrantAuthorization.performBaseValidation({
+      incomingMessage: incomingMessage,
+      expectedGrantor,
+      expectedGrantee,
+      permissionGrant,
+      messageStore
+    });
+
+    // If the grant specifies a protocol, the query must specify the same protocol.
+    const permissionScope = permissionGrant.scope as ProtocolPermissionScope;
+    const protocolInGrant = permissionScope.protocol;
+    const protocolInMessage = incomingMessage.descriptor.filter?.protocol;
+    if (protocolInGrant !== undefined && protocolInMessage !== protocolInGrant) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolsGrantAuthorizationQueryProtocolScopeMismatch,
+        `Grant protocol scope ${protocolInGrant} does not match protocol in message ${protocolInMessage}`
+      );
+    }
   }
 
   /**

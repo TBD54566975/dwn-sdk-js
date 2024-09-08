@@ -293,6 +293,91 @@ export function testProtocolsQueryHandler(): void {
           expect(unauthorizedProtocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantRevoked);
         });
 
+        it('should allow to scope a ProtocolsQuery to a specific protocol', async () => {
+          const alice = await TestDataGenerator.generateDidKeyPersona();
+          const bob = await TestDataGenerator.generateDidKeyPersona();
+
+          // create 2 unpublished protocols, and one published protocol
+          const { message: allowedProtocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+            author    : alice,
+            published : false,
+          });
+          const allowedProtocol = allowedProtocolMessage.descriptor.definition.protocol;
+          const { status: allowedStatus } = await dwn.processMessage(alice.did, allowedProtocolMessage);
+          expect(allowedStatus.code).to.equal(202);
+
+
+          const { message: notAllowedProtocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+            author    : alice,
+            published : false,
+          });
+          const notAllowedProtocol = notAllowedProtocolMessage.descriptor.definition.protocol;
+          const { status: notAllowedStatus } = await dwn.processMessage(alice.did, notAllowedProtocolMessage);
+          expect(notAllowedStatus.code).to.equal(202);
+
+          const { message: publishedProtocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+            author    : alice,
+            published : true,
+          });
+          const publishedProtocol = publishedProtocolMessage.descriptor.definition.protocol;
+          const { status: publishedStatus } = await dwn.processMessage(alice.did, publishedProtocolMessage);
+          expect(publishedStatus.code).to.equal(202);
+
+
+          // Alice grants Bob the access to ProtocolsQuery on her DWN for a specific protocol
+          const permissionGrant = await PermissionsProtocol.createGrant({
+            signer      : Jws.createSigner(alice),
+            grantedTo   : bob.did,
+            dateExpires : Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 }),
+            scope       : { interface: DwnInterfaceName.Protocols, method: DwnMethodName.Query, protocol: allowedProtocol }
+          });
+
+          const dataStream = DataStream.fromBytes(permissionGrant.permissionGrantBytes);
+          const grantRecordsWriteReply = await dwn.processMessage(alice.did, permissionGrant.recordsWrite.message, { dataStream });
+          expect(grantRecordsWriteReply.status.code).to.equal(202);
+
+          // Bob tries to ProtocolsQuery to Alice's DWN for the allowed protocol
+          const protocolsQueryAllowed = await TestDataGenerator.generateProtocolsQuery({
+            author : bob,
+            filter : {
+              protocol: allowedProtocol
+            },
+            permissionGrantId: permissionGrant.recordsWrite.message.recordId
+          });
+
+          const protocolQueryAllowedReply = await dwn.processMessage(alice.did, protocolsQueryAllowed.message);
+          expect(protocolQueryAllowedReply.status.code).to.equal(200);
+          expect(protocolQueryAllowedReply.entries?.length).to.equal(1);
+          expect(protocolQueryAllowedReply.entries![0].descriptor.definition.protocol).to.deep.equal(allowedProtocol);
+
+          // Bob tries to ProtocolsQuery to Alice's DWN for a different protocol
+          const protocolQueryNotAllowed = await TestDataGenerator.generateProtocolsQuery({
+            author : bob,
+            filter : {
+              protocol: notAllowedProtocol,
+            },
+            permissionGrantId: permissionGrant.recordsWrite.message.recordId
+          });
+
+          const protocolQueryNotAllowedReply = await dwn.processMessage(alice.did, protocolQueryNotAllowed.message);
+          expect(protocolQueryNotAllowedReply.status.code).to.equal(200);
+          expect(protocolQueryNotAllowedReply.entries?.length).to.equal(0);
+
+          // Bob tries to ProtocolsQuery to Alice's DWN for a published protocol with the same grant
+          const protocolQueryPublished = await TestDataGenerator.generateProtocolsQuery({
+            author : bob,
+            filter : {
+              protocol: publishedProtocol,
+            },
+            permissionGrantId: permissionGrant.recordsWrite.message.recordId
+          });
+
+          const protocolQueryPublishedReply = await dwn.processMessage(alice.did, protocolQueryPublished.message);
+          expect(protocolQueryPublishedReply.status.code).to.equal(200);
+          expect(protocolQueryPublishedReply.entries?.length).to.equal(1);
+          expect(protocolQueryPublishedReply.entries![0].descriptor.definition.protocol).to.deep.equal(publishedProtocol);
+        });
+
         it('rejects with 401 when an external party attempts to ProtocolsQuery if they present an expired grant', async () => {
           // scenario: Alice grants Bob access to ProtocolsQuery, but when Bob invokes the grant it has expired
           const alice = await TestDataGenerator.generateDidKeyPersona();
