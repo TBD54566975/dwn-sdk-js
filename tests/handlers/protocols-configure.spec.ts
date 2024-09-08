@@ -293,7 +293,7 @@ export function testProtocolsConfigureHandler(): void {
         });
         const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
         expect(protocolsConfigureReply.status.code).to.equal(401);
-        expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.AuthorizationAuthorNotOwner);
+        expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureAuthorizationFailed);
       });
 
       it('should reject ProtocolsConfigure with action rule containing duplicated actor (`who` or `who` + `of` combination) within a rule set', async () => {
