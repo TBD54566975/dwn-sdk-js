@@ -239,6 +239,23 @@ export function testProtocolsQueryHandler(): void {
           const bob = await TestDataGenerator.generateDidKeyPersona();
           const mallory = await TestDataGenerator.generateDidKeyPersona();
 
+          // Alice creates a public and private protocol to test query results
+          const { message: publicProtocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+            author    : alice,
+            published : true,
+          });
+
+          const { status: publicProtocolStatus } = await dwn.processMessage(alice.did, publicProtocolMessage);
+          expect(publicProtocolStatus.code).to.equal(202);
+
+          const { message: privateProtocolMessage } = await TestDataGenerator.generateProtocolsConfigure({
+            author    : alice,
+            published : false,
+          });
+
+          const { status: privateProtocolStatus } = await dwn.processMessage(alice.did, privateProtocolMessage);
+          expect(privateProtocolStatus.code).to.equal(202);
+
           // 1. Alice grants Bob the access to ProtocolsQuery on her DWN
           const permissionGrant = await PermissionsProtocol.createGrant({
             signer      : Jws.createSigner(alice),
@@ -259,6 +276,7 @@ export function testProtocolsQueryHandler(): void {
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(200);
+          expect(protocolsQueryReply.entries?.length).to.equal(2);
 
           // 3. Verify that Mallory cannot to use Bob's permission grant to gain access to Alice's DWN
           const malloryProtocolsQuery = await TestDataGenerator.generateProtocolsQuery({
