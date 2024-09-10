@@ -8,7 +8,7 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class ProtocolsGrantAuthorization {
   /**
-   * Authorizes the given RecordsWrite in the scope of the DID given.
+   * Authorizes the given ProtocolsConfigure in the scope of the DID given.
    */
   public static async authorizeConfigure(input: {
     protocolsConfigureMessage: ProtocolsConfigureMessage,
@@ -62,7 +62,7 @@ export class ProtocolsGrantAuthorization {
   }
 
   /**
-   * Verifies a record against the scope of the given grant.
+   * Verifies a ProtocolsConfigure against the scope of the given grant.
    */
   private static verifyScope(
     protocolsConfigureMessage: ProtocolsConfigureMessage,
