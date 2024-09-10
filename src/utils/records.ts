@@ -35,21 +35,6 @@ export class Records {
   }
 
   /**
-   * Gets the DID of the author of the given message.
-   */
-  public static getAuthor(message: RecordsWriteMessage | RecordsDeleteMessage): string | undefined {
-    let author;
-
-    if (message.authorization.authorDelegatedGrant !== undefined) {
-      author = Message.getSigner(message.authorization.authorDelegatedGrant);
-    } else {
-      author = Message.getSigner(message);
-    }
-
-    return author;
-  }
-
-  /**
    * Decrypts the encrypted data in a message reply using the given ancestor private key.
    * @param ancestorPrivateKey Any ancestor private key in the key derivation path.
    */

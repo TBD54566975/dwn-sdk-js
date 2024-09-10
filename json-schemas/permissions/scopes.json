@@ -60,6 +60,25 @@
         }
       }
     },
+    "protocols-configure-scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Protocols"
+        },
+        "method": {
+          "const": "Configure"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      }
+    },
     "protocols-query-scope": {
       "type": "object",
       "additionalProperties": false,
@@ -73,6 +92,9 @@
         },
         "method": {
           "const": "Query"
+        },
+        "protocol": {
+          "type": "string"
         }
       }
     },

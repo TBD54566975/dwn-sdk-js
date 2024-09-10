@@ -1,9 +1,13 @@
+import type { DataEncodedRecordsWriteMessage } from '../types/records-types.js';
+import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import Ajv from 'ajv/dist/2020.js';
 import { Message } from '../core/message.js';
+import { PermissionGrant } from '../protocols/permission-grant.js';
+import { ProtocolsGrantAuthorization } from '../core/protocols-grant-authorization.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -14,6 +18,10 @@ export type ProtocolsConfigureOptions = {
   messageTimestamp?: string;
   definition: ProtocolDefinition;
   signer: Signer;
+  /**
+   * The delegated grant invoked to sign on behalf of the logical author, which is the grantor of the delegated grant.
+   */
+  delegatedGrant?: DataEncodedRecordsWriteMessage;
   permissionGrantId?: string;
 };
 
@@ -38,6 +46,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
     const authorization = await Message.createAuthorization({
       descriptor,
       signer            : options.signer,
+      delegatedGrant    : options.delegatedGrant,
       permissionGrantId : options.permissionGrantId
     });
     const message = { descriptor, authorization };
@@ -47,6 +56,21 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
 
     const protocolsConfigure = new ProtocolsConfigure(message);
     return protocolsConfigure;
+  }
+
+  /**
+   * Authorizes the author-delegate who signed this message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public async authorizeAuthorDelegate(messageStore: MessageStore): Promise<void> {
+    const delegatedGrant = await PermissionGrant.parse(this.message.authorization.authorDelegatedGrant!);
+    await ProtocolsGrantAuthorization.authorizeConfigure({
+      protocolsConfigureMessage : this.message,
+      expectedGrantor           : this.author!,
+      expectedGrantee           : this.signer!,
+      permissionGrant           : delegatedGrant,
+      messageStore
+    });
   }
 
   /**

@@ -25,7 +25,7 @@ import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnInterfaceName, DwnMethodName, Encoder, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Message, PermissionsProtocol, RecordsDelete, RecordsQuery, RecordsRead, RecordsSubscribe } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -66,6 +66,127 @@ export function testAuthorDelegatedGrant(): void {
 
     after(async () => {
       await dwn.close();
+    });
+
+    describe('ProtocolsConfigure', () => {
+      it('should allow author-delegated grant to configure protocols', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // Alice grants Bob ability to configure any protocol, bob will use it to configure the email protocol
+        const scope: PermissionScope = {
+          interface : DwnInterfaceName.Protocols,
+          method    : DwnMethodName.Configure,
+        };
+
+        const grantToBob = await PermissionsProtocol.createGrant({
+          delegated   : true, // this is a delegated grant
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Allow Bob to configure the email protocol',
+          grantedTo   : bob.did,
+          scope,
+          signer      : Jws.createSigner(alice)
+        });
+
+        // Bob attempts to configure a protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          delegatedGrant     : grantToBob.dataEncodedMessage,
+          author             : bob,
+          protocolDefinition : emailProtocolDefinition,
+        });
+
+        // Bob should be abel to configure a protocol on behalf of alice
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // verify the protocol configure message was processed
+        const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
+          author : alice,
+          filter : { protocol: emailProtocolDefinition.protocol }
+        });
+
+        const { status, entries } = await dwn.processMessage(alice.did, protocolsQuery.message);
+        expect(status.code).to.equal(200);
+        expect(entries?.length).to.equal(1);
+
+        const fetchedProtocolConfigure = entries![0];
+        expect(fetchedProtocolConfigure.descriptor.definition).to.deep.equal(emailProtocolDefinition);
+
+        // author should be alice
+        const author = Message.getAuthor(fetchedProtocolConfigure);
+        expect(author).to.equal(alice.did);
+
+        const signer = Message.getSigner(fetchedProtocolConfigure);
+        expect(signer).to.equal(bob.did);
+      });
+
+      it('should allow author-delegated grant to configure a specific protocol', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+
+        // Alice grants Bob to configure the email protocol
+        const scope: PermissionScope = {
+          interface : DwnInterfaceName.Protocols,
+          method    : DwnMethodName.Configure,
+          protocol  : emailProtocolDefinition.protocol,
+        };
+
+        const grantToBob = await PermissionsProtocol.createGrant({
+          delegated   : true, // this is a delegated grant
+          dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+          description : 'Allow Bob to configure the email protocol',
+          grantedTo   : bob.did,
+          scope,
+          signer      : Jws.createSigner(alice)
+        });
+
+        // Bob attempts to configure a protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          delegatedGrant     : grantToBob.dataEncodedMessage,
+          author             : bob,
+          protocolDefinition : emailProtocolDefinition,
+        });
+
+        // Bob should be abel to configure a protocol on behalf of alice
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // verify the protocol configure message was processed
+        const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
+          author : alice,
+          filter : { protocol: emailProtocolDefinition.protocol }
+        });
+
+        const { status, entries } = await dwn.processMessage(alice.did, protocolsQuery.message);
+        expect(status.code).to.equal(200);
+        expect(entries?.length).to.equal(1);
+
+        const fetchedProtocolConfigure = entries![0];
+        expect(fetchedProtocolConfigure.descriptor.definition).to.deep.equal(emailProtocolDefinition);
+
+        // author should be alice
+        const author = Message.getAuthor(fetchedProtocolConfigure);
+        expect(author).to.equal(alice.did);
+
+        const signer = Message.getSigner(fetchedProtocolConfigure);
+        expect(signer).to.equal(bob.did);
+
+        // verify that bob cannot configure a different protocol
+        const otherProtocolDefinition = {
+          ...emailProtocolDefinition,
+          protocol: 'https://example.com/protocol/otherProtocol'
+        };
+
+        const otherProtocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          delegatedGrant     : grantToBob.dataEncodedMessage,
+          author             : bob,
+          protocolDefinition : otherProtocolDefinition,
+        });
+
+        const otherProtocolConfigureReply = await dwn.processMessage(alice.did, otherProtocolConfigure.message);
+        expect(otherProtocolConfigureReply.status.code).to.equal(401);
+        expect(otherProtocolConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsGrantAuthorizationScopeProtocolMismatch);
+      });
     });
 
     describe('RecordsWrite.parse()', async () => {

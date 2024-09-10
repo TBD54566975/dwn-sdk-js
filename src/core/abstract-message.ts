@@ -28,6 +28,13 @@ export abstract class AbstractMessage<M extends GenericMessage> implements Messa
     return this._signaturePayload;
   }
 
+  /**
+   * If this message is signed by an author-delegate.
+   */
+  public get isSignedByAuthorDelegate(): boolean {
+    return Message.isSignedByAuthorDelegate(this._message);
+  }
+
   protected constructor(message: M) {
     this._message = message;
 
