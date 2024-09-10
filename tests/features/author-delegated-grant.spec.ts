@@ -73,7 +73,7 @@ export function testAuthorDelegatedGrant(): void {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();
 
-        // Alice grants Bob to configure the email protocol
+        // Alice grants Bob ability to configure any protocol, bob will use it to configure the email protocol
         const scope: PermissionScope = {
           interface : DwnInterfaceName.Protocols,
           method    : DwnMethodName.Configure,

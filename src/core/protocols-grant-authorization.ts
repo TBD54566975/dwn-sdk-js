@@ -32,6 +32,10 @@ export class ProtocolsGrantAuthorization {
     ProtocolsGrantAuthorization.verifyScope(protocolsConfigureMessage, permissionGrant.scope as ProtocolPermissionScope);
   }
 
+  /**
+   * Authorizes the scope of a permission grant for a ProtocolsQuery message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
   public static async authorizeQuery(input: {
     expectedGrantor: string,
     expectedGrantee: string,

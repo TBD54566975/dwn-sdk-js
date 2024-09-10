@@ -376,6 +376,17 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolQueryPublishedReply.status.code).to.equal(200);
           expect(protocolQueryPublishedReply.entries?.length).to.equal(1);
           expect(protocolQueryPublishedReply.entries![0].descriptor.definition.protocol).to.deep.equal(publishedProtocol);
+
+          // Bob tries to ProtocolsQuery to Alice's DWN with no filters, using the same grant
+          const protocolQueryNoFilters = await ProtocolsQuery.create({
+            signer            : Jws.createSigner(bob),
+            permissionGrantId : permissionGrant.recordsWrite.message.recordId,
+          });
+
+          const protocolQueryNoFiltersReply = await dwn.processMessage(alice.did, protocolQueryNoFilters.message);
+          expect(protocolQueryNoFiltersReply.status.code).to.equal(200);
+          expect(protocolQueryNoFiltersReply.entries?.length).to.equal(1);
+          expect(protocolQueryNoFiltersReply.entries![0].descriptor.definition.protocol).to.deep.equal(publishedProtocol);
         });
 
         it('rejects with 401 when an external party attempts to ProtocolsQuery if they present an expired grant', async () => {
