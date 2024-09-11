@@ -1,24 +1,26 @@
-import type { MessageStore } from '../../src/types/message-store.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { PermissionScope, Signer } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import Sinon from 'sinon';
+import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, PermissionsProtocol } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, Message, MessageStoreLevel, PermissionsProtocol } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
 
 describe('RecordsWrite', () => {
+  beforeEach(() => {
+    sinon.restore();
+  });
+
   describe('create()', () => {
     it('should be able to create and authorize a valid RecordsWrite message', async () => {
       // testing `create()` first
@@ -40,7 +42,7 @@ describe('RecordsWrite', () => {
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
 
-      const messageStoreStub = stubInterface<MessageStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
       await RecordsWriteHandler['authorizeRecordsWrite'](alice.did, recordsWrite, messageStoreStub);
     });
@@ -346,7 +348,7 @@ describe('RecordsWrite', () => {
         data       : TestDataGenerator.randomBytes(10),
       });
 
-      const validateJsonSchemaSpy = Sinon.spy(Message, 'validateJsonSchema');
+      const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
       await RecordsWrite.parse(recordsWrite.message);
 

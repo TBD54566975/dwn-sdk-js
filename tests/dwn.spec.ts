@@ -6,10 +6,10 @@ import type { DataStore, EventLog, MessageStore, ResumableTaskStore } from '../s
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
+import { DataStoreLevel, EventEmitterStream, EventLogLevel, MessageStoreLevel, ResumableTaskStoreLevel } from '../src/index.js';
 
 import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestEventStream } from './test-event-stream.js';
 import { TestStores } from './test-stores.js';
@@ -50,6 +50,7 @@ export function testDwnClass(): void {
     });
 
     after(async () => {
+      sinon.restore();
       await dwn.close();
     });
 
@@ -133,11 +134,11 @@ export function testDwnClass(): void {
           }
         };
 
-        const messageStoreStub = stubInterface<MessageStore>();
-        const dataStoreStub = stubInterface<DataStore>();
-        const resumableTaskStoreStub = stubInterface<ResumableTaskStore>();
-        const eventLogStub = stubInterface<EventLog>();
-        const eventStreamStub = stubInterface<EventStream>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+        const resumableTaskStoreStub = sinon.createStubInstance(ResumableTaskStoreLevel);
+        const eventLogStub = sinon.createStubInstance(EventLogLevel);
+        const eventStreamStub = sinon.createStubInstance(EventEmitterStream);
 
         const dwnWithConfig = await Dwn.create({
           tenantGate         : blockAllTenantGate,
@@ -166,12 +167,11 @@ export function testDwnClass(): void {
             return { isActiveTenant: false, detail: customMessage };
           }
         };
-
-        const messageStoreStub = stubInterface<MessageStore>();
-        const dataStoreStub = stubInterface<DataStore>();
-        const resumableTaskStoreStub = stubInterface<ResumableTaskStore>();
-        const eventLogStub = stubInterface<EventLog>();
-        const eventStreamStub = stubInterface<EventStream>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+        const resumableTaskStoreStub = sinon.createStubInstance(ResumableTaskStoreLevel);
+        const eventLogStub = sinon.createStubInstance(EventLogLevel);
+        const eventStreamStub = sinon.createStubInstance(EventEmitterStream);
 
         const dwnWithConfig = await Dwn.create({
           tenantGate         : blockAllTenantGate,

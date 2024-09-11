@@ -1,12 +1,16 @@
-import type { MessageStore } from '../../src/index.js';
-
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
+import { MessageStoreLevel } from '../../src/index.js';
 import { ProtocolAuthorization } from '../../src/core/protocol-authorization.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
+import sinon from 'sinon';
+
 describe('ProtocolAuthorization', () => {
+  beforeEach(() => {
+    sinon.restore();
+  });
+
   describe('authorizeWrite()', () => {
     it('should throw if message references non-existent parent', async () => {
       const alice = await TestDataGenerator.generateDidKeyPersona();
@@ -17,7 +21,7 @@ describe('ProtocolAuthorization', () => {
       });
 
       // stub the message store
-      const messageStoreStub = stubInterface<MessageStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
       messageStoreStub.query.resolves({ messages: [] }); // simulate parent not in message store
 
       await expect(ProtocolAuthorization.authorizeWrite(alice.did, recordsWrite, messageStoreStub)).to.be.rejectedWith(
@@ -38,7 +42,7 @@ describe('ProtocolAuthorization', () => {
         }
       } as any;
 
-      const messageStoreStub = stubInterface<MessageStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
       expect(ProtocolAuthorization['getActionsSeekingARuleMatch'](alice.did, deliberatelyCraftedInvalidMessage, messageStoreStub)).to.be.empty;
     });
   });

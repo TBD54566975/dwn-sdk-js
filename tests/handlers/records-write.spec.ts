@@ -36,7 +36,6 @@ import { PermissionConditionPublication } from '../../src/types/permission-types
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -44,8 +43,8 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { DwnError, DwnErrorCode } from '../../src/core/dwn-error.js';
 
+import { DataStoreLevel, DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, MessageStoreLevel, PermissionsProtocol, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, PermissionsProtocol, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -59,6 +58,10 @@ export function testRecordsWriteHandler(): void {
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
+
+    beforeEach(() => {
+      sinon.restore();
+    });
 
     describe('functional tests', () => {
 
@@ -78,8 +81,6 @@ export function testRecordsWriteHandler(): void {
       });
 
       beforeEach(async () => {
-        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
@@ -4231,10 +4232,10 @@ export function testRecordsWriteHandler(): void {
 
         const tenant = author.did;
         const didResolver = TestStubGenerator.createDidResolverStub(author);
-        const messageStore = stubInterface<MessageStore>();
-        const dataStore = stubInterface<DataStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStoreStub, dataStoreStub, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4255,10 +4256,10 @@ export function testRecordsWriteHandler(): void {
 
         const tenant = author.did;
         const didResolver = sinon.createStubInstance(UniversalResolver);
-        const messageStore = stubInterface<MessageStore>();
-        const dataStore = stubInterface<DataStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStoreStub, dataStoreStub, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4273,10 +4274,10 @@ export function testRecordsWriteHandler(): void {
         // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
         const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
         const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-        const messageStore = stubInterface<MessageStore>();
-        const dataStore = stubInterface<DataStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStoreStub, dataStoreStub, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(401);
@@ -4288,10 +4289,10 @@ export function testRecordsWriteHandler(): void {
 
         // setting up a stub DID resolver & message store
         const didResolver = TestStubGenerator.createDidResolverStub(author);
-        const messageStore = stubInterface<MessageStore>();
-        const dataStore = stubInterface<DataStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStoreStub, dataStoreStub, eventLog, eventStream);
 
         const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
@@ -4321,10 +4322,10 @@ export function testRecordsWriteHandler(): void {
         message.authorization = { signature: authorizationBuilder.getJws() };
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);
-        const messageStore = stubInterface<MessageStore>();
-        const dataStore = stubInterface<DataStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStoreStub, dataStoreStub, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4377,10 +4378,6 @@ export function testRecordsWriteHandler(): void {
     });
 
     describe('unknown error', () => {
-      beforeEach(() => {
-        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-      });
-
       it('should throw if `recordsWriteHandler.processMessageWithoutDataStream()` throws unknown error', async () => {
         // simulate an initial write to test non-data path, as initial writes without data are always accepted (bot not readable)
         // https://github.com/TBD54566975/dwn-sdk-js/issues/628
@@ -4390,11 +4387,10 @@ export function testRecordsWriteHandler(): void {
         const { message, dataStream } = await TestDataGenerator.generateFromRecordsWrite({ author, existingWrite: initialWrite });
         const tenant = author.did;
         const didResolverStub = TestStubGenerator.createDidResolverStub(author);
-
-        const messageStoreStub = stubInterface<MessageStore>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
         messageStoreStub.query.resolves({ messages: [ initialWriteMessage ] });
 
-        const dataStoreStub = stubInterface<DataStore>();
+        const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
         const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog, eventStream);
 
