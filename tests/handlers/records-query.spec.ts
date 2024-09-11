@@ -23,18 +23,22 @@ import { Message } from '../../src/core/message.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { DataStoreLevel, Dwn, MessageStoreLevel, RecordsWrite, Time } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, RecordsWrite, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 export function testRecordsQueryHandler(): void {
   describe('RecordsQueryHandler.handle()', () => {
+
+    beforeEach(() => {
+      sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
+    });
+
     describe('functional tests', () => {
       let didResolver: DidResolver;
       let messageStore: MessageStore;
@@ -60,8 +64,6 @@ export function testRecordsQueryHandler(): void {
       });
 
       beforeEach(async () => {
-        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
@@ -3005,10 +3007,10 @@ export function testRecordsQueryHandler(): void {
       // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
       const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author!.did, keyId: author!.keyId });
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-      const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
+      const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStoreStub, dataStoreStub);
       const reply = await recordsQueryHandler.handle({ tenant, message });
 
       expect(reply.status.code).to.equal(401);
@@ -3020,9 +3022,9 @@ export function testRecordsQueryHandler(): void {
 
       // setting up a stub method resolver & message store
       const didResolver = TestStubGenerator.createDidResolverStub(author!);
-      const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
-      const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+      const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStoreStub, dataStoreStub);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsQuery, 'parse').throws('anyError');

@@ -15,13 +15,12 @@ import { Message } from '../../src/core/message.js';
 import { Poller } from '../utils/poller.js';
 import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { RecordsSubscribeHandler } from '../../src/handlers/records-subscribe.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
-import { Dwn, DwnErrorCode, DwnMethodName, Time } from '../../src/index.js';
+import { Dwn, DwnErrorCode, DwnMethodName, EventEmitterStream, MessageStoreLevel, Time } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -232,10 +231,10 @@ export function testRecordsSubscribeHandler(): void {
         // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
         const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author!.did, keyId: author!.keyId });
         const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-        const messageStore = stubInterface<MessageStore>();
-        const eventStream = stubInterface<EventStream>();
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const eventStreamStub = sinon.createStubInstance(EventEmitterStream);
 
-        const recordsSubscribeHandler = new RecordsSubscribeHandler(didResolver, messageStore, eventStream);
+        const recordsSubscribeHandler = new RecordsSubscribeHandler(didResolver, messageStoreStub, eventStreamStub);
         const reply = await recordsSubscribeHandler.handle({ tenant, message, subscriptionHandler: () => {} });
 
         expect(reply.status.code).to.equal(401);
@@ -247,9 +246,9 @@ export function testRecordsSubscribeHandler(): void {
 
         // setting up a stub method resolver & message store
         const didResolver = TestStubGenerator.createDidResolverStub(author!);
-        const messageStore = stubInterface<MessageStore>();
-        const eventStream = stubInterface<EventStream>();
-        const recordsSubscribeHandler = new RecordsSubscribeHandler(didResolver, messageStore, eventStream);
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const eventStreamStub = sinon.createStubInstance(EventEmitterStream);
+        const recordsSubscribeHandler = new RecordsSubscribeHandler(didResolver, messageStoreStub, eventStreamStub);
 
         // stub the `parse()` function to throw an error
         sinon.stub(RecordsSubscribe, 'parse').throws('anyError');

@@ -4,7 +4,7 @@ import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, ResumableTaskStore } from '../../src/index.js';
 
-import { DwnConstant, PermissionsProtocol, Time } from '../../src/index.js';
+import { DataStoreLevel, DwnConstant, MessageStoreLevel, PermissionsProtocol, Time } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -26,7 +26,6 @@ import { Encryption } from '../../src/utils/encryption.js';
 import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
 import { RecordsReadHandler } from '../../src/handlers/records-read.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
@@ -48,6 +47,10 @@ export function testRecordsReadHandler(): void {
     let eventStream: EventStream;
     let dwn: Dwn;
 
+    beforeEach(() => {
+      sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
+    });
+
     describe('functional tests', () => {
 
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -66,8 +69,6 @@ export function testRecordsReadHandler(): void {
       });
 
       beforeEach(async () => {
-        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
@@ -1893,10 +1894,10 @@ export function testRecordsReadHandler(): void {
       // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
       const mismatchingPersona = await TestDataGenerator.generatePersona({ did: alice.did, keyId: alice.keyId });
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-      const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStoreStub, dataStoreStub);
       const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
       expect(reply.status.code).to.equal(401);
     });
@@ -1911,10 +1912,10 @@ export function testRecordsReadHandler(): void {
       });
 
       // setting up a stub method resolver & message store
-      const messageStore = stubInterface<MessageStore>();
-      const dataStore = stubInterface<DataStore>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStoreStub, dataStoreStub);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsRead, 'parse').throws('anyError');

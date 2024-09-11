@@ -1,6 +1,6 @@
 import type { DidResolver } from '@web5/dids';
 import type { EventStream } from '../../src/types/subscriptions.js';
-import type { ResumableTaskManager } from '../../src/core/resumable-task-manager.js';
+import { ResumableTaskManager } from '../../src/core/resumable-task-manager.js';
 import type {
   DataStore,
   EventLog,
@@ -25,13 +25,12 @@ import { DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
-import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestEventStream } from '../test-event-stream.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DataStream, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { DataStream, Dwn, Encoder, Jws, MessageStoreLevel, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
 import { DidKey, UniversalResolver } from '@web5/dids';
 
 chai.use(chaiAsPromised);
@@ -45,6 +44,14 @@ export function testRecordsDeleteHandler(): void {
     let eventLog: EventLog;
     let eventStream: EventStream;
     let dwn: Dwn;
+
+    beforeEach(() => {
+      sinon.restore();
+    });
+
+    after(() => {
+      sinon.restore();
+    });
 
     describe('functional tests', () => {
 
@@ -64,8 +71,6 @@ export function testRecordsDeleteHandler(): void {
       });
 
       beforeEach(async () => {
-        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-
         // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
         await messageStore.clear();
         await dataStore.clear();
@@ -764,10 +769,12 @@ export function testRecordsDeleteHandler(): void {
       // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
       const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-      const messageStore = stubInterface<MessageStore>();
-      const resumableTaskManager = stubInterface<ResumableTaskManager>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
+      // setting up a stub method resolver & message store
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const resumableTaskManagerStub = sinon.createStubInstance(ResumableTaskManager);
+
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStoreStub, resumableTaskManagerStub);
       const reply = await recordsDeleteHandler.handle({ tenant, message });
       expect(reply.status.code).to.equal(401);
     });
@@ -777,10 +784,10 @@ export function testRecordsDeleteHandler(): void {
       const tenant = author.did;
 
       // setting up a stub method resolver & message store
-      const messageStore = stubInterface<MessageStore>();
-      const resumableTaskManager = stubInterface<ResumableTaskManager>();
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const resumableTaskManagerStub = sinon.createStubInstance(ResumableTaskManager);
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, resumableTaskManager);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStoreStub, resumableTaskManagerStub);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsDelete, 'parse').throws('anyError');
