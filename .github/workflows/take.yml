@@ -1,0 +1,26 @@
+name: Auto-assign issue to contributor
+on:
+  issue_comment:
+
+jobs:
+  assign:
+    name: Take an issue
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    if: ${{ github.event.created_at >= format('{0}-10-01T00:00:00Z', github.event.created_at.substr(0,4)) && github.event.created_at <= format('{0}-10-31T23:59:59Z', github.event.created_at.substr(0,4)) }}
+    steps:
+    - name: take the issue
+      uses: bdougie/take-action@1439165ac45a7461c2d89a59952cd7d941964b87
+      with:
+        message: Thanks for taking this issue! Let us know if you have any questions!
+        trigger: .take
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  log_out_of_october:
+    name: Log when outside October
+    runs-on: ubuntu-latest
+    if: ${{ !(github.event.created_at >= format('{0}-10-01T00:00:00Z', github.event.created_at.substr(0,4)) && github.event.created_at <= format('{0}-10-31T23:59:59Z', github.event.created_at.substr(0,4))) }}
+    steps:
+    - name: Log skipped action
+      run: echo "Action skipped because the current date is not in October."
