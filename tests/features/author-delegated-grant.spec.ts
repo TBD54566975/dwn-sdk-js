@@ -95,7 +95,7 @@ export function testAuthorDelegatedGrant(): void {
           protocolDefinition : emailProtocolDefinition,
         });
 
-        // Bob should be abel to configure a protocol on behalf of alice
+        // Bob should be able to configure a protocol on behalf of alice
         const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
@@ -147,7 +147,7 @@ export function testAuthorDelegatedGrant(): void {
           protocolDefinition : emailProtocolDefinition,
         });
 
-        // Bob should be abel to configure a protocol on behalf of alice
+        // Bob should be able to configure a protocol on behalf of alice
         const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
         expect(protocolConfigureReply.status.code).to.equal(202);
 

@@ -65,10 +65,11 @@ export function testNestedRoleScenarios(): void {
       // 4. Bob can invoke his `admin` role to perform actions:
       //   4a. Bob can read the community record
       //   4b. Bob can create gated-channels 1 & 2 in the community
+      //   4c. Bob can query all gated-channels in the community
       // 5. Bob as the creator/author of the channels can add participants in the gated-channels
       //   5a. Bob can add himself and Carol as participants in the gated-channel 1
       //   5b. Bob can add himself and Daniel as participants in the gated-channel 2
-      // 6. Carol can read the gated channel 2 record by invoking her child participant role to the gated channel 2
+      // 6. Carol can read the gated channel 1 record by invoking her child participant role to the gated channel 1
       // 7. Carol CANNOT add anyone as a participant in the gated-channel 2 since she is not a participant in the channel
       // 8. Carol CANNOT add Daniel as another participant in the gated-channel without invoking her role
       // 9. Carol can invoke her participant role to add Daniel as another participant in the gated-channel
@@ -150,6 +151,20 @@ export function testNestedRoleScenarios(): void {
       });
       const channel2RecordReply = await dwn.processMessage(alice.did, channel2Record.message, { dataStream: channel2Record.dataStream });
       expect(channel2RecordReply.status.code).to.equal(202);
+
+      //   4c. Bob can query all gated-channels in the community
+      const bobQuery = await RecordsQuery.create({
+        signer       : Jws.createSigner(bob),
+        protocolRole : 'community/admin',
+        filter       : {
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'community/gatedChannel',
+          contextId    : communityRecord.message.contextId
+        }
+      });
+      const bobQueryReply = await dwn.processMessage(alice.did, bobQuery.message);
+      expect(bobQueryReply.status.code).to.equal(200);
+      expect(bobQueryReply.entries?.length).to.equal(2);
 
       // 5. Bob as the creator/author of the channels can  add participants in the gated-channels
       // 5a. Bob can add himself and Carol as participants in the gated-channel 1
