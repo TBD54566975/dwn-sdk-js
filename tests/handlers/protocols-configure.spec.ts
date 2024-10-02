@@ -437,6 +437,161 @@ export function testProtocolsConfigureHandler(): void {
         expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.ProtocolsConfigureDuplicateRoleInRuleSet);
       });
 
+      it('should reject ProtocolsConfigure with role action rule that contain a read action(`read` || `query` || `subscribe`) but not all of the read actions', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // without 'subscribe' action
+        const protocolDefinitionWithoutSubscribe: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Query] // missing `subscribe`
+                }
+              ]
+            }
+          }
+        };
+
+        // manually craft the invalid ProtocolsConfigure message because our library will not let you create an invalid definition
+        let descriptor: ProtocolsConfigureDescriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinitionWithoutSubscribe
+        };
+
+        let authorization = await Message.createAuthorization({
+          descriptor,
+          signer: Jws.createSigner(alice)
+        });
+        let protocolsConfigureMessage = { descriptor, authorization };
+
+        const withoutSubscribeResponse = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+        expect(withoutSubscribeResponse.status.code).to.equal(400);
+
+        // without 'query' action
+        const protocolDefinitionWithoutQuery: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Subscribe] // missing `query`
+                }
+              ]
+            }
+          }
+        };
+
+        descriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinitionWithoutQuery
+        };
+
+        authorization = await Message.createAuthorization({
+          descriptor,
+          signer: Jws.createSigner(alice)
+        });
+        protocolsConfigureMessage = { descriptor, authorization };
+
+        const withoutQueryResponse = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+        expect(withoutQueryResponse.status.code).to.equal(400);
+
+        // without 'read' action
+        const protocolDefinitionWithoutRead: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Query, ProtocolAction.Subscribe] // missing `read`
+                }
+              ]
+            }
+          }
+        };
+
+        descriptor = {
+          interface        : DwnInterfaceName.Protocols,
+          method           : DwnMethodName.Configure,
+          messageTimestamp : Time.getCurrentTimestamp(),
+          definition       : protocolDefinitionWithoutRead
+        };
+
+        authorization = await Message.createAuthorization({
+          descriptor,
+          signer: Jws.createSigner(alice)
+        });
+
+        protocolsConfigureMessage = { descriptor, authorization };
+
+        const withoutReadResponse = await dwn.processMessage(alice.did, protocolsConfigureMessage);
+        expect(withoutReadResponse.status.code).to.equal(400);
+
+
+        // sanity, all read actions exist
+        const protocolDefinitionWithAllReadActions: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Query, ProtocolAction.Subscribe]
+                }
+              ]
+            }
+          }
+        };
+
+        const withAllReadActions = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinitionWithAllReadActions,
+        });
+
+        const withAllReadActionsResponse = await dwn.processMessage(alice.did, withAllReadActions.message);
+        expect(withAllReadActionsResponse.status.code).to.equal(202);
+      });
+
       describe('Grant authorization', () => {
         it('allows an external party to ProtocolsConfigure only if they have a valid grant', async () => {
           // scenario:
