@@ -110,7 +110,7 @@ export class Secp256k1 {
 
     const publicKeyBytes = Secp256k1.publicJwkToBytes(publicJwk);
     const hashedContent = await sha256.encode(content);
-    return secp256k1.verify(signature, hashedContent, publicKeyBytes);
+    return secp256k1.verify(signature, hashedContent, publicKeyBytes, { lowS: false });
   }
 
   /**
