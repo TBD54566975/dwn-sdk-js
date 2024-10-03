@@ -1034,7 +1034,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   /**
    * Fetches the initial RecordsWrite of a record.
-   * @returns The initial RecordsWrite if found; `undefined` if the record is not found.
+   * @returns The initial RecordsWrite if found; `undefined` otherwise.
    */
   public static async fetchInitialRecordsWrite(
     messageStore: MessageStore,
@@ -1042,6 +1042,24 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     recordId: string
   ): Promise<RecordsWrite | undefined> {
 
+    const initialRecordsWriteMessage = await RecordsWrite.fetchInitialRecordsWriteMessage(messageStore, tenant, recordId);
+    if (initialRecordsWriteMessage === undefined) {
+      return undefined;
+    }
+
+    const initialRecordsWrite = await RecordsWrite.parse(initialRecordsWriteMessage);
+    return initialRecordsWrite;
+  }
+
+  /**
+   * Fetches the initial RecordsWrite message of a record.
+   * @returns The initial RecordsWriteMessage if found; `undefined` otherwise.
+   */
+  public static async fetchInitialRecordsWriteMessage(
+    messageStore: MessageStore,
+    tenant: string,
+    recordId: string
+  ): Promise<RecordsWriteMessage | undefined> {
     const query = { entryId: recordId };
     const { messages } = await messageStore.query(tenant, [query]);
 
@@ -1049,7 +1067,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       return undefined;
     }
 
-    const initialRecordsWrite = await RecordsWrite.parse(messages[0] as RecordsWriteMessage);
-    return initialRecordsWrite;
+    return messages[0] as RecordsWriteMessage;
   }
 }

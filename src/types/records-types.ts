@@ -203,10 +203,17 @@ export type RecordsReadMessage = {
 };
 
 export type RecordsReadReply = GenericMessageReply & {
+  /**
+   * The RecordsDelete if the record is deleted.
+   */
+  delete?: RecordsDeleteMessage;
+
+  /**
+   * The initial write of the record if the returned RecordsWrite message itself is not the initial write or if a RecordsDelete is returned.
+   */
+  initialWrite?: RecordsWriteMessage;
+
   record?: RecordsWriteMessage & {
-    /**
-     * The initial write of the record if the returned RecordsWrite message itself is not the initial write.
-     */
     initialWrite?: RecordsWriteMessage;
     data: Readable;
   };
