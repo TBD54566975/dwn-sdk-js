@@ -8,6 +8,9 @@ import { PrivateKeySigner } from '../../../src/index.js';
 import { signatureAlgorithms } from '../../../src/jose/algorithms/signing/signature-algorithms.js';
 import sinon from 'sinon';
 import { UniversalResolver } from '@web5/dids';
+import { Encoder } from '../../../src/utils/encoder.js';
+import { ed25519 } from '../../../src/jose/algorithms/signing/ed25519.js';
+import { DwnError, DwnErrorCode } from '../../../src/core/dwn-error.js';
 
 const { Ed25519, secp256k1 } = signatureAlgorithms;
 const secp256r1 = signatureAlgorithms['P-256'];
@@ -122,6 +125,34 @@ describe('General JWS Sign/Verify', () => {
     const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
     expect(verificationResult.signers.length).to.equal(1);
     expect(verificationResult.signers).to.include('did:jank:alice');
+  });
+
+  it('should throw an error for invalid Ed25519 JWK', async () => {
+    const invalidJwk = {
+      kty: 'RSA', // Invalid key type
+      crv: 'Ed25519',
+      d: 'invalid-private-key'
+    };
+
+    const content = new TextEncoder().encode('anyPayloadValue');
+
+    try {
+      await ed25519.sign(content, invalidJwk as any);
+      expect.fail('Expected an error to be thrown');
+    } catch (error) {
+      expect(error).to.be.instanceOf(DwnError);
+      expect((error as DwnError).code).to.equal(DwnErrorCode.Ed25519InvalidJwk);
+      expect((error as DwnError).message).to.include('invalid jwk. kty MUST be OKP. crv MUST be Ed25519');
+    }
+  });
+
+  it('should convert public key bytes to JWK', async () => {
+    const { publicJwk } = await ed25519.generateKeyPair();
+    const publicKeyBytes = Encoder.base64UrlToBytes(publicJwk.x);
+
+    const convertedJwk = await ed25519.publicKeyToJwk(publicKeyBytes);
+
+    expect(convertedJwk).to.deep.equal(publicJwk);
   });
 
   it('should support multiple signatures using different key types', async () => {
