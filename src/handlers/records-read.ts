@@ -66,6 +66,8 @@ export class RecordsReadHandler implements MethodHandler {
     const matchedMessage = existingMessages[0];
 
     // if the matched message is a RecordsDelete, we mark the record as not-found and return both the RecordsDelete the initial write
+    // NOTE: there is an opportunity in the future here to restrict this behavior further:
+    //       ie. perform similar authorization checks as when records exists before returning data about deleted record
     if (matchedMessage.descriptor.method === DwnMethodName.Delete) {
       const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
