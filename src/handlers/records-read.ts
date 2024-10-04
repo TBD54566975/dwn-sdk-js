@@ -129,8 +129,10 @@ export class RecordsReadHandler implements MethodHandler {
     } else if (descriptor.published === true) {
       // authentication is not required for published data
       return;
-    } else if (recordsRead.author !== undefined && recordsRead.author === descriptor.recipient) {
-      // The recipient of a message may always read it
+    } else if (recordsRead.author !== undefined &&
+      (recordsRead.author === descriptor.recipient || recordsRead.author === matchedRecordsWrite.author)
+    ) {
+      // The recipient or author of a message may always read it
       return;
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionGrantId !== undefined) {
       const permissionGrant = await PermissionsProtocol.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionGrantId);

@@ -106,7 +106,7 @@ export function testRecordsReadHandler(): void {
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
       });
 
-      it('should not allow non-tenant to RecordsRead their a record data', async () => {
+      it('should not allow non-tenant to RecordsRead a record', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
 
         // insert data
@@ -203,6 +203,72 @@ export function testRecordsReadHandler(): void {
 
         const dataFetched = await DataStream.toBytes(readReply.record!.data!);
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+      });
+
+      it('should allow a non-tenant to read RecordsRead data they have authored', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // Alice installs a protocol that allows anyone to write foo record
+        const protocolDefinition:ProtocolDefinition = {
+          published : true,
+          protocol  : 'https://example.com/foo',
+          types     : {
+            foo: {}
+          },
+          structure: {
+            foo: {
+              $actions: [{
+                who : 'anyone',
+                can : ['create']
+              }]
+            }
+          }
+        };
+
+        const configureProtocol = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinition,
+        });
+        const configureProtocolReply = await dwn.processMessage(alice.did, configureProtocol.message);
+        expect(configureProtocolReply.status.code).to.equal(202);
+
+        // Bob writes a foo record to Alice's DWN
+        const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'foo',
+        });
+        const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
+        expect(writeReply.status.code).to.equal(202);
+
+        // Bob reads the record he sent to Alice from Alice's DWN
+        const recordsRead = await RecordsRead.create({
+          filter: {
+            recordId: message.recordId,
+          },
+          signer: Jws.createSigner(bob)
+        });
+
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+        expect(readReply.status.code).to.equal(200);
+        expect(readReply.record).to.exist;
+        expect(readReply.record?.descriptor).to.exist;
+
+        const dataFetched = await DataStream.toBytes(readReply.record!.data!);
+        expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+
+        // carol attempts to read Bob's record
+        const carolRecordsRead = await RecordsRead.create({
+          filter: {
+            recordId: message.recordId,
+          },
+          signer: Jws.createSigner(carol)
+        });
+
+        const carolReadReply = await dwn.processMessage(alice.did, carolRecordsRead.message);
+        expect(carolReadReply.status.code).to.equal(401);
       });
 
       it('should include `initialWrite` property if RecordsWrite is not initial write', async () => {
