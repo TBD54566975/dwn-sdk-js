@@ -3,7 +3,7 @@ import type { DidResolver } from '@web5/dids';
 import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
@@ -45,8 +45,8 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     // get the latest active messages matching the supplied filter
-    // only RecordsWrite messages will be returned due to 'isLatestBaseState' being set to true.
     const query: Filter = {
+      // NOTE: we don't filter by `method` so that we get both RecordsWrite and RecordsDelete messages
       interface         : DwnInterfaceName.Records,
       isLatestBaseState : true,
       ...Records.convertFilter(message.descriptor.filter)
@@ -63,7 +63,20 @@ export class RecordsReadHandler implements MethodHandler {
       ), 400);
     }
 
-    const matchedRecordsWrite = existingMessages[0] as RecordsQueryReplyEntry;
+    const matchedMessage = existingMessages[0];
+
+    if (matchedMessage.descriptor.method === DwnMethodName.Delete) {
+      const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
+      const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
+      return {
+        status : { code: 404, detail: 'Not Found' },
+        delete : recordsDeleteMessage,
+        initialWrite
+      };
+    }
+
+    const matchedRecordsWrite = matchedMessage as RecordsQueryReplyEntry;
+
     try {
       await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(matchedRecordsWrite), this.messageStore);
     } catch (error) {

@@ -1,6 +1,7 @@
 import type { DataStore, EventLog, EventStream, MessageStore, ResumableTaskStore } from '../src/index.js';
 
 import { testAuthorDelegatedGrant } from './features/author-delegated-grant.spec.js';
+import { testDeletedRecordScenarios } from './scenarios/deleted-record.spec.js';
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventLog } from './event-log/event-log.spec.js';
@@ -83,6 +84,7 @@ export class TestSuite {
     testResumableTasks();
 
     // scenario tests
+    testDeletedRecordScenarios();
     testEndToEndScenarios();
     testMessagesQueryScenarios();
     testNestedRoleScenarios();

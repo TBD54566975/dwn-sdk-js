@@ -3,7 +3,7 @@
   "published": true,
   "types": {
     "post": {
-      "schema": "eph",
+      "schema": "post",
       "dataFormats": [
         "application/json"
       ]
