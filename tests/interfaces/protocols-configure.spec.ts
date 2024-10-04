@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import type { ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../../src/index.js';
+import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { Jws } from '../../src/utils/jws.js';
@@ -231,6 +231,129 @@ describe('ProtocolsConfigure', () => {
 
         await expect(createProtocolsConfigurePromise)
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath);
+      });
+
+      it('should reject protocol definitions with `role` actions that contain a read action(`read` || `query` || `subscribe`) but not all of the read actions', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // without 'subscribe' action
+        const protocolDefinitionWithoutSubscribe: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Query] // missing `subscribe`
+                }
+              ]
+            }
+          }
+        };
+
+        const withoutSubscribePromise = TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinitionWithoutSubscribe,
+        });
+
+        await expect(withoutSubscribePromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRoleReadActionMissing);
+
+        // without 'query' action
+        const protocolDefinitionWithoutQuery: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Subscribe] // missing `query`
+                }
+              ]
+            }
+          }
+        };
+
+        const withoutQueryPromise = TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinitionWithoutQuery,
+        });
+
+        await expect(withoutQueryPromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRoleReadActionMissing);
+
+        // without 'read' action
+        const protocolDefinitionWithoutRead: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Query, ProtocolAction.Subscribe] // missing `read`
+                }
+              ]
+            }
+          }
+        };
+
+        const withoutReadPromise = TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinitionWithoutRead,
+        });
+
+        await expect(withoutReadPromise).to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureRoleReadActionMissing);
+
+        // sanity, all read actions exist
+        const protocolDefinitionWithAllReadActions: ProtocolDefinition = {
+          protocol  : 'http://foo',
+          published : true,
+          types     : {
+            friend : {},
+            foo    : {},
+          },
+          structure: {
+            friend: {
+              $role: true
+            },
+            foo: {
+              $actions: [
+                {
+                  role : 'friend',
+                  can  : [ProtocolAction.Read, ProtocolAction.Query, ProtocolAction.Subscribe]
+                }
+              ]
+            }
+          }
+        };
+
+        const withAllReadActions = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinitionWithAllReadActions,
+        });
+        expect(withAllReadActions.message.descriptor.definition).to.deep.equal(protocolDefinitionWithAllReadActions);
       });
 
       it('rejects protocol definitions with actions that contain `of` and  `who` is `anyone`', async () => {

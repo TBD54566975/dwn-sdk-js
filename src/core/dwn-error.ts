@@ -91,6 +91,7 @@ export enum DwnErrorCode {
   ProtocolsConfigureInvalidTagSchema = 'ProtocolsConfigureInvalidTagSchema',
   ProtocolsConfigureRecordNestingDepthExceeded = 'ProtocolsConfigureRecordNestingDepthExceeded',
   ProtocolsConfigureRoleDoesNotExistAtGivenPath = 'ProtocolsConfigureRoleDoesNotExistAtGivenPath',
+  ProtocolsConfigureRoleReadActionMissing = 'ProtocolsConfigureRoleReadActionMissing',
   ProtocolsGrantAuthorizationQueryProtocolScopeMismatch = 'ProtocolsGrantAuthorizationQueryProtocolScopeMismatch',
   ProtocolsGrantAuthorizationScopeProtocolMismatch = 'ProtocolsGrantAuthorizationScopeProtocolMismatch',
   ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',

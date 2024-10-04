@@ -196,6 +196,16 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
             DwnErrorCode.ProtocolsConfigureRoleDoesNotExistAtGivenPath,
             `Role in action ${JSON.stringify(actionRule)} for rule set ${ruleSetProtocolPath} does not exist.`
           );
+        } else {
+          // it is a role record, we ensure that if any of the `can` actions are 'read' type of actions ('read', 'query', 'subscribe'),
+          // that they are all present.
+          const readActions = [ProtocolAction.Read, ProtocolAction.Query, ProtocolAction.Subscribe];
+          if (readActions.find( action => actionRule.can.includes(action)) && !readActions.every(action => actionRule.can.includes(action))) {
+            throw new DwnError(
+              DwnErrorCode.ProtocolsConfigureRoleReadActionMissing,
+              `Role in action ${JSON.stringify(actionRule)} for rule set ${ruleSetProtocolPath} must contain all read actions (${readActions.join(', ')}).`
+            );
+          }
         }
       }
 
