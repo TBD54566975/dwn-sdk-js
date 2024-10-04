@@ -243,7 +243,7 @@ export function testRecordsReadHandler(): void {
         const writeReply = await dwn.processMessage(alice.did, message, { dataStream });
         expect(writeReply.status.code).to.equal(202);
 
-        // Bob reads the data that Alice sent him
+        // Bob reads the record he sent to Alice from Alice's DWN
         const recordsRead = await RecordsRead.create({
           filter: {
             recordId: message.recordId,
