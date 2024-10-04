@@ -45,7 +45,6 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     // get the latest active messages matching the supplied filter
-    // only RecordsWrite messages will be returned due to 'isLatestBaseState' being set to true.
     const query: Filter = {
       // NOTE: we don't filter by `method` so that we get both RecordsWrite and RecordsDelete messages
       interface         : DwnInterfaceName.Records,
