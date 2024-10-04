@@ -72,8 +72,8 @@ export class RecordsReadHandler implements MethodHandler {
       const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
       return {
-        status: { code: 404, detail: 'Not Found' },
-        recordsDelete: recordsDeleteMessage,
+        status        : { code: 404, detail: 'Not Found' },
+        recordsDelete : recordsDeleteMessage,
         initialWrite
       };
     }
@@ -103,8 +103,8 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     const recordsReadReply: RecordsReadReply = {
-      status: { code: 200, detail: 'OK' },
-      recordsWrite: matchedRecordsWrite,
+      status       : { code: 200, detail: 'OK' },
+      recordsWrite : matchedRecordsWrite,
       data
     };
 

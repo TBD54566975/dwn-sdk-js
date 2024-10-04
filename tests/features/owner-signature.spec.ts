@@ -82,7 +82,7 @@ export function testOwnerSignature(): void {
       expect(readReply.recordsWrite?.descriptor).to.exist;
 
       // Alice augments Bob's message as an external owner
-      const { data, recordsWrite } = readReply; // remove data from message
+      const { recordsWrite } = readReply; // remove data from message
       const ownerSignedMessage = await RecordsWrite.parse(recordsWrite!);
       await ownerSignedMessage.signAsOwner(Jws.createSigner(alice));
 

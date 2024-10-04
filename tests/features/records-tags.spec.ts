@@ -2080,7 +2080,8 @@ export function testRecordsTags(): void {
         const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
         expect(tagsRecord1ReadReply.status.code).to.equal(200);
         expect(tagsRecord1ReadReply.recordsWrite).to.not.be.undefined;
-        expect(tagsRecord1ReadReply.recordsWrite!.descriptor.tags).to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
+        expect(tagsRecord1ReadReply.recordsWrite!.descriptor.tags)
+          .to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
       });
 
       it('should overwrite tags when updating a Record', async () => {
