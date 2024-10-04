@@ -1,5 +1,6 @@
-import * as crypto from 'crypto';
 import * as eciesjs from 'eciesjs';
+import { AesCtr } from '@web5/crypto';
+import type { Jwk } from '@web5/crypto';
 import { Readable } from 'readable-stream';
 
 // compress publicKey for message encryption
@@ -12,57 +13,87 @@ export class Encryption {
   /**
    * Encrypts the given plaintext stream using AES-256-CTR algorithm.
    */
-  public static async aes256CtrEncrypt(key: Uint8Array, initializationVector: Uint8Array, plaintextStream: Readable): Promise<Readable> {
-    const cipher = crypto.createCipheriv('aes-256-ctr', key, initializationVector);
 
+  private static async convertToJwk(key: Uint8Array): Promise<Jwk> {
+    return {
+      kty : 'oct',
+      k   : Buffer.from(key).toString('base64url'),
+      alg : 'A256CTR',
+      ext : 'true',
+    };
+  }
+
+  public static async aes256CtrEncrypt(
+    key: Uint8Array,
+    initializationVector: Uint8Array,
+    plaintextStream: Readable
+  ): Promise<Readable> {
+    const jwkKey = await this.convertToJwk(key);
+
+    // Create a cipher stream
     const cipherStream = new Readable({
-      read(): void { }
+      read(): void {},
     });
 
-    plaintextStream.on('data', (chunk) => {
-      const encryptedChunk = cipher.update(chunk);
+    plaintextStream.on('data', async (chunk) => {
+      // Encrypt the chunk using AesCtr
+      const encryptedChunk = await AesCtr.encrypt({
+        data    : chunk,
+        key     : jwkKey,
+        counter : initializationVector,
+        length  : 256,
+      });
+
       cipherStream.push(encryptedChunk);
     });
 
     plaintextStream.on('end', () => {
-      const finalChunk = cipher.final();
-      cipherStream.push(finalChunk);
-      cipherStream.push(null);
+      cipherStream.push(null); // Signal the end of the stream
     });
 
     plaintextStream.on('error', (err) => {
-      cipherStream.emit('error', err);
+      cipherStream.emit('error', err); // Emit error if any occurs in the plaintext stream
     });
 
-    return cipherStream;
+    return cipherStream; // Return the cipher stream
   }
 
   /**
    * Decrypts the given cipher stream using AES-256-CTR algorithm.
    */
-  public static async aes256CtrDecrypt(key: Uint8Array, initializationVector: Uint8Array, cipherStream: Readable): Promise<Readable> {
-    const decipher = crypto.createDecipheriv('aes-256-ctr', key, initializationVector);
+  public static async aes256CtrDecrypt(
+    key: Uint8Array,
+    initializationVector: Uint8Array,
+    cipherStream: Readable
+  ): Promise<Readable> {
+    const jwkKey = await this.convertToJwk(key); // Convert key to JWK format
 
+    // Create a plaintext stream
     const plaintextStream = new Readable({
-      read(): void { }
+      read(): void {},
     });
 
-    cipherStream.on('data', (chunk) => {
-      const decryptedChunk = decipher.update(chunk);
-      plaintextStream.push(decryptedChunk);
+    cipherStream.on('data', async (chunk) => {
+      // Decrypt the chunk using AesCtr
+      const decryptedChunk = await AesCtr.decrypt({
+        data    : chunk,
+        key     : jwkKey,
+        counter : initializationVector,
+        length  : 256, // Length of the key in bits
+      });
+
+      plaintextStream.push(decryptedChunk); // Push the decrypted chunk to the plaintext stream
     });
 
     cipherStream.on('end', () => {
-      const finalChunk = decipher.final();
-      plaintextStream.push(finalChunk);
-      plaintextStream.push(null);
+      plaintextStream.push(null); // Signal the end of the stream
     });
 
     cipherStream.on('error', (err) => {
-      plaintextStream.emit('error', err);
+      plaintextStream.emit('error', err); // Emit error if any occurs in the cipher stream
     });
 
-    return plaintextStream;
+    return plaintextStream; // Return the plaintext stream
   }
 
   /**
@@ -70,7 +101,10 @@ export class Encryption {
    * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
    * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
-  public static async eciesSecp256k1Encrypt(publicKeyBytes: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
+  public static async eciesSecp256k1Encrypt(
+    publicKeyBytes: Uint8Array,
+    plaintext: Uint8Array
+  ): Promise<EciesEncryptionOutput> {
     // underlying library requires Buffer as input
     const publicKey = Buffer.from(publicKeyBytes);
     const plaintextBuffer = Buffer.from(plaintext);
@@ -96,7 +130,7 @@ export class Encryption {
       ciphertext,
       ephemeralPublicKey,
       initializationVector,
-      messageAuthenticationCode
+      messageAuthenticationCode,
     };
   }
 
@@ -105,14 +139,16 @@ export class Encryption {
    * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
    * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
-  public static async eciesSecp256k1Decrypt(input: EciesEncryptionInput): Promise<Uint8Array> {
+  public static async eciesSecp256k1Decrypt(
+    input: EciesEncryptionInput
+  ): Promise<Uint8Array> {
     // underlying library requires Buffer as input
     const privateKeyBuffer = Buffer.from(input.privateKey);
     const eciesEncryptionOutput = Buffer.concat([
       input.ephemeralPublicKey,
       input.initializationVector,
       input.messageAuthenticationCode,
-      input.ciphertext
+      input.ciphertext,
     ]);
 
     const plaintext = eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
@@ -123,7 +159,7 @@ export class Encryption {
   /**
    * Expose eciesjs library configuration
    */
-  static get isEphemeralKeyCompressed():boolean {
+  static get isEphemeralKeyCompressed(): boolean {
     return eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed;
   }
 }
@@ -141,5 +177,5 @@ export type EciesEncryptionInput = EciesEncryptionOutput & {
 
 export enum EncryptionAlgorithm {
   Aes256Ctr = 'A256CTR',
-  EciesSecp256k1 = 'ECIES-ES256K'
+  EciesSecp256k1 = 'ECIES-ES256K',
 }
