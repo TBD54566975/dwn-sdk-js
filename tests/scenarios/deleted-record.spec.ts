@@ -108,8 +108,8 @@ export function testDeletedRecordScenarios(): void {
 
       // Expected outcome: Alice should get a 404 error with the reply containing the deleted record and the initial write of the record.
       expect(readReply.status.code).to.equal(404);
-      expect(readReply.delete).to.exist;
-      expect(readReply.delete).to.deep.equal(recordsDelete.message);
+      expect(readReply.recordsDelete).to.exist;
+      expect(readReply.recordsDelete).to.deep.equal(recordsDelete.message);
       expect(readReply.initialWrite).to.exist;
       expect(readReply.initialWrite).to.deep.equal(recordsWriteMessage);
     });

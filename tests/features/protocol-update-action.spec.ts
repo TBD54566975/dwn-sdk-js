@@ -165,8 +165,8 @@ export function testProtocolUpdateAction(): void {
       });
       const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(recordsReadReply.status.code).to.equal(200);
-      expect(recordsReadReply.record?.data).to.exist;
-      const dataFromReply = await DataStream.toBytes(recordsReadReply.record!.data);
+      expect(recordsReadReply.data).to.exist;
+      const dataFromReply = await DataStream.toBytes(recordsReadReply.data!);
       expect(dataFromReply).to.eql(bobFooNewBytes);
 
       // 5. Carol creates a `foo` by invoking the user role.
@@ -350,8 +350,8 @@ export function testProtocolUpdateAction(): void {
       });
       const bobBarReadReply = await dwn.processMessage(alice.did, bobBarRead.message);
       expect(bobBarReadReply.status.code).to.equal(200);
-      expect(bobBarReadReply.record?.data).to.exist;
-      const dataFromBobBarRead = await DataStream.toBytes(bobBarReadReply.record!.data);
+      expect(bobBarReadReply.data).to.exist;
+      const dataFromBobBarRead = await DataStream.toBytes(bobBarReadReply.data!);
       expect(dataFromBobBarRead).to.eql(bobBarNewBytes);
 
       // 7. Verify that Bob cannot update Carol's `bar`.
@@ -423,8 +423,8 @@ export function testProtocolUpdateAction(): void {
       });
       const bobBazReadReply = await dwn.processMessage(alice.did, bobBazRead.message);
       expect(bobBazReadReply.status.code).to.equal(200);
-      expect(bobBazReadReply.record?.data).to.exist;
-      const dataFromBobBazRead = await DataStream.toBytes(bobBazReadReply.record!.data);
+      expect(bobBazReadReply.data).to.exist;
+      const dataFromBobBazRead = await DataStream.toBytes(bobBazReadReply.data!);
       expect(dataFromBobBazRead).to.eql(bobBazNewBytes);
 
       // 11. Verify that Bob cannot update Carol's `baz`
@@ -534,8 +534,8 @@ export function testProtocolUpdateAction(): void {
       });
       const bobFooReadReply = await dwn.processMessage(alice.did, bobBarRead.message);
       expect(bobFooReadReply.status.code).to.equal(200);
-      expect(bobFooReadReply.record?.data).to.exist;
-      const dataFromBobFooRead = await DataStream.toBytes(bobFooReadReply.record!.data);
+      expect(bobFooReadReply.data).to.exist;
+      const dataFromBobFooRead = await DataStream.toBytes(bobFooReadReply.data!);
       expect(dataFromBobFooRead).to.eql(bobFooNewBytes);
 
       // 5. Verify that Bob cannot update Carol's `foo`.

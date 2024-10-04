@@ -168,7 +168,7 @@ export function testRecordsDeleteHandler(): void {
         const aliceRead1Reply = await dwn.processMessage(alice.did, aliceRead1.message);
         expect(aliceRead1Reply.status.code).to.equal(200);
 
-        const aliceDataFetched = await DataStream.toBytes(aliceRead1Reply.record!.data!);
+        const aliceDataFetched = await DataStream.toBytes(aliceRead1Reply.data!);
         expect(ArrayUtility.byteArraysEqual(aliceDataFetched, data)).to.be.true;
 
         // alice deletes the other record
@@ -194,7 +194,7 @@ export function testRecordsDeleteHandler(): void {
         const bobRead1Reply = await dwn.processMessage(bob.did, bobRead1.message);
         expect(bobRead1Reply.status.code).to.equal(200);
 
-        const bobDataFetched = await DataStream.toBytes(bobRead1Reply.record!.data!);
+        const bobDataFetched = await DataStream.toBytes(bobRead1Reply.data!);
         expect(ArrayUtility.byteArraysEqual(bobDataFetched, data)).to.be.true;
       });
 
