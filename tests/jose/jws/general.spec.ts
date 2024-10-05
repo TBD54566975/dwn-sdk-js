@@ -1,16 +1,18 @@
+import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import chai, { expect } from 'chai';
+import { expect } from 'chai';
+import sinon from 'sinon';
+import { UniversalResolver } from '@web5/dids';
 
+import { ed25519 } from '../../../src/jose/algorithms/signing/ed25519.js';
+import { Encoder } from '../../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../../src/jose/jws/general/builder.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
 import { PrivateKeySigner } from '../../../src/index.js';
 import { signatureAlgorithms } from '../../../src/jose/algorithms/signing/signature-algorithms.js';
-import sinon from 'sinon';
-import { UniversalResolver } from '@web5/dids';
-import { Encoder } from '../../../src/utils/encoder.js';
-import { ed25519 } from '../../../src/jose/algorithms/signing/ed25519.js';
 import { DwnError, DwnErrorCode } from '../../../src/core/dwn-error.js';
+
 
 const { Ed25519, secp256k1 } = signatureAlgorithms;
 const secp256r1 = signatureAlgorithms['P-256'];
@@ -129,9 +131,9 @@ describe('General JWS Sign/Verify', () => {
 
   it('should throw an error for invalid Ed25519 JWK', async () => {
     const invalidJwk = {
-      kty: 'RSA', // Invalid key type
-      crv: 'Ed25519',
-      d: 'invalid-private-key'
+      kty : 'RSA', // Invalid key type
+      crv : 'Ed25519',
+      d   : 'invalid-private-key'
     };
 
     const content = new TextEncoder().encode('anyPayloadValue');
