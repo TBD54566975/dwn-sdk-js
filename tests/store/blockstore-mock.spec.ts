@@ -1,8 +1,9 @@
-import chaiAsPromised from 'chai-as-promised';
-import chai, { expect } from 'chai';
-import { CID } from 'multiformats/cid';
 import * as Block from 'multiformats/block';
 import * as Raw from 'multiformats/codecs/raw';
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { CID } from 'multiformats/cid';
+import { expect } from 'chai';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import { BlockstoreMock } from '../../src/store/blockstore-mock.js';
