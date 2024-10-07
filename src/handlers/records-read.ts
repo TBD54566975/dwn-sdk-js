@@ -68,6 +68,22 @@ export class RecordsReadHandler implements MethodHandler {
     if (matchedMessage.descriptor.method === DwnMethodName.Delete) {
       const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
+
+      if (initialWrite === undefined) {
+        return messageReplyFromError(new DwnError(
+          DwnErrorCode.RecordsReadInitialWriteNotFound,
+          'Initial write for deleted record not found'
+        ), 400);
+      }
+
+      // Perform authorization before returning the delete and initial write messages
+      const parsedInitialWrite = await RecordsWrite.parse(initialWrite);
+      try {
+        await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, parsedInitialWrite, this.messageStore);
+      } catch (error) {
+        return messageReplyFromError(error, 401);
+      }
+
       return {
         status : { code: 404, detail: 'Not Found' },
         delete : recordsDeleteMessage,
