@@ -6,7 +6,6 @@ export type { GenericMessage, GenericMessageReply, MessageSort, MessageSubscript
 export type { MessagesFilter, MessagesReadMessage as MessagesReadMessage, MessagesReadReply as MessagesReadReply, MessagesReadReplyEntry as MessagesReadReplyEntry, MessagesQueryMessage, MessagesQueryReply, MessagesSubscribeDescriptor, MessagesSubscribeMessage, MessagesSubscribeReply, MessageSubscriptionHandler } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-export type { DataEncodedRecordsWriteMessage, EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscribeReply, RecordSubscriptionHandler, RecordsWriteDescriptor, RecordsWriteTags, RecordsWriteTagValue, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
@@ -14,7 +13,6 @@ export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js
 export { DataStore, DataStorePutResult, DataStoreGetResult } from './types/data-store.js';
 export { ResumableTaskStore, ManagedResumableTask } from './types/resumable-task-store.js';
 export { DataStream } from './utils/data-stream.js';
-export { DateSort } from './types/records-types.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
 export { Dwn } from './dwn.js';
 export { DwnConstant } from './core/dwn-constant.js';
@@ -49,6 +47,7 @@ export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';
 export * from './types/permission-types.js';
+export * from './types/records-types.js';
 
 // concrete implementations of stores and event stream
 export { DataStoreLevel } from './store/data-store-level.js';

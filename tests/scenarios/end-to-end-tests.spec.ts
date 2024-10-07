@@ -201,7 +201,7 @@ export function testEndToEndScenarios(): void {
       });
       const threadReadReply = await dwn.processMessage(alice.did, threadRead.message) as RecordsReadReply;
       expect(threadReadReply.status.code).to.equal(200);
-      expect(threadReadReply.recordsWrite).to.exist;
+      expect(threadReadReply.entry!.recordsWrite).to.exist;
 
       // Test Bob can invoke his 'participant' role to read the chat message
       // TODO: #555 - We currently lack role-authorized RecordsQuery for a realistic scenario (https://github.com/TBD54566975/dwn-sdk-js/issues/555)
@@ -215,7 +215,7 @@ export function testEndToEndScenarios(): void {
       });
       const chatReadReply = await dwn.processMessage(alice.did, chatRead.message) as RecordsReadReply;
       expect(chatReadReply.status.code).to.equal(200);
-      expect(chatReadReply.recordsWrite).to.exist;
+      expect(chatReadReply.entry!.recordsWrite).to.exist;
 
       // 7. Bob is able to decrypt all thread content
       // Bob decrypts the participant message to obtain the context-derived private key
@@ -224,8 +224,8 @@ export function testEndToEndScenarios(): void {
         derivationScheme  : KeyDerivationScheme.ProtocolPath,
         derivedPrivateKey : bob.keyPair.privateJwk
       };
-      const participantRecordWriteFetched = participantReadReply.recordsWrite!;
-      const encryptedContextDerivedPrivateKeyBytes = await DataStream.toBytes(participantReadReply.data!); // to create streams for testing
+      const participantRecordWriteFetched = participantReadReply.entry!.recordsWrite!;
+      const encryptedContextDerivedPrivateKeyBytes = await DataStream.toBytes(participantReadReply.entry!.data!); // to create streams for testing
       const derivationPathFromProtocolPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(participantRecordWriteFetched.descriptor);
       const bobProtocolPathDerivedPrivateKey = await HdKey.derivePrivateKey(bobRootKey, derivationPathFromProtocolPath);
       const decryptedContextDerivedKeyStream = await Records.decrypt(
@@ -247,16 +247,16 @@ export function testEndToEndScenarios(): void {
 
       // Verify that Bob can now decrypt Alice's chat thread record using the decrypted context-derived key
       const decryptedChatThread = await Records.decrypt(
-        threadReadReply.recordsWrite!,
+        threadReadReply.entry!.recordsWrite!,
         decryptedContextDerivedPrivateKey,
-        threadReadReply.data!
+        threadReadReply.entry!.data!
       );
       expect(await DataStream.toBytes(decryptedChatThread)).to.deep.equal(threadBytes);
 
       // Verify that Bob can now decrypt Alice's chat message using the decrypted context-derived key
-      const encryptedChatMessageBytes = await DataStream.toBytes(chatReadReply.data!); // to create streams for testing
+      const encryptedChatMessageBytes = await DataStream.toBytes(chatReadReply.entry!.data!); // to create streams for testing
       const decryptedChatMessage = await Records.decrypt(
-        chatReadReply.recordsWrite!,
+        chatReadReply.entry!.recordsWrite!,
         decryptedContextDerivedPrivateKey,
         DataStream.fromBytes(encryptedChatMessageBytes)
       );
@@ -264,7 +264,7 @@ export function testEndToEndScenarios(): void {
 
       // Arguably unrelated to the scenario, but let's also sanity check that Alice's root key can also decrypt the encrypted chat message
       const decryptedChatMessageStream2 = await Records.decrypt(
-        chatReadReply.recordsWrite!,
+        chatReadReply.entry!.recordsWrite!,
         aliceRootKey,
         DataStream.fromBytes(encryptedChatMessageBytes)
       );
