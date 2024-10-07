@@ -202,21 +202,29 @@ export type RecordsReadMessage = {
   descriptor: RecordsReadDescriptor;
 };
 
+/**
+ * The reply to a RecordsRead message.
+ */
 export type RecordsReadReply = GenericMessageReply & {
+  /**
+   * The latest RecordsWrite message of the record if record exists (not deleted).
+   */
+  recordsWrite?: RecordsWriteMessage;
+
   /**
    * The RecordsDelete if the record is deleted.
    */
-  delete?: RecordsDeleteMessage;
+  recordsDelete?: RecordsDeleteMessage;
 
   /**
    * The initial write of the record if the returned RecordsWrite message itself is not the initial write or if a RecordsDelete is returned.
    */
   initialWrite?: RecordsWriteMessage;
 
-  record?: RecordsWriteMessage & {
-    initialWrite?: RecordsWriteMessage;
-    data: Readable;
-  };
+  /**
+   * The data stream associated with the record if the records exists (not deleted).
+   */
+  data?: Readable;
 };
 
 export type RecordsReadDescriptor = {

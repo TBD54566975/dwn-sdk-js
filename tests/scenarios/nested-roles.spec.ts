@@ -129,7 +129,7 @@ export function testNestedRoleScenarios(): void {
       });
       const bobCommunityReadReply = await dwn.processMessage(alice.did, bobCommunityRead.message);
       expect(bobCommunityReadReply.status.code).to.equal(200);
-      expect(bobCommunityReadReply.record?.recordId).to.equal(communityRecord.message.recordId);
+      expect(bobCommunityReadReply.recordsWrite?.recordId).to.equal(communityRecord.message.recordId);
 
       //   4b. Bob can create gated-channels 1 & 2 in the community
       const channel1Record = await TestDataGenerator.generateRecordsWrite({
@@ -225,7 +225,7 @@ export function testNestedRoleScenarios(): void {
       });
       const carolReadReply = await dwn.processMessage(alice.did, carolRead.message);
       expect(carolReadReply.status.code).to.equal(200);
-      expect(carolReadReply.record?.recordId).to.equal(channel1Record.message.recordId);
+      expect(carolReadReply.recordsWrite?.recordId).to.equal(channel1Record.message.recordId);
 
       // 7. Carol CANNOT add anyone as a participant in the gated-channel 2 since she is not a participant in the channel
       const participantCarolRecord = await TestDataGenerator.generateRecordsWrite({

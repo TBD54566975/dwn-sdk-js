@@ -65,16 +65,20 @@ export class RecordsReadHandler implements MethodHandler {
 
     const matchedMessage = existingMessages[0];
 
+    // if the matched message is a RecordsDelete, we mark the record as not-found and return both the RecordsDelete and the initial RecordsWrite
+    // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/819:
+    // Consider performing authorization checks like when records exists before returning RecordsDelete and initial RecordsWrite of a deleted record
     if (matchedMessage.descriptor.method === DwnMethodName.Delete) {
       const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
       return {
-        status : { code: 404, detail: 'Not Found' },
-        delete : recordsDeleteMessage,
+        status        : { code: 404, detail: 'Not Found' },
+        recordsDelete : recordsDeleteMessage,
         initialWrite
       };
     }
 
+    // else the matched message is a RecordsWrite
     const matchedRecordsWrite = matchedMessage as RecordsQueryReplyEntry;
 
     try {
@@ -98,27 +102,24 @@ export class RecordsReadHandler implements MethodHandler {
       data = result.dataStream;
     }
 
-    const record = {
-      ...matchedRecordsWrite,
+    const recordsReadReply: RecordsReadReply = {
+      status       : { code: 200, detail: 'OK' },
+      recordsWrite : matchedRecordsWrite,
       data
     };
 
-    // attach initial write if returned RecordsWrite is not initial write
-    if (!await RecordsWrite.isInitialWrite(record)) {
+    // attach initial write if latest RecordsWrite is not initial write
+    if (!await RecordsWrite.isInitialWrite(matchedRecordsWrite)) {
       const initialWriteQueryResult = await this.messageStore.query(
         tenant,
-        [{ recordId: record.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
+        [{ recordId: matchedRecordsWrite.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
       );
       const initialWrite = initialWriteQueryResult.messages[0] as RecordsQueryReplyEntry;
-      delete initialWrite.encodedData; // defensive measure but technically optional because we do this when an update RecordsWrite takes place
-      record.initialWrite = initialWrite;
+      delete initialWrite.encodedData; // just defensive because technically should already be deleted when a later RecordsWrite is written
+      recordsReadReply.initialWrite = initialWrite;
     }
 
-    const messageReply: RecordsReadReply = {
-      status: { code: 200, detail: 'OK' },
-      record
-    };
-    return messageReply;
+    return recordsReadReply;
   };
 
   /**

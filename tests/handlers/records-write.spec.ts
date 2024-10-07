@@ -287,7 +287,7 @@ export function testRecordsWriteHandler(): void {
         });
         const recordsReadReply = await dwn.processMessage(tenant, recordsRead.message);
         expect(recordsReadReply.status.code).to.equal(200);
-        expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(newDataFormat);
+        expect(recordsReadReply.recordsWrite?.descriptor.dataFormat).to.equal(newDataFormat);
       });
 
       it('should not allow changes to immutable properties', async () => {
@@ -359,8 +359,8 @@ export function testRecordsWriteHandler(): void {
 
         const readMessageReply = await dwn.processMessage(tenant, readMessage.message);
         expect(readMessageReply.status.code).to.equal(200);
-        expect(readMessageReply.record).to.exist;
-        const data = await DataStream.toBytes(readMessageReply.record!.data);
+        expect(readMessageReply.recordsWrite).to.exist;
+        const data = await DataStream.toBytes(readMessageReply.data!);
         expect(data).to.eql(dataBytes);
       });
 
@@ -478,8 +478,8 @@ export function testRecordsWriteHandler(): void {
 
           const readMessageReply = await dwn.processMessage(tenant, readMessage.message);
           expect(readMessageReply.status.code).to.equal(200);
-          expect(readMessageReply.record).to.exist;
-          const data = await DataStream.toBytes(readMessageReply.record!.data);
+          expect(readMessageReply.recordsWrite).to.exist;
+          const data = await DataStream.toBytes(readMessageReply.data!);
           expect(data).to.eql(dataBytes);
         });
 
@@ -511,8 +511,8 @@ export function testRecordsWriteHandler(): void {
 
           const readMessageReply = await dwn.processMessage(tenant, readMessage.message);
           expect(readMessageReply.status.code).to.equal(200);
-          expect(readMessageReply.record).to.exist;
-          const data = await DataStream.toBytes(readMessageReply.record!.data);
+          expect(readMessageReply.recordsWrite).to.exist;
+          const data = await DataStream.toBytes(readMessageReply.data!);
           expect(data).to.eql(dataBytes);
         });
       });
@@ -736,7 +736,7 @@ export function testRecordsWriteHandler(): void {
         const readReply = await dwn.processMessage(alice.did, read.message);
         expect(readReply.status.code).to.equal(200);
 
-        const readDataBytes = await DataStream.toBytes(readReply.record!.data!);
+        const readDataBytes = await DataStream.toBytes(readReply.data!);
         expect(ArrayUtility.byteArraysEqual(readDataBytes, write2.dataBytes!)).to.be.true;
       });
 
@@ -790,7 +790,7 @@ export function testRecordsWriteHandler(): void {
         const readReply = await dwn.processMessage(alice.did, read.message);
         expect(readReply.status.code).to.equal(200);
 
-        const readDataBytes = await DataStream.toBytes(readReply.record!.data!);
+        const readDataBytes = await DataStream.toBytes(readReply.data!);
         expect(ArrayUtility.byteArraysEqual(readDataBytes, write2.dataBytes!)).to.be.true;
       });
 
@@ -2505,7 +2505,7 @@ export function testRecordsWriteHandler(): void {
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(200);
-          expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(protocolDefinition.types.image.dataFormats[1]);
+          expect(recordsReadReply.recordsWrite?.descriptor.dataFormat).to.equal(protocolDefinition.types.image.dataFormats[1]);
         });
 
         it('#690 - should allow any data format for a record if protocol definition does not explicitly specify the list of allowed data formats', async () => {
@@ -2557,7 +2557,7 @@ export function testRecordsWriteHandler(): void {
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(200);
-          expect(recordsReadReply.record?.descriptor.dataFormat).to.equal(newDataFormat);
+          expect(recordsReadReply.recordsWrite?.descriptor.dataFormat).to.equal(newDataFormat);
         });
 
         it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {

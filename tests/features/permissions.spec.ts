@@ -345,7 +345,7 @@ export function testPermissions(): void {
       // 9. Verify that any third-party can fetch the revocation status of the permission grant
       const revocationReadReply2 = await dwn.processMessage(alice.did, revocationRead.message);
       expect(revocationReadReply2.status.code).to.equal(200);
-      expect(revocationReadReply2.record?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
+      expect(revocationReadReply2.recordsWrite?.recordId).to.equal(revokeWrite.recordsWrite.message.recordId);
     });
 
     it('should fail if a RecordsPermissionScope in a Request or Grant record is created without a protocol', async () => {
