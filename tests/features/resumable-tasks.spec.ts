@@ -138,7 +138,7 @@ export function testResumableTasks(): void {
 
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
-      expect(readReply.recordsWrite).to.exist;
+      expect(readReply.entry!.recordsWrite).to.exist;
 
       // 3. Restart the DWN to trigger the resumable task to be resumed.
       await dwn.close();
@@ -147,7 +147,7 @@ export function testResumableTasks(): void {
       // 4. Verify that the record is deleted.
       const readReply2 = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply2.status.code).to.equal(404);
-      expect(readReply2.recordsWrite).to.be.undefined;
+      expect(readReply2.entry!.recordsWrite).to.be.undefined;
     });
 
     it('should only resume tasks that are timed-out up to the batch size when DWN starts', async () => {

@@ -2079,8 +2079,8 @@ export function testRecordsTags(): void {
 
         const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
         expect(tagsRecord1ReadReply.status.code).to.equal(200);
-        expect(tagsRecord1ReadReply.recordsWrite).to.not.be.undefined;
-        expect(tagsRecord1ReadReply.recordsWrite!.descriptor.tags)
+        expect(tagsRecord1ReadReply.entry!.recordsWrite).to.not.be.undefined;
+        expect(tagsRecord1ReadReply.entry!.recordsWrite!.descriptor.tags)
           .to.deep.equal({ stringTag, numberTag, booleanTag, stringArrayTag, numberArrayTag });
       });
 
@@ -2114,8 +2114,8 @@ export function testRecordsTags(): void {
 
         const tagsRecord1ReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
         expect(tagsRecord1ReadReply.status.code).to.equal(200);
-        expect(tagsRecord1ReadReply.recordsWrite).to.not.be.undefined;
-        expect(tagsRecord1ReadReply.recordsWrite!.descriptor.tags).to.deep.equal({
+        expect(tagsRecord1ReadReply.entry!.recordsWrite).to.not.be.undefined;
+        expect(tagsRecord1ReadReply.entry!.recordsWrite!.descriptor.tags).to.deep.equal({
           stringTag      : 'string-value',
           numberTag      : 54566975,
           booleanTag     : false,
@@ -2149,8 +2149,8 @@ export function testRecordsTags(): void {
 
         const updatedRecordReadReply = await dwn.processMessage(alice.did, tagsRecord1Read.message);
         expect(updatedRecordReadReply.status.code).to.equal(200);
-        expect(updatedRecordReadReply.recordsWrite).to.exist;
-        expect(updatedRecordReadReply.recordsWrite!.descriptor.tags).to.deep.equal({ newTag: 'new-value' });
+        expect(updatedRecordReadReply.entry!.recordsWrite).to.exist;
+        expect(updatedRecordReadReply.entry!.recordsWrite!.descriptor.tags).to.deep.equal({ newTag: 'new-value' });
 
         // Sanity: Query for the old tag value should return no results
         const tagsQueryMatchReply2 = await dwn.processMessage(alice.did, tagsQueryMatch.message);

@@ -505,7 +505,7 @@ export function testAuthorDelegatedGrant(): void {
       });
       const deviceXRecordsReadReply = await dwn.processMessage(bob.did, recordsReadByDeviceX.message);
       expect(deviceXRecordsReadReply.status.code).to.equal(200);
-      expect(deviceXRecordsReadReply.recordsWrite?.recordId).to.equal(chatRecord.message.recordId);
+      expect(deviceXRecordsReadReply.entry!.recordsWrite?.recordId).to.equal(chatRecord.message.recordId);
 
       // Verify that Carol cannot query as Alice by invoking the delegated grant granted to Device X
       const recordsQueryByCarol = await RecordsQuery.create({

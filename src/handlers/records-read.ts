@@ -72,9 +72,11 @@ export class RecordsReadHandler implements MethodHandler {
       const recordsDeleteMessage = matchedMessage as RecordsDeleteMessage;
       const initialWrite = await RecordsWrite.fetchInitialRecordsWriteMessage(this.messageStore, tenant, recordsDeleteMessage.descriptor.recordId);
       return {
-        status        : { code: 404, detail: 'Not Found' },
-        recordsDelete : recordsDeleteMessage,
-        initialWrite
+        status : { code: 404, detail: 'Not Found' },
+        entry  : {
+          recordsDelete: recordsDeleteMessage,
+          initialWrite
+        }
       };
     }
 
@@ -103,9 +105,11 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     const recordsReadReply: RecordsReadReply = {
-      status       : { code: 200, detail: 'OK' },
-      recordsWrite : matchedRecordsWrite,
-      data
+      status : { code: 200, detail: 'OK' },
+      entry  : {
+        recordsWrite: matchedRecordsWrite,
+        data
+      }
     };
 
     // attach initial write if latest RecordsWrite is not initial write
@@ -116,7 +120,7 @@ export class RecordsReadHandler implements MethodHandler {
       );
       const initialWrite = initialWriteQueryResult.messages[0] as RecordsQueryReplyEntry;
       delete initialWrite.encodedData; // just defensive because technically should already be deleted when a later RecordsWrite is written
-      recordsReadReply.initialWrite = initialWrite;
+      recordsReadReply.entry!.initialWrite = initialWrite;
     }
 
     return recordsReadReply;

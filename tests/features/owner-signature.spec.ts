@@ -78,26 +78,26 @@ export function testOwnerSignature(): void {
 
       const readReply = await dwn.processMessage(bob.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
-      expect(readReply.recordsWrite).to.exist;
-      expect(readReply.recordsWrite?.descriptor).to.exist;
+      expect(readReply.entry!.recordsWrite).to.exist;
+      expect(readReply.entry!.recordsWrite?.descriptor).to.exist;
 
       // Alice augments Bob's message as an external owner
-      const { recordsWrite } = readReply; // remove data from message
-      const ownerSignedMessage = await RecordsWrite.parse(recordsWrite!);
+      const { entry } = readReply; // remove data from message
+      const ownerSignedMessage = await RecordsWrite.parse(entry!.recordsWrite!);
       await ownerSignedMessage.signAsOwner(Jws.createSigner(alice));
 
       // Test that Alice can successfully retain/write Bob's message to her DWN
-      const aliceDataStream = readReply.data!;
+      const aliceDataStream = readReply.entry!.data!;
       const aliceWriteReply = await dwn.processMessage(alice.did, ownerSignedMessage.message, { dataStream: aliceDataStream });
       expect(aliceWriteReply.status.code).to.equal(202);
 
       // Test that Bob's message can be read from Alice's DWN
       const readReply2 = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply2.status.code).to.equal(200);
-      expect(readReply2.recordsWrite).to.exist;
-      expect(readReply2.recordsWrite?.descriptor).to.exist;
+      expect(readReply2.entry!.recordsWrite).to.exist;
+      expect(readReply2.entry!.recordsWrite?.descriptor).to.exist;
 
-      const dataFetched = await DataStream.toBytes(readReply2.data!);
+      const dataFetched = await DataStream.toBytes(readReply2.entry!.data!);
       expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
@@ -144,10 +144,10 @@ export function testOwnerSignature(): void {
       });
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
-      expect(readReply.recordsWrite).to.exist;
-      expect(readReply.recordsWrite?.descriptor).to.exist;
+      expect(readReply.entry!.recordsWrite).to.exist;
+      expect(readReply.entry!.recordsWrite?.descriptor).to.exist;
 
-      const dataFetched = await DataStream.toBytes(readReply.data!);
+      const dataFetched = await DataStream.toBytes(readReply.entry!.data!);
       expect(ArrayUtility.byteArraysEqual(dataFetched, bobRecordsWrite.dataBytes!)).to.be.true;
     });
 

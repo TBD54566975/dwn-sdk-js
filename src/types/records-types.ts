@@ -207,6 +207,17 @@ export type RecordsReadMessage = {
  */
 export type RecordsReadReply = GenericMessageReply & {
   /**
+   * A container for the data returned from a `RecordsRead`.
+   * `undefined` if no data needs to be returned.
+   */
+  entry?: RecordsReadReplyEntry;
+};
+
+/**
+ * The structure of the `entry` container property in `RecordsReadReplyEntry`.
+ */
+export type RecordsReadReplyEntry = {
+  /**
    * The latest RecordsWrite message of the record if record exists (not deleted).
    */
   recordsWrite?: RecordsWriteMessage;
