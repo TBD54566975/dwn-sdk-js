@@ -1,0 +1,79 @@
+name: Propagate Issue Labels to PR
+on:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  copy_labels:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Get issue number from PR body
+      id: issue_number
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const prBody = context.payload.pull_request.body || '';
+          // Remove HTML comments
+          const bodyWithoutComments = prBody.replace(/<!--[\s\S]*?-->/g, '');
+          // Find issue number
+          const match = bodyWithoutComments.match(/(?:Resolves|Closes) #(\d+)/);
+          const issueNumber = match ? match[1] : null;
+          if (issueNumber) {
+            console.log(`Issue number found: ${issueNumber}`);
+            core.setOutput('has_issue', 'true');
+            core.setOutput('issue_number', issueNumber);
+          } else {
+            console.log('No issue number found in PR body');
+            core.setOutput('has_issue', 'false');
+          }
+    - name: Get labels from linked issue
+      if: steps.issue_number.outputs.has_issue == 'true'
+      uses: actions/github-script@v6
+      id: issue_labels
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const issue_number = ${{ steps.issue_number.outputs.issue_number }};
+          try {
+            const issue = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(issue_number)
+            });
+            return issue.data.labels.map(label => label.name);
+          } catch (error) {
+            console.log(`Error fetching issue labels: ${error}`);
+            return [];
+          }
+    - name: Check for required labels
+      if: steps.issue_number.outputs.has_issue == 'true' && steps.issue_labels.outputs.result != '[]'
+      id: check_labels
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const labels = ${{ steps.issue_labels.outputs.result }};
+          const hacktoberfestLabel = labels.some(label => label.toLowerCase().includes('hacktoberfest'));
+          const sizeLabelPresent = labels.some(label => ['small', 'medium', 'large'].includes(label.toLowerCase()));
+          return hacktoberfestLabel || sizeLabelPresent;
+    - name: Add labels to PR
+      if: steps.issue_number.outputs.has_issue == 'true' && steps.check_labels.outputs.result == 'true'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const pr_number = context.issue.number;
+          const labels = ${{ steps.issue_labels.outputs.result }};
+          try {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr_number,
+              labels: labels
+            });
+            console.log('Labels added successfully');
+          } catch (error) {
+            console.log(`Error adding labels: ${error}`);
+          }
