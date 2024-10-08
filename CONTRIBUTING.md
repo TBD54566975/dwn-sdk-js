@@ -116,6 +116,7 @@ Our preferred code style has been codified into `eslint` rules. Feel free to tak
 | command                           | description                                                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `npm run test:node`               | runs tests and type checking                                                                                       |
+| `npm run test:node-grep`          | runs specific tests matching a pattern. Requires the -g option. For example: `npm run test:node-grep -g "RecordsReadHandler.handle"`                                                       |
 | `npm run test:browser`            | runs tests against browser bundles in headless browser                                                             |
 | `npm run test:browser-debug`      | runs tests against browser bundles in debug-ready Chrome                                                           |
 | `npm run build`                   | transpiles `ts` -> `js` as `esm` and `cjs`, generates `esm` and `umd` bundles, and generates all type declarations |
