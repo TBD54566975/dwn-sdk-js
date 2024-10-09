@@ -163,4 +163,5 @@ export enum DwnErrorCode {
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
   UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
   UrlSchemaNotNormalized = 'UrlSchemaNotNormalized',
+  RecordsReadInitialWriteNotFound = 'RecordsReadInitialWriteNotFound',
 };

@@ -205,6 +205,100 @@ export function testRecordsReadHandler(): void {
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
       });
 
+      it('should return 400 when fetching initial write for a deleted record fails', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+
+        // Write a record
+        const { message: writeMessage, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const writeReply = await dwn.processMessage(alice.did, writeMessage, { dataStream });
+        expect(writeReply.status.code).to.equal(202);
+
+        // Delete the record
+        const recordsDelete = await RecordsDelete.create({
+          signer   : Jws.createSigner(alice),
+          recordId : writeMessage.recordId
+        });
+        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        // Stub the messageStore.query method to simulate failure in fetching initial write
+        const queryStub = sinon.stub(dwn['messageStore'], 'query');
+        queryStub.onFirstCall().resolves({ messages: [recordsDelete.message] });
+        queryStub.onSecondCall().resolves({ messages: [] }); // Simulate no initial write found
+
+        // Attempt to read the deleted record
+        const recordsRead = await RecordsRead.create({
+          filter : { recordId: writeMessage.recordId },
+          signer : Jws.createSigner(alice)
+        });
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+
+        // Verify the response
+        expect(readReply.status.code).to.equal(400);
+        expect(readReply.status.detail).to.contain(DwnErrorCode.RecordsReadInitialWriteNotFound);
+
+        // Restore the original messageStore.query method
+        queryStub.restore();
+      });
+
+      it('should return 401 when a non-author attempts to read the initial write of a deleted record', async () => {
+        const alice = await TestDataGenerator.generateDidKeyPersona();
+        const bob = await TestDataGenerator.generateDidKeyPersona();
+        const carol = await TestDataGenerator.generateDidKeyPersona();
+
+        // Alice installs a protocol that allows anyone to write
+        const protocolDefinition: ProtocolDefinition = {
+          published : true,
+          protocol  : 'https://example.com/foo',
+          types     : {
+            foo: {}
+          },
+          structure: {
+            foo: {
+              $actions: [{
+                who : 'anyone',
+                can : ['create', 'delete']
+              }]
+            }
+          }
+        };
+
+        const configureProtocol = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : protocolDefinition,
+        });
+        const configureProtocolReply = await dwn.processMessage(alice.did, configureProtocol.message);
+        expect(configureProtocolReply.status.code).to.equal(202);
+
+        // Bob writes a record to Alice's DWN
+        const { message: writeMessage, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          protocol     : protocolDefinition.protocol,
+          protocolPath : 'foo'
+        });
+        const writeReply = await dwn.processMessage(alice.did, writeMessage, { dataStream });
+        expect(writeReply.status.code).to.equal(202);
+
+        // Bob deletes the record
+        const recordsDelete = await RecordsDelete.create({
+          signer   : Jws.createSigner(bob),
+          recordId : writeMessage.recordId
+        });
+        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        // Carol attempts to read the deleted record
+        const recordsRead = await RecordsRead.create({
+          filter : { recordId: writeMessage.recordId },
+          signer : Jws.createSigner(carol)
+        });
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+
+        // Verify the response
+        expect(readReply.status.code).to.equal(401);
+        expect(readReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+      });
+
       it('should allow a non-tenant to read RecordsRead data they have authored', async () => {
         const alice = await TestDataGenerator.generateDidKeyPersona();
         const bob = await TestDataGenerator.generateDidKeyPersona();

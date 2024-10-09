@@ -154,6 +154,7 @@
     "lint:fix": "eslint . --fix",
     "circular-dependency-check": "depcruise src",
     "test:node": "npm run compile-validators && tsc && c8 node --enable-source-maps node_modules/.bin/mocha \"dist/esm/tests/**/*.spec.js\"",
+    "test:node-grep": "npm run compile-validators && tsc && c8 node --enable-source-maps node_modules/.bin/mocha \"dist/esm/tests/**/*.spec.js\" -- --grep $npm_config_grep",
     "test:browser": "npm run compile-validators && cross-env karma start karma.conf.cjs",
     "test:browser-debug": "npm run compile-validators && cross-env karma start karma.conf.debug.cjs",
     "license-check": "license-report --only=prod > license-report.json && node ./build/license-check.cjs",
