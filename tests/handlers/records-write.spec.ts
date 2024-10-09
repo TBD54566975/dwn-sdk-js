@@ -1331,8 +1331,12 @@ export function testRecordsWriteHandler(): void {
           });
 
           it('should allow co-update with ancestor author rule', async () => {
-            // scenario: Bob authors a post on Alice's DWN. Alice adds a comment to the post. Bob is able to update the comment,
-            //           since he authored the post.
+            // scenario:
+            // 0. Protocol rule: author of `post` can `co-update` `post/comment`
+            // 1. Bob authors a post on Alice's DWN.
+            // 2. Alice modifies the Bob's post as the owner of the DWN (testing authorship authorization logic).
+            // 3. Alice adds a comment to the post.
+            // 4. Bob is able to update the comment since he originally authored the post.
 
             const alice = await TestDataGenerator.generateDidKeyPersona();
             const bob = await TestDataGenerator.generateDidKeyPersona();
@@ -1356,7 +1360,27 @@ export function testRecordsWriteHandler(): void {
             const postRecordsReply = await dwn.processMessage(alice.did, postRecord.message, { dataStream: postRecord.dataStream });
             expect(postRecordsReply.status.code).to.equal(202);
 
-            // Alice creates a post/comment
+            // generate a subsequent RecordsWrite from Alice overwriting Bob's message to test change of author
+            const aliceData = new TextEncoder().encode('state changed by alice');
+            const messageFromAlice = await RecordsWrite.createFrom({
+              signer              : Jws.createSigner(alice),
+              recordsWriteMessage : postRecord.recordsWrite.message,
+              data                : aliceData
+            });
+            const aliceWriteReply = await dwn.processMessage(alice.did, messageFromAlice.message, { dataStream: DataStream.fromBytes(aliceData) });
+            expect(aliceWriteReply.status.code).to.equal(202);
+
+            // verify alice's message got written to the DB
+            const postQuery = await RecordsQuery.create({
+              filter : { recordId: postRecord.message.recordId },
+              signer : Jws.createSigner(alice)
+            });
+            const recordQueryReply = await dwn.processMessage(alice.did, postQuery.message);
+            expect(recordQueryReply.status.code).to.equal(200);
+            expect(recordQueryReply.entries?.length).to.equal(1);
+            expect(recordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(aliceData));
+
+            // Alice creates a comment
             const commentRecord = await TestDataGenerator.generateRecordsWrite({
               author          : alice,
               recipient       : alice.did,
@@ -2081,7 +2105,10 @@ export function testRecordsWriteHandler(): void {
         });
 
         it('should allow updating records by the initial author', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then modifies the message
+          // scenario:
+          // 1. Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule.
+          // 2. Alice modifies the message.
+          // 3. Verify that bob can still modify the message.
 
           // write a protocol definition with an allow-anyone rule
           const protocolDefinition = messageProtocolDefinition;
@@ -2126,11 +2153,27 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryReply.entries?.length).to.equal(1);
           expect(bobRecordsQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
+          // generate a subsequent RecordsWrite from Alice overwriting Bob's message
+          const aliceData = new TextEncoder().encode('state changed by alice');
+          const messageFromAlice = await RecordsWrite.createFrom({
+            signer              : Jws.createSigner(alice),
+            recordsWriteMessage : messageFromBob.recordsWrite.message,
+            data                : aliceData
+          });
+          const aliceWriteReply = await dwn.processMessage(alice.did, messageFromAlice.message, { dataStream: DataStream.fromBytes(aliceData) });
+          expect(aliceWriteReply.status.code).to.equal(202);
+
+          // verify alice's message got written to the DB
+          const recordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+          expect(recordQueryReply.status.code).to.equal(200);
+          expect(recordQueryReply.entries?.length).to.equal(1);
+          expect(recordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(aliceData));
+
           // generate a new message from bob updating the existing message
           const updatedMessageBytes = Encoder.stringToBytes('updated message from bob');
           const updatedMessageFromBob = await TestDataGenerator.generateFromRecordsWrite({
             author        : bob,
-            existingWrite : messageFromBob.recordsWrite,
+            existingWrite : messageFromAlice,
             data          : updatedMessageBytes
           });
 
