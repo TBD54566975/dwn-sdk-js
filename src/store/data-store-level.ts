@@ -114,7 +114,7 @@ export class DataStoreLevel implements DataStore {
   }
 }
 
-type DataStoreLevelConfig = {
+export type DataStoreLevelConfig = {
   blockstoreLocation?: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };

@@ -7,7 +7,7 @@ import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
 
-type EventLogLevelConfig = {
+export type EventLogLevelConfig = {
  /**
    * must be a directory path (relative or absolute) where
    *  LevelDB will store its files, or in browsers, the name of the

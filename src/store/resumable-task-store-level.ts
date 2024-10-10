@@ -3,7 +3,7 @@ import type { ManagedResumableTask, ResumableTaskStore } from '../types/resumabl
 import { Cid } from '../utils/cid.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
-type ResumableTaskStoreLevelConfig = {
+export type ResumableTaskStoreLevelConfig = {
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase
 };
