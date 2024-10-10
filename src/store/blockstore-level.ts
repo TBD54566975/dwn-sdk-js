@@ -107,7 +107,7 @@ export class BlockstoreLevel implements Blockstore {
   }
 }
 
-type BlockstoreLevelConfig = {
+export type BlockstoreLevelConfig = {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };
