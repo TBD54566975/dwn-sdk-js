@@ -3,7 +3,7 @@ import { AesCtr } from '@web5/crypto';
 import type { Jwk } from '@web5/crypto';
 import { Readable } from 'readable-stream';
 
-// compress publicKey for message encryption
+// Compress publicKey for message encryption
 eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed = true;
 
 /**
@@ -35,24 +35,31 @@ export class Encryption {
       read(): void {},
     });
 
-    plaintextStream.on('data', async (chunk) => {
-      // Encrypt the chunk using AesCtr
-      const encryptedChunk = await AesCtr.encrypt({
-        data    : chunk,
-        key     : jwkKey,
-        counter : initializationVector,
-        length  : 256,
-      });
+    let buffer = Buffer.alloc(0);
 
-      cipherStream.push(encryptedChunk);
+    plaintextStream.on('data', async (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
     });
 
-    plaintextStream.on('end', () => {
-      cipherStream.push(null); // Signal the end of the stream
+    plaintextStream.on('end', async () => {
+      try {
+        // Encrypt the entire buffer when the stream ends
+        const encryptedData = await AesCtr.encrypt({
+          data    : buffer,
+          key     : jwkKey,
+          counter : initializationVector,
+          length  : 128, // FIX: Counter length must be between 1 and 128
+        });
+
+        cipherStream.push(encryptedData);
+        cipherStream.push(null); // Signal the end of the stream
+      } catch (error) {
+        cipherStream.emit('error', error); // Emit error if encryption fails
+      }
     });
 
     plaintextStream.on('error', (err) => {
-      cipherStream.emit('error', err); // Emit error if any occurs in the plaintext stream
+      cipherStream.emit('error', err); // Propagate errors
     });
 
     return cipherStream; // Return the cipher stream
@@ -73,24 +80,31 @@ export class Encryption {
       read(): void {},
     });
 
-    cipherStream.on('data', async (chunk) => {
-      // Decrypt the chunk using AesCtr
-      const decryptedChunk = await AesCtr.decrypt({
-        data    : chunk,
-        key     : jwkKey,
-        counter : initializationVector,
-        length  : 256, // Length of the key in bits
-      });
+    let buffer = Buffer.alloc(0);
 
-      plaintextStream.push(decryptedChunk); // Push the decrypted chunk to the plaintext stream
+    cipherStream.on('data', async (chunk) => {
+      buffer = Buffer.concat([buffer, chunk]);
     });
 
-    cipherStream.on('end', () => {
-      plaintextStream.push(null); // Signal the end of the stream
+    cipherStream.on('end', async () => {
+      try {
+        // Decrypt the entire buffer when the stream ends
+        const decryptedData = await AesCtr.decrypt({
+          data    : buffer,
+          key     : jwkKey,
+          counter : initializationVector,
+          length  : 128, // FIX: Counter length must be between 1 and 128
+        });
+
+        plaintextStream.push(decryptedData);
+        plaintextStream.push(null); // Signal the end of the stream
+      } catch (error) {
+        plaintextStream.emit('error', error); // Emit error if decryption fails
+      }
     });
 
     cipherStream.on('error', (err) => {
-      plaintextStream.emit('error', err); // Emit error if any occurs in the cipher stream
+      plaintextStream.emit('error', err); // Propagate errors
     });
 
     return plaintextStream; // Return the plaintext stream
