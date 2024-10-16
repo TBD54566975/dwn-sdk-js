@@ -32,7 +32,7 @@ We suggest the following process when picking up one of these issues:
 `dwn-sdk-js` is a participating in Hacktoberfest 2024! We’re so excited for your contributions, and have created a wide variety of issues so that anyone can contribute. Whether you're a seasoned developer or a first-time open source contributor, there's something for everyone.
 
 ### Here's how you can get started:
-1. Read the [code of conduct](https://github.com/TBD54566975/dwn-sdk-js/blob/main/CODE_OF_CONDUCT.mdd).
+1. Read the [code of conduct](https://github.com/TBD54566975/dwn-sdk-js/blob/main/CODE_OF_CONDUCT.md).
 2. Choose a task from this project's Hacktoberfest issues in our [Project Hub](https://github.com/TBD54566975/dwn-sdk-js/issues/806). Each issue has the 🏷️ `hacktoberfest` label.
 5. Comment ".take" on the corresponding issue to get assigned the task.
 6. Fork the repository and create a new branch for your work.
