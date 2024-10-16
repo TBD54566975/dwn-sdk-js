@@ -36,7 +36,7 @@ export type AuthorizationModel = {
   ownerDelegatedGrant?: DelegatedGrantRecordsWriteMessage;
 };
 
-type DelegatedGrantRecordsWriteMessage = {
+export type DelegatedGrantRecordsWriteMessage = {
   authorization: {
     /**
      * The signature of the author.
@@ -116,7 +116,7 @@ export type Pagination = {
   limit?: number;
 };
 
-type Status = {
+export type Status = {
   code: number
   detail: string
 };

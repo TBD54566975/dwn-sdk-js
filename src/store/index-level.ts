@@ -8,7 +8,7 @@ import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
 
-type IndexLevelConfig = {
+export type IndexLevelConfig = {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase
 };

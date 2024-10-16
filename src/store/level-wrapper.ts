@@ -266,7 +266,7 @@ export class LevelWrapper<V> {
   }
 }
 
-type LevelWrapperConfig<V> = CreateLevelDatabaseOptions<V> & {
+export type LevelWrapperConfig<V> = CreateLevelDatabaseOptions<V> & {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };

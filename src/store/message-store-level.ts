@@ -188,7 +188,7 @@ export class MessageStoreLevel implements MessageStore {
   }
 }
 
-type MessageStoreLevelConfig = {
+export type MessageStoreLevelConfig = {
   blockstoreLocation?: string,
   indexLocation?: string,
   createLevelDatabase?: typeof createLevelDatabase,
