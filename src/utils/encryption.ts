@@ -6,18 +6,42 @@ import { Readable } from 'readable-stream';
 // Compress publicKey for message encryption
 eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed = true;
 
+export interface EciesEncryptionOutput {
+  ciphertext: Uint8Array;
+  ephemeralPublicKey: Uint8Array;
+  initializationVector: Uint8Array;
+  messageAuthenticationCode: Uint8Array;
+}
+
+export interface EciesEncryptionInput {
+  privateKey: Uint8Array;
+  ephemeralPublicKey: Uint8Array;
+  initializationVector: Uint8Array;
+  messageAuthenticationCode: Uint8Array;
+  ciphertext: Uint8Array;
+}
+
 /**
  * Utility class for performing common, non-DWN specific encryption operations.
  */
 export class Encryption {
   /**
-   * Encrypts the given plaintext stream using AES-256-CTR algorithm.
+   * Converts a key to base64url encoding
+   * @param key - Uint8Array to convert
    */
+  public static isEphemeralKeyCompressed: boolean = true; // Set default value
+
+  private static toBase64Url(buffer: Buffer): string {
+    return buffer.toString('base64') // Convert to base64
+      .replace(/\+/g, '-') // Replace + with -
+      .replace(/\//g, '_') // Replace / with _
+      .replace(/=+$/, ''); // Remove any trailing '='
+  }
 
   private static async convertToJwk(key: Uint8Array): Promise<Jwk> {
     return {
       kty : 'oct',
-      k   : Buffer.from(key).toString('base64url'),
+      k   : this.toBase64Url(Buffer.from(key)), // Use the new base64url method
       alg : 'A256CTR',
       ext : 'true',
     };
@@ -37,7 +61,7 @@ export class Encryption {
 
     let buffer = Buffer.alloc(0);
 
-    plaintextStream.on('data', async (chunk) => {
+    plaintextStream.on('data', (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
     });
 
@@ -65,9 +89,6 @@ export class Encryption {
     return cipherStream; // Return the cipher stream
   }
 
-  /**
-   * Decrypts the given cipher stream using AES-256-CTR algorithm.
-   */
   public static async aes256CtrDecrypt(
     key: Uint8Array,
     initializationVector: Uint8Array,
@@ -82,7 +103,7 @@ export class Encryption {
 
     let buffer = Buffer.alloc(0);
 
-    cipherStream.on('data', async (chunk) => {
+    cipherStream.on('data', (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
     });
 
@@ -110,22 +131,15 @@ export class Encryption {
     return plaintextStream; // Return the plaintext stream
   }
 
-  /**
-   * Encrypts the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme)
-   * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
-   * and AES-GCM for the symmetric encryption and MAC algorithms.
-   */
   public static async eciesSecp256k1Encrypt(
     publicKeyBytes: Uint8Array,
     plaintext: Uint8Array
   ): Promise<EciesEncryptionOutput> {
-    // underlying library requires Buffer as input
     const publicKey = Buffer.from(publicKeyBytes);
     const plaintextBuffer = Buffer.from(plaintext);
 
     const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
 
-    // split cryptogram returned into constituent parts
     let start = 0;
     let end = Encryption.isEphemeralKeyCompressed ? 33 : 65;
     const ephemeralPublicKey = cryptogram.subarray(start, end);
@@ -148,15 +162,9 @@ export class Encryption {
     };
   }
 
-  /**
-   * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme)
-   * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
-   * and AES-GCM for the symmetric encryption and MAC algorithms.
-   */
   public static async eciesSecp256k1Decrypt(
     input: EciesEncryptionInput
   ): Promise<Uint8Array> {
-    // underlying library requires Buffer as input
     const privateKeyBuffer = Buffer.from(input.privateKey);
     const eciesEncryptionOutput = Buffer.concat([
       input.ephemeralPublicKey,
@@ -165,29 +173,10 @@ export class Encryption {
       input.ciphertext,
     ]);
 
-    const plaintext = eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
-
-    return plaintext;
-  }
-
-  /**
-   * Expose eciesjs library configuration
-   */
-  static get isEphemeralKeyCompressed(): boolean {
-    return eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed;
+    return eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
   }
 }
 
-export type EciesEncryptionOutput = {
-  initializationVector: Uint8Array;
-  ephemeralPublicKey: Uint8Array;
-  ciphertext: Uint8Array;
-  messageAuthenticationCode: Uint8Array;
-};
-
-export type EciesEncryptionInput = EciesEncryptionOutput & {
-  privateKey: Uint8Array;
-};
 
 export enum EncryptionAlgorithm {
   Aes256Ctr = 'A256CTR',
