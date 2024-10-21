@@ -1,8 +1,8 @@
+import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
 import { Encoder } from './encoder.js';
 import { getWebcryptoSubtle } from '@noble/ciphers/webcrypto';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
 
 export enum KeyDerivationScheme {
   /**

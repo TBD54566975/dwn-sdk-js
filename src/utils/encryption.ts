@@ -6,29 +6,30 @@ import { Readable } from 'readable-stream';
 // Compress publicKey for message encryption
 eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed = true;
 
-export interface EciesEncryptionOutput {
+export type EciesEncryptionOutput = {
   ciphertext: Uint8Array;
   ephemeralPublicKey: Uint8Array;
   initializationVector: Uint8Array;
   messageAuthenticationCode: Uint8Array;
-}
+};
 
-export interface EciesEncryptionInput {
+export type EciesEncryptionInput = {
   privateKey: Uint8Array;
   ephemeralPublicKey: Uint8Array;
   initializationVector: Uint8Array;
   messageAuthenticationCode: Uint8Array;
   ciphertext: Uint8Array;
-}
+};
 
 /**
  * Utility class for performing common, non-DWN specific encryption operations.
  */
 export class Encryption {
+
   /**
-   * Converts a key to base64url encoding
-   * @param key - Uint8Array to convert
+   * Encrypts the given plaintext stream using AES-256-CTR algorithm.
    */
+
   public static isEphemeralKeyCompressed: boolean = true; // Set default value
 
   private static toBase64Url(buffer: Buffer): string {
@@ -89,6 +90,11 @@ export class Encryption {
     return cipherStream; // Return the cipher stream
   }
 
+
+  /**
+   * Decrypts the given cipher stream using AES-256-CTR algorithm.
+   */
+
   public static async aes256CtrDecrypt(
     key: Uint8Array,
     initializationVector: Uint8Array,
@@ -139,6 +145,7 @@ export class Encryption {
     const plaintextBuffer = Buffer.from(plaintext);
 
     const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
+    // split cryptogram returned into constituent parts
 
     let start = 0;
     let end = Encryption.isEphemeralKeyCompressed ? 33 : 65;
@@ -162,6 +169,12 @@ export class Encryption {
     };
   }
 
+  /**
+   * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme)
+   * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
+   * and AES-GCM for the symmetric encryption and MAC algorithms.
+   */
+
   public static async eciesSecp256k1Decrypt(
     input: EciesEncryptionInput
   ): Promise<Uint8Array> {
@@ -173,6 +186,9 @@ export class Encryption {
       input.ciphertext,
     ]);
 
+    /**
+   * Expose eciesjs library configuration
+   */
     return eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
   }
 }
