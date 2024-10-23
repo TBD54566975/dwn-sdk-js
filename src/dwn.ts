@@ -29,7 +29,7 @@ import { RecordsSubscribeHandler } from './handlers/records-subscribe.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
 import { ResumableTaskManager } from './core/resumable-task-manager.js';
 import { StorageController } from './store/storage-controller.js';
-import { DidDht, DidJwk, DidKey, DidResolverCacheLevel, UniversalResolver } from '@web5/dids';
+import { DidDht, DidJwk, DidKey, DidResolverCacheLevel, DidWeb, UniversalResolver } from '@web5/dids';
 import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {
@@ -126,7 +126,7 @@ export class Dwn {
    */
   public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new UniversalResolver({
-      didResolvers : [DidDht, DidJwk, DidKey ],
+      didResolvers : [ DidDht, DidJwk, DidKey, DidWeb ],
       cache        : new DidResolverCacheLevel({ location: 'RESOLVERCACHE' }),
     });
     config.tenantGate ??= new AllowAllTenantGate();
