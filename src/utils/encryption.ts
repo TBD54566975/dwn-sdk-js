@@ -25,24 +25,19 @@ export type EciesEncryptionInput = {
  * Utility class for performing common, non-DWN specific encryption operations.
  */
 export class Encryption {
-
   /**
    * Encrypts the given plaintext stream using AES-256-CTR algorithm.
    */
 
   public static isEphemeralKeyCompressed: boolean = true; // Set default value
 
-  private static toBase64Url(buffer: Buffer): string {
-    return buffer.toString('base64') // Convert to base64
-      .replace(/\+/g, '-') // Replace + with -
-      .replace(/\//g, '_') // Replace / with _
-      .replace(/=+$/, ''); // Remove any trailing '='
-  }
-
   private static async convertToJwk(key: Uint8Array): Promise<Jwk> {
+    // Construct the private key in JWK format using bytesToPrivateKey method.
+    const privateKey = await AesCtr.bytesToPrivateKey({ privateKeyBytes: key });
+
+    // Assign the algorithm and extractability flag.
     return {
-      kty : 'oct',
-      k   : this.toBase64Url(Buffer.from(key)), // Use the new base64url method
+      ...privateKey,
       alg : 'A256CTR',
       ext : 'true',
     };
@@ -90,7 +85,6 @@ export class Encryption {
     return cipherStream; // Return the cipher stream
   }
 
-
   /**
    * Decrypts the given cipher stream using AES-256-CTR algorithm.
    */
@@ -120,7 +114,7 @@ export class Encryption {
           data    : buffer,
           key     : jwkKey,
           counter : initializationVector,
-          length  : 128, // FIX: Counter length must be between 1 and 128
+          length  : 128,
         });
 
         plaintextStream.push(decryptedData);
@@ -187,12 +181,11 @@ export class Encryption {
     ]);
 
     /**
-   * Expose eciesjs library configuration
-   */
+     * Expose eciesjs library configuration
+     */
     return eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
   }
 }
-
 
 export enum EncryptionAlgorithm {
   Aes256Ctr = 'A256CTR',
